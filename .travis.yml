@@ -1,0 +1,26 @@
+dist: trusty
+language: scala
+scala:
+- 2.12.1
+jdk:
+- openjdk8
+sudo: false
+cache:
+  directories:
+  - $HOME/.ivy2/cache
+  - $HOME/.sbt/boot/
+before_cache:
+- find $HOME/.ivy2 -name "ivydata-*.properties" -delete
+- find $HOME/.sbt -name "*.lock" -delete
+env:
+- META_PASSWORD=""
+services:
+- postgresql
+before_script:
+- psql -c 'create database test_db;' -U postgres
+addons:
+  postgresql: '9.4'
+notifications:
+  slack:
+    rooms:
+      secure: aFLsiY4wMzbHRXFkCmE7Z1kAdRXXIgNoSS/goyeQkXyiZ7K08maGRwX+RGv44UbP97rnmdBMloox5rbxwOcEdoRH1EzywjPTgNeLhtOOJMhrl5S82Iw4PaanGKHwxyjdNad95G4AHQNrTOgE4Bo5Vvxr3+uUAfQLS3Yv+Y5QxoMqKxGH8z7ZPB/XnqMbsJTYhl4Fdb2NloPstabB8gbpX9Mw35++Tok9gvErwVUt2HwmuVZzO8CJBR+oxEW6yRH5zP8yXH6/DhjPYWCCBTKeyBxHyKZBqZQPXhESeeFN54Xclb1ZtDHQlwPpxoGpnk/phZlMak1WyQzTX3tFj4c9YT1jTkj7QnVXQSRd5bmzmezf+I5z0yNrHjBm8Jsmhbee7gZsuTyakIK/zfgtD3m0u9NyGqYgfNLtPqHsvXgiwgbpJN5VB0JelF4EIrwGxKlmrbFnghtpyEXCUn3z5ROP6MNqNwUF0UY1L+OOi7MG+8FqGaq5N7WAoypLTmhnQHSc/ZmD/MlqDRhilBSgCTNNYybckMCDo+FyNHKHifu1L6nKTAQlG63SXcbtHfGeDHDJrdAQ1+rKS2fV8aiGyGF8QSVQO+gkmRBTyi4nX27eYnnrm09MiOwr2EW4u//aPLC8ezWnpMZXKpmPJHaiXjnRJF9Zx8Pr3r2Hg62bISzNy8c=
