@@ -33,9 +33,9 @@ case class SearchableArticle(
   introduction: SearchableLanguageValues,
   tags: SearchableLanguageList,
   lastUpdated: Date,
-  license: String,
+  license: Option[String],
   authors: Seq[String],
-  articleType: String
+  articleType: Option[String]
 )
 
 case class SearchableConcept(

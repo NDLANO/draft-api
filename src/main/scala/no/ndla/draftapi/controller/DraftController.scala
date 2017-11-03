@@ -182,7 +182,7 @@ trait DraftController {
         )
       }
 
-      val hitResult = converterService.getHitsV2(searchResult.response, language)
+      val hitResult = converterService.getHits(searchResult.response, language)
       SearchResult(
         searchResult.totalCount,
         searchResult.page,
@@ -250,7 +250,7 @@ trait DraftController {
     post("/", operation(newArticle)) {
       authRole.assertHasRole(RoleWithWriteAccess)
       val newArticle = extract[NewArticle](request.body)
-      writeService.newArticleV2(newArticle) match {
+      writeService.newArticle(newArticle) match {
         case Success(article) => Created(body=article)
         case Failure(exception) => errorHandler(exception)
       }
@@ -261,7 +261,7 @@ trait DraftController {
 
       val articleId = long("article_id")
       val updatedArticle = extract[UpdatedArticle](request.body)
-      writeService.updateArticleV2(articleId, updatedArticle) match {
+      writeService.updateArticle(articleId, updatedArticle) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)
       }

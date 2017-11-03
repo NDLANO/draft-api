@@ -24,7 +24,7 @@ case class Article(id: Option[Long],
                    revision: Option[Int],
                    title: Seq[ArticleTitle],
                    content: Seq[ArticleContent],
-                   copyright: Copyright,
+                   copyright: Option[Copyright],
                    tags: Seq[ArticleTag],
                    requiredLibraries: Seq[RequiredLibrary],
                    visualElement: Seq[VisualElement],
@@ -34,7 +34,7 @@ case class Article(id: Option[Long],
                    created: Date,
                    updated: Date,
                    updatedBy: String,
-                   articleType: String) extends Content
+                   articleType: Option[String]) extends Content
 
 
 object Article extends SQLSyntaxSupport[Article] {

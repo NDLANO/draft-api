@@ -8,7 +8,6 @@
 package no.ndla.draftapi.service.search
 
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.model.api.{Article => ApiArticleV2, ArticleContentV2}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.search._
 import no.ndla.network.ApplicationUrl
@@ -28,8 +27,8 @@ trait SearchConverterService {
         content = SearchableLanguageValues(ai.content.map(article => LanguageValue(article.language, Jsoup.parseBodyFragment(article.content).text()))),
         tags = SearchableLanguageList(ai.tags.map(tag => LanguageValue(tag.language, tag.tags))),
         lastUpdated = ai.updated,
-        license = ai.copyright.license,
-        authors = ai.copyright.authors.map(_.name),
+        license = ai.copyright.flatMap(_.license),
+        authors = ai.copyright.map(_.authors).map(a => a.map(_.name)).toSeq.flatten,
         articleType = ai.articleType
       )
     }

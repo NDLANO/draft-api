@@ -50,7 +50,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
 
-    service.newArticleV2(TestData.newArticleV2).get.id.toString should equal(article.id.get.toString)
+    service.newArticle(TestData.newArticle).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
   }
@@ -113,7 +113,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
-    service.updateArticleV2(articleId, updatedApiArticle).get should equal(converterService.toApiArticleV2(expectedArticle, "en").get)
+    service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en").get)
   }
 
   test("That updateArticleV2 updates only title properly") {
@@ -121,7 +121,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(newTitle), None, Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
-    service.updateArticleV2(articleId, updatedApiArticle).get should equal(converterService.toApiArticleV2(expectedArticle, "en").get)
+    service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en").get)
   }
 
   test("That updateArticleV2 updates multiple fields properly") {
@@ -132,7 +132,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedIntro = "introintro"
     val updatedMetaId = "1234"
     val updatedVisualElement = "<embed something>"
-    val updatedCopyright = api.Copyright(api.License("a", Some("b"), None), "c", Seq(api.Author("Opphavsmann", "Jonas")))
+    val updatedCopyright = api.Copyright(Some(api.License("a", Some("b"), None)), Some("c"), Seq(api.Author("Opphavsmann", "Jonas")))
     val updatedRequiredLib = api.RequiredLibrary("tjup", "tjap", "tjim")
 
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(updatedTitle), Some(updatedContent), updatedTags,
@@ -143,7 +143,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       revision = Some(article.revision.get + 1),
       title = Seq(ArticleTitle(updatedTitle, "en")),
       content = Seq(ArticleContent(updatedContent, "en")),
-      copyright = Copyright("a", "c", Seq(Author("Opphavsmann", "Jonas"))),
+      copyright = Some(Copyright(Some("a"), Some("c"), Seq(Author("Opphavsmann", "Jonas")))),
       tags = Seq(ArticleTag(Seq("en", "to", "tre"), "en")),
       requiredLibraries = Seq(RequiredLibrary("tjup", "tjap", "tjim")),
       visualElement = Seq(VisualElement(updatedVisualElement, "en")),
@@ -152,7 +152,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaImageId = Some(updatedMetaId),
       updated = today)
 
-    service.updateArticleV2(articleId, updatedApiArticle).get should equal(converterService.toApiArticleV2(expectedArticle, "en").get)
+    service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en").get)
   }
 
 }
