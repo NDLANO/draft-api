@@ -9,8 +9,7 @@ package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
 import no.ndla.draftapi.UnitSuite
-import no.ndla.draftapi.model.api.ValidationMessage
-import no.ndla.draftapi.model.domain.{Attributes, ResourceType}
+import no.ndla.validation.{Attributes, EmbedTagValidator, ResourceType, ValidationMessage}
 
 class EmbedTagValidatorTest extends UnitSuite {
   val embedTagValidator = new EmbedTagValidator()

@@ -12,17 +12,17 @@ import javax.servlet.http.HttpServletRequest
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
-import no.ndla.draftapi.model.api.{AccessDeniedException, Error, ImportException, ImportExceptions, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError, ValidationException, ValidationMessage}
-import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
+import no.ndla.draftapi.model.api.{AccessDeniedException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
 import no.ndla.draftapi.model.domain.emptySomeToNone
+import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.apache.logging.log4j.ThreadContext
 import org.elasticsearch.index.IndexNotFoundException
-import org.json4s.{DefaultFormats, Formats}
-import org.scalatra._
-import org.scalatra.json.NativeJsonSupport
-import org.scalatra.{BadRequest, InternalServerError, NotFound, ScalatraServlet}
 import org.json4s.native.Serialization.read
-import java.lang.Math.{max, min}
+import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.json.NativeJsonSupport
+import org.scalatra.{BadRequest, InternalServerError, NotFound, ScalatraServlet, _}
+
 import scala.util.{Failure, Success, Try}
 
 abstract class NdlaController extends ScalatraServlet with NativeJsonSupport with LazyLogging {

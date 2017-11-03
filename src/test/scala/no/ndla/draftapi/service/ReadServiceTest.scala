@@ -11,6 +11,7 @@ import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTa
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.{Attributes, ResourceType}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import scalikejdbc.DBSession

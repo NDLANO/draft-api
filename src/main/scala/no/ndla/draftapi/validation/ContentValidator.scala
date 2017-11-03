@@ -7,11 +7,11 @@
 
 package no.ndla.draftapi.validation
 
-import no.ndla.draftapi.model.api.{ValidationException, ValidationMessage}
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.DraftApiProperties.{NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl, H5PResizerScriptUrl}
+import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl}
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
+import no.ndla.validation.{HtmlRules, TextValidator, ValidationException, ValidationMessage}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -77,7 +77,7 @@ trait ContentValidator {
 
     def rootElementContainsOnlySectionBlocks(field: String, html: String): Option[ValidationMessage] = {
       val legalTopLevelTag = "section"
-      val topLevelTags = HtmlTools.stringToJsoupDocument(html).children().asScala.map(_.tagName())
+      val topLevelTags = HtmlRules.stringToJsoupDocument(html).children().asScala.map(_.tagName())
 
       topLevelTags.forall(_ == legalTopLevelTag) match {
         case true => None

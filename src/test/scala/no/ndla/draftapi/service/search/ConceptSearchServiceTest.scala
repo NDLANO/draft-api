@@ -84,7 +84,6 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
     conceptIndexService.indexDocument(concept9)
 
     blockUntil(() => {
-      println(s"num docs: ${conceptSearchService.countDocuments}")
       conceptSearchService.countDocuments == 9
     })
   }

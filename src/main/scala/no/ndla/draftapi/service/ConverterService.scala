@@ -18,10 +18,10 @@ import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
-import no.ndla.draftapi.validation.HtmlTools
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
 import Language._
+import no.ndla.validation.{Attributes, EmbedTagRules, HtmlRules, ResourceType}
 
 import scala.collection.JavaConverters._
 
@@ -146,14 +146,14 @@ trait ConverterService {
     private def getLinkToOldNdla(id: Long): Option[String] = draftRepository.getExternalIdFromId(id).map(createLinkToOldNdla)
 
     private def removeUnknownEmbedTagAttributes(html: String): String = {
-      val document = HtmlTools.stringToJsoupDocument(html)
+      val document = HtmlRules.stringToJsoupDocument(html)
       document.select("embed").asScala.map(el => {
-        domain.ResourceType.valueOf(el.attr(domain.Attributes.DataResource.toString))
-          .map(domain.EmbedTag.attributesForResourceType)
-          .map(knownAttributes => HtmlTools.removeIllegalAttributes(el, knownAttributes.all.map(_.toString)))
+        ResourceType.valueOf(el.attr(Attributes.DataResource.toString))
+          .map(EmbedTagRules.attributesForResourceType)
+          .map(knownAttributes => HtmlRules.removeIllegalAttributes(el, knownAttributes.all.map(_.toString)))
       })
 
-      HtmlTools.jsoupDocumentToString(document)
+      HtmlRules.jsoupDocumentToString(document)
     }
 
     def toApiArticle(article: domain.Article, language: String): api.Article = {

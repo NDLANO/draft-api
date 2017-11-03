@@ -8,9 +8,9 @@
 package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.DraftApiProperties.H5PResizerScriptUrl
-import no.ndla.draftapi.model.api.ValidationException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.ValidationException
 
 class ContentValidatorTest extends UnitSuite with TestEnvironment {
   override val contentValidator = new ContentValidator(allowEmptyLanguageField = false)

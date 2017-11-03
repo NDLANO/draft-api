@@ -8,8 +8,8 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.{Attributes, ResourceType}
 import org.mockito.Mockito._
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {

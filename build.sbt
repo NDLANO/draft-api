@@ -3,10 +3,10 @@ import java.util.Properties
 val Scalaversion = "2.12.2"
 val Scalatraversion = "2.5.1"
 val ScalaLoggingVersion = "3.5.0"
+val ScalaTestVersion = "3.0.1"
 val Log4JVersion = "2.7"
 val Jettyversion = "9.2.10.v20150310"
 val AwsSdkversion = "1.11.46"
-val ScalaTestVersion = "3.0.1"
 val MockitoVersion = "1.10.19"
 val Elastic4sVersion = "5.2.8"
 val ElasticsearchVersion = "5.1.1"
@@ -34,6 +34,7 @@ lazy val draft_api = (project in file(".")).
     libraryDependencies ++= Seq(
       "ndla" %% "network" % "0.24",
       "ndla" %% "mapping" % "0.4",
+      "ndla" %% "validation" % "0.1-SNAPSHOT",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",

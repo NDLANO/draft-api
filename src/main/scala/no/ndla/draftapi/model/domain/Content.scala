@@ -10,7 +10,7 @@ package no.ndla.draftapi.model.domain
 import java.util.Date
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.model.api.{ValidationException, ValidationMessage}
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
 import org.json4s.native.Serialization._

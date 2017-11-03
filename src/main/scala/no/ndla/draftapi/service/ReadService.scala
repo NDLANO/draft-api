@@ -11,10 +11,9 @@ import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTa
 import no.ndla.draftapi.caching.MemoizeAutoRenew
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.domain.Attributes
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
-import no.ndla.draftapi.validation.HtmlTools
+import no.ndla.validation.{Attributes, HtmlRules}
 import org.jsoup.nodes.Element
 
 import scala.math.max
@@ -60,11 +59,11 @@ trait ReadService {
     })
 
     private[service] def addUrlOnResource(content: String): String = {
-      val doc = HtmlTools.stringToJsoupDocument(content)
+      val doc = HtmlRules.stringToJsoupDocument(content)
 
       val embedTags = doc.select(s"$resourceHtmlEmbedTag").asScala.toList
       embedTags.foreach(addUrlOnEmbedTag)
-      HtmlTools.jsoupDocumentToString(doc)
+      HtmlRules.jsoupDocumentToString(doc)
     }
 
     private def addUrlOnEmbedTag(embedTag: Element) = {
