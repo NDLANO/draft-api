@@ -224,7 +224,7 @@ trait DraftController {
       val articleId = long("article_id")
       val language = paramOrDefault("language", Language.AllLanguages)
 
-      readService.withIdV2(articleId, language) match {
+      readService.withId(articleId, language) match {
         case Some(article) => article
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $articleId and language $language found"))
       }

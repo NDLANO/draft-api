@@ -24,15 +24,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     service.toApiLicense("by") should equal(api.License("by", Some("Creative Commons Attribution 2.0 Generic"), Some("https://creativecommons.org/licenses/by/2.0/")))
   }
 
-  test("toApiArticleV2 converts a domain.Article to an api.ArticleV2") {
+  test("toApiArticle converts a domain.Article to an api.ArticleV2") {
     when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
-    service.toApiArticle(TestData.sampleDomainArticle, "nb") should equal(Some(TestData.apiArticleV2))
-  }
-
-  test("toApiArticleV2 returns None when language is not supported") {
-    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
-    service.toApiArticle(TestData.sampleDomainArticle, "someRandomLanguage") should be(None)
-    service.toApiArticle(TestData.sampleDomainArticle, "") should be(None)
+    service.toApiArticle(TestData.sampleDomainArticle, "nb") should equal(TestData.apiArticleV2)
   }
 
   test("toDomainArticleShould should remove unneeded attributes on embed-tags") {

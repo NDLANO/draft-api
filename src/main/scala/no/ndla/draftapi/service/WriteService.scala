@@ -28,7 +28,7 @@ trait WriteService {
         case Success(_) => {
           val article = draftRepository.insert(domainArticle)
           articleIndexService.indexDocument(article)
-          Success(converterService.toApiArticle(article, newArticle.language).get)
+          Success(converterService.toApiArticle(article, newArticle.language))
         }
         case Failure(exception) => Failure(exception)
       }
@@ -62,7 +62,7 @@ trait WriteService {
           } yield article
       }
 
-      article.map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language).get)
+      article.map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {

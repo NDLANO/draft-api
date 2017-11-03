@@ -156,12 +156,10 @@ trait ConverterService {
       HtmlTools.jsoupDocumentToString(document)
     }
 
-    def toApiArticle(article: domain.Article, language: String): Option[api.Article] = {
+    def toApiArticle(article: domain.Article, language: String): api.Article = {
       val supportedLanguages = getSupportedLanguages(
         Seq(article.title, article.visualElement, article.introduction, article.metaDescription, article.tags, article.content)
       )
-
-      if (supportedLanguages.isEmpty || (!supportedLanguages.contains(language) && language != AllLanguages)) return None
 
       val meta = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
       val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
@@ -170,7 +168,7 @@ trait ConverterService {
       val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
       val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
 
-      Some(api.Article(
+      api.Article(
         article.id.get,
         article.id.flatMap(getLinkToOldNdla),
         article.revision.get,
@@ -187,7 +185,7 @@ trait ConverterService {
         article.updatedBy,
         article.articleType,
         supportedLanguages
-      ))
+      )
     }
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)

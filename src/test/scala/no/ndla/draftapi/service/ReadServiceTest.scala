@@ -47,7 +47,7 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Some("54321"))
 
     val expectedResult = converterService.toApiArticle(article.copy(content = Seq(expectedArticleContent1), visualElement = Seq(VisualElement(visualElementAfter, "nb"))), "nb")
-    readService.withIdV2(1, "nb") should equal(expectedResult)
+    readService.withId(1, "nb") should equal(Some(expectedResult))
   }
 
   test("addIdAndUrlOnResource adds an id and url attribute on embed-resoures with a data-resource_id attribute") {

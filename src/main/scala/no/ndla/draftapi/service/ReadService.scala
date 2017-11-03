@@ -28,10 +28,10 @@ trait ReadService {
     def getInternalIdByExternalId(externalId: Long): Option[api.ArticleId] =
       draftRepository.getIdFromExternalId(externalId.toString).map(api.ArticleId)
 
-    def withIdV2(id: Long, language: String): Option[api.Article] = {
+    def withId(id: Long, language: String): Option[api.Article] = {
       draftRepository.withId(id)
         .map(addUrlsOnEmbedResources)
-        .flatMap(article => converterService.toApiArticle(article, language))
+        .map(article => converterService.toApiArticle(article, language))
     }
 
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
@@ -51,7 +51,7 @@ trait ReadService {
 
     def getArticlesByPage(pageNo: Int, pageSize: Int, lang: String): api.ArticleDump = {
       val (safePageNo, safePageSize) = (max(pageNo, 1), max(pageSize, 0))
-      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize).flatMap(article => converterService.toApiArticle(article, lang))
+      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize).map(article => converterService.toApiArticle(article, lang))
       api.ArticleDump(draftRepository.articleCount, pageNo, pageSize, lang, results)
     }
 
