@@ -21,7 +21,7 @@ import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json.NativeJsonSupport
-import org.scalatra.{BadRequest, InternalServerError, NotFound, ScalatraServlet, _}
+import org.scalatra.{BadRequest, InternalServerError, NotFound, ScalatraServlet, Forbidden, Conflict, UnprocessableEntity}
 
 import scala.util.{Failure, Success, Try}
 
