@@ -27,9 +27,9 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
   override val converterService = new ConverterService
   override val searchConverterService = new SearchConverterService
 
-  val byNcSa = Copyright("by-nc-sa", "Gotham City", List(Author("Forfatter", "DC Comics")))
-  val publicDomain = Copyright("publicdomain", "Metropolis", List(Author("Forfatter", "Bruce Wayne")))
-  val copyrighted = Copyright("copyrighted", "New York", List(Author("Forfatter", "Clark Kent")))
+  val byNcSa = Copyright(Some("by-nc-sa"), Some("Gotham City"), List(Author("Forfatter", "DC Comics")))
+  val publicDomain = Copyright(Some("publicdomain"), Some("Metropolis"), List(Author("Forfatter", "Bruce Wayne")))
+  val copyrighted = Copyright(Some("copyrighted"), Some("New York"), List(Author("Forfatter", "Clark Kent")))
 
   val today = DateTime.now()
 
@@ -84,7 +84,6 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
     conceptIndexService.indexDocument(concept9)
 
     blockUntil(() => {
-      println(s"num docs: ${conceptSearchService.countDocuments}")
       conceptSearchService.countDocuments == 9
     })
   }
@@ -135,7 +134,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
   test("That all returns all documents ordered by title ascending") {
     val results = conceptSearchService.all(List(), Language.DefaultLanguage, 1, 10, Sort.ByTitleAsc)
     val hits = results.results
-    hits.foreach(println)
+
     results.totalCount should be(9)
     hits.head.id should be(8)
     hits(1).id should be(9)

@@ -8,10 +8,10 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.model.domain.ResourceType
 import no.ndla.network.secrets.PropertyKeys
 import no.ndla.network.secrets.Secrets.readSecrets
 import no.ndla.network.Domains
+import no.ndla.validation.ResourceType
 
 import scala.util.Properties._
 import scala.util.{Failure, Success}

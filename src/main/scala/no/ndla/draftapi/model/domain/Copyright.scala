@@ -7,4 +7,4 @@
 
 package no.ndla.draftapi.model.domain
 
-case class Copyright(license: String, origin: String, authors: Seq[Author])
+case class Copyright(license: Option[String], origin: Option[String], authors: Seq[Author])

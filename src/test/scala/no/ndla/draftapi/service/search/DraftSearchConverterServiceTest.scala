@@ -73,7 +73,7 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
     val articleSummary = searchConverterService.asArticleSummary(searchableArticle)
 
     articleSummary.id should equal (article.id.get)
-    articleSummary.license should equal (article.copyright.license)
+    articleSummary.license should equal (article.copyright.flatMap(_.license))
     articleSummary.title should equal (article.title)
   }
 

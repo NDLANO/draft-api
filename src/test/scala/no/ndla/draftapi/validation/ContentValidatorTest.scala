@@ -8,9 +8,9 @@
 package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.DraftApiProperties.H5PResizerScriptUrl
-import no.ndla.draftapi.model.api.ValidationException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.ValidationException
 
 class ContentValidatorTest extends UnitSuite with TestEnvironment {
   override val contentValidator = new ContentValidator(allowEmptyLanguageField = false)
@@ -117,37 +117,37 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   }
 
   test("validateArticle throws an exception on an article with an invalid license") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Copyright("beerware", "", Seq()))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("beerware"), None, Seq())))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with a valid license") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Copyright("by-sa", "", Seq()))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq())))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle throws an exception on an article with html in copyright origin") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Copyright("by-sa", "<h1>origin</h1>", Seq()))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), Some("<h1>origin</h1>"), Seq())))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with plain text in copyright origin") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Copyright("by-sa", "", Seq()))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq())))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with plain text in authors field") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Copyright("by-sa", "", Seq(Author("author", "John Doe"))))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(Author("author", "John Doe")))))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle throws an exception on an article with html in authors field") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Copyright("by-sa", "", Seq(Author("author", "<h1>john</h1>"))))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(Author("author", "<h1>john</h1>")))))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
   test("validateArticle throws an exception on an article with an invalid article type") {
-    val article = TestData.sampleArticleWithByNcSa.copy(articleType = "invalid")
+    val article = TestData.sampleArticleWithByNcSa.copy(articleType = Some("invalid"))
     contentValidator.validateArticle(article, false).isFailure should be (true)
   }
 
@@ -169,6 +169,13 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   test("Validation should not fail with language=unknown if allowUnknownLanguage is set") {
     val article = TestData.sampleArticleWithByNcSa.copy(title = Seq(ArticleTitle("tittele", "unknown")))
     contentValidator.validateArticle(article, true).isSuccess should be (true)
+  }
+
+  test("validation should fail if article does not contain a title") {
+    val article = TestData.sampleArticleWithByNcSa.copy(title = Seq.empty)
+    val errors = contentValidator.validateArticle(article, true)
+    errors.isFailure should be (true)
+    errors.failed.get.asInstanceOf[ValidationException].errors.head.message should equal ("An article must contain at least one title. Perhaps you tried to delete the only title in the article?")
   }
 
 }

@@ -13,5 +13,6 @@ trait WithLanguage {
 
 trait LanguageField[T] extends WithLanguage {
   def value: T
+  def isEmpty: Boolean
   def language: String
 }
