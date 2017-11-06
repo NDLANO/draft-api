@@ -37,11 +37,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   addServlet(controller, "/test")
 
   val updateTitleJson = """{"revision": 1, "title": "hehe", "language": "nb", "content": "content"}"""
-  val invalidArticle = """{"revision": 1, "title": [{"language": "nb", "titlee": "lol"]}"""
+  val invalidArticle = """{"revision": 1, "title": [{"language": "nb", "titlee": "lol"]}""" // typo in "titlee"
+  val invalidNewArticle = """{ "language": "nb", "content": "<section><h2>Hi</h2></section>" }""" // missing title
   val lang = "nb"
   val articleId = 1
 
-  test("/<article_id> should return 200 if the cover was found withIdV2") {
+  test("/<article_id> should return 200 if the cover was found withId") {
     when(readService.withId(articleId, lang)).thenReturn(Some(TestData.sampleArticleV2))
 
     get(s"/test/$articleId?language=$lang") {
@@ -49,7 +50,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("/<article_id> should return 404 if the article was not found withIdV2") {
+  test("/<article_id> should return 404 if the article was not found withId") {
     when(readService.withId(articleId, lang)).thenReturn(None)
 
     get(s"/test/$articleId?language=$lang") {
@@ -57,15 +58,14 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("/<article_id> should return 400 if the article was not found withIdV2") {
+  test("/<article_id> should return 400 if the article was not found withId") {
     get(s"/test/one") {
       status should equal(400)
     }
   }
 
-
-  test("POST / should return 400 on failure to validate request") {
-    post("/test/", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("POST / should return 400 if body does not contain all required fields") {
+    post("/test/", invalidArticle, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(400)
     }
   }
