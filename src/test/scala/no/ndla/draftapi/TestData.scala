@@ -144,7 +144,7 @@ object TestData {
 
   val newArticle = api.NewArticle(
     "en",
-    Some("test"),
+    "test",
     Some("<article><div>test</div></article>"),
     Seq.empty,
     None,

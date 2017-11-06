@@ -81,7 +81,7 @@ trait ConverterService {
     }
 
     def toDomainArticle(newArticle: api.NewArticle): domain.Article = {
-      val domainTitles = newArticle.title.map(title => domain.ArticleTitle(title, newArticle.language)).toSeq
+      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.title))
       val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
 
       domain.Article(

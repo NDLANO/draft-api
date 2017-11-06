@@ -171,4 +171,11 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     contentValidator.validateArticle(article, true).isSuccess should be (true)
   }
 
+  test("validation should fail if article does not contain a title") {
+    val article = TestData.sampleArticleWithByNcSa.copy(title = Seq.empty)
+    val errors = contentValidator.validateArticle(article, true)
+    errors.isFailure should be (true)
+    errors.failed.get.asInstanceOf[ValidationException].errors.head.message should equal ("An article must contain at least one title. Perhaps you tried to delete the only title in the article?")
+  }
+
 }

@@ -12,7 +12,7 @@ import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 import scala.annotation.meta.field
 @ApiModel(description = "Information about the article")
 case class NewArticle(@(ApiModelProperty@field)(description = "The chosen language") language: String,
-                      @(ApiModelProperty@field)(description = "The title of the article") title: Option[String],
+                      @(ApiModelProperty@field)(description = "The title of the article") title: String,
                       @(ApiModelProperty@field)(description = "The content of the article") content: Option[String],
                       @(ApiModelProperty@field)(description = "Searchable tags") tags: Seq[String],
                       @(ApiModelProperty@field)(description = "An introduction") introduction: Option[String],
