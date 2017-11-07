@@ -8,7 +8,7 @@
 
 import javax.servlet.ServletContext
 
-import no.ndla.draftapi.ComponentRegistry.{internController, draftController, resourcesApp, healthController, conceptController}
+import no.ndla.draftapi.ComponentRegistry.{internController, draftController, agreementController, resourcesApp, healthController, conceptController}
 import no.ndla.draftapi.DraftSwagger
 import org.scalatra.LifeCycle
 
@@ -18,6 +18,7 @@ class ScalatraBootstrap extends LifeCycle {
 
   override def init(context: ServletContext) {
     context.mount(draftController, "/draft-api/v1/drafts", "drafts")
+    context.mount(agreementController, "/draft-api/v1/agreements/", "agreements")
     context.mount(conceptController, "/draft-api/v1/concepts", "concepts")
     context.mount(resourcesApp, "/draft-api/api-docs")
     context.mount(internController, "/intern")

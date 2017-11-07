@@ -10,8 +10,7 @@ package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.{Role, User}
-import no.ndla.draftapi.controller.ConceptController
-import no.ndla.draftapi.controller.{DraftController, HealthController, InternController}
+import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
 import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service._
@@ -29,6 +28,7 @@ object ComponentRegistry
     with ConceptSearchService
     with ConceptIndexService
     with DraftController
+    with AgreementController
     with HealthController
     with DraftRepository
     with ConceptRepository
@@ -62,6 +62,7 @@ object ComponentRegistry
 
   lazy val internController = new InternController
   lazy val draftController = new DraftController
+  lazy val agreementController = new AgreementController
   lazy val conceptController = new ConceptController
   lazy val resourcesApp = new ResourcesApp
   lazy val healthController = new HealthController

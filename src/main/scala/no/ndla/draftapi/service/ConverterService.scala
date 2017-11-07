@@ -164,7 +164,15 @@ trait ConverterService {
     }
 
    def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
-      domain.Copyright(copyright.license.license, copyright.origin, copyright.authors.map(toDomainAuthor))
+      domain.Copyright(
+        copyright.license.license,
+        copyright.origin,
+        copyright.creators.map(toDomainAuthor),
+        copyright.processors.map(toDomainAuthor),
+        copyright.rightsholders.map(toDomainAuthor),
+        copyright.validFrom,
+        copyright.validTo
+      )
     }
 
     def toDomainAuthor(author: api.Author): domain.Author = {
@@ -241,7 +249,11 @@ trait ConverterService {
       api.Copyright(
         toApiLicense(copyright.license),
         copyright.origin,
-        copyright.authors.map(toApiAuthor)
+        copyright.creators.map(toApiAuthor),
+        copyright.processors.map(toApiAuthor),
+        copyright.rightsholders.map(toApiAuthor),
+        copyright.validFrom,
+        copyright.validTo
       )
     }
 
