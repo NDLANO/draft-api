@@ -13,6 +13,7 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization._
 import scalikejdbc._
 
@@ -22,6 +23,7 @@ sealed trait Content {
 
 case class Article(id: Option[Long],
                    revision: Option[Int],
+                   status: ArticleStatus.Value,
                    title: Seq[ArticleTitle],
                    content: Seq[ArticleContent],
                    copyright: Option[Copyright],
@@ -38,7 +40,7 @@ case class Article(id: Option[Long],
 
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats
+  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus)
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
@@ -48,6 +50,7 @@ object Article extends SQLSyntaxSupport[Article] {
     Article(
       Some(rs.long(lp.c("id"))),
       Some(rs.int(lp.c("revision"))),
+      meta.status,
       meta.title,
       meta.content,
       meta.copyright,
@@ -68,6 +71,14 @@ object Article extends SQLSyntaxSupport[Article] {
     ignore("id") orElse
     ignore("revision")
   )
+}
+
+object ArticleStatus extends Enumeration {
+  val PUBLISHED, DRAFT = Value
+
+  def valueOf(s:String): Option[ArticleStatus.Value] = {
+    ArticleStatus.values.find(_.toString == s.toUpperCase)
+  }
 }
 
 object ArticleType extends Enumeration {

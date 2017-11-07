@@ -16,7 +16,7 @@ import io.searchbox.core.{SearchResult => JestSearchResult}
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.Language
+import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
@@ -81,12 +81,13 @@ trait ConverterService {
     }
 
     def toDomainArticle(newArticle: api.NewArticle): domain.Article = {
-      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.title))
+      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
       val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
 
       domain.Article(
         id = None,
         revision = None,
+        ArticleStatus.DRAFT,
         title = domainTitles,
         content = domainContent,
         copyright = newArticle.copyright.map(toDomainCopyright),
@@ -119,7 +120,6 @@ trait ConverterService {
 
     def toDomainVisualElement(visual: String, language: String): domain.VisualElement =
       domain.VisualElement(removeUnknownEmbedTagAttributes(visual), language)
-
 
     def toDomainIntroduction(intro: api.ArticleIntroduction): domain.ArticleIntroduction = {
       domain.ArticleIntroduction(intro.introduction, intro.language)
@@ -172,6 +172,7 @@ trait ConverterService {
         article.id.get,
         article.id.flatMap(getLinkToOldNdla),
         article.revision.get,
+        article.status.toString,
         title,
         articleContent,
         article.copyright.map(toApiCopyright),
