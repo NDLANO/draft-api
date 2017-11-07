@@ -47,11 +47,10 @@ trait AgreementController {
         notes "Shows all agreements. You can search too."
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        queryParam[Option[String]]("articleTypes").description("Return only articles of specific type(s). To provide multiple types, separate by comma (,)."),
         queryParam[Option[String]]("query").description("Return only articles with content matching the specified query."),
-        queryParam[Option[String]]("ids").description("Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,)."),
+        queryParam[Option[String]]("ids").description("Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,)."),
         queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb"),
-        queryParam[Option[String]]("license").description("Return only articles with provided license."),
+        queryParam[Option[String]]("license").description("Return only agreements with provided license."),
         queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
         queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page."),
         queryParam[Option[String]]("sort").description(
@@ -61,12 +60,11 @@ trait AgreementController {
              The following are supported: relevance, -relevance, title, -title, lastUpdated, -lastUpdated, id, -id""".stripMargin)
       )
         authorizations "oauth2"
-        responseMessages(response500))
+        responseMessages response500)
 
     get("/", operation(getAllAgreements)) {
       val query = paramOrNone("query")
       val sort = Sort.valueOf(paramOrDefault("sort", ""))
-      val language = paramOrDefault("language", Language.DefaultLanguage)
       val license = paramOrNone("license")
       val pageSize = intOrDefault("page-size", DraftApiProperties.DefaultPageSize)
       val page = intOrDefault("page", 1)
