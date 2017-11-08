@@ -13,7 +13,7 @@ import no.ndla.draftapi.DraftApiProperties.RoleWithWriteAccess
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
-import no.ndla.draftapi.service.search.ArticleSearchService
+import no.ndla.draftapi.service.search.{AgreementSearchService, ArticleSearchService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
@@ -24,7 +24,7 @@ import org.scalatra.{Created, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait AgreementController {
-  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role =>
+  this: ReadService with WriteService with AgreementSearchService with ConverterService with Role =>
   val agreementController: AgreementController
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {

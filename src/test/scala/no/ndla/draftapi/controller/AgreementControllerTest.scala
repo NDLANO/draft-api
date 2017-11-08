@@ -15,28 +15,27 @@ class AgreementControllerTest extends UnitSuite with TestEnvironment with Scalat
   implicit val formats = org.json4s.DefaultFormats
   implicit val swagger = new DraftSwagger
 
-  lazy val controller = new ConceptController
+  lazy val controller = new AgreementController
   addServlet(controller, "/test")
 
-  val conceptId = 1
-  val lang = "nb"
+  val agreementId = 1
 
   test("/<agreement_id> should return 200 if the agreement was found") {
-    when(readService.conceptWithId(1, lang)).thenReturn(Some(TestData.sampleApiConcept))
-    get(s"/test/$conceptId?language=$lang") {
+    when(readService.agreementWithId(1)).thenReturn(Some(TestData.sampleApiAgreement))
+    get(s"/test/$agreementId") {
       status should equal(200)
     }
   }
 
-  test("/<concept_id> should return 404 if the article was not found") {
-    when(readService.conceptWithId(conceptId, lang)).thenReturn(None)
+  test("/<agreement_id> should return 404 if the article was not found") {
+    when(readService.agreementWithId(agreementId)).thenReturn(None)
 
-    get(s"/test/$conceptId?language=$lang") {
+    get(s"/test/$agreementId") {
       status should equal(404)
     }
   }
 
-  test("/<concept_id> should return 400 if the article was not found") {
+  test("/<agreement_id> should return 400 if the request was bad") {
     get(s"/test/one") {
       status should equal(400)
     }

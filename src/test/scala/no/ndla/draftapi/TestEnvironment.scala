@@ -34,6 +34,7 @@ trait TestEnvironment
     with InternController
     with HealthController
     with ConceptController
+    with AgreementController
     with DataSource
     with DraftRepository
     with AgreementRepository

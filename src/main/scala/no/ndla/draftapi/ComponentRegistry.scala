@@ -35,6 +35,7 @@ object ComponentRegistry
     with ConceptRepository
     with ElasticClient
     with ArticleSearchService
+    with AgreementSearchService
     with IndexService
     with ArticleIndexService
     with AgreementIndexService
@@ -74,6 +75,7 @@ object ComponentRegistry
   lazy val agreementRepository = new AgreementRepository
   lazy val articleSearchService = new ArticleSearchService
   lazy val articleIndexService = new ArticleIndexService
+  lazy val agreementSearchService = new AgreementSearchService
   lazy val agreementIndexService = new AgreementIndexService
   lazy val conceptSearchService = new ConceptSearchService
   lazy val conceptIndexService = new ConceptIndexService
