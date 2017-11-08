@@ -68,7 +68,7 @@ trait AgreementController {
         notes "Shows the agreement for the specified id."
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        pathParam[Long]("agreement_id").description("Id of the article that is to be returned"),
+        pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
       )
         authorizations "oauth2"
         responseMessages(response404, response500))
