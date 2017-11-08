@@ -245,6 +245,23 @@ trait DraftController {
       }
     }
 
+    val updateArticleStatus =
+      (apiOperation[Article]("updateArticleStatus")
+        summary "Update the status of an existing article"
+        notes "Update the status of an existing article"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        pathParam[Long]("article_id").description("Id of the article that is to be updated"),
+        bodyParam[ArticleStatus]
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response404, response500))
+
+    put("/:article_id/status", operation(updateArticleStatus)) {
+      authRole.assertHasRole(RoleWithWriteAccess)
+      writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body))
+    }
+
     val updateArticle =
       (apiOperation[Article]("updateArticle")
         summary "Update an existing article"

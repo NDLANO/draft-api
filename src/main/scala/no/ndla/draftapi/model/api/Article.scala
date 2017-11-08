@@ -17,7 +17,7 @@ import scala.annotation.meta.field
 case class Article(@(ApiModelProperty@field)(description = "The unique id of the article") id: Long,
                    @(ApiModelProperty@field)(description = "Link to article on old platform") oldNdlaUrl: Option[String],
                    @(ApiModelProperty@field)(description = "The revision number for the article") revision: Int,
-                   @(ApiModelProperty@field)(description = "The status of this article", allowableValues = "CREATED,IMPORTED,DRAFT,SKETCH,USER_TEST,QUALITY_ASSURED,PUBLISHED") status: Set[String],
+                   @(ApiModelProperty@field)(description = "The status of this article", allowableValues = "CREATED,IMPORTED,DRAFT,SKETCH,USER_TEST,QUALITY_ASSURED,AWAITING_QUALITY_ASSURANCE") status: Set[String],
                    @(ApiModelProperty@field)(description = "Available titles for the article") title: Option[ArticleTitle],
                    @(ApiModelProperty@field)(description = "The content of the article in available languages") content: Option[ArticleContent],
                    @(ApiModelProperty@field)(description = "Describes the copyright information for the article") copyright: Option[Copyright],

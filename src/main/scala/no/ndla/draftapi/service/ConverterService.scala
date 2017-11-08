@@ -22,9 +22,10 @@ import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
 import ArticleStatus._
 import Language._
-import no.ndla.validation.{Attributes, EmbedTagRules, HtmlRules, ResourceType}
+import no.ndla.validation._
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
   this: Clock with DraftRepository with User =>
@@ -188,6 +189,15 @@ trait ConverterService {
         article.articleType,
         supportedLanguages
       )
+    }
+
+    def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
+      val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
+      if (invalidStatuses.nonEmpty) {
+        val errors = invalidStatuses.flatMap { case Failure(ex: ValidationException) => ex.errors }
+        Failure(new ValidationException(errors=errors.toSeq))
+      } else
+        Success(validStatuses.map(_.get))
     }
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)

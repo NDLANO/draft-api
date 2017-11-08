@@ -17,6 +17,8 @@ import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization._
 import scalikejdbc._
 
+import scala.util.{Failure, Success, Try}
+
 sealed trait Content {
   def id: Option[Long]
 }
@@ -74,11 +76,17 @@ object Article extends SQLSyntaxSupport[Article] {
 }
 
 object ArticleStatus extends Enumeration {
-  val CREATED, IMPORTED, USER_TEST, QUALITY_ASSURED, DRAFT, SKETCH, PUBLISHED = Value
+  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH = Value
 
-  def valueOf(s:String): Option[ArticleStatus.Value] = {
-    ArticleStatus.values.find(_.toString == s.toUpperCase)
-  }
+  def valueOfOrError(s: String): Try[ArticleStatus.Value] =
+    valueOf(s) match {
+      case Some(st) => Success(st)
+      case None =>
+        val validStatuses = values.map(_.toString).mkString(", ")
+        Failure(new ValidationException(errors=Seq(ValidationMessage("status", s"'$s' is not a valid article status. Must be one of $validStatuses"))))
+    }
+
+  def valueOf(s: String): Option[ArticleStatus.Value] = values.find(_.toString == s.toUpperCase)
 }
 
 object ArticleType extends Enumeration {
