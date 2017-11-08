@@ -194,7 +194,10 @@ trait ConverterService {
     def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
       val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
       if (invalidStatuses.nonEmpty) {
-        val errors = invalidStatuses.flatMap { case Failure(ex: ValidationException) => ex.errors }
+        val errors = invalidStatuses.flatMap {
+          case Failure(ex: ValidationException) => ex.errors
+          case Failure(ex) => Set(ValidationMessage("status", ex.getMessage))
+        }
         Failure(new ValidationException(errors=errors.toSeq))
       } else
         Success(validStatuses.map(_.get))
