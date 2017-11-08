@@ -31,7 +31,6 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
-    def toDomainAgreement(newAgreement: NewAgreement) = ???
 
 
     def getHitsV2(response: JestSearchResult, language: String): Seq[api.ArticleSummary] = {
@@ -107,6 +106,19 @@ trait ConverterService {
         updated=clock.now(),
         updatedBy=authUser.id(),
         newArticle.articleType
+      )
+    }
+
+    def toDomainAgreement(newAgreement: NewAgreement): domain.Agreement = {
+      domain.Agreement(
+        id = None,
+        content = newAgreement.content,
+        copyright = toDomainCopyright(newAgreement.copyright),
+        created = clock.now(),
+        updated = clock.now(),
+        updatedBy = authUser.id(),
+        validFrom = newAgreement.validFrom,
+        validTo = newAgreement.validTo
       )
     }
 

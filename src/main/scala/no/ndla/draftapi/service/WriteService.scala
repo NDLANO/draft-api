@@ -22,9 +22,8 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService {
-    def newAgreement(newAgreement: api.NewAgreement) = {
+    def newAgreement(newAgreement: api.NewAgreement): Try[Agreement] = {
       val domainAgreement = converterService.toDomainAgreement(newAgreement)
-
     }
 
     def newArticleV2(newArticle: api.NewArticle): Try[Article] = {

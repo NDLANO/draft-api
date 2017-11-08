@@ -107,7 +107,7 @@ trait AgreementController {
       authRole.assertHasRole(RoleWithWriteAccess)
       val newAgreement = extract[NewAgreement](request.body)
       writeService.newAgreement(newAgreement) match {
-        case Success(article) => Created(body=article)
+        case Success(agreement) => Created(body=agreement)
         case Failure(exception) => errorHandler(exception)
       }
     }
