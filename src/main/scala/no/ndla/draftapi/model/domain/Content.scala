@@ -112,3 +112,35 @@ object Concept extends SQLSyntaxSupport[Concept] {
       ignore("revision")
   )
 }
+
+case class Agreement(
+                      id: Option[Long],
+                      content: String,
+                      copyright: Copyright,
+                      created: Date,
+                      updated: Date,
+                      updatedBy: String) extends Content
+
+
+object Agreement extends SQLSyntaxSupport[Agreement] {
+  implicit val formats = org.json4s.DefaultFormats
+  override val tableName = "agreementdata"
+  override val schemaName = Some(DraftApiProperties.MetaSchema)
+
+  def apply(lp: SyntaxProvider[Agreement])(rs:WrappedResultSet): Agreement = apply(lp.resultName)(rs)
+  def apply(lp: ResultName[Agreement])(rs: WrappedResultSet): Agreement = {
+    val meta = read[Agreement](rs.string(lp.c("document")))
+    Agreement(
+      Some(rs.long(lp.c("id"))),
+      meta.content,
+      meta.copyright,
+      meta.created,
+      meta.updated,
+      meta.updatedBy
+    )
+  }
+
+  val JSonSerializer = FieldSerializer[Agreement](
+    ignore("id")
+  )
+}

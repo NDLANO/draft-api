@@ -13,7 +13,7 @@ import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.Attributes
 import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.validation.HtmlTools
 import org.jsoup.nodes.Element
 
@@ -21,7 +21,7 @@ import scala.math.max
 import scala.collection.JavaConverters._
 
 trait ReadService {
-  this: DraftRepository with ConceptRepository with ConverterService =>
+  this: DraftRepository with ConceptRepository with AgreementRepository with ConverterService =>
   val readService: ReadService
 
   class ReadService {

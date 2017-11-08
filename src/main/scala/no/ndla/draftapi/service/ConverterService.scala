@@ -116,9 +116,7 @@ trait ConverterService {
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
-        updatedBy = authUser.id(),
-        validFrom = newAgreement.validFrom,
-        validTo = newAgreement.validTo
+        updatedBy = authUser.id()
       )
     }
 
@@ -185,6 +183,7 @@ trait ConverterService {
         copyright.creators.map(toDomainAuthor),
         copyright.processors.map(toDomainAuthor),
         copyright.rightsholders.map(toDomainAuthor),
+        copyright.agreement,
         copyright.validFrom,
         copyright.validTo
       )
@@ -249,6 +248,8 @@ trait ConverterService {
       ))
     }
 
+    def toApiAgreement(agreement: domain.Agreement): api.Agreement = ???
+
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = {
       api.ArticleTitle(title.title, title.language)
     }
@@ -267,6 +268,7 @@ trait ConverterService {
         copyright.creators.map(toApiAuthor),
         copyright.processors.map(toApiAuthor),
         copyright.rightsholders.map(toApiAuthor),
+        copyright.agreement,
         copyright.validFrom,
         copyright.validTo
       )

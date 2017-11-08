@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
-import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
@@ -31,11 +31,13 @@ object ComponentRegistry
     with AgreementController
     with HealthController
     with DraftRepository
+    with AgreementRepository
     with ConceptRepository
     with ElasticClient
     with ArticleSearchService
     with IndexService
     with ArticleIndexService
+    with AgreementIndexService
     with SearchService
     with LazyLogging
     with NdlaClient
@@ -69,8 +71,10 @@ object ComponentRegistry
 
   lazy val draftRepository = new ArticleRepository
   lazy val conceptRepository = new ConceptRepository
+  lazy val agreementRepository = new AgreementRepository
   lazy val articleSearchService = new ArticleSearchService
   lazy val articleIndexService = new ArticleIndexService
+  lazy val agreementIndexService = new AgreementIndexService
   lazy val conceptSearchService = new ConceptSearchService
   lazy val conceptIndexService = new ConceptIndexService
 

@@ -19,5 +19,6 @@ case class Copyright(@(ApiModelProperty@field)(description = "Describes the lice
                      @(ApiModelProperty@field)(description = "List of creators") creators: Seq[Author],
                      @(ApiModelProperty@field)(description = "List of processors") processors: Seq[Author],
                      @(ApiModelProperty@field)(description = "List of rightsholders") rightsholders: Seq[Author],
+                     @(ApiModelProperty@field)(description = "Reference to agreement id") agreement: Option[Long],
                      @(ApiModelProperty@field)(description = "List of rightsholders") validFrom: Option[Date],
                      @(ApiModelProperty@field)(description = "List of rightsholders") validTo: Option[Date])

@@ -28,8 +28,11 @@ trait ContentValidator {
       content match {
         case concept: Concept => validateConcept(concept, allowUnknownLanguage)
         case article: Article => validateArticle(article, allowUnknownLanguage)
+        case agreement: Agreement => validateAgreement(agreement)
       }
     }
+
+    def validateAgreement(agreement: Agreement): Try[Agreement] = ???
 
     def validateArticle(article: Article, allowUnknownLanguage: Boolean): Try[Article] = {
       val validationErrors = article.content.flatMap(c => validateArticleContent(c, allowUnknownLanguage)) ++

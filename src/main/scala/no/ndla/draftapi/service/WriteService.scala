@@ -8,22 +8,29 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Article, NewAgreement, NotFoundException}
+import no.ndla.draftapi.model.api.{Article, Agreement, NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.DraftRepository
-import no.ndla.draftapi.service.search.ArticleIndexService
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
-  this: DraftRepository with ConverterService with ContentValidator with ArticleIndexService with Clock with User with ReadService =>
+  this: DraftRepository with AgreementRepository with ConverterService with ContentValidator with ArticleIndexService with AgreementIndexService with Clock with User with ReadService =>
   val writeService: WriteService
 
   class WriteService {
     def newAgreement(newAgreement: api.NewAgreement): Try[Agreement] = {
       val domainAgreement = converterService.toDomainAgreement(newAgreement)
+      contentValidator.validateAgreement(domainAgreement) match {
+        case Success(_) =>
+          val agreement = agreementRepository.insert(domainAgreement)
+          agreementIndexService.indexDocument(agreement)
+          Success(converterService.toApiAgreement(agreement))
+        case Failure(exception) => Failure(exception)
+      }
     }
 
     def newArticleV2(newArticle: api.NewArticle): Try[Article] = {

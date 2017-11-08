@@ -132,7 +132,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedIntro = "introintro"
     val updatedMetaId = "1234"
     val updatedVisualElement = "<embed something>"
-    val updatedCopyright = api.Copyright(api.License("a", Some("b"), None), "c", Seq(api.Author("Opphavsmann", "Jonas")), List(), List(), None, None)
+    val updatedCopyright = api.Copyright(api.License("a", Some("b"), None), "c", Seq(api.Author("Opphavsmann", "Jonas")), List(), List(), None, None, None)
     val updatedRequiredLib = api.RequiredLibrary("tjup", "tjap", "tjim")
 
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(updatedTitle), Some(updatedContent), updatedTags,
@@ -143,7 +143,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       revision = Some(article.revision.get + 1),
       title = Seq(ArticleTitle(updatedTitle, "en")),
       content = Seq(ArticleContent(updatedContent, "en")),
-      copyright = Copyright("a", "c", Seq(Author("Opphavsmann", "Jonas")), List(), List(), None, None),
+      copyright = Copyright("a", "c", Seq(Author("Opphavsmann", "Jonas")), List(), List(), None, None, None),
       tags = Seq(ArticleTag(Seq("en", "to", "tre"), "en")),
       requiredLibraries = Seq(RequiredLibrary("tjup", "tjap", "tjim")),
       visualElement = Seq(VisualElement(updatedVisualElement, "en")),

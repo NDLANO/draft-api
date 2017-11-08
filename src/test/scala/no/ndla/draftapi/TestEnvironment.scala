@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
-import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
@@ -25,6 +25,8 @@ trait TestEnvironment
     with ArticleIndexService
     with ConceptSearchService
     with ConceptIndexService
+    with AgreementSearchService
+    with AgreementIndexService
     with IndexService
     with SearchService
     with LazyLogging
@@ -34,6 +36,7 @@ trait TestEnvironment
     with ConceptController
     with DataSource
     with DraftRepository
+    with AgreementRepository
     with ConceptRepository
     with MockitoSugar
     with ConverterService
@@ -49,16 +52,20 @@ trait TestEnvironment
   val articleIndexService = mock[ArticleIndexService]
   val conceptSearchService = mock[ConceptSearchService]
   val conceptIndexService = mock[ConceptIndexService]
+  val agreementSearchService = mock[AgreementSearchService]
+  val agreementIndexService = mock[AgreementIndexService]
 
   val internController = mock[InternController]
   val draftController = mock[DraftController]
   val conceptController = mock[ConceptController]
+  val agreementController = mock[AgreementController]
 
   val healthController = mock[HealthController]
 
   val dataSource = mock[javax.sql.DataSource]
   val draftRepository = mock[ArticleRepository]
   val conceptRepository = mock[ConceptRepository]
+  val agreementRepository = mock[AgreementRepository]
 
   val converterService = mock[ConverterService]
 

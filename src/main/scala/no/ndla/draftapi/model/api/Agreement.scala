@@ -20,7 +20,5 @@ case class Agreement(@(ApiModelProperty@field)(description = "The unique id of t
                      @(ApiModelProperty@field)(description = "Describes the copyright information for the agreement") copyright: Copyright,
                      @(ApiModelProperty@field)(description = "When the agreement was created") created: Date,
                      @(ApiModelProperty@field)(description = "When the agreement was last updated") updated: Date,
-                     @(ApiModelProperty@field)(description = "By whom the agreement was last updated") updatedBy: String,
-                     @(ApiModelProperty@field)(description = "The date from which the agreement is valid") validFrom: Date,
-                     @(ApiModelProperty@field)(description = "The date to which the agreement is valid") validTo: Date
+                     @(ApiModelProperty@field)(description = "By whom the agreement was last updated") updatedBy: String
                     )
