@@ -238,6 +238,9 @@ object TestData {
     Set("nb")
   )
 
+  val statusWithAwaitingPublishing = Set(ArticleStatus.DRAFT, ArticleStatus.QUEUED_FOR_PUBLISHING)
+  val statusWithDraft = Set(ArticleStatus.DRAFT)
+
 }
 
 

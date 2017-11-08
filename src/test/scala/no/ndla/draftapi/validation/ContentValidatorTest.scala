@@ -9,7 +9,8 @@ package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.DraftApiProperties.H5PResizerScriptUrl
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.draftapi.{DraftApiProperties, TestData, TestEnvironment, UnitSuite}
+import no.ndla.network.AuthUser
 import no.ndla.validation.ValidationException
 
 class ContentValidatorTest extends UnitSuite with TestEnvironment {
@@ -176,6 +177,19 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     val errors = contentValidator.validateArticle(article, true)
     errors.isFailure should be (true)
     errors.failed.get.asInstanceOf[ValidationException].errors.head.message should equal ("An article must contain at least one title. Perhaps you tried to delete the only title in the article?")
+  }
+
+  test("validateUserAbleToSetStatus should return a failure if user does not have write required permissions") {
+    AuthUser.setRoles(List(DraftApiProperties.RoleWithWriteAccess))
+    contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isFailure should be (true)
+
+    AuthUser.setRoles(List(DraftApiProperties.RoleWithPublishAccess))
+    contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isFailure should be (true)
+  }
+
+  test("validateUserAbleToSetStatus should return success if user has all needed permissions") {
+    AuthUser.setRoles(List(DraftApiProperties.RoleWithWriteAccess, DraftApiProperties.RoleWithPublishAccess))
+    contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isSuccess should be (true)
   }
 
 }

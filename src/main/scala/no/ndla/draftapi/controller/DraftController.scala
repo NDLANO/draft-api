@@ -259,7 +259,10 @@ trait DraftController {
 
     put("/:article_id/status", operation(updateArticleStatus)) {
       authRole.assertHasRole(RoleWithWriteAccess)
-      writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body))
+      writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body)) match {
+        case Success(s) => s
+        case Failure(e) => errorHandler(e)
+      }
     }
 
     val updateArticle =

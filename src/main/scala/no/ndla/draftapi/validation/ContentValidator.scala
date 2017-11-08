@@ -12,6 +12,7 @@ import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveV
 import no.ndla.draftapi.model.domain
 import domain.ArticleStatus._
 import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.model.api.AccessDeniedException
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.AuthUser
@@ -57,11 +58,11 @@ trait ContentValidator {
     }
 
     def validateUserAbleToSetStatus(status: Set[domain.ArticleStatus.Value]): Try[Set[domain.ArticleStatus.Value]] = {
-      def fail(message: String) = Failure(new ValidationException(errors=Seq(ValidationMessage("status", message))))
+      def fail(message: String) = Failure(new AccessDeniedException(message))
 
       if (!AuthUser.hasRole(RoleWithWriteAccess))
         fail("You lack the required roles to statuses")
-      else if (status.contains(QUEUED_FOR_PUBLISHING) && AuthUser.hasRole(RoleWithPublishAccess))
+      else if (status.contains(QUEUED_FOR_PUBLISHING) && !AuthUser.hasRole(RoleWithPublishAccess))
         fail(s"You lack the required role to set the status $QUEUED_FOR_PUBLISHING")
       else
         Success(status)

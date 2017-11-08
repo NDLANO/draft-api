@@ -8,6 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchResult, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.scalatra.test.scalatest.ScalatraFunSuite
@@ -16,7 +17,7 @@ import org.mockito.Matchers._
 import no.ndla.mapping.License.getLicenses
 import org.json4s.native.Serialization.{read, write}
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFunSuite {
 
@@ -165,4 +166,23 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       verify(articleSearchService, times(1)).all(List(1, 2, 3, 4), Language.DefaultLanguage, None, 1, 4, Sort.ByTitleAsc, ArticleType.all)
     }
   }
+
+  test("PUT /:id/status should return 403 if user does not have the required role") {
+    put("/test/1/status", headers=Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+      status should equal (403)
+    }
+
+    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Failure(new AccessDeniedException("no cookie for you")))
+    put("/test/1/status", body=write(TestData.statusWithAwaitingPublishing), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (403)
+    }
+  }
+
+  test("PUT /:id/status should return 200 if user has required permissions") {
+    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Success(TestData.apiArticleV2))
+    put("/test/1/status", body=write(TestData.statusWithDraft), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (200)
+    }
+  }
+
 }

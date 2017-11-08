@@ -10,6 +10,7 @@ package no.ndla.draftapi.service
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito
@@ -17,7 +18,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import scalikejdbc.DBSession
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 class WriteServiceTest extends UnitSuite with TestEnvironment {
   override val converterService = new ConverterService
@@ -45,7 +46,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     })
   }
 
-  test("newArticleV2 should insert a given articleV2") {
+  test("newArticle should insert a given article") {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
@@ -108,7 +109,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.mergeLanguageFields(existing, updated) should equal(Seq(desc1, desc3, oppdatertDesc2))
   }
 
-  test("That updateArticleV2 updates only content properly") {
+  test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
     val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
@@ -116,7 +117,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("That updateArticleV2 updates only title properly") {
+  test("That updateArticle updates only title properly") {
     val newTitle = "NyTittelTest"
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(newTitle), None, Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
@@ -124,7 +125,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("That updateArticleV2 updates multiple fields properly") {
+  test("That updateArticle updates multiple fields properly") {
     val updatedTitle = "NyTittelTest"
     val updatedContent = "NyContentTest"
     val updatedTags = Seq("en", "to", "tre")
@@ -153,6 +154,26 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today)
 
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+  }
+
+  test("That updateArticleStatus returns a failure if user is not permitted to set status") {
+    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
+      .thenReturn(Failure(new ValidationException(errors=Seq[ValidationMessage]())))
+
+    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
+    service.updateArticleStatus(articleId, status).isFailure should be (true)
+    verify(draftRepository, times(0)).update(any[Article])
+    verify(articleIndexService, times(0)).indexDocument(any[Article])
+  }
+
+  test("That updateArticleStatus returns success if user is permitted to set status") {
+    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
+      .thenAnswer((a: InvocationOnMock) => Success(a.getArgumentAt(0, classOf[Set[ArticleStatus.Value]])))
+
+    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
+    service.updateArticleStatus(articleId, status).isSuccess should be (true)
+    verify(draftRepository, times(1)).update(any[Article])
+    verify(articleIndexService, times(1)).indexDocument(any[Article])
   }
 
 }
