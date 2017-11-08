@@ -22,6 +22,7 @@ import no.ndla.draftapi.validation.HtmlTools
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
 import Language._
+import no.ndla.draftapi.model.api.NewAgreement
 
 import scala.collection.JavaConverters._
 
@@ -30,6 +31,8 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
+    def toDomainAgreement(newAgreement: NewAgreement) = ???
+
 
     def getHitsV2(response: JestSearchResult, language: String): Seq[api.ArticleSummary] = {
       var resultList = Seq[api.ArticleSummary]()

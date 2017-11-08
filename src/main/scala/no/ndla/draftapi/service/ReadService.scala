@@ -93,6 +93,9 @@ trait ReadService {
     def conceptWithId(id: Long, language: String): Option[api.Concept] =
       conceptRepository.withId(id).map(concept => converterService.toApiConcept(concept, language))
 
+    def agreementWithId(id: Long): Option[api.Agreement] =
+      agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))
+
   }
 
 }

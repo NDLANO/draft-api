@@ -17,11 +17,10 @@ import scala.annotation.meta.field
 case class Agreement(@(ApiModelProperty@field)(description = "The unique id of the article") id: Long,
                      @(ApiModelProperty@field)(description = "Titles for the agreement") title: String,
                      @(ApiModelProperty@field)(description = "The content of the agreement") content: String,
-                     @(ApiModelProperty@field)(description = "Describes the copyright information for the article") copyright: Copyright,
+                     @(ApiModelProperty@field)(description = "Describes the copyright information for the agreement") copyright: Copyright,
                      @(ApiModelProperty@field)(description = "When the agreement was created") created: Date,
                      @(ApiModelProperty@field)(description = "When the agreement was last updated") updated: Date,
                      @(ApiModelProperty@field)(description = "By whom the agreement was last updated") updatedBy: String,
                      @(ApiModelProperty@field)(description = "The date from which the agreement is valid") validFrom: Date,
-                     @(ApiModelProperty@field)(description = "The date to which the agreement is valid") validTo: Date,
-                     @(ApiModelProperty@field)(description = "The languages this article supports") language: String //TODO: Should agreements have languages?
+                     @(ApiModelProperty@field)(description = "The date to which the agreement is valid") validTo: Date
                     )

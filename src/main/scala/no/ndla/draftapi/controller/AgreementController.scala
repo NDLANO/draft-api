@@ -62,6 +62,28 @@ trait AgreementController {
         authorizations "oauth2"
         responseMessages response500)
 
+    val getAgreementById =
+      (apiOperation[Agreement]("getAgreementById")
+        summary "Show agreement with a specified Id"
+        notes "Shows the agreement for the specified id."
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        pathParam[Long]("agreement_id").description("Id of the article that is to be returned"),
+      )
+        authorizations "oauth2"
+        responseMessages(response404, response500))
+
+    val newAgreement =
+      (apiOperation[Agreement]("newAgreement")
+        summary "Create a new agreement"
+        notes "Creates a new agreement"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        bodyParam[NewAgreement]
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response500))
+
     get("/", operation(getAllAgreements)) {
       val query = paramOrNone("query")
       val sort = Sort.valueOf(paramOrDefault("sort", ""))
@@ -70,6 +92,24 @@ trait AgreementController {
       val page = intOrDefault("page", 1)
       val idList = paramAsListOfLong("ids")
       val articleTypesFilter = paramAsListOfString("articleTypes")
+    }
+
+    get("/:agreement_id", operation(getAgreementById)) {
+      val agreementId = long("agreement_id")
+
+      readService.agreementWithId(agreementId) match {
+        case Some(article) => article
+        case None => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
+      }
+    }
+
+    post("/", operation(newAgreement)) {
+      authRole.assertHasRole(RoleWithWriteAccess)
+      val newAgreement = extract[NewAgreement](request.body)
+      writeService.newAgreement(newAgreement) match {
+        case Success(article) => Created(body=article)
+        case Failure(exception) => errorHandler(exception)
+      }
     }
 
   }

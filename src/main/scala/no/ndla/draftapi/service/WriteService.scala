@@ -8,7 +8,7 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Article, NotFoundException}
+import no.ndla.draftapi.model.api.{Article, NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
@@ -22,6 +22,11 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService {
+    def newAgreement(newAgreement: api.NewAgreement) = {
+      val domainAgreement = converterService.toDomainAgreement(newAgreement)
+
+    }
+
     def newArticleV2(newArticle: api.NewArticle): Try[Article] = {
       val domainArticle = converterService.toDomainArticle(newArticle)
       contentValidator.validateArticle(domainArticle, false) match {
