@@ -7,7 +7,7 @@
 
 package no.ndla.draftapi.service
 
-import no.ndla.draftapi.auth.User
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api.{Article, ArticleStatus, NotFoundException}
 import no.ndla.draftapi.model.domain._
@@ -18,7 +18,13 @@ import no.ndla.draftapi.validation.ContentValidator
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
-  this: DraftRepository with ConverterService with ContentValidator with ArticleIndexService with Clock with User with ReadService =>
+  this: DraftRepository
+    with ConverterService
+    with ContentValidator
+    with ArticleIndexService
+    with Clock
+    with User
+    with ReadService =>
   val writeService: WriteService
 
   class WriteService {
@@ -72,8 +78,12 @@ trait WriteService {
     def updateArticleStatus(id: Long, status: ArticleStatus): Try[api.Article] = {
       val domainStatuses = converterService.toDomainStatus(status) match {
         case Failure(ex) => return Failure(ex)
-        case Success(s) => s
-      }
+        case Success(s) =>
+          contentValidator.validateUserAbleToSetStatus(s) match {
+            case Failure(ex) => return Failure(ex)
+            case Success(_) => s
+          }
+       }
 
       val article = draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
