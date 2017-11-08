@@ -20,6 +20,7 @@ import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
+import ArticleStatus._
 import Language._
 import no.ndla.validation.{Attributes, EmbedTagRules, HtmlRules, ResourceType}
 
@@ -87,7 +88,7 @@ trait ConverterService {
       domain.Article(
         id = None,
         revision = None,
-        ArticleStatus.DRAFT,
+        ArticleStatus.ValueSet(CREATED),
         title = domainTitles,
         content = domainContent,
         copyright = newArticle.copyright.map(toDomainCopyright),
@@ -172,7 +173,7 @@ trait ConverterService {
         article.id.get,
         article.id.flatMap(getLinkToOldNdla),
         article.revision.get,
-        article.status.toString,
+        article.status.map(_.toString),
         title,
         articleContent,
         article.copyright.map(toApiCopyright),

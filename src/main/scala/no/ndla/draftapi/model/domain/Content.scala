@@ -23,7 +23,7 @@ sealed trait Content {
 
 case class Article(id: Option[Long],
                    revision: Option[Int],
-                   status: ArticleStatus.Value,
+                   status: Set[ArticleStatus.Value],
                    title: Seq[ArticleTitle],
                    content: Seq[ArticleContent],
                    copyright: Option[Copyright],
@@ -74,7 +74,7 @@ object Article extends SQLSyntaxSupport[Article] {
 }
 
 object ArticleStatus extends Enumeration {
-  val PUBLISHED, DRAFT = Value
+  val CREATED, IMPORTED, USER_TEST, QUALITY_ASSURED, DRAFT, SKETCH, PUBLISHED = Value
 
   def valueOf(s:String): Option[ArticleStatus.Value] = {
     ArticleStatus.values.find(_.toString == s.toUpperCase)
