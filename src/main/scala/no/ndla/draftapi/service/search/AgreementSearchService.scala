@@ -33,61 +33,46 @@ trait AgreementSearchService {
   val agreementSearchService: AgreementSearchService
 
   //TODO: Fix entire class
-  class AgreementSearchService extends LazyLogging with SearchService[api.ArticleSummary] {
+  class AgreementSearchService extends LazyLogging with SearchService[api.AgreementSummary] {
     private val noCopyright = QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("license", "copyrighted"))
 
-    override val searchIndex: String = DraftApiProperties.DraftSearchIndex
+    override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
 
-    override def hitToApiModel(hit: JsonObject, language: String): api.ArticleSummary = {
-      converterService.hitAsArticleSummaryV2(hit, language)
+    override def hitToApiModel(hit: JsonObject, language: String): api.AgreementSummary = {
+      converterService.hitAsAgreementSummary(hit)
     }
 
-    def all(withIdIn: List[Long], language: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): SearchResult = {
-      val articleTypesFilter = if (articleTypes.nonEmpty) articleTypes else ArticleType.all
+    def all(withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
       val fullSearch = QueryBuilders.boolQuery()
-        .filter(QueryBuilders.constantScoreQuery(QueryBuilders.termsQuery("articleType", articleTypesFilter:_*)))
-      executeSearch(withIdIn, language, license, sort, page, pageSize, fullSearch)
+      executeSearch(withIdIn, license, sort, page, pageSize, fullSearch)
     }
 
-    def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): SearchResult = {
-      val language = if (searchLanguage == Language.AllLanguages) Language.DefaultLanguage else searchLanguage
-      val articleTypesFilter = if (articleTypes.nonEmpty) articleTypes else ArticleType.all
-      val titleSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"title.$language")
-      val introSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"introduction.$language")
-      val contentSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"content.$language")
-      val tagSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"tags.$language")
+    def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
+      val titleSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"title")
+      val contentSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"content")
 
       val fullQuery = QueryBuilders.boolQuery()
         .must(QueryBuilders.boolQuery()
           .should(QueryBuilders.nestedQuery("title", titleSearch, ScoreMode.Avg).boost(2))
-          .should(QueryBuilders.nestedQuery("introduction", introSearch, ScoreMode.Avg).boost(2))
           .should(QueryBuilders.nestedQuery("content", contentSearch, ScoreMode.Avg).boost(1))
-          .should(QueryBuilders.nestedQuery("tags", tagSearch, ScoreMode.Avg).boost(2)))
-        .filter(QueryBuilders.constantScoreQuery(QueryBuilders.termsQuery("articleType", articleTypesFilter:_*)))
+        )
 
-      executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery)
+      executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
     }
 
-    def executeSearch(withIdIn: List[Long], language: String, license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryBuilder): SearchResult = {
+    def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryBuilder): SearchResult = {
 
-      val (filteredSearch, searchLanguage) = {
-        val licenseFilteredSearch = license match {
-          case None => queryBuilder.filter(noCopyright)
-          case Some(lic) => queryBuilder.filter(QueryBuilders.termQuery("license", lic))
-        }
-
-        language match {
-          case Language.AllLanguages => (licenseFilteredSearch, Language.DefaultLanguage)
-          case _ => (licenseFilteredSearch.filter(QueryBuilders.nestedQuery("title", QueryBuilders.existsQuery(s"title.$language"), ScoreMode.Avg)), language)
-        }
+      val filteredSearch = license match {
+        case None => queryBuilder.filter(noCopyright)
+        case Some(lic) => queryBuilder.filter(QueryBuilders.termQuery("license", lic))
       }
 
       val idFilteredSearch = withIdIn match {
-        case head :: tail => filteredSearch.filter(QueryBuilders.idsQuery(DraftApiProperties.DraftSearchDocument).addIds(head.toString :: tail.map(_.toString):_*))
+        case head :: tail => filteredSearch.filter(QueryBuilders.idsQuery(DraftApiProperties.AgreementSearchDocument).addIds(head.toString :: tail.map(_.toString): _*))
         case Nil => filteredSearch
       }
 
-      val searchQuery = new SearchSourceBuilder().query(idFilteredSearch).sort(getSortDefinition(sort, searchLanguage))
+      val searchQuery = new SearchSourceBuilder().query(idFilteredSearch).sort(getSortDefinition(sort))
 
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
       val request = new Search.Builder(searchQuery.toString)
@@ -102,7 +87,7 @@ trait AgreementSearchService {
       }
 
       jestClient.execute(request.build()) match {
-        case Success(response) => SearchResult(response.getTotal.toLong, page, numResults, searchLanguage, response)
+        case Success(response) => SearchResult(response.getTotal.toLong, page, numResults, Language.NoLanguage, response)
         case Failure(f) => errorHandler(Failure(f))
       }
     }
@@ -123,9 +108,9 @@ trait AgreementSearchService {
       }
     }
 
-    private def scheduleIndexDocuments() = ???  /*{
+    private def scheduleIndexDocuments() = {
       val f = Future {
-        articleIndexService.indexDocuments
+        agreementIndexService.indexDocuments
       }
 
       f.failed.foreach(t => logger.warn("Unable to create index: " + t.getMessage, t))
@@ -133,7 +118,7 @@ trait AgreementSearchService {
         case Success(reindexResult) => logger.info(s"Completed indexing of ${reindexResult.totalIndexed} documents in ${reindexResult.millisUsed} ms.")
         case Failure(ex) => logger.warn(ex.getMessage, ex)
       }
-    }*/
+    }
 
   }
 }

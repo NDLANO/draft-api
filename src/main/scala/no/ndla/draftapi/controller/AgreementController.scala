@@ -12,8 +12,8 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.DraftApiProperties.RoleWithWriteAccess
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
-import no.ndla.draftapi.service.search.{AgreementSearchService, ArticleSearchService}
+import no.ndla.draftapi.model.domain.{Language, Sort}
+import no.ndla.draftapi.service.search.AgreementSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
@@ -84,6 +84,35 @@ trait AgreementController {
         authorizations "oauth2"
         responseMessages(response400, response403, response500))
 
+    private def search(query: Option[String], sort: Option[Sort.Value], license: Option[String], page: Int, pageSize: Int, idList: List[Long]) = {
+      val searchResult = query match {
+        case Some(q) => agreementSearchService.matchingQuery(
+          query = q,
+          withIdIn = idList,
+          license = license,
+          page = page,
+          pageSize = if (idList.isEmpty) pageSize else idList.size,
+          sort = sort.getOrElse(Sort.ByRelevanceDesc)
+        )
+        case None => agreementSearchService.all(
+          withIdIn = idList,
+          license = license,
+          page = page,
+          pageSize = if (idList.isEmpty) pageSize else idList.size,
+          sort = sort.getOrElse(Sort.ByTitleAsc)
+        )
+      }
+
+      val hitResult = converterService.getAgreementHits(searchResult.response)
+      AgreementSearchResult(
+        searchResult.totalCount,
+        searchResult.page,
+        searchResult.pageSize,
+        searchResult.language,
+        hitResult
+      )
+    }
+
     get("/", operation(getAllAgreements)) {
       val query = paramOrNone("query")
       val sort = Sort.valueOf(paramOrDefault("sort", ""))
@@ -91,7 +120,8 @@ trait AgreementController {
       val pageSize = intOrDefault("page-size", DraftApiProperties.DefaultPageSize)
       val page = intOrDefault("page", 1)
       val idList = paramAsListOfLong("ids")
-      val articleTypesFilter = paramAsListOfString("articleTypes")
+
+      search(query, sort, license, page, pageSize, idList)
     }
 
     get("/:agreement_id", operation(getAgreementById)) {
