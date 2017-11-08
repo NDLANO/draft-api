@@ -24,17 +24,38 @@ trait AgreementRepository {
   class AgreementRepository extends LazyLogging with Repository[Agreement] {
     implicit val formats: Formats = org.json4s.DefaultFormats + Agreement.JSonSerializer
 
+    def insert(agreement: Agreement)(implicit session: DBSession = AutoSession): Agreement = {
+      val dataObject = new PGobject()
+      dataObject.setType("jsonb")
+      dataObject.setValue(write(agreement))
+
+      val agreementId: Long = sql"insert into ${Agreement.table} (document) values (${dataObject})".updateAndReturnGeneratedKey().apply()
+
+      logger.info(s"Inserted new agreement: $agreementId")
+      agreement.copy(id=Some(agreementId))
+    }
+
+    def update(agreement: Agreement)(implicit session: DBSession = AutoSession): Try[Agreement] = {
+      val dataObject = new PGobject()
+      dataObject.setType("jsonb")
+      dataObject.setValue(write(agreement))
+
+      val count = sql"update ${Agreement.table} set document=${dataObject} where id=${agreement.id}".update().apply()
+
+      logger.info(s"Updated agreement ${agreement.id}")
+      Success(agreement)
+    }
+
+
     def withId(id: Long): Option[Agreement] =
-      agreementWhere(sqls"co.id=${id.toInt}")
+      agreementWhere(sqls"agr.id=${id.toInt}")
 
-    def withExternalId(externalId: String): Option[Concept] =
-      conceptWhere(sqls"co.external_id=$externalId")
-
-    def exists(externalId: String): Boolean =
-      conceptWhere(sqls"co.external_id=$externalId").isDefined
+    def delete(id: Long)(implicit session: DBSession = AutoSession) = {
+      sql"delete from ${Agreement.table} where id = $id".update().apply()
+    }
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
-      sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Concept.table}".map(rs => {
+      sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Agreement.table}".map(rs => {
         (rs.long("mi"), rs.long("ma"))
       }).single().apply() match {
         case Some(minmax) => minmax
@@ -42,17 +63,17 @@ trait AgreementRepository {
       }
     }
 
-    override def documentsWithIdBetween(min: Long, max: Long): List[Concept] =
-      conceptsWhere(sqls"co.id between $min and $max")
+    override def documentsWithIdBetween(min: Long, max: Long): List[Agreement] =
+      agreementsWhere(sqls"agr.id between $min and $max")
 
-    private def agreementWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Option[Concept] = {
-      val co = Agreement.syntax("co")
-      sql"select ${co.result.*} from ${Concept.as(co)} where $whereClause".map(Concept(co)).single.apply()
+    private def agreementWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Option[Agreement] = {
+      val agr = Agreement.syntax("agr")
+      sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause".map(Agreement(agr)).single.apply()
     }
 
-    private def conceptsWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): List[Concept] = {
-      val co = Concept.syntax("co")
-      sql"select ${co.result.*} from ${Concept.as(co)} where $whereClause".map(Concept(co)).list.apply()
+    private def agreementsWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): List[Agreement] = {
+      val agr = Agreement.syntax("agr")
+      sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause".map(Agreement(agr)).list.apply()
     }
 
   }
