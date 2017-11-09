@@ -8,8 +8,8 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Article, Agreement, NewAgreement, NotFoundException}
-import no.ndla.draftapi.model.domain._
+import no.ndla.draftapi.model.api.NotFoundException
+import no.ndla.draftapi.model.domain.LanguageField
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
@@ -22,7 +22,28 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService {
-    def newAgreement(newAgreement: api.NewAgreement): Try[Agreement] = {
+
+    def updateAgreement(agreementId: Long, updatedAgreement: api.UpdatedAgreement): Try[api.Agreement] = {
+      agreementRepository.withId(agreementId) match {
+        case None => Failure(NotFoundException(s"Agreement with id $agreementId does not exist"))
+        case Some(existing) =>
+          val toUpdate = existing.copy(
+            title = updatedAgreement.title.getOrElse(existing.title),
+            content = updatedAgreement.content.getOrElse(existing.content),
+            copyright = updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
+            updated = clock.now(),
+            updatedBy = authUser.id()
+          )
+
+          for {
+            _ <- contentValidator.validateAgreement(toUpdate)
+            agreement <- agreementRepository.update(toUpdate)
+            _ <- agreementIndexService.indexDocument(agreement)
+          } yield converterService.toApiAgreement(agreement)
+      }
+    }
+
+    def newAgreement(newAgreement: api.NewAgreement): Try[api.Agreement] = {
       val domainAgreement = converterService.toDomainAgreement(newAgreement)
       contentValidator.validateAgreement(domainAgreement) match {
         case Success(_) =>
@@ -33,7 +54,7 @@ trait WriteService {
       }
     }
 
-    def newArticleV2(newArticle: api.NewArticle): Try[Article] = {
+    def newArticleV2(newArticle: api.NewArticle): Try[api.Article] = {
       val domainArticle = converterService.toDomainArticle(newArticle)
       contentValidator.validateArticle(domainArticle, false) match {
         case Success(_) => {
@@ -50,7 +71,7 @@ trait WriteService {
       (toKeep ++ updated).filterNot(_.value.isEmpty)
     }
 
-    private def mergeTags(existing: Seq[ArticleTag], updated: Seq[ArticleTag]): Seq[ArticleTag] = {
+    private def mergeTags(existing: Seq[domain.ArticleTag], updated: Seq[domain.ArticleTag]): Seq[domain.ArticleTag] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.tags.isEmpty)
     }

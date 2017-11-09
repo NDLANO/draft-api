@@ -10,6 +10,7 @@ package no.ndla.draftapi
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
+import no.ndla.draftapi.model.api.NewAgreement
 import org.joda.time.{DateTime, DateTimeZone}
 
 object TestData {
@@ -274,8 +275,20 @@ object TestData {
     api.Copyright(api.License("publicdomain", None, None), "", Seq(), List(), List(), None, None, None),
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
-    "ndladude21"
+    "ndalId54321"
   )
+
+  val sampleDomainAgreement = Agreement(
+    id = Some(1),
+    title = "tittledur",
+    content = "contentur",
+    copyright = byNcSaCopyright,
+    created = DateTime.now().minusDays(4).toDate,
+    updated = DateTime.now().minusDays(2).toDate,
+    updatedBy = "ndalId54321"
+  )
+
+  val newAgreement = NewAgreement("newTitle", "newString", api.Copyright(api.License("by-sa", None, None), "", List(),List(),List(), None, None, None))
 
 }
 

@@ -84,6 +84,18 @@ trait AgreementController {
         authorizations "oauth2"
         responseMessages(response400, response403, response500))
 
+    val updateAgreement =
+      (apiOperation[Agreement]("updateAgreement")
+        summary "Update an existing agreement"
+        notes "Update an existing agreement"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        pathParam[Long]("article_id").description("Id of the agreement that is to be updated"),
+        bodyParam[UpdatedAgreement]
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response404, response500))
+
     private def search(query: Option[String], sort: Option[Sort.Value], license: Option[String], page: Int, pageSize: Int, idList: List[Long]) = {
       val searchResult = query match {
         case Some(q) => agreementSearchService.matchingQuery(
@@ -138,6 +150,17 @@ trait AgreementController {
       val newAgreement = extract[NewAgreement](request.body)
       writeService.newAgreement(newAgreement) match {
         case Success(agreement) => Created(body=agreement)
+        case Failure(exception) => errorHandler(exception)
+      }
+    }
+
+    patch("/:agreement_id", operation(updateAgreement)) {
+      authRole.assertHasRole(RoleWithWriteAccess)
+
+      val agreementId = long("agreement_id")
+      val updatedAgreement = extract[UpdatedAgreement](request.body)
+      writeService.updateAgreement(agreementId, updatedAgreement) match {
+        case Success(agreement) => Ok(body=agreement)
         case Failure(exception) => errorHandler(exception)
       }
     }
