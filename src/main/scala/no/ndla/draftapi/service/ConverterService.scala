@@ -16,14 +16,16 @@ import io.searchbox.core.{SearchResult => JestSearchResult}
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.Language
+import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
+import ArticleStatus._
 import Language._
-import no.ndla.validation.{Attributes, EmbedTagRules, HtmlRules, ResourceType}
+import no.ndla.validation._
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
   this: Clock with DraftRepository with User =>
@@ -81,12 +83,13 @@ trait ConverterService {
     }
 
     def toDomainArticle(newArticle: api.NewArticle): domain.Article = {
-      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.title))
+      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
       val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
 
       domain.Article(
         id = None,
         revision = None,
+        ArticleStatus.ValueSet(CREATED),
         title = domainTitles,
         content = domainContent,
         copyright = newArticle.copyright.map(toDomainCopyright),
@@ -119,7 +122,6 @@ trait ConverterService {
 
     def toDomainVisualElement(visual: String, language: String): domain.VisualElement =
       domain.VisualElement(removeUnknownEmbedTagAttributes(visual), language)
-
 
     def toDomainIntroduction(intro: api.ArticleIntroduction): domain.ArticleIntroduction = {
       domain.ArticleIntroduction(intro.introduction, intro.language)
@@ -172,6 +174,7 @@ trait ConverterService {
         article.id.get,
         article.id.flatMap(getLinkToOldNdla),
         article.revision.get,
+        article.status.map(_.toString),
         title,
         articleContent,
         article.copyright.map(toApiCopyright),
@@ -186,6 +189,18 @@ trait ConverterService {
         article.articleType,
         supportedLanguages
       )
+    }
+
+    def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
+      val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
+      if (invalidStatuses.nonEmpty) {
+        val errors = invalidStatuses.flatMap {
+          case Failure(ex: ValidationException) => ex.errors
+          case Failure(ex) => Set(ValidationMessage("status", ex.getMessage))
+        }
+        Failure(new ValidationException(errors=errors.toSeq))
+      } else
+        Success(validStatuses.map(_.get))
     }
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)

@@ -10,6 +10,7 @@ package no.ndla.draftapi
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
+import ArticleStatus._
 import org.joda.time.{DateTime, DateTimeZone}
 
 object TestData {
@@ -26,6 +27,7 @@ object TestData {
     id=1,
     oldNdlaUrl = None,
     revision=1,
+    status=Set(DRAFT.toString),
     title=Some(api.ArticleTitle("title", "nb")),
     content=Some(api.ArticleContent("this is content", "nb")),
     copyright = Some(api.Copyright(Some(api.License("licence", None, None)), Some("origin"), Seq(api.Author("developer", "Per")))),
@@ -74,6 +76,7 @@ object TestData {
     articleId,
     Some(s"//red.ndla.no/node/$externalId"),
     2,
+    Set(DRAFT.toString),
     Some(api.ArticleTitle("title", "nb")),
     Some(api.ArticleContent("content", "nb")),
     Some(api.Copyright(Some(api.License("by", Some("Creative Commons Attribution 2.0 Generic"), Some("https://creativecommons.org/licenses/by/2.0/"))), Some(""), Seq.empty)),
@@ -92,6 +95,7 @@ object TestData {
   val sampleArticleWithPublicDomain = Article(
     Option(1),
     Option(1),
+    ArticleStatus.ValueSet(DRAFT),
     Seq(ArticleTitle("test", "en")),
     Seq(ArticleContent("<section><div>test</div></section>", "en")),
     Some(publicDomainCopyright),
@@ -109,6 +113,7 @@ object TestData {
   val sampleDomainArticle = Article(
     Option(articleId),
     Option(2),
+    ArticleStatus.ValueSet(DRAFT),
     Seq(ArticleTitle("title", "nb")),
     Seq(ArticleContent("content", "nb")),
     Some(Copyright(Some("by"), Some(""), Seq.empty)),
@@ -127,6 +132,7 @@ object TestData {
   val sampleDomainArticle2 = Article(
     None,
     None,
+    ArticleStatus.ValueSet(DRAFT),
     Seq(ArticleTitle("test", "en")),
     Seq(ArticleContent("<article><div>test</div></article>", "en")),
     Some(Copyright(Some("publicdomain"), Some(""), Seq.empty)),
@@ -162,6 +168,7 @@ object TestData {
   val sampleDomainArticleWithHtmlFault = Article(
     Option(articleId),
     Option(2),
+    ArticleStatus.ValueSet(DRAFT),
     Seq(ArticleTitle("test", "en")),
     Seq(ArticleContent(
     """<ul><li><h1>Det er ikke lov å gjøre dette.</h1> Tekst utenfor.</li><li>Dette er helt ok</li></ul>
@@ -186,6 +193,7 @@ object TestData {
     1,
     None,
     1,
+    Set(CREATED.toString),
     Some(api.ArticleTitle("test", "en")),
     Some(api.ArticleContent(
       """<ul><li><h1>Det er ikke lov å gjøre dette.</h1> Tekst utenfor.</li><li>Dette er helt ok</li></ul>
@@ -229,6 +237,9 @@ object TestData {
     DateTime.now().minusDays(2).toDate,
     Set("nb")
   )
+
+  val statusWithAwaitingPublishing = Set(ArticleStatus.DRAFT, ArticleStatus.QUEUED_FOR_PUBLISHING)
+  val statusWithDraft = Set(ArticleStatus.DRAFT)
 
 }
 
