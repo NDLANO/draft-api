@@ -66,11 +66,8 @@ trait ConverterService {
       val id = hit.get("id").getAsLong
       val title = hit.get("title").getAsString
       val content = hit.get("content").getAsString
-      val internalContactName = hit.get("internalContactName").getAsString
-      val supplierContactName = hit.get("supplierContactName").getAsString
 
-
-      api.AgreementSummary(id,title,internalContactName, supplierContactName)
+      api.AgreementSummary(id,title)
     }
 
     def hitAsArticleSummaryV2(hit: JsonObject, language: String): api.ArticleSummary = {
@@ -139,17 +136,11 @@ trait ConverterService {
         id = None,
         title = newAgreement.title,
         content = newAgreement.content,
-        internalContact = toDomainAgreementContact(newAgreement.internalContact),
-        supplier = toDomainAgreementContact(newAgreement.supplier),
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
         updatedBy = authUser.id()
       )
-    }
-
-    def toDomainAgreementContact(contact: api.AgreementContact): domain.AgreementContact = {
-      domain.AgreementContact(contact.name, contact.email)
     }
 
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle = {

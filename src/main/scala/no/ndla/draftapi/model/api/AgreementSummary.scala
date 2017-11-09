@@ -14,6 +14,4 @@ import scala.annotation.meta.field
 
 @ApiModel(description = "Short summary of information about the agreement")
 case class AgreementSummary(@(ApiModelProperty@field)(description = "The unique id of the agreement") id: Long,
-                            @(ApiModelProperty@field)(description = "The title of the agreement") title: String,
-                            @(ApiModelProperty@field)(description = "The name of the internal contact") internalContactName: String,
-                            @(ApiModelProperty@field)(description = "The name of the supplier contact") supplierContactName: String)
+                            @(ApiModelProperty@field)(description = "The title of the agreement") title: String)

@@ -38,8 +38,6 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     Some(1),
     "title",
     "content",
-    AgreementContact("Jim Jum", "j@j.com"),
-    AgreementContact("Bim Bum", "b@b.com"),
     byNcSa,
     today.minusDays(2).toDate,
     today.minusDays(4).toDate,
@@ -53,12 +51,12 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   val agreement5 = sampleAgreement.copy(id=Some(6), title="Kjeltringer er ikke velkomne", content = "De er slemmere enn kjeft")
   val agreement6 = sampleAgreement.copy(id=Some(7), title="Du er en tyv", content = "Det er du som er tyven")
   val agreement7 = sampleAgreement.copy(id=Some(8), title="Lurerier er ikke lov", content = "Lurerier er bare lov dersom du er en tyv")
-  val agreement8 = sampleAgreement.copy(id=Some(9), title="Hvorfor er aper så slemme", content = "Har du blitt helt ape")
+  val agreement8 = sampleAgreement.copy(id=Some(9), title="Hvorfor er aper så slemme", content = "Har du blitt helt ape", copyright = copyrighted)
   val agreement9 = sampleAgreement.copy(id=Some(10), title="Du er en av dem du", content = "Det er ikke snilt å være en av dem")
 
 
   override def beforeAll = {
-    agreementIndexService.createIndexWithName(DraftApiProperties.DraftSearchIndex)
+    agreementIndexService.createIndexWithName(DraftApiProperties.AgreementSearchIndex)
 
     agreementIndexService.indexDocument(agreement1)
     agreementIndexService.indexDocument(agreement2)
@@ -77,7 +75,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   }
 
   override def afterAll() = {
-    agreementIndexService.deleteIndex(Some(DraftApiProperties.DraftSearchIndex))
+    agreementIndexService.deleteIndex(Some(DraftApiProperties.AgreementSearchIndex))
   }
 
   test("That getStartAtAndNumResults returns SEARCH_MAX_PAGE_SIZE for value greater than SEARCH_MAX_PAGE_SIZE") {
@@ -122,64 +120,60 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   test("That all returns all documents ordered by title ascending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleAsc)
     val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(8)
-    hits.head.id should be(8)
-    hits(1).id should be(9)
-    hits(2).id should be(1)
-    hits(3).id should be(3)
-    hits(4).id should be(5)
-    hits(5).id should be(6)
-    hits(6).id should be(2)
-    hits.last.id should be(7)
+    results.totalCount should be(9)
+    hits(0).id should be(2)
+    hits(1).id should be(10)
+    hits(2).id should be(7)
+    hits(3).id should be(9)
+    hits(4).id should be(6)
+    hits(5).id should be(8)
+    hits(6).id should be(4)
+    hits(7).id should be(3)
+    hits(8).id should be(5)
   }
 
   test("That all returns all documents ordered by title descending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleDesc)
     val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(8)
-    hits.head.id should be(7)
-    hits(1).id should be(2)
-    hits(2).id should be(6)
-    hits(3).id should be(5)
-    hits(4).id should be(3)
-    hits(5).id should be(1)
-    hits.last.id should be(8)
+    results.totalCount should be(9)
+    hits(0).id should be(5)
+    hits(1).id should be(3)
+    hits(2).id should be(4)
+    hits(3).id should be(8)
+    hits(4).id should be(6)
+    hits(5).id should be(9)
+    hits(6).id should be(7)
+    hits(7).id should be(10)
+    hits(8).id should be(2)
   }
 
   test("That paging returns only hits on current page and not more than page-size") {
     val page1 = agreementSearchService.all(List(), None, 1, 2, Sort.ByTitleAsc)
     val hits1 = converterService.getAgreementHits(page1.response)
-    page1.totalCount should be(8)
+    page1.totalCount should be(9)
     page1.page should be(1)
     hits1.size should be(2)
-    hits1.head.id should be(8)
-    hits1.last.id should be(9)
+    hits1.head.id should be(2)
+    hits1.last.id should be(10)
 
     val page2 = agreementSearchService.all(List(), None, 2, 2, Sort.ByTitleAsc)
     val hits2 = converterService.getAgreementHits(page2.response)
-    page2.totalCount should be(8)
+    page2.totalCount should be(9)
     page2.page should be(2)
     hits2.size should be(2)
-    hits2.head.id should be(1)
-    hits2.last.id should be(3)
+    hits2.head.id should be(7)
+    hits2.last.id should be(9)
   }
 
   test("That search combined with filter by id only returns documents matching the query with one of the given ids") {
-    val results = agreementSearchService.matchingQuery("bil", List(3), None, 1, 10, Sort.ByRelevanceDesc)
+    val results = agreementSearchService.matchingQuery("Du", List(10), None, 1, 10, Sort.ByRelevanceDesc)
     val hits = converterService.getAgreementHits(results.response)
     results.totalCount should be(1)
-    hits.head.id should be(3)
+    hits.head.id should be(10)
   }
 
   test("That search matches title") {
-    val results = agreementSearchService.matchingQuery("Pingvinen", List(), None, 1, 10, Sort.ByTitleAsc)
-    val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(1)
-    hits.head.id should be(2)
-  }
-
-  test("That search matches tags") {
-    val results = agreementSearchService.matchingQuery("and", List(), None, 1, 10, Sort.ByTitleAsc)
+    val results = agreementSearchService.matchingQuery("Ugler", List(), None, 1, 10, Sort.ByTitleAsc)
     val hits = converterService.getAgreementHits(results.response)
     results.totalCount should be(1)
     hits.head.id should be(3)
@@ -191,34 +185,34 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("That search returns superman since license is specified as copyrighted") {
-    val results = agreementSearchService.matchingQuery("supermann", List(), Some("copyrighted"), 1, 10, Sort.ByTitleAsc)
+    val results = agreementSearchService.matchingQuery("aper", List(), Some("copyrighted"), 1, 10, Sort.ByTitleAsc)
     val hits = converterService.getAgreementHits(results.response)
     results.totalCount should be(1)
-    hits.head.id should be(4)
+    hits.head.id should be(9)
   }
 
   test("Searching with logical AND only returns results with all terms") {
-    val search1 = agreementSearchService.matchingQuery("bilde + bil", List(), None, 1, 10, Sort.ByTitleAsc)
+    val search1 = agreementSearchService.matchingQuery("aper + du", List(), None, 1, 10, Sort.ByIdAsc)
     val hits1 = converterService.getAgreementHits(search1.response)
-    hits1.map(_.id) should equal (Seq(1, 3, 5))
+    hits1.map(_.id) should equal (Seq(2, 7, 8, 9, 10))
 
-    val search2 = agreementSearchService.matchingQuery("batmen + bil", List(), None, 1, 10, Sort.ByTitleAsc)
+    val search2 = agreementSearchService.matchingQuery("lurerier + dersom", List(), None, 1, 10, Sort.ByIdAsc)
     val hits2 = converterService.getAgreementHits(search2.response)
-    hits2.map(_.id) should equal (Seq(1))
+    hits2.map(_.id) should equal (Seq(8))
 
-    val search3 = agreementSearchService.matchingQuery("bil + bilde - flaggermusmann", List(), None, 1, 10, Sort.ByTitleAsc)
+    val search3 = agreementSearchService.matchingQuery("tyv + stjeler - Lurerier", List(), None, 1, 10, Sort.ByIdAsc)
     val hits3 = converterService.getAgreementHits(search3.response)
-    hits3.map(_.id) should equal (Seq(1, 3, 5))
+    hits3.map(_.id) should equal (Seq(4, 7, 8))
 
-    val search4 = agreementSearchService.matchingQuery("bil - hulken", List(), None, 1, 10, Sort.ByTitleAsc)
+    val search4 = agreementSearchService.matchingQuery("aper -slemme", List(), None, 1, 10, Sort.ByIdAsc)
     val hits4 = converterService.getAgreementHits(search4.response)
-    hits4.map(_.id) should equal (Seq(1, 3, 5))
+    hits4.map(_.id) should equal (Seq(2))
   }
 
   test("search in content should be ranked lower than introduction and title") {
-    val search = agreementSearchService.matchingQuery("mareritt + ragnarok", List(), None, 1, 10, Sort.ByRelevanceDesc)
+    val search = agreementSearchService.matchingQuery("tyven", List(), None, 1, 10, Sort.ByRelevanceDesc)
     val hits = converterService.getAgreementHits(search.response)
-    hits.map(_.id) should equal (Seq(9, 8))
+    hits.map(_.id) should equal (Seq(4, 7))
   }
 
   def blockUntil(predicate: () => Boolean) = {

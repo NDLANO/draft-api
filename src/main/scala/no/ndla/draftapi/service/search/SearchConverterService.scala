@@ -22,9 +22,7 @@ trait SearchConverterService {
       SearchableAgreement(
         id = domainModel.id.get,
         title = domainModel.title,
-        content = domainModel.content,
-        internalContactName = domainModel.internalContact.name,
-        supplierContactName = domainModel.supplier.name
+        content = domainModel.content
       )
     }
 

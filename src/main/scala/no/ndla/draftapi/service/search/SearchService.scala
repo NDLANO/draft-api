@@ -60,8 +60,8 @@ trait SearchService {
 
     def getSortDefinition(sort: Sort.Value): FieldSortBuilder = {
       sort match {
-        case (Sort.ByTitleAsc) => SortBuilders.fieldSort("title").order(SortOrder.ASC).missing("_last")
-        case (Sort.ByTitleDesc) => SortBuilders.fieldSort("title").order(SortOrder.DESC).missing("_last")
+        case (Sort.ByTitleAsc) => SortBuilders.fieldSort("title.raw").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByTitleDesc) => SortBuilders.fieldSort("title.raw").order(SortOrder.DESC).missing("_last")
         case (Sort.ByRelevanceAsc) => SortBuilders.fieldSort("_score").order(SortOrder.ASC)
         case (Sort.ByRelevanceDesc) => SortBuilders.fieldSort("_score").order(SortOrder.DESC)
         case (Sort.ByLastUpdatedAsc) => SortBuilders.fieldSort("lastUpdated").order(SortOrder.ASC).missing("_last")

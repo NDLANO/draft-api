@@ -11,6 +11,4 @@ case class SearchableAgreement(
   id: Long,
   title: String,
   content: String,
-  internalContactName: String,
-  supplierContactName: String
 )

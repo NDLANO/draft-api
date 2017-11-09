@@ -92,7 +92,7 @@ trait AgreementController {
           license = license,
           page = page,
           pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByRelevanceDesc)
+          sort = sort.getOrElse(Sort.ByTitleAsc)
         )
         case None => agreementSearchService.all(
           withIdIn = idList,
@@ -128,7 +128,7 @@ trait AgreementController {
       val agreementId = long("agreement_id")
 
       readService.agreementWithId(agreementId) match {
-        case Some(article) => article
+        case Some(agreement) => agreement
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
       }
     }
