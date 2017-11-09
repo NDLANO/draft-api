@@ -36,12 +36,12 @@ trait AgreementIndexService {
     def getMapping: String = {
       MappingContentBuilder.buildWithName(mapping(documentType).fields(
         intField("id"),
-        textField("title").fielddata(true),
-        textField("content").fielddata(true),
-        keywordField("supplier.name"),
-        keywordField("internalContact.name"),
-        dateField("created"),
-        dateField("updated")
+        //textField("title").fielddata(true),
+        //textField("content").fielddata(true),
+        //keywordField("supplier.name"),
+        //keywordField("internalContact.name"),
+        //dateField("created"),
+        //dateField("updated")
       ), DraftApiProperties.AgreementSearchDocument).string()
     }
   }

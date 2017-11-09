@@ -31,6 +31,7 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
+
     def getAgreementHits(response: JestSearchResult): Seq[api.AgreementSummary] = {
       var resultList = Seq[api.AgreementSummary]() //TODO: Look into why this is var
       response.getTotal match {

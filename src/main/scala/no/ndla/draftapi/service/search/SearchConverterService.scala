@@ -18,7 +18,13 @@ trait SearchConverterService {
   val searchConverterService: SearchConverterService
 
   class SearchConverterService extends LazyLogging {
-    def asSearchableAgreement(domainModel: Agreement): SearchableAgreement = ???
+    def asSearchableAgreement(domainModel: Agreement): SearchableAgreement = {
+      new SearchableAgreement(
+        id = domainModel.id.get,
+        title = domainModel.title,
+        content = domainModel.content
+      )
+    }
 
     def asSearchableArticle(ai: Article): SearchableArticle = {
       SearchableArticle(

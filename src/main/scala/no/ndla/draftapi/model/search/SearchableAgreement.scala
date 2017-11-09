@@ -9,6 +9,6 @@ package no.ndla.draftapi.model.search
 
 case class SearchableAgreement(
   id: Long,
-  title: SearchableLanguageValues,
-  content: SearchableLanguageValues
+  title: String,
+  content: String
 )
