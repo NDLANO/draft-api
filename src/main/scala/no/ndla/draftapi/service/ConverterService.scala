@@ -127,12 +127,19 @@ trait ConverterService {
     def toDomainAgreement(newAgreement: NewAgreement): domain.Agreement = {
       domain.Agreement(
         id = None,
+        title = newAgreement.title,
         content = newAgreement.content,
+        internalContact = toDomainAgreementContact(newAgreement.internalContact),
+        supplier = toDomainAgreementContact(newAgreement.supplier),
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
         updatedBy = authUser.id()
       )
+    }
+
+    def toDomainAgreementContact(contact: api.AgreementContact): domain.AgreementContact = {
+      domain.AgreementContact(contact.name, contact.email)
     }
 
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle = {

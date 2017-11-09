@@ -48,13 +48,17 @@ trait AgreementSearchService {
     }
 
     def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
-      val titleSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"title")
-      val contentSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"content")
+      val titleSearch = QueryBuilders.simpleQueryStringQuery(query).field("title")
+      val contentSearch = QueryBuilders.simpleQueryStringQuery(query).field("content")
+      val internalContactSearch = QueryBuilders.simpleQueryStringQuery(query).field("internalContact.name")
+      val supplierSearch = QueryBuilders.simpleQueryStringQuery(query).field("supplier.name")
 
       val fullQuery = QueryBuilders.boolQuery()
         .must(QueryBuilders.boolQuery()
           .should(QueryBuilders.nestedQuery("title", titleSearch, ScoreMode.Avg).boost(2))
           .should(QueryBuilders.nestedQuery("content", contentSearch, ScoreMode.Avg).boost(1))
+          .should(QueryBuilders.nestedQuery("internalContact", internalContactSearch, ScoreMode.Avg).boost(1))
+          .should(QueryBuilders.nestedQuery("supplier", supplierSearch, ScoreMode.Avg).boost(1))
         )
 
       executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)

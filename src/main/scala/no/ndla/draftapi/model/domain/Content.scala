@@ -11,6 +11,7 @@ import java.util.Date
 
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.api.{ValidationException, ValidationMessage}
+import org.joda.time.DateTime
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
 import org.json4s.native.Serialization._
@@ -115,7 +116,10 @@ object Concept extends SQLSyntaxSupport[Concept] {
 
 case class Agreement(
                       id: Option[Long],
+                      title: String,
                       content: String,
+                      internalContact: AgreementContact,
+                      supplier: AgreementContact,
                       copyright: Copyright,
                       created: Date,
                       updated: Date,
@@ -132,7 +136,10 @@ object Agreement extends SQLSyntaxSupport[Agreement] {
     val meta = read[Agreement](rs.string(lp.c("document")))
     Agreement(
       Some(rs.long(lp.c("id"))),
+      meta.title,
       meta.content,
+      meta.internalContact,
+      meta.supplier,
       meta.copyright,
       meta.created,
       meta.updated,

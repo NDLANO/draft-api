@@ -38,6 +38,8 @@ trait AgreementIndexService {
         intField("id"),
         textField("title").fielddata(true),
         textField("content").fielddata(true),
+        keywordField("supplier.name"),
+        keywordField("internalContact.name"),
         dateField("created"),
         dateField("updated")
       ), DraftApiProperties.AgreementSearchDocument).string()
