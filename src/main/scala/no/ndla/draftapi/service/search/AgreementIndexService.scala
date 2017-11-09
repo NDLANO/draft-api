@@ -36,8 +36,8 @@ trait AgreementIndexService {
     def getMapping: String = {
       MappingContentBuilder.buildWithName(mapping(documentType).fields(
         intField("id"),
-        textField("title"),
-        textField("content"),
+        textField("title").fielddata(true),
+        textField("content").fielddata(true),
         dateField("created"),
         dateField("updated")
       ), DraftApiProperties.AgreementSearchDocument).string()
