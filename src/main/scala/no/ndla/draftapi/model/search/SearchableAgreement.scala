@@ -11,4 +11,5 @@ case class SearchableAgreement(
   id: Long,
   title: String,
   content: String,
+  license: String
 )

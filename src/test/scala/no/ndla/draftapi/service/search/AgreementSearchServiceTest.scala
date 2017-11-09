@@ -51,8 +51,9 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   val agreement5 = sampleAgreement.copy(id=Some(6), title="Kjeltringer er ikke velkomne", content = "De er slemmere enn kjeft")
   val agreement6 = sampleAgreement.copy(id=Some(7), title="Du er en tyv", content = "Det er du som er tyven")
   val agreement7 = sampleAgreement.copy(id=Some(8), title="Lurerier er ikke lov", content = "Lurerier er bare lov dersom du er en tyv")
-  val agreement8 = sampleAgreement.copy(id=Some(9), title="Hvorfor er aper så slemme", content = "Har du blitt helt ape", copyright = copyrighted)
+  val agreement8 = sampleAgreement.copy(id=Some(9), title="Hvorfor er aper så slemme", content = "Har du blitt helt ape")
   val agreement9 = sampleAgreement.copy(id=Some(10), title="Du er en av dem du", content = "Det er ikke snilt å være en av dem")
+  val agreement10 = sampleAgreement.copy(id=Some(11), title="Woopie", content = "This agreement is copyrighted", copyright = copyrighted)
 
 
   override def beforeAll = {
@@ -67,10 +68,11 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     agreementIndexService.indexDocument(agreement7)
     agreementIndexService.indexDocument(agreement8)
     agreementIndexService.indexDocument(agreement9)
+    agreementIndexService.indexDocument(agreement10)
 
     blockUntil(() => {
       println(s"num docs: ${agreementSearchService.countDocuments}")
-      agreementSearchService.countDocuments == 9
+      agreementSearchService.countDocuments == 10
     })
   }
 
@@ -184,11 +186,11 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     results.totalCount should be(0)
   }
 
-  test("That search returns superman since license is specified as copyrighted") {
-    val results = agreementSearchService.matchingQuery("aper", List(), Some("copyrighted"), 1, 10, Sort.ByTitleAsc)
+  test("That search returns the only one with license specified as copyrighted") {
+    val results = agreementSearchService.all(List(), Some("copyrighted"), 1, 10, Sort.ByTitleAsc)
     val hits = converterService.getAgreementHits(results.response)
     results.totalCount should be(1)
-    hits.head.id should be(9)
+    hits.head.id should be(11)
   }
 
   test("Searching with logical AND only returns results with all terms") {

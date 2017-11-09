@@ -65,9 +65,9 @@ trait ConverterService {
     def hitAsAgreementSummary(hit: JsonObject): api.AgreementSummary = {
       val id = hit.get("id").getAsLong
       val title = hit.get("title").getAsString
-      val content = hit.get("content").getAsString
+      val license = hit.get("license").getAsString
 
-      api.AgreementSummary(id,title)
+      api.AgreementSummary(id,title, license)
     }
 
     def hitAsArticleSummaryV2(hit: JsonObject, language: String): api.ArticleSummary = {

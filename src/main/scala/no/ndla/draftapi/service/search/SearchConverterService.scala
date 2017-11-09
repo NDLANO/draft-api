@@ -22,7 +22,8 @@ trait SearchConverterService {
       SearchableAgreement(
         id = domainModel.id.get,
         title = domainModel.title,
-        content = domainModel.content
+        content = domainModel.content,
+        license = domainModel.copyright.license
       )
     }
 
