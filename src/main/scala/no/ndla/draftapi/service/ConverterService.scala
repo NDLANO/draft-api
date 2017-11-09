@@ -271,7 +271,17 @@ trait ConverterService {
       ))
     }
 
-    def toApiAgreement(agreement: domain.Agreement): api.Agreement = ???
+    def toApiAgreement(agreement: domain.Agreement): api.Agreement = {
+      api.Agreement(
+        id = agreement.id.get,
+        title = agreement.title,
+        content = agreement.content,
+        copyright = toApiCopyright(agreement.copyright),
+        created = agreement.created,
+        updated = agreement.updated,
+        updatedBy = agreement.updatedBy
+      )
+    }
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = {
       api.ArticleTitle(title.title, title.language)

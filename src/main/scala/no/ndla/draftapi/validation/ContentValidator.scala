@@ -32,7 +32,17 @@ trait ContentValidator {
       }
     }
 
-    def validateAgreement(agreement: Agreement): Try[Agreement] = ???
+    def validateAgreement(agreement: Agreement): Try[Agreement] = {
+      val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
+        NoHtmlValidator.validate("content", agreement.content).toList ++
+        validateCopyright(agreement.copyright)
+
+      if (validationErrors.isEmpty){
+        Success(agreement)
+      } else {
+        Failure(new ValidationException(errors = validationErrors))
+      }
+    }
 
     def validateArticle(article: Article, allowUnknownLanguage: Boolean): Try[Article] = {
       val validationErrors = article.content.flatMap(c => validateArticleContent(c, allowUnknownLanguage)) ++
