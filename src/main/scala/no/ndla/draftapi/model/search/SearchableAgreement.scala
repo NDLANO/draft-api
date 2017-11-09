@@ -10,5 +10,7 @@ package no.ndla.draftapi.model.search
 case class SearchableAgreement(
   id: Long,
   title: String,
-  content: String
+  content: String,
+  internalContactName: String,
+  supplierContactName: String
 )

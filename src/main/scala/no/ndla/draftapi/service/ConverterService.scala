@@ -62,7 +62,16 @@ trait ConverterService {
       }
     }
 
-    def hitAsAgreementSummary(hit: JsonObject): api.AgreementSummary = ???
+    def hitAsAgreementSummary(hit: JsonObject): api.AgreementSummary = {
+      val id = hit.get("id").getAsLong
+      val title = hit.get("title").getAsString
+      val content = hit.get("content").getAsString
+      val internalContactName = hit.get("internalContactName").getAsString
+      val supplierContactName = hit.get("supplierContactName").getAsString
+
+
+      api.AgreementSummary(id,title,internalContactName, supplierContactName)
+    }
 
     def hitAsArticleSummaryV2(hit: JsonObject, language: String): api.ArticleSummary = {
       val titles = getEntrySetSeq(hit, "title").map(entr => domain.ArticleTitle(entr.getValue.getAsString, entr.getKey))

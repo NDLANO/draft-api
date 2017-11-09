@@ -19,10 +19,12 @@ trait SearchConverterService {
 
   class SearchConverterService extends LazyLogging {
     def asSearchableAgreement(domainModel: Agreement): SearchableAgreement = {
-      new SearchableAgreement(
+      SearchableAgreement(
         id = domainModel.id.get,
         title = domainModel.title,
-        content = domainModel.content
+        content = domainModel.content,
+        internalContactName = domainModel.internalContact.name,
+        supplierContactName = domainModel.supplier.name
       )
     }
 

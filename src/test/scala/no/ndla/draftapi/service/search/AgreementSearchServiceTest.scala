@@ -99,23 +99,24 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   test("That all returns all documents ordered by id ascending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdAsc)
     val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(8)
-    hits.head.id should be(1)
-    hits(1).id should be(2)
-    hits(2).id should be(3)
+    results.totalCount should be(9)
+    hits(0).id should be(2)
+    hits(1).id should be(3)
+    hits(2).id should be(4)
     hits(3).id should be(5)
     hits(4).id should be(6)
     hits(5).id should be(7)
     hits(6).id should be(8)
-    hits.last.id should be(9)
+    hits(7).id should be(9)
+    hits(8).id should be(10)
   }
 
   test("That all returns all documents ordered by id descending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdDesc)
     val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(8)
-    hits.head.id should be (9)
-    hits.last.id should be (1)
+    results.totalCount should be(9)
+    hits.head.id should be (10)
+    hits.last.id should be (2)
   }
 
   test("That all returns all documents ordered by title ascending") {
@@ -145,49 +146,6 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     hits.last.id should be(8)
   }
 
-  test("That all returns all documents ordered by lastUpdated descending") {
-    val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByLastUpdatedDesc)
-    val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(8)
-    hits.head.id should be(3)
-    hits.last.id should be(5)
-  }
-
-  test("That all returns all documents ordered by lastUpdated ascending") {
-    val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByLastUpdatedAsc)
-    val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(8)
-    hits.head.id should be(5)
-    hits(1).id should be(6)
-    hits(2).id should be(7)
-    hits(3).id should be(8)
-    hits(4).id should be(9)
-    hits(5).id should be(1)
-    hits(6).id should be(2)
-    hits.last.id should be(3)
-  }
-
-  test("That all filtering on license only returns documents with given license") {
-    val results = agreementSearchService.all(List(), Some("publicdomain"), 1, 10, Sort.ByTitleAsc)
-    val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(7)
-    hits.head.id should be(8)
-    hits(1).id should be(9)
-    hits(2).id should be(3)
-    hits(3).id should be(5)
-    hits(4).id should be(6)
-    hits(5).id should be(2)
-    hits.last.id should be(7)
-  }
-
-  test("That all filtered by id only returns documents with the given ids") {
-    val results = agreementSearchService.all(List(1, 3), None, 1, 10, Sort.ByIdAsc)
-    val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(2)
-    hits.head.id should be(1)
-    hits.last.id should be(3)
-  }
-
   test("That paging returns only hits on current page and not more than page-size") {
     val page1 = agreementSearchService.all(List(), None, 1, 2, Sort.ByTitleAsc)
     val hits1 = converterService.getAgreementHits(page1.response)
@@ -204,23 +162,6 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     hits2.size should be(2)
     hits2.head.id should be(1)
     hits2.last.id should be(3)
-  }
-
-  test("mathcingQuery should filter results based on an article type filter") {
-    val results = agreementSearchService.matchingQuery("bil", List(), None, 1, 10, Sort.ByRelevanceDesc)
-    results.totalCount should be(0)
-
-    val results2 = agreementSearchService.matchingQuery("bil", List(), None, 1, 10, Sort.ByRelevanceDesc)
-    results2.totalCount should be(3)
-  }
-
-  test("That search matches title and html-content ordered by relevance descending") {
-    val results = agreementSearchService.matchingQuery("bil", List(), None, 1, 10, Sort.ByRelevanceDesc)
-    val hits = converterService.getAgreementHits(results.response)
-    results.totalCount should be(3)
-    hits.head.id should be(5)
-    hits(1).id should be(1)
-    hits.last.id should be(3)
   }
 
   test("That search combined with filter by id only returns documents matching the query with one of the given ids") {
