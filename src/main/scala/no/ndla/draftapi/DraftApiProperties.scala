@@ -62,15 +62,6 @@ object DraftApiProperties extends LazyLogging {
   val IndexBulkSize = 200
   val ElasticSearchIndexMaxResultWindow = 10000
 
-  val oldCreatorTypes = List("opphavsmann", "fotograf", "kunstner", "redaksjonelt", "forfatter", "manusforfatter", "innleser", "oversetter", "regissør", "illustratør", "medforfatter", "komponist")
-  val creatorTypes = List("originator", "photographer", "artist", "editorial", "writer", "scriptwriter", "reader", "translator", "director", "illustrator", "cowriter", "composer")
-
-  val oldProcessorTypes = List("bearbeider", "tilrettelegger", "redaksjonelt", "språklig", "ide", "sammenstiller", "korrektur")
-  val processorTypes = List("processor", "facilitator", "editorial", "linguistic", "idea", "compiler", "correction")
-
-  val oldRightsholderTypes = List("rettighetshaver", "forlag", "distributør", "leverandør")
-  val rightsholderTypes = List("rightsholder", "publisher", "distributor", "supplier")
-  val allowedAuthors = creatorTypes ++ processorTypes ++ rightsholderTypes
   final val allowedAuthorsStr = "originator,photographer,artist,editorial,writer,scriptwriter,reader,translator,director,illustrator,cowriter,composer,processor,facilitator,editorial,linguistic,idea,compiler,correction,rightsholder,publisher,distributor,supplier"
 
   val CorrelationIdKey = "correlationID"
