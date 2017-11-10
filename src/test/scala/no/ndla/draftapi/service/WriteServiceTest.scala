@@ -50,6 +50,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
+    when(ArticleApiClient.allocateArticleId).thenReturn(Success(1: Long))
 
     service.newArticle(TestData.newArticle).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])

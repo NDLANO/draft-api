@@ -8,6 +8,7 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.{Role, User}
+import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api.{Article, ArticleStatus, NotFoundException}
 import no.ndla.draftapi.model.domain._
@@ -24,20 +25,19 @@ trait WriteService {
     with ArticleIndexService
     with Clock
     with User
-    with ReadService =>
+    with ReadService
+    with ArticleApiClient =>
   val writeService: WriteService
 
   class WriteService {
     def newArticle(newArticle: api.NewArticle): Try[Article] = {
-      val domainArticle = converterService.toDomainArticle(newArticle)
-      contentValidator.validateArticle(domainArticle, false) match {
-        case Success(_) => {
-          val article = draftRepository.insert(domainArticle)
-          articleIndexService.indexDocument(article)
-          Success(converterService.toApiArticle(article, newArticle.language))
-        }
-        case Failure(exception) => Failure(exception)
-      }
+      for {
+        domainArticle <- converterService.toDomainArticle(newArticle)
+        _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
+        insertedArticle <- Try(draftRepository.insert(domainArticle))
+        _ <- articleIndexService.indexDocument(insertedArticle)
+        apiArticle <- Success(converterService.toApiArticle(insertedArticle, newArticle.language))
+      } yield apiArticle
     }
 
     private def updateArticle(toUpdate: domain.Article): Try[domain.Article] = {
@@ -83,7 +83,7 @@ trait WriteService {
             case Failure(ex) => return Failure(ex)
             case Success(_) => s
           }
-       }
+      }
 
       val article = draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))

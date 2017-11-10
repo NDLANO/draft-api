@@ -34,10 +34,10 @@ trait DraftRepository {
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
 
-      val articleId: Long = sql"insert into ${Article.table} (document, revision) values (${dataObject}, $startRevision)".updateAndReturnGeneratedKey().apply
+      val articleId: Long = sql"insert into ${Article.table} (id, document, revision) values (${article.id}, ${dataObject}, $startRevision)".updateAndReturnGeneratedKey().apply
 
       logger.info(s"Inserted new article: $articleId")
-      article.copy(id=Some(articleId), revision=Some(startRevision))
+      article.copy(revision=Some(startRevision))
     }
 
     def update(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
@@ -58,66 +58,8 @@ trait DraftRepository {
       }
     }
 
-    def insertWithExternalIds(article: Article, externalId: String, externalSubjectId: Seq[String])(implicit session: DBSession = AutoSession): Article = {
-      val startRevision = 1
-      val dataObject = new PGobject()
-      dataObject.setType("jsonb")
-      dataObject.setValue(write(article))
-
-      val articleId: Long = sql"insert into ${Article.table} (external_id, external_subject_id, document) values (${externalId}, ARRAY[${externalSubjectId}]::text[], ${dataObject})".updateAndReturnGeneratedKey().apply
-
-      logger.info(s"Inserted node $externalId: $articleId")
-      article.copy(id=Some(articleId))
-    }
-
-    def updateWithExternalId(article: Article, externalId: String)(implicit session: DBSession = AutoSession): Try[Article] = {
-      val dataObject = new PGobject()
-      dataObject.setType("jsonb")
-      dataObject.setValue(write(article))
-
-      val expectedArticleRevision = 1
-      Try(sql"update ${Article.table} set document=${dataObject} where external_id=${externalId} and revision=$expectedArticleRevision".updateAndReturnGeneratedKey().apply) match {
-        case Success(articleId) => {
-          logger.info(s"Updated article with external_id=$externalId, id=$articleId")
-          Success(article.copy(id=Some(articleId)))
-        }
-        case Failure(ex) => {
-          val message = "The revision stored in the database is newer than the one being updated. Please use the latest version from database when updating."
-
-          logger.info(message)
-          Failure(new OptimisticLockException(message))
-        }
-      }
-    }
-
-    def updateWithExternalIdOverrideManualChanges(article: Article, externalId: String)(implicit session: DBSession = AutoSession): Try[Article] = {
-      val dataObject = new PGobject()
-      dataObject.setType("jsonb")
-      dataObject.setValue(write(article))
-
-      val startRevision = 1
-      Try(sql"update ${Article.table} set document=${dataObject}, revision=$startRevision where external_id=${externalId}".updateAndReturnGeneratedKey().apply) match {
-        case Success(articleId) =>
-          logger.info(s"Updated article with external_id=$externalId, id=$articleId. Revision reset to 1")
-          Success(article.copy(id=Some(articleId)))
-        case Failure(ex) =>
-          logger.warn(s"Failed to update article with external id $externalId: ${ex.getMessage}")
-          Failure(ex)
-      }
-    }
-
-    def delete(articleId: Long)(implicit session: DBSession = AutoSession) = {
-      sql"delete from ${Article.table} where id = $articleId".update().apply
-    }
-
     def withId(articleId: Long): Option[Article] =
       articleWhere(sqls"ar.id=${articleId.toInt}")
-
-    def withExternalId(externalId: String): Option[Article] =
-      articleWhere(sqls"ar.external_id=$externalId")
-
-    def exists(externalId: String): Boolean =
-      articleWhere(sqls"ar.external_id=$externalId").isDefined
 
     def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {
       sql"select id from ${Article.table} where external_id=${externalId}"

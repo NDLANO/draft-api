@@ -22,13 +22,14 @@ import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
 import ArticleStatus._
 import Language._
+import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.validation._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
-  this: Clock with DraftRepository with User =>
+  this: Clock with DraftRepository with User with ArticleApiClient =>
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
@@ -82,28 +83,32 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(newArticle: api.NewArticle): domain.Article = {
-      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
-      val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
+    def toDomainArticle(newArticle: api.NewArticle): Try[domain.Article] = {
+      ArticleApiClient.allocateArticleId match {
+        case Failure(ex) => Failure(ex)
+        case Success(id) =>
+          val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
+          val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
 
-      domain.Article(
-        id = None,
-        revision = None,
-        ArticleStatus.ValueSet(CREATED),
-        title = domainTitles,
-        content = domainContent,
-        copyright = newArticle.copyright.map(toDomainCopyright),
-        tags = toDomainTag(newArticle.tags, newArticle.language),
-        requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
-        visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-        introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-        metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-        metaImageId = newArticle.metaImageId,
-        created = clock.now(),
-        updated = clock.now(),
-        updatedBy = authUser.id(),
-        articleType = newArticle.articleType
-      )
+          Success(domain.Article(
+            id = Some(id),
+            revision = None,
+            ArticleStatus.ValueSet(CREATED),
+            title = domainTitles,
+            content = domainContent,
+            copyright = newArticle.copyright.map(toDomainCopyright),
+            tags = toDomainTag(newArticle.tags, newArticle.language),
+            requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
+            visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
+            introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
+            metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
+            metaImageId = newArticle.metaImageId,
+            created = clock.now(),
+            updated = clock.now(),
+            updatedBy = authUser.id(),
+            articleType = newArticle.articleType
+          ))
+      }
     }
 
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle = domain.ArticleTitle(articleTitle.title, articleTitle.language)

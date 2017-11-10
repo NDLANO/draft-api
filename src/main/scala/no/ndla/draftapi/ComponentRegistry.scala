@@ -45,7 +45,8 @@ object ComponentRegistry
     with ContentValidator
     with Clock
     with Role
-    with User {
+    with User
+    with ArticleApiClient {
 
   implicit val swagger = new DraftSwagger
 
@@ -88,4 +89,6 @@ object ComponentRegistry
   lazy val clock = new SystemClock
   lazy val authRole = new AuthRole
   lazy val authUser = new AuthUser
+
+  lazy val ArticleApiClient = new ArticleApiClient
 }
