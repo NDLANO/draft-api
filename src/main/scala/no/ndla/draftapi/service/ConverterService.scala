@@ -33,17 +33,9 @@ trait ConverterService {
   class ConverterService extends LazyLogging {
 
     def getAgreementHits(response: JestSearchResult): Seq[api.AgreementSummary] = {
-      var resultList = Seq[api.AgreementSummary]() //TODO: Look into why this is var
-      response.getTotal match {
-        case count: Integer if count > 0 =>
-          val resultArray = response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray
-          val iterator = resultArray.iterator()
-          while (iterator.hasNext) {
-            resultList = resultList :+ hitAsAgreementSummary(iterator.next().asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject])
-          }
-          resultList
-        case _ => Seq()
-      }
+      response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray.asScala.map(jsonElem => {
+        hitAsAgreementSummary(jsonElem.asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject])
+      }).toSeq
     }
 
 
