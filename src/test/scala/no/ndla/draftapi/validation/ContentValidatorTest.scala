@@ -171,4 +171,24 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     contentValidator.validateArticle(article, true).isSuccess should be (true)
   }
 
+  test("Validation should fail if agreement title contains html") {
+    val agreement = TestData.sampleDomainAgreement.copy(title = "<h1>HEY TITLE</h1>")
+    contentValidator.validateAgreement(agreement).isSuccess should be (false)
+  }
+
+  test("Validation should succeed if agreement title contains no html") {
+    val agreement = TestData.sampleDomainAgreement.copy(title = "HEY TITLE")
+    contentValidator.validateAgreement(agreement).isSuccess should be (true)
+  }
+
+  test("Validation should fail if agreement content contains html") {
+    val agreement = TestData.sampleDomainAgreement.copy(content = "<h1>HEY CONTENT</h1>")
+    contentValidator.validateAgreement(agreement).isSuccess should be (false)
+  }
+
+  test("Validation should succeed if agreement content contains no html") {
+    val agreement = TestData.sampleDomainAgreement.copy(content = "HEY CONTENT")
+    contentValidator.validateAgreement(agreement).isSuccess should be (true)
+  }
+
 }
