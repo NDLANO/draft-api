@@ -40,7 +40,7 @@ trait ArticleSearchService {
     override val searchIndex: String = DraftApiProperties.DraftSearchIndex
 
     override def hitToApiModel(hit: JsonObject, language: String): api.ArticleSummary = {
-      converterService.hitAsArticleSummaryV2(hit, language)
+      converterService.hitAsArticleSummary(hit, language)
     }
 
     def all(withIdIn: List[Long], language: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): SearchResult = {

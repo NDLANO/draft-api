@@ -9,4 +9,5 @@ package no.ndla.draftapi.model.domain
 
 case class ConceptTitle(title: String, language: String) extends LanguageField[String] {
   override def value: String = title
+  override def isEmpty: Boolean = value.isEmpty
 }

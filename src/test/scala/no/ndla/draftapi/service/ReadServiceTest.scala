@@ -11,6 +11,7 @@ import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTa
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.{Attributes, ResourceType}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import scalikejdbc.DBSession
@@ -46,8 +47,8 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.withId(1)).thenReturn(Option(article))
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Some("54321"))
 
-    val expectedResult = converterService.toApiArticleV2(article.copy(content = Seq(expectedArticleContent1), visualElement = Seq(VisualElement(visualElementAfter, "nb"))), "nb")
-    readService.withIdV2(1, "nb") should equal(expectedResult)
+    val expectedResult = converterService.toApiArticle(article.copy(content = Seq(expectedArticleContent1), visualElement = Seq(VisualElement(visualElementAfter, "nb"))), "nb")
+    readService.withId(1, "nb") should equal(Some(expectedResult))
   }
 
   test("addIdAndUrlOnResource adds an id and url attribute on embed-resoures with a data-resource_id attribute") {

@@ -10,12 +10,15 @@ package no.ndla.draftapi.model.domain
 import java.util.Date
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.model.api.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization._
 import scalikejdbc._
+
+import scala.util.{Failure, Success, Try}
 
 sealed trait Content {
   def id: Option[Long]
@@ -23,9 +26,10 @@ sealed trait Content {
 
 case class Article(id: Option[Long],
                    revision: Option[Int],
+                   status: Set[ArticleStatus.Value],
                    title: Seq[ArticleTitle],
                    content: Seq[ArticleContent],
-                   copyright: Copyright,
+                   copyright: Option[Copyright],
                    tags: Seq[ArticleTag],
                    requiredLibraries: Seq[RequiredLibrary],
                    visualElement: Seq[VisualElement],
@@ -35,11 +39,11 @@ case class Article(id: Option[Long],
                    created: Date,
                    updated: Date,
                    updatedBy: String,
-                   articleType: String) extends Content
+                   articleType: Option[String]) extends Content
 
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats
+  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus)
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
@@ -49,6 +53,7 @@ object Article extends SQLSyntaxSupport[Article] {
     Article(
       Some(rs.long(lp.c("id"))),
       Some(rs.int(lp.c("revision"))),
+      meta.status,
       meta.title,
       meta.content,
       meta.copyright,
@@ -69,6 +74,20 @@ object Article extends SQLSyntaxSupport[Article] {
     ignore("id") orElse
     ignore("revision")
   )
+}
+
+object ArticleStatus extends Enumeration {
+  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH = Value
+
+  def valueOfOrError(s: String): Try[ArticleStatus.Value] =
+    valueOf(s) match {
+      case Some(st) => Success(st)
+      case None =>
+        val validStatuses = values.map(_.toString).mkString(", ")
+        Failure(new ValidationException(errors=Seq(ValidationMessage("status", s"'$s' is not a valid article status. Must be one of $validStatuses"))))
+    }
+
+  def valueOf(s: String): Option[ArticleStatus.Value] = values.find(_.toString == s.toUpperCase)
 }
 
 object ArticleType extends Enumeration {

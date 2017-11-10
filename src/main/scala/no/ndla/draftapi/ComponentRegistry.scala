@@ -73,6 +73,7 @@ object ComponentRegistry
   lazy val draftRepository = new ArticleRepository
   lazy val conceptRepository = new ConceptRepository
   lazy val agreementRepository = new AgreementRepository
+
   lazy val articleSearchService = new ArticleSearchService
   lazy val articleIndexService = new ArticleIndexService
   lazy val agreementSearchService = new AgreementSearchService

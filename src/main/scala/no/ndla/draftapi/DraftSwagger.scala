@@ -16,7 +16,7 @@ class ResourcesApp(implicit val swagger: Swagger) extends ScalatraServlet with N
   }
 }
 
-object ArticleApiInfo {
+object DraftApiInfo {
   val apiInfo = ApiInfo(
     "Draft API",
     "Documentation for the Draft API of NDLA.no",
@@ -26,6 +26,6 @@ object ArticleApiInfo {
     "http://www.gnu.org/licenses/gpl-3.0.en.html")
 }
 
-class DraftSwagger extends Swagger("2.0", "0.8", ArticleApiInfo.apiInfo) {
+class DraftSwagger extends Swagger("2.0", "0.8", DraftApiInfo.apiInfo) {
   addAuthorization(OAuth(List("articles:all"), List(ApplicationGrant(TokenEndpoint("/auth/tokens", "access_token")))))
 }

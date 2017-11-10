@@ -8,15 +8,16 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchResult, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.scalatra.test.scalatest.ScalatraFunSuite
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import no.ndla.mapping.License.getLicenses
-import org.json4s.native.Serialization.read
+import org.json4s.native.Serialization.{read, write}
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFunSuite {
 
@@ -37,42 +38,42 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   addServlet(controller, "/test")
 
   val updateTitleJson = """{"revision": 1, "title": "hehe", "language": "nb", "content": "content"}"""
-  val invalidArticle = """{"revision": 1, "title": [{"language": "nb", "titlee": "lol"]}"""
+  val invalidArticle = """{"revision": 1, "title": [{"language": "nb", "titlee": "lol"]}""" // typo in "titlee"
+  val invalidNewArticle = """{ "language": "nb", "content": "<section><h2>Hi</h2></section>" }""" // missing title
   val lang = "nb"
   val articleId = 1
 
-  test("/<article_id> should return 200 if the cover was found withIdV2") {
-    when(readService.withIdV2(articleId, lang)).thenReturn(Some(TestData.sampleArticleV2))
+  test("/<article_id> should return 200 if the cover was found withId") {
+    when(readService.withId(articleId, lang)).thenReturn(Some(TestData.sampleArticleV2))
 
     get(s"/test/$articleId?language=$lang") {
       status should equal(200)
     }
   }
 
-  test("/<article_id> should return 404 if the article was not found withIdV2") {
-    when(readService.withIdV2(articleId, lang)).thenReturn(None)
+  test("/<article_id> should return 404 if the article was not found withId") {
+    when(readService.withId(articleId, lang)).thenReturn(None)
 
     get(s"/test/$articleId?language=$lang") {
       status should equal(404)
     }
   }
 
-  test("/<article_id> should return 400 if the article was not found withIdV2") {
+  test("/<article_id> should return 400 if the article was not found withId") {
     get(s"/test/one") {
       status should equal(400)
     }
   }
 
-
-  test("POST / should return 400 on failure to validate request") {
-    post("/test/", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("POST / should return 400 if body does not contain all required fields") {
+    post("/test/", invalidArticle, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(400)
     }
   }
 
   test("POST / should return 201 on created") {
-    when(writeService.newArticleV2(any[NewArticle])).thenReturn(Success(TestData.sampleArticleV2))
-    post("/test/", TestData.requestNewArticleV2Body, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+    when(writeService.newArticle(any[NewArticle])).thenReturn(Success(TestData.sampleArticleV2))
+    post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(201)
     }
   }
@@ -126,7 +127,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 200 on success") {
-    when(writeService.updateArticleV2(any[Long], any[UpdatedArticle])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
+    when(writeService.updateArticle(any[Long], any[UpdatedArticle])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
     patch("/test/123", updateTitleJson, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal (200)
     }
@@ -158,11 +159,30 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
       .thenReturn(searchMock)
     when(searchMock.response).thenReturn(searchResultMock)
-    when(converterService.getHitsV2(searchResultMock, "nb")).thenReturn(Seq.empty)
+    when(converterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal (200)
       verify(articleSearchService, times(1)).all(List(1, 2, 3, 4), Language.DefaultLanguage, None, 1, 4, Sort.ByTitleAsc, ArticleType.all)
     }
   }
+
+  test("PUT /:id/status should return 403 if user does not have the required role") {
+    put("/test/1/status", headers=Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+      status should equal (403)
+    }
+
+    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Failure(new AccessDeniedException("no cookie for you")))
+    put("/test/1/status", body=write(TestData.statusWithAwaitingPublishing), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (403)
+    }
+  }
+
+  test("PUT /:id/status should return 200 if user has required permissions") {
+    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Success(TestData.apiArticleV2))
+    put("/test/1/status", body=write(TestData.statusWithDraft), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (200)
+    }
+  }
+
 }

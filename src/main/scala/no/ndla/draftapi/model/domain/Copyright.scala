@@ -10,8 +10,8 @@ package no.ndla.draftapi.model.domain
 import java.util.Date
 
 case class Copyright(
-                      license: String,
-                      origin: String,
+                      license: Option[String],
+                      origin: Option[String],
                       creators: Seq[Author],
                       processors: Seq[Author],
                       rightsholders: Seq[Author],

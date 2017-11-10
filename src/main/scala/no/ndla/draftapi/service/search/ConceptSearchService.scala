@@ -18,7 +18,6 @@ import no.ndla.draftapi.integration.ElasticClient
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.service.ConverterService
-import no.ndla.draftapi.service.search.ConceptIndexService
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.index.IndexNotFoundException

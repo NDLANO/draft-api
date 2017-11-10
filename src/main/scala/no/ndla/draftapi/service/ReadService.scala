@@ -11,10 +11,10 @@ import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTa
 import no.ndla.draftapi.caching.MemoizeAutoRenew
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.domain.Attributes
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
-import no.ndla.draftapi.validation.HtmlTools
+import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
+import no.ndla.validation.{Attributes, HtmlRules}
 import org.jsoup.nodes.Element
 
 import scala.math.max
@@ -28,10 +28,10 @@ trait ReadService {
     def getInternalIdByExternalId(externalId: Long): Option[api.ArticleId] =
       draftRepository.getIdFromExternalId(externalId.toString).map(api.ArticleId)
 
-    def withIdV2(id: Long, language: String): Option[api.Article] = {
+    def withId(id: Long, language: String): Option[api.Article] = {
       draftRepository.withId(id)
         .map(addUrlsOnEmbedResources)
-        .flatMap(article => converterService.toApiArticleV2(article, language))
+        .map(article => converterService.toApiArticle(article, language))
     }
 
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
@@ -51,7 +51,7 @@ trait ReadService {
 
     def getArticlesByPage(pageNo: Int, pageSize: Int, lang: String): api.ArticleDump = {
       val (safePageNo, safePageSize) = (max(pageNo, 1), max(pageSize, 0))
-      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize).flatMap(article => converterService.toApiArticleV2(article, lang))
+      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize).map(article => converterService.toApiArticle(article, lang))
       api.ArticleDump(draftRepository.articleCount, pageNo, pageSize, lang, results)
     }
 
@@ -60,11 +60,11 @@ trait ReadService {
     })
 
     private[service] def addUrlOnResource(content: String): String = {
-      val doc = HtmlTools.stringToJsoupDocument(content)
+      val doc = HtmlRules.stringToJsoupDocument(content)
 
       val embedTags = doc.select(s"$resourceHtmlEmbedTag").asScala.toList
       embedTags.foreach(addUrlOnEmbedTag)
-      HtmlTools.jsoupDocumentToString(doc)
+      HtmlRules.jsoupDocumentToString(doc)
     }
 
     private def addUrlOnEmbedTag(embedTag: Element) = {
