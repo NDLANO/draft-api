@@ -11,3 +11,8 @@ CREATE TABLE conceptdata (
   external_id TEXT,
   document JSONB
 );
+
+CREATE TABLE agreementdata (
+  id BIGSERIAL PRIMARY KEY,
+  document JSONB
+);
