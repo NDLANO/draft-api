@@ -12,17 +12,15 @@ import java.util.Map.Entry
 
 import com.google.gson.{JsonElement, JsonObject}
 import com.typesafe.scalalogging.LazyLogging
-import io.searchbox.core.{SearchResult => JestSearchResult}
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
+import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.domain.ArticleStatus._
+import no.ndla.draftapi.model.domain.Language._
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
-import ArticleStatus._
-import Language._
-import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.validation._
 
 import scala.collection.JavaConverters._
@@ -33,48 +31,6 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
-
-    def getHits(response: JestSearchResult, language: String): Seq[api.ArticleSummary] = {
-      var resultList = Seq[api.ArticleSummary]()
-      response.getTotal match {
-        case count: Integer if count > 0 => {
-          val resultArray = response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray
-          val iterator = resultArray.iterator()
-          while (iterator.hasNext) {
-            resultList = resultList :+ hitAsArticleSummary(iterator.next().asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject], language)
-          }
-          resultList
-        }
-        case _ => Seq()
-      }
-    }
-
-    def hitAsArticleSummary(hit: JsonObject, language: String): api.ArticleSummary = {
-      val titles = getEntrySetSeq(hit, "title").map(entr => domain.ArticleTitle(entr.getValue.getAsString, entr.getKey))
-      val introductions = getEntrySetSeq(hit, "introduction").map(entr => domain.ArticleIntroduction(entr.getValue.getAsString, entr.getKey))
-      val visualElements = getEntrySetSeq(hit, "visualElement").map(entr => domain.VisualElement(entr.getValue.getAsString, entr.getKey))
-
-      val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
-
-      val title = findByLanguageOrBestEffort(titles, language).map(toApiArticleTitle).getOrElse(api.ArticleTitle("", DefaultLanguage))
-      val visualElement = findByLanguageOrBestEffort(visualElements, language).map(toApiVisualElement)
-      val introduction = findByLanguageOrBestEffort(introductions, language).map(toApiArticleIntroduction)
-
-      api.ArticleSummary(
-        hit.get("id").getAsLong,
-        title,
-        visualElement,
-        introduction,
-        ApplicationUrl.get + hit.get("id").getAsString,
-        hit.get("license").getAsString,
-        hit.get("articleType").getAsString,
-        supportedLanguages
-      )
-    }
-
-    def getEntrySetSeq(hit: JsonObject, fieldPath: String): Seq[Entry[String, JsonElement]] = {
-      hit.get(fieldPath).getAsJsonObject.entrySet.asScala.to[Seq]
-    }
 
     def getValueByFieldAndLanguage(hit: JsonObject, fieldPath: String, searchLanguage: String): String = {
       hit.get(fieldPath).getAsJsonObject.entrySet.asScala.to[Seq].find(entr => entr.getKey == searchLanguage) match {
@@ -106,7 +62,7 @@ trait ConverterService {
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.id(),
-            articleType = newArticle.articleType
+            articleType = newArticle.articleType.flatMap(ArticleType.valueOf)
           ))
       }
     }
@@ -191,7 +147,7 @@ trait ConverterService {
         article.created,
         article.updated,
         article.updatedBy,
-        article.articleType,
+        article.articleType.map(_.toString),
         supportedLanguages
       )
     }

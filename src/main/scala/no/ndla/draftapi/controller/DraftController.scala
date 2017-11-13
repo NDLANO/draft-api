@@ -9,7 +9,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.DraftApiProperties.RoleWithWriteAccess
+import no.ndla.draftapi.DraftApiProperties.DraftRoleWithWriteAccess
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
@@ -70,37 +70,30 @@ trait DraftController {
     }
 
     private def search(query: Option[String], sort: Option[Sort.Value], language: String, license: Option[String], page: Int, pageSize: Int, idList: List[Long], articleTypesFilter: Seq[String]) = {
-      val searchResult = query match {
-        case Some(q) => articleSearchService.matchingQuery(
-          query = q,
-          withIdIn = idList,
-          searchLanguage = language,
-          license = license,
-          page = page,
-          pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByRelevanceDesc),
-          if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
-        )
+      query match {
+        case Some(q) =>
+          articleSearchService.matchingQuery(
+            query = q,
+            withIdIn = idList,
+            searchLanguage = language,
+            license = license,
+            page = page,
+            pageSize = if (idList.isEmpty) pageSize else idList.size,
+            sort = sort.getOrElse(Sort.ByRelevanceDesc),
+            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
+          )
 
-        case None => articleSearchService.all(
-          withIdIn = idList,
-          language = language,
-          license = license,
-          page = page,
-          pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByTitleAsc),
-          if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
-        )
+        case None =>
+          articleSearchService.all(
+            withIdIn = idList,
+            language = language,
+            license = license,
+            page = page,
+            pageSize = if (idList.isEmpty) pageSize else idList.size,
+            sort = sort.getOrElse(Sort.ByTitleAsc),
+            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
+          )
       }
-
-      val hitResult = converterService.getHits(searchResult.response, language)
-      SearchResult(
-        searchResult.totalCount,
-        searchResult.page,
-        searchResult.pageSize,
-        searchResult.language,
-        hitResult
-      )
     }
 
     val getAllArticles =
@@ -237,7 +230,7 @@ trait DraftController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newArticle)) {
-      authRole.assertHasRole(RoleWithWriteAccess)
+      authRole.assertHasRole(DraftRoleWithWriteAccess)
       val newArticle = extract[NewArticle](request.body)
       writeService.newArticle(newArticle) match {
         case Success(article) => Created(body=article)
@@ -258,7 +251,7 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     put("/:article_id/status", operation(updateArticleStatus)) {
-      authRole.assertHasRole(RoleWithWriteAccess)
+      authRole.assertHasRole(DraftRoleWithWriteAccess)
       writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body)) match {
         case Success(s) => s
         case Failure(e) => errorHandler(e)
@@ -278,7 +271,7 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
-      authRole.assertHasRole(RoleWithWriteAccess)
+      authRole.assertHasRole(DraftRoleWithWriteAccess)
 
       val articleId = long("article_id")
       val updatedArticle = extract[UpdatedArticle](request.body)

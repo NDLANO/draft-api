@@ -26,12 +26,11 @@ import org.elasticsearch.index.query._
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait ArticleSearchService {
-  this: ElasticClient with SearchConverterService with SearchService with ArticleIndexService with ConverterService =>
+  this: ElasticClient with SearchConverterService with SearchService with ArticleIndexService with SearchConverterService =>
   val articleSearchService: ArticleSearchService
 
   class ArticleSearchService extends LazyLogging with SearchService[api.ArticleSummary] {
@@ -39,18 +38,16 @@ trait ArticleSearchService {
 
     override val searchIndex: String = DraftApiProperties.DraftSearchIndex
 
-    override def hitToApiModel(hit: JsonObject, language: String): api.ArticleSummary = {
-      converterService.hitAsArticleSummary(hit, language)
-    }
+    override def hitToApiModel(hit: JsonObject, language: String): api.ArticleSummary = searchConverterService.hitAsArticleSummary(hit, language)
 
-    def all(withIdIn: List[Long], language: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): SearchResult = {
+    def all(withIdIn: List[Long], language: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): api.SearchResult = {
       val articleTypesFilter = if (articleTypes.nonEmpty) articleTypes else ArticleType.all
       val fullSearch = QueryBuilders.boolQuery()
         .filter(QueryBuilders.constantScoreQuery(QueryBuilders.termsQuery("articleType", articleTypesFilter:_*)))
       executeSearch(withIdIn, language, license, sort, page, pageSize, fullSearch)
     }
 
-    def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): SearchResult = {
+    def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): api.SearchResult = {
       val language = if (searchLanguage == Language.AllLanguages) Language.DefaultLanguage else searchLanguage
       val articleTypesFilter = if (articleTypes.nonEmpty) articleTypes else ArticleType.all
       val titleSearch = QueryBuilders.simpleQueryStringQuery(query).field(s"title.$language")
@@ -69,8 +66,7 @@ trait ArticleSearchService {
       executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery)
     }
 
-    def executeSearch(withIdIn: List[Long], language: String, license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryBuilder): SearchResult = {
-
+    def executeSearch(withIdIn: List[Long], language: String, license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryBuilder): api.SearchResult = {
       val (filteredSearch, searchLanguage) = {
         val licenseFilteredSearch = license match {
           case None => queryBuilder.filter(noCopyright)
@@ -98,12 +94,12 @@ trait ArticleSearchService {
 
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
-        logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested ${requestedResultWindow}")
+        logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
         throw new ResultWindowTooLargeException()
       }
 
       jestClient.execute(request.build()) match {
-        case Success(response) => SearchResult(response.getTotal.toLong, page, numResults, searchLanguage, response)
+        case Success(response) => api.SearchResult(response.getTotal.toLong, page, numResults, searchLanguage, searchConverterService.getHits(response, language))
         case Failure(f) => errorHandler(Failure(f))
       }
     }
