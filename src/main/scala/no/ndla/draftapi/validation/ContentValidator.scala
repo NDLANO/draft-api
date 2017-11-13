@@ -41,7 +41,7 @@ trait ContentValidator {
     def validateAgreement(agreement: Agreement): Try[Agreement] = {
       val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
         NoHtmlValidator.validate("content", agreement.content).toList ++
-        validateCopyright(agreement.copyright)
+        validateAgreementCopyright(agreement.copyright)
 
       if (validationErrors.isEmpty){
         Success(agreement)
@@ -147,6 +147,11 @@ trait ContentValidator {
     private def validateTitle(content: LanguageField[String], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("title", content.value).toList ++
         validateLanguage("language", content.language, allowUnknownLanguage)
+    }
+
+    private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
+      val agreementMessage = copyright.agreement.map(_ => ValidationMessage("copyright.agreement", "Agreement copyrights cant contain agreements"))
+      agreementMessage ++ validateCopyright(copyright)
     }
 
     private def validateCopyright(copyright: Copyright): Seq[ValidationMessage] = {
