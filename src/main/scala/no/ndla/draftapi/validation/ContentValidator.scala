@@ -8,7 +8,7 @@
 package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl, RoleWithPublishAccess, RoleWithWriteAccess}
+import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl, DraftRoleWithPublishAccess, DraftRoleWithWriteAccess}
 import no.ndla.draftapi.model.domain
 import domain.ArticleStatus._
 import no.ndla.draftapi.auth.Role
@@ -46,8 +46,7 @@ trait ContentValidator {
         validateTags(article.tags, allowUnknownLanguage) ++
         article.requiredLibraries.flatMap(validateRequiredLibrary) ++
         article.metaImageId.flatMap(validateMetaImageId) ++
-        article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage)) ++
-        article.articleType.map(validateArticleType).toSeq.flatten
+        article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {
         Success(article)
@@ -60,9 +59,9 @@ trait ContentValidator {
     def validateUserAbleToSetStatus(status: Set[domain.ArticleStatus.Value]): Try[Set[domain.ArticleStatus.Value]] = {
       def fail(message: String) = Failure(new AccessDeniedException(message))
 
-      if (!AuthUser.hasRole(RoleWithWriteAccess))
+      if (!authRole.canSetStatus)
         fail("You lack the required roles to statuses")
-      else if (status.contains(QUEUED_FOR_PUBLISHING) && !AuthUser.hasRole(RoleWithPublishAccess))
+      else if (status.contains(QUEUED_FOR_PUBLISHING) && !authRole.canSetPublishStatus)
         fail(s"You lack the required role to set the status $QUEUED_FOR_PUBLISHING")
       else
         Success(status)
@@ -76,13 +75,6 @@ trait ContentValidator {
         Success(concept)
       } else {
         Failure(new ValidationException(errors = validationErrors))
-      }
-    }
-
-    private def validateArticleType(articleType: String): Seq[ValidationMessage] = {
-      ArticleType.valueOf(articleType) match {
-        case None => Seq(ValidationMessage("articleType", s"$articleType is not a valid article type. Valid options are ${ArticleType.all.mkString(",")}"))
-        case _ => Seq.empty
       }
     }
 

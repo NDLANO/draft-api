@@ -8,7 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchResult, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.scalatra.test.scalatest.ScalatraFunSuite
@@ -23,10 +23,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   val jwtHeader = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
 
-  val jwtClaims = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiYXJ0aWNsZXM6d3JpdGUiXSwibmRsYV9pZCI6ImFiYzEyMyJ9LCJuYW1lIjoiRG9uYWxkIER1Y2siLCJpc3MiOiJodHRwczovL3NvbWUtZG9tYWluLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTIzIiwiYXVkIjoiYWJjIiwiZXhwIjoxNDg2MDcwMDYzLCJpYXQiOjE0ODYwMzQwNjN9"
+  val jwtClaims = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiZHJhZnRzOndyaXRlIl0sIm5kbGFfaWQiOiJhYmMxMjMifSwibmFtZSI6IkRvbmFsZCBEdWNrIiwiaXNzIjoiaHR0cHM6Ly9zb21lLWRvbWFpbi8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEyMyIsImF1ZCI6ImFiYyIsImV4cCI6MTQ4NjA3MDA2MywiaWF0IjoxNDg2MDM0MDYzfQ"
+  val jwtClainsAllRoles = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiYXJ0aWNsZXM6d3JpdGUiLCJhcnRpY2xlczpwdWJsaXNoIiwiZHJhZnRzOndyaXRlIiwiZHJhZnRzOnB1Ymxpc2giXSwibmRsYV9pZCI6ImFiYzEyMyJ9LCJuYW1lIjoiRG9uYWxkIER1Y2siLCJpc3MiOiJodHRwczovL3NvbWUtZG9tYWluLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTIzIiwiYXVkIjoiYWJjIiwiZXhwIjoxNDg2MDcwMDYzLCJpYXQiOjE0ODYwMzQwNjN9"
   val jwtClaimsNoRoles = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOltdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
   val jwtClaimsWrongRole = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsic29tZTpvdGhlciJdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
 
+  val authHeadWithAllRoles = s"Bearer $jwtHeader.$jwtClaims.eL4ee3tTIxEObXzd5-TXXmADfsyUao9czrq74cRWPhE"
   val authHeaderWithWriteRole = s"Bearer $jwtHeader.$jwtClaims.VxqM2bu2UF8IAalibIgdRdmsTDDWKEYpKzHPbCJcFzA"
   val authHeaderWithoutAnyRoles = s"Bearer $jwtHeader.$jwtClaimsNoRoles.kXjaQ9QudcRHTqhfrzKr0Zr4pYISBfJoXWHVBreDyO8"
   val authHeaderWithWrongRole = s"Bearer $jwtHeader.$jwtClaimsWrongRole.JsxMW8y0hCmpuu9tpQr6ZdfcqkOS8hRatFi3cTO_PvY"
@@ -154,12 +156,11 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("GET / should use size of id-list as page-size if defined") {
-    val searchMock = mock[SearchResult]
+    val searchMock = mock[api.SearchResult]
     val searchResultMock = mock[io.searchbox.core.SearchResult]
     when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
       .thenReturn(searchMock)
-    when(searchMock.response).thenReturn(searchResultMock)
-    when(converterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
+    when(searchConverterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal (200)

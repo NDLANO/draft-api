@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.DataSource
 import no.ndla.draftapi.model.api.OptimisticLockException
-import no.ndla.draftapi.model.domain.{Article, ArticleIds, ArticleStatus, ArticleTag}
+import no.ndla.draftapi.model.domain._
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.write
@@ -26,7 +26,7 @@ trait DraftRepository {
   val draftRepository: ArticleRepository
 
   class ArticleRepository extends LazyLogging with Repository[Article] {
-    implicit val formats = org.json4s.DefaultFormats + Article.JSonSerializer + new EnumNameSerializer(ArticleStatus)
+    implicit val formats = org.json4s.DefaultFormats + Article.JSonSerializer + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(ArticleType)
 
     def insert(article: Article)(implicit session: DBSession = AutoSession): Article = {
       val startRevision = 1

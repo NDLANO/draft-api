@@ -7,12 +7,15 @@
 
 package no.ndla.draftapi.integration
 
-import no.ndla.network.NdlaClient
 import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
 import no.ndla.draftapi.model.api.ArticleId
+import no.ndla.draftapi.model.domain.Article
+import no.ndla.network.NdlaClient
+import no.ndla.validation.ValidationMessage
 import org.json4s.native.Serialization.write
+import org.json4s.jackson.JsonMethods._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scalaj.http.Http
 
 case class ArticleApiId(id: Long)
@@ -24,12 +27,28 @@ trait ArticleApiClient {
   class ArticleApiClient {
     private val InternalEndpoint = s"http://$ArticleApiHost/intern"
 
-    def allocateArticleId: Try[Long] =
-      post[ArticleId, String](s"$InternalEndpoint/id/article/allocate", "").map(_.id)
-
-    private def post[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A]): Try[A] = {
+    def allocateArticleId: Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
-      ndlaClient.fetch[A](Http(endpointUrl).postData(write(data)))
+      post[ArticleId, String](s"$InternalEndpoint/id/article/allocate", "").map(_.id)
+    }
+
+    def getValidationErrors(article: Article): Try[Set[ValidationMessage]] = {
+      implicit val formats = Article.formats
+      post[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
+    }
+
+    def updateArticle(article: Article): Try[Article] = {
+      implicit val formats = Article.formats
+      post[Article, Article](s"$InternalEndpoint/article/${article.id.get}", article)
+    }
+
+    private def post[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
+      ndlaClient.fetch[A](
+        Http(endpointUrl)
+          .postData(write(data))
+          .method("POST")
+          .header("content-type", "application/json")
+      )
     }
 
   }

@@ -147,11 +147,6 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
-  test("validateArticle throws an exception on an article with an invalid article type") {
-    val article = TestData.sampleArticleWithByNcSa.copy(articleType = Some("invalid"))
-    contentValidator.validateArticle(article, false).isFailure should be (true)
-  }
-
   test("Validation should fail if concept content contains html") {
     val concept = TestData.sampleConcept.copy(content=Seq(ConceptContent("<h1>lolol</h1>", "nb")))
     contentValidator.validate(concept).isFailure should be (true)
@@ -180,15 +175,15 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   }
 
   test("validateUserAbleToSetStatus should return a failure if user does not have write required permissions") {
-    AuthUser.setRoles(List(DraftApiProperties.RoleWithWriteAccess))
+    AuthUser.setRoles(List(DraftApiProperties.DraftRoleWithWriteAccess))
     contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isFailure should be (true)
 
-    AuthUser.setRoles(List(DraftApiProperties.RoleWithPublishAccess))
+    AuthUser.setRoles(List(DraftApiProperties.DraftRoleWithPublishAccess))
     contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isFailure should be (true)
   }
 
   test("validateUserAbleToSetStatus should return success if user has all needed permissions") {
-    AuthUser.setRoles(List(DraftApiProperties.RoleWithWriteAccess, DraftApiProperties.RoleWithPublishAccess))
+    AuthUser.setRoles(List(DraftApiProperties.DraftRoleWithWriteAccess, DraftApiProperties.DraftRoleWithPublishAccess))
     contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isSuccess should be (true)
   }
 

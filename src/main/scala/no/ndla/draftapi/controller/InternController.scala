@@ -10,10 +10,12 @@ package no.ndla.draftapi.controller
 
 import java.util.concurrent.TimeUnit
 
+import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{ArticleIndexService, ConceptIndexService, IndexService}
+import no.ndla.draftapi.DraftApiProperties.{ArticleRoleWithPublishAccess, ArticleRoleWithWriteAccess}
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
@@ -23,7 +25,14 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 trait InternController {
-  this: ReadService with ConverterService with DraftRepository with IndexService with ArticleIndexService with ConceptIndexService =>
+  this: ReadService
+    with WriteService
+    with ConverterService
+    with DraftRepository
+    with IndexService
+    with ArticleIndexService
+    with ConceptIndexService
+    with Role =>
   val internController: InternController
 
   class InternController extends NdlaController {
@@ -70,6 +79,15 @@ trait InternController {
       val lang = paramOrDefault("language", Language.AllLanguages)
 
       readService.getArticlesByPage(pageNo, pageSize, lang)
+    }
+
+    post("/article/:id/publish/?") {
+      authRole.assertHasRoles(Set(ArticleRoleWithWriteAccess, ArticleRoleWithPublishAccess))
+
+      writeService.publishArticle(long("id")) match {
+        case Success(s) => s
+        case Failure(ex) => errorHandler(ex)
+      }
     }
 
   }

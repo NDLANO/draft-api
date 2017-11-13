@@ -108,7 +108,7 @@ object TestData {
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
     "ndalId54321",
-    Some(ArticleType.Standard.toString))
+    Some(ArticleType.Standard))
 
   val sampleDomainArticle = Article(
     Option(articleId),
@@ -126,7 +126,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some(ArticleType.Standard.toString)
+    Some(ArticleType.Standard)
   )
 
   val sampleDomainArticle2 = Article(
@@ -145,7 +145,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some(ArticleType.Standard.toString)
+    Some(ArticleType.Standard)
   )
 
   val newArticle = api.NewArticle(
@@ -186,7 +186,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some(ArticleType.Standard.toString)
+    Some(ArticleType.Standard)
   )
 
   val apiArticleWithHtmlFaultV2 = api.Article(
