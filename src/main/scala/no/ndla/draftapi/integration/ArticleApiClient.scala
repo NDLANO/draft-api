@@ -13,7 +13,7 @@ import no.ndla.draftapi.model.domain.Article
 import no.ndla.network.NdlaClient
 import no.ndla.validation.ValidationMessage
 import org.json4s.native.Serialization.write
-import org.json4s.jackson.JsonMethods._
+import no.ndla.draftapi.model.api
 
 import scala.util.{Failure, Success, Try}
 import scalaj.http.Http
@@ -37,9 +37,9 @@ trait ArticleApiClient {
       post[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
     }
 
-    def updateArticle(article: Article): Try[Article] = {
-      implicit val formats = Article.formats
-      post[Article, Article](s"$InternalEndpoint/article/${article.id.get}", article)
+    def updateArticle(id: Long, article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
+      implicit val format = org.json4s.DefaultFormats
+      post[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id", article)
     }
 
     private def post[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {

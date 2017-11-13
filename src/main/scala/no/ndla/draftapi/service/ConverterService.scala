@@ -14,6 +14,7 @@ import com.google.gson.{JsonElement, JsonObject}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.api.ArticleApiCopyright
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
@@ -216,6 +217,24 @@ trait ConverterService {
     def toApiConceptTitle(title: domain.ConceptTitle): api.ConceptTitle = api.ConceptTitle(title.title, title.language)
 
     def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent = api.ConceptContent(title.content, title.language)
+
+    def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
+      api.ArticleApiArticle(
+        title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
+        content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
+        copyright = article.copyright.map(c => api.ArticleApiCopyright(c.license, c.origin, c.authors.map(a => api.ArticleApiAuthor(a.`type`, a.name)))),
+        tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
+        requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
+        visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
+        introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
+        metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
+        metaImageId = article.metaImageId,
+        created = article.created,
+        updated = article.updated,
+        updatedBy = article.updatedBy,
+        articleType = article.articleType.toString
+      )
+    }
 
   }
 }

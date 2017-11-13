@@ -100,12 +100,12 @@ trait WriteService {
     def publishArticle(id: Long): Try[domain.Article] = {
       draftRepository.withId(id) match {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
-          val publishedArticle = ArticleApiClient.updateArticle(article)
+          val publishedArticle = ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article))
 
           if (publishedArticle.isSuccess) {
             updateArticle(article.copy(status=article.status.filter(_ != QUEUED_FOR_PUBLISHING)))
           } else {
-            publishedArticle
+            Success(article)
           }
         case Some(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
         case None => Failure(NotFoundException(s"No article with id $id"))
