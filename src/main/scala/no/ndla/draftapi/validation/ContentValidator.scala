@@ -150,7 +150,7 @@ trait ContentValidator {
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
-      val agreementMessage = copyright.agreement.map(_ => ValidationMessage("copyright.agreement", "Agreement copyrights cant contain agreements"))
+      val agreementMessage = copyright.agreement.map(_ => ValidationMessage("copyright.agreement", "Agreement copyrights cant contain agreements")).toSeq
       agreementMessage ++ validateCopyright(copyright)
     }
 
