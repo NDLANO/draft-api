@@ -35,6 +35,7 @@ trait TestEnvironment
     with HealthController
     with ConceptController
     with AgreementController
+    with ReindexClient
     with DataSource
     with DraftRepository
     with AgreementRepository
@@ -74,6 +75,7 @@ trait TestEnvironment
   val writeService = mock[WriteService]
   val contentValidator = mock[ContentValidator]
   val importValidator = mock[ContentValidator]
+  val reindexClient = mock[ReindexClient]
 
   val ndlaClient = mock[NdlaClient]
   val searchConverterService = mock[SearchConverterService]

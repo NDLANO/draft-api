@@ -42,6 +42,14 @@ object DraftApiProperties extends LazyLogging {
     ResourceType.Audio.toString -> s"$Domain/audio-api/v1/audio"
   )
 
+  val internalApiUrls = Map(
+    "article-api" -> "http://article-api.ndla-local/intern",
+    "audio-api" -> "http://audio-api.ndla-local/intern",
+    "draft-api" -> "http://draft-api.ndla-local/intern",
+    "image-api" -> "http://image-api.ndla-local/intern",
+    "learningpath-api" -> "http://learningpath-api.ndla-local/intern",
+  )
+
   val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
   val NDLABrightcovePlayerId = prop("NDLA_BRIGHTCOVE_PLAYER_ID")
   val NDLABrightcoveVideoScriptUrl = s"//players.brightcove.net/$NDLABrightcoveAccountId/${NDLABrightcovePlayerId}_default/index.min.js"

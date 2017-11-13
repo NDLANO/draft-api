@@ -34,6 +34,7 @@ object ComponentRegistry
     with AgreementRepository
     with ConceptRepository
     with ElasticClient
+    with ReindexClient
     with ArticleSearchService
     with AgreementSearchService
     with IndexService
@@ -89,6 +90,7 @@ object ComponentRegistry
   lazy val searchConverterService = new SearchConverterService
   lazy val readService = new ReadService
   lazy val writeService = new WriteService
+  lazy val reindexClient = new ReindexClient
 
   lazy val jestClient: NdlaJestClient = JestClientFactory.getClient()
 
