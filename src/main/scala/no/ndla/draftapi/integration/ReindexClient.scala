@@ -29,8 +29,6 @@ trait ReindexClient {
 
     private def reindexImages() = Http(s"${DraftApiProperties.internalApiUrls("image-api")}/index").postForm.execute()
 
-    private def reindexLearningpaths() = Http(s"${DraftApiProperties.internalApiUrls("learningpath-api")}/index").postForm.execute()
-
     def reindexAll() = {
       logger.info("Calling for API's to reindex")
       Future {
@@ -38,7 +36,6 @@ trait ReindexClient {
         reindexAudios()
         reindexDrafts()
         reindexImages()
-        reindexLearningpaths()
       }
     }
   }

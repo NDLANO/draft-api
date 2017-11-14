@@ -46,8 +46,7 @@ object DraftApiProperties extends LazyLogging {
     "article-api" -> "http://article-api.ndla-local/intern",
     "audio-api" -> "http://audio-api.ndla-local/intern",
     "draft-api" -> "http://draft-api.ndla-local/intern",
-    "image-api" -> "http://image-api.ndla-local/intern",
-    "learningpath-api" -> "http://learningpath-api.ndla-local/intern"
+    "image-api" -> "http://image-api.ndla-local/intern"
   )
 
   val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
