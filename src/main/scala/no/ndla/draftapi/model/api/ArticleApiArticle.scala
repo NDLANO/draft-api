@@ -9,7 +9,8 @@ package no.ndla.draftapi.model.api
 
 import java.util.Date
 
-case class ArticleApiArticle(title: Seq[ArticleApiTitle],
+case class ArticleApiArticle(revision: Option[Int],
+                      title: Seq[ArticleApiTitle],
                       content: Seq[ArticleApiContent],
                       copyright: Option[ArticleApiCopyright],
                       tags: Seq[ArticleApiTag],
@@ -21,7 +22,7 @@ case class ArticleApiArticle(title: Seq[ArticleApiTitle],
                       created: Date,
                       updated: Date,
                       updatedBy: String,
-                      articleType: String)
+                      articleType: Option[String])
 case class ArticleApiTitle(title: String, language: String)
 case class ArticleApiContent(content: String, language: String)
 case class ArticleApiCopyright(license: Option[String], origin: Option[String], authors: Seq[ArticleApiAuthor])

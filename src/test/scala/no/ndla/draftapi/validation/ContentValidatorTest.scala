@@ -174,17 +174,4 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     errors.failed.get.asInstanceOf[ValidationException].errors.head.message should equal ("An article must contain at least one title. Perhaps you tried to delete the only title in the article?")
   }
 
-  test("validateUserAbleToSetStatus should return a failure if user does not have write required permissions") {
-    AuthUser.setRoles(List(DraftApiProperties.DraftRoleWithWriteAccess))
-    contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isFailure should be (true)
-
-    AuthUser.setRoles(List(DraftApiProperties.DraftRoleWithPublishAccess))
-    contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isFailure should be (true)
-  }
-
-  test("validateUserAbleToSetStatus should return success if user has all needed permissions") {
-    AuthUser.setRoles(List(DraftApiProperties.DraftRoleWithWriteAccess, DraftApiProperties.DraftRoleWithPublishAccess))
-    contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isSuccess should be (true)
-  }
-
 }

@@ -43,6 +43,21 @@ object TestData {
     supportedLanguages = Seq("nb")
   )
 
+  val sampleApiUpdateArticle = api.UpdatedArticle(
+    1,
+    "nb",
+    Some("tittel"),
+    None,
+    Seq.empty,
+    None,
+    None,
+    None,
+    None,
+    None,
+    Seq.empty,
+    None
+  )
+
   val articleHit1 = """
                       |{
                       |  "id": "4",

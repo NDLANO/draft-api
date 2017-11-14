@@ -8,14 +8,14 @@
 package no.ndla.draftapi.integration
 
 import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
+import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.api.ArticleId
 import no.ndla.draftapi.model.domain.Article
 import no.ndla.network.NdlaClient
 import no.ndla.validation.ValidationMessage
 import org.json4s.native.Serialization.write
-import no.ndla.draftapi.model.api
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 import scalaj.http.Http
 
 case class ArticleApiId(id: Long)

@@ -9,7 +9,6 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.DraftApiProperties.DraftRoleWithWriteAccess
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
@@ -230,9 +229,8 @@ trait DraftController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newArticle)) {
-      authRole.assertHasRole(DraftRoleWithWriteAccess)
-      val newArticle = extract[NewArticle](request.body)
-      writeService.newArticle(newArticle) match {
+      authRole.assertHasRole(authRole.DraftRoleWithWriteAccess)
+      writeService.newArticle(extract[NewArticle](request.body)) match {
         case Success(article) => Created(body=article)
         case Failure(exception) => errorHandler(exception)
       }
@@ -251,7 +249,6 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     put("/:article_id/status", operation(updateArticleStatus)) {
-      authRole.assertHasRole(DraftRoleWithWriteAccess)
       writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body)) match {
         case Success(s) => s
         case Failure(e) => errorHandler(e)
@@ -271,11 +268,7 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
-      authRole.assertHasRole(DraftRoleWithWriteAccess)
-
-      val articleId = long("article_id")
-      val updatedArticle = extract[UpdatedArticle](request.body)
-      writeService.updateArticle(articleId, updatedArticle) match {
+      writeService.updateArticle(long("article_id"), extract[UpdatedArticle](request.body)) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)
       }

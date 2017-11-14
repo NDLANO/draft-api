@@ -8,7 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchResult, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.scalatra.test.scalatest.ScalatraFunSuite
@@ -110,20 +110,10 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("That PATCH /:id returns 403 if no auth-header") {
-    patch("/test/123") {
-      status should equal (403)
-    }
-  }
+  test("That PATCH /:id returns 403 if access denied") {
+    when(writeService.updateArticle(any[Long], any[api.UpdatedArticle])).thenReturn(Failure(new AccessDeniedException("Not today")))
 
-  test("That PATCH /:id returns 403 if auth header does not have expected role") {
-    patch("/test/123", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
-      status should equal (403)
-    }
-  }
-
-  test("That PATCH /:id returns 403 if auth header does not have any roles") {
-    patch("/test/123", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+    patch("/test/123", body=write(TestData.sampleApiUpdateArticle)) {
       status should equal (403)
     }
   }
@@ -169,12 +159,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("PUT /:id/status should return 403 if user does not have the required role") {
-    put("/test/1/status", headers=Map("Authorization" -> authHeaderWithoutAnyRoles)) {
-      status should equal (403)
-    }
-
-    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Failure(new AccessDeniedException("no cookie for you")))
-    put("/test/1/status", body=write(TestData.statusWithAwaitingPublishing), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+    when(writeService.updateArticleStatus(any[Long], any[api.ArticleStatus])).thenReturn(Failure(new AccessDeniedException("Not today")))
+    put("/test/1/status", body=write(api.ArticleStatus(Set(domain.ArticleStatus.DRAFT.toString)))) {
       status should equal (403)
     }
   }

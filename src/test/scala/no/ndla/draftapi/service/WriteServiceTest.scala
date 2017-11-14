@@ -10,6 +10,7 @@ package no.ndla.draftapi.service
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
@@ -115,6 +116,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
+    AuthUser.setRoles(authRole.updateDraftRoles.toList)
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -123,6 +125,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(newTitle), None, Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
+    AuthUser.setRoles(authRole.updateDraftRoles.toList)
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -158,9 +161,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("That updateArticleStatus returns a failure if user is not permitted to set status") {
-    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
-      .thenReturn(Failure(new ValidationException(errors=Seq[ValidationMessage]())))
-
     val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
     service.updateArticleStatus(articleId, status).isFailure should be (true)
     verify(draftRepository, times(0)).update(any[Article])
@@ -168,10 +168,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("That updateArticleStatus returns success if user is permitted to set status") {
-    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
-      .thenAnswer((a: InvocationOnMock) => Success(a.getArgumentAt(0, classOf[Set[ArticleStatus.Value]])))
-
     val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
+    AuthUser.setRoles(authRole.setPublishStatusRoles.toList)
     service.updateArticleStatus(articleId, status).isSuccess should be (true)
     verify(draftRepository, times(1)).update(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])

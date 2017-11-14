@@ -15,7 +15,6 @@ import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{ArticleIndexService, ConceptIndexService, IndexService}
-import no.ndla.draftapi.DraftApiProperties.{ArticleRoleWithPublishAccess, ArticleRoleWithWriteAccess}
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
@@ -82,8 +81,6 @@ trait InternController {
     }
 
     post("/article/:id/publish/?") {
-      authRole.assertHasRoles(Set(ArticleRoleWithWriteAccess, ArticleRoleWithPublishAccess))
-
       writeService.publishArticle(long("id")) match {
         case Success(s) => s
         case Failure(ex) => errorHandler(ex)

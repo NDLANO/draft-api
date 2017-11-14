@@ -220,6 +220,7 @@ trait ConverterService {
 
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
+        revision = article.revision,
         title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
         content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
         copyright = article.copyright.map(c => api.ArticleApiCopyright(c.license, c.origin, c.authors.map(a => api.ArticleApiAuthor(a.`type`, a.name)))),
@@ -232,7 +233,7 @@ trait ConverterService {
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
-        articleType = article.articleType.toString
+        articleType = article.articleType.map(_.toString)
       )
     }
 
