@@ -7,7 +7,8 @@
 
 package no.ndla.draftapi.service
 
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
+import no.ndla.draftapi.model.api.AccessDeniedException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
@@ -173,6 +174,37 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.updateArticleStatus(articleId, status).isSuccess should be (true)
     verify(draftRepository, times(1)).update(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
+  }
+
+  test("publishArticle should return Failure if not permitted to publish to article-api") {
+    AuthUser.setRoles(authRole.setStatusRoles.toList)
+    val res = service.publishArticle(1)
+    res.isFailure should be (true)
+    res.failed.get.isInstanceOf[AccessDeniedException]
+  }
+
+  test("publishArticle should return Failure if article is not ready for publishing") {
+    AuthUser.setRoles(authRole.publishToArticleApiRoles.toList)
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
+
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+
+    val res = service.publishArticle(1)
+    res.isFailure should be (true)
+    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
+  }
+
+  test("publishArticle should return Success if permitted to publish to article-api") {
+    AuthUser.setRoles(authRole.publishToArticleApiRoles.toList)
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
+    val apiArticle = converterService.toArticleApiArticle(article)
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(draftRepository.update(any[Article])).thenReturn(Success(article))
+    when(ArticleApiClient.updateArticle(1, apiArticle)).thenReturn(Success(apiArticle))
+
+    val res = service.publishArticle(1)
+    res.isSuccess should be (true)
+    verify(ArticleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
 }
