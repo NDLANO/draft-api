@@ -42,6 +42,11 @@ trait ArticleApiClient {
       post[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id", article)
     }
 
+    def validateArticle(article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
+      implicit val format = org.json4s.DefaultFormats
+      post[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article)
+    }
+
     private def post[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
       ndlaClient.fetch[A](
         Http(endpointUrl)

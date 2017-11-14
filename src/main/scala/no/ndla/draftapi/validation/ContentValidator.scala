@@ -9,7 +9,11 @@ package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl}
 import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.api.NotFoundException
 import no.ndla.draftapi.model.domain._
+import no.ndla.draftapi.repository.DraftRepository
+import no.ndla.draftapi.service.ConverterService
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import no.ndla.validation.{HtmlRules, TextValidator, ValidationException, ValidationMessage}
@@ -18,7 +22,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ContentValidator {
-  this: Role =>
+  this: Role with DraftRepository with ConverterService with ArticleApiClient =>
   val contentValidator: ContentValidator
   val importValidator: ContentValidator
 
@@ -50,6 +54,16 @@ trait ContentValidator {
         Failure(new ValidationException(errors = validationErrors))
       }
 
+    }
+
+    def validateArticleApiArticle(id: Long): Try[Article] = {
+      draftRepository.withId(id) match {
+        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
+        case Some(art) => ArticleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
+          case Failure(ex) => Failure(ex)
+          case Success(_) => Success(art)
+        }
+      }
     }
 
     private def validateConcept(concept: Concept, allowUnknownLanguage: Boolean): Try[Concept] = {
@@ -167,5 +181,6 @@ trait ContentValidator {
       val languageCodes = get6391CodeFor6392CodeMappings.values.toSeq ++ (if (allowUnknownLanguage) Seq("unknown") else Seq.empty)
       languageCodes.contains(languageCode)
     }
+
   }
 }

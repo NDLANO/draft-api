@@ -14,6 +14,7 @@ import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
+import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
 import org.json4s.{DefaultFormats, Formats}
@@ -23,7 +24,7 @@ import org.scalatra.{Created, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait DraftController {
-  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role =>
+  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role with ContentValidator =>
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -271,6 +272,24 @@ trait DraftController {
       writeService.updateArticle(long("article_id"), extract[UpdatedArticle](request.body)) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)
+      }
+    }
+
+    val validateArticle =
+      (apiOperation[Unit]("validateArticle")
+        summary "Validate an article"
+        notes "Validate an article"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        pathParam[Long]("article_id").description("Id of the article that is to be validated")
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response404, response500))
+
+    put("/:article_id/validate", operation(validateArticle)) {
+      contentValidator.validateArticleApiArticle(long("article_id")) match {
+        case Success(_) => Ok()
+        case Failure(ex) => errorHandler(ex)
       }
     }
 
