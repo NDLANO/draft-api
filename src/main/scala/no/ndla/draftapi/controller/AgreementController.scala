@@ -42,61 +42,6 @@ trait AgreementController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    val getAllAgreements =
-      (apiOperation[AgreementSearchResult]("getAllAgreements")
-        summary "Show all agreements"
-        notes "Shows all agreements. You can search too."
-        parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        queryParam[Option[String]]("query").description("Return only articles with content matching the specified query."),
-        queryParam[Option[String]]("ids").description("Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,)."),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb"),
-        queryParam[Option[String]]("license").description("Return only agreements with provided license."),
-        queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
-        queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page."),
-        queryParam[Option[String]]("sort").description(
-          """The sorting used on results.
-             Default is by -relevance (desc) when querying.
-             When browsing, the default is title (asc).
-             The following are supported: relevance, -relevance, title, -title, lastUpdated, -lastUpdated, id, -id""".stripMargin)
-      )
-        authorizations "oauth2"
-        responseMessages response500)
-
-    val getAgreementById =
-      (apiOperation[Agreement]("getAgreementById")
-        summary "Show agreement with a specified Id"
-        notes "Shows the agreement for the specified id."
-        parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
-      )
-        authorizations "oauth2"
-        responseMessages(response404, response500))
-
-    val newAgreement =
-      (apiOperation[Agreement]("newAgreement")
-        summary "Create a new agreement"
-        notes "Creates a new agreement"
-        parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        bodyParam[NewAgreement]
-      )
-        authorizations "oauth2"
-        responseMessages(response400, response403, response500))
-
-    val updateAgreement =
-      (apiOperation[Agreement]("updateAgreement")
-        summary "Update an existing agreement"
-        notes "Update an existing agreement"
-        parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the agreement that is to be updated"),
-        bodyParam[UpdatedAgreement]
-      )
-        authorizations "oauth2"
-        responseMessages(response400, response403, response404, response500))
-
     private def search(query: Option[String], sort: Option[Sort.Value], license: Option[String], page: Int, pageSize: Int, idList: List[Long]) = {
       val searchResult = query match {
         case Some(q) => agreementSearchService.matchingQuery(
@@ -126,6 +71,27 @@ trait AgreementController {
       )
     }
 
+    val getAllAgreements =
+      (apiOperation[AgreementSearchResult]("getAllAgreements")
+        summary "Show all agreements"
+        notes "Shows all agreements. You can search too."
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        queryParam[Option[String]]("query").description("Return only articles with content matching the specified query."),
+        queryParam[Option[String]]("ids").description("Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,)."),
+        queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb"),
+        queryParam[Option[String]]("license").description("Return only agreements with provided license."),
+        queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
+        queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page."),
+        queryParam[Option[String]]("sort").description(
+          """The sorting used on results.
+             Default is by -relevance (desc) when querying.
+             When browsing, the default is title (asc).
+             The following are supported: relevance, -relevance, title, -title, lastUpdated, -lastUpdated, id, -id""".stripMargin)
+      )
+        authorizations "oauth2"
+        responseMessages response500)
+
     get("/", operation(getAllAgreements)) {
       val query = paramOrNone("query")
       val sort = Sort.valueOf(paramOrDefault("sort", ""))
@@ -137,6 +103,17 @@ trait AgreementController {
       search(query, sort, license, page, pageSize, idList)
     }
 
+    val getAgreementById =
+      (apiOperation[Agreement]("getAgreementById")
+        summary "Show agreement with a specified Id"
+        notes "Shows the agreement for the specified id."
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
+      )
+        authorizations "oauth2"
+        responseMessages(response404, response500))
+
     get("/:agreement_id", operation(getAgreementById)) {
       val agreementId = long("agreement_id")
 
@@ -145,6 +122,17 @@ trait AgreementController {
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
       }
     }
+
+    val newAgreement =
+      (apiOperation[Agreement]("newAgreement")
+        summary "Create a new agreement"
+        notes "Creates a new agreement"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        bodyParam[NewAgreement]
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response500))
 
     post("/", operation(newAgreement)) {
       authRole.assertHasRole(RoleWithWriteAccess)
@@ -156,6 +144,18 @@ trait AgreementController {
         case Failure(exception) => errorHandler(exception)
       }
     }
+
+    val updateAgreement =
+      (apiOperation[Agreement]("updateAgreement")
+        summary "Update an existing agreement"
+        notes "Update an existing agreement"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        pathParam[Long]("article_id").description("Id of the agreement that is to be updated"),
+        bodyParam[UpdatedAgreement]
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response404, response500))
 
     patch("/:agreement_id", operation(updateAgreement)) {
       authRole.assertHasRole(RoleWithWriteAccess)

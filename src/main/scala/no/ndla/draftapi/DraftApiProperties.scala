@@ -69,8 +69,6 @@ object DraftApiProperties extends LazyLogging {
   val IndexBulkSize = 200
   val ElasticSearchIndexMaxResultWindow = 10000
 
-  final val allowedAuthorsStr = "originator,photographer,artist,editorial,writer,scriptwriter,reader,translator,director,illustrator,cowriter,composer,processor,facilitator,editorial,linguistic,idea,compiler,correction,rightsholder,publisher,distributor,supplier"
-
   val CorrelationIdKey = "correlationID"
   val CorrelationIdHeader = "X-Correlation-ID"
 

@@ -16,7 +16,6 @@ import scala.concurrent.Future
 import scalaj.http.Http
 
 trait ReindexClient {
-  this: NdlaClient =>
   val reindexClient: ReindexClient
 
   class ReindexClient extends LazyLogging {
