@@ -102,7 +102,7 @@ trait WriteService {
             metaImageId = if (updatedApiArticle.metaImageId.isDefined) updatedApiArticle.metaImageId else existing.metaImageId,
             updated = clock.now(),
             updatedBy = authUser.id(),
-            articleType = updatedApiArticle.articleType.flatMap(ArticleType.valueOf).orElse(existing.articleType)
+            articleType = updatedApiArticle.articleType.map(ArticleType.valueOfOrError).orElse(existing.articleType)
           )
 
           updateArticle(toUpdate)

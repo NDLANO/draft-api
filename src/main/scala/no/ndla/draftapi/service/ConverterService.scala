@@ -8,20 +8,17 @@
 
 package no.ndla.draftapi.service
 
-import java.util.Map.Entry
-
-import com.google.gson.{JsonElement, JsonObject}
+import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{ArticleApiCopyright, NewAgreement}
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.api.NewAgreement
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
-import no.ndla.network.ApplicationUrl
 import no.ndla.validation._
 
 import scala.collection.JavaConverters._
@@ -63,7 +60,7 @@ trait ConverterService {
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.id(),
-            articleType = newArticle.articleType.flatMap(ArticleType.valueOf)
+            articleType = newArticle.articleType.map(ArticleType.valueOfOrError)
           ))
       }
     }
