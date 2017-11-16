@@ -14,7 +14,7 @@ import com.google.gson.{JsonElement, JsonObject}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.ArticleApiCopyright
+import no.ndla.draftapi.model.api.{ArticleApiCopyright, NewAgreement}
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
@@ -68,6 +68,18 @@ trait ConverterService {
       }
     }
 
+    def toDomainAgreement(newAgreement: NewAgreement): domain.Agreement = {
+      domain.Agreement(
+        id = None,
+        title = newAgreement.title,
+        content = newAgreement.content,
+        copyright = toDomainCopyright(newAgreement.copyright),
+        created = clock.now(),
+        updated = clock.now(),
+        updatedBy = authUser.id()
+      )
+    }
+
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle = domain.ArticleTitle(articleTitle.title, articleTitle.language)
 
     def toDomainContent(articleContent: api.ArticleContent): domain.ArticleContent = {
@@ -97,8 +109,17 @@ trait ConverterService {
 
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
 
-    def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
-      domain.Copyright(copyright.license.map(_.license), copyright.origin, copyright.authors.map(toDomainAuthor))
+   def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
+      domain.Copyright(
+        copyright.license.map(_.license),
+        copyright.origin,
+        copyright.creators.map(toDomainAuthor),
+        copyright.processors.map(toDomainAuthor),
+        copyright.rightsholders.map(toDomainAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo
+      )
     }
 
     def toDomainAuthor(author: api.Author): domain.Author = domain.Author(author.`type`, author.name)
@@ -153,6 +174,18 @@ trait ConverterService {
       )
     }
 
+    def toApiAgreement(agreement: domain.Agreement): api.Agreement = {
+      api.Agreement(
+        id = agreement.id.get,
+        title = agreement.title,
+        content = agreement.content,
+        copyright = toApiCopyright(agreement.copyright),
+        created = agreement.created,
+        updated = agreement.updated,
+        updatedBy = agreement.updatedBy
+      )
+    }
+
     def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
       val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
       if (invalidStatuses.nonEmpty) {
@@ -170,7 +203,16 @@ trait ConverterService {
     def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
-      api.Copyright(copyright.license.map(toApiLicense), copyright.origin, copyright.authors.map(toApiAuthor))
+      api.Copyright(
+        copyright.license.map(toApiLicense),
+        copyright.origin,
+        copyright.creators.map(toApiAuthor),
+        copyright.processors.map(toApiAuthor),
+        copyright.rightsholders.map(toApiAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo
+      )
     }
 
     def toApiLicense(shortLicense: String): api.License = {
@@ -218,12 +260,25 @@ trait ConverterService {
 
     def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent = api.ConceptContent(title.content, title.language)
 
+    def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
+      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
+      api.ArticleApiCopyright(copyright.license,
+        copyright.origin,
+        copyright.creators.map(toArticleApiAuthor),
+        copyright.processors.map(toArticleApiAuthor),
+        copyright.rightsholders.map(toArticleApiAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo
+      )
+    }
+
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
         revision = article.revision,
         title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
         content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
-        copyright = article.copyright.map(c => api.ArticleApiCopyright(c.license, c.origin, c.authors.map(a => api.ArticleApiAuthor(a.`type`, a.name)))),
+        copyright = article.copyright.map(toArticleApiCopyright),
         tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
         requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),

@@ -11,12 +11,13 @@ import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
 import ArticleStatus._
+import no.ndla.draftapi.model.api.NewAgreement
 import org.joda.time.{DateTime, DateTimeZone}
 
 object TestData {
-  private val publicDomainCopyright= Copyright(Some("publicdomain"), Some(""), List.empty)
-  private val byNcSaCopyright = Copyright(Some("by-nc-sa"), Some("Gotham City"), List(Author("Forfatter", "DC Comics")))
-  private val copyrighted = Copyright(Some("copyrighted"), Some("New York"), List(Author("Forfatter", "Clark Kent")))
+  private val publicDomainCopyright= Copyright(Some("publicdomain"), Some(""), List.empty, List(), List(), None, None, None)
+  private val byNcSaCopyright = Copyright(Some("by-nc-sa"), Some("Gotham City"), List(Author("Forfatter", "DC Comics")), List(), List(), None, None, None)
+  private val copyrighted = Copyright(Some("copyrighted"), Some("New York"), List(Author("Forfatter", "Clark Kent")), List(), List(), None, None, None)
   private val today = new DateTime().toDate
 
   private val embedUrl = "http://www.example.org"
@@ -30,7 +31,7 @@ object TestData {
     status=Set(DRAFT.toString),
     title=Some(api.ArticleTitle("title", "nb")),
     content=Some(api.ArticleContent("this is content", "nb")),
-    copyright = Some(api.Copyright(Some(api.License("licence", None, None)), Some("origin"), Seq(api.Author("developer", "Per")))),
+    copyright = Some(api.Copyright(Some(api.License("licence", None, None)), Some("origin"), Seq(api.Author("developer", "Per")), List(), List(), None, None, None)),
     tags = Some(api.ArticleTag(Seq("tag"), "nb")),
     requiredLibraries = Seq(api.RequiredLibrary("JS", "JavaScript", "url")),
     visualElement = None,
@@ -94,7 +95,7 @@ object TestData {
     Set(DRAFT.toString),
     Some(api.ArticleTitle("title", "nb")),
     Some(api.ArticleContent("content", "nb")),
-    Some(api.Copyright(Some(api.License("by", Some("Creative Commons Attribution 2.0 Generic"), Some("https://creativecommons.org/licenses/by/2.0/"))), Some(""), Seq.empty)),
+    Some(api.Copyright(Some(api.License("by", Some("Creative Commons Attribution 2.0 Generic"), Some("https://creativecommons.org/licenses/by/2.0/"))), Some(""), Seq.empty, List(), List(), None, None, None)),
     None,
     Seq.empty,
     None,
@@ -131,7 +132,7 @@ object TestData {
     ArticleStatus.ValueSet(DRAFT),
     Seq(ArticleTitle("title", "nb")),
     Seq(ArticleContent("content", "nb")),
-    Some(Copyright(Some("by"), Some(""), Seq.empty)),
+    Some(Copyright(Some("by"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
     Seq.empty,
     Seq.empty,
@@ -150,7 +151,7 @@ object TestData {
     ArticleStatus.ValueSet(DRAFT),
     Seq(ArticleTitle("test", "en")),
     Seq(ArticleContent("<article><div>test</div></article>", "en")),
-    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty)),
+    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
     Seq.empty,
     Seq.empty,
@@ -172,7 +173,7 @@ object TestData {
     None,
     None,
     None,
-    Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty)),
+    Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
     Some("standard")
   )
@@ -191,7 +192,7 @@ object TestData {
       |<ol><li><h3>Det er ikke lov å gjøre dette.</h3></li><li>Dette er helt ok</li></ol>
       |<ol><li><h4>Det er ikke lov å gjøre dette.</h4></li><li>Dette er helt ok</li></ol>
     """.stripMargin, "en")),
-    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty)),
+    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
     Seq.empty,
     Seq.empty,
@@ -216,7 +217,7 @@ object TestData {
         |<ol><li><h3>Det er ikke lov å gjøre dette.</h3></li><li>Dette er helt ok</li></ol>
         |<ol><li><h4>Det er ikke lov å gjøre dette.</h4></li><li>Dette er helt ok</li></ol>
       """.stripMargin, "en")),
-    Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty)),
+    Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Some(api.ArticleTag(Seq.empty, "en")),
     Seq.empty,
     None,
@@ -238,7 +239,7 @@ object TestData {
     Some(1),
     Seq(ConceptTitle("Tittel for begrep", "nb")),
     Seq(ConceptContent("Innhold for begrep", "nb")),
-    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty)),
+    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate
   )
@@ -247,12 +248,33 @@ object TestData {
     1,
     api.ConceptTitle("Tittel for begrep", "nb"),
     api.ConceptContent("Innhold for begrep", "nb"),
-    Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty)),
+    Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
     Set("nb")
   )
 
+  val sampleApiAgreement = api.Agreement(
+    1,
+    "title",
+    "content",
+    api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq(), List(), List(), None, None, None),
+    DateTime.now().minusDays(4).toDate,
+    DateTime.now().minusDays(2).toDate,
+    "ndalId54321"
+  )
+
+  val sampleDomainAgreement = Agreement(
+    id = Some(1),
+    title = "tittledur",
+    content = "contentur",
+    copyright = byNcSaCopyright,
+    created = DateTime.now().minusDays(4).toDate,
+    updated = DateTime.now().minusDays(2).toDate,
+    updatedBy = "ndalId54321"
+  )
+
+  val newAgreement = NewAgreement("newTitle", "newString", api.Copyright(Some(api.License("by-sa", None, None)), Some(""), List(),List(),List(), None, None, None))
   val statusWithAwaitingPublishing = Set(ArticleStatus.DRAFT, ArticleStatus.QUEUED_FOR_PUBLISHING)
   val statusWithDraft = Set(ArticleStatus.DRAFT)
 

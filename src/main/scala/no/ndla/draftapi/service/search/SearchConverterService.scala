@@ -25,7 +25,6 @@ trait SearchConverterService {
   val searchConverterService: SearchConverterService
 
   class SearchConverterService extends LazyLogging {
-
     def asSearchableArticle(ai: Article): SearchableArticle = {
       SearchableArticle(
         id = ai.id.get,
@@ -36,7 +35,7 @@ trait SearchConverterService {
         tags = SearchableLanguageList(ai.tags.map(tag => LanguageValue(tag.language, tag.tags))),
         lastUpdated = ai.updated,
         license = ai.copyright.flatMap(_.license),
-        authors = ai.copyright.map(_.authors).map(a => a.map(_.name)).toSeq.flatten,
+        authors = ai.copyright.map(copy => copy.creators ++ copy.processors ++ copy.rightsholders).map(a => a.map(_.name)).toSeq.flatten,
         articleType = ai.articleType.map(_.toString)
       )
     }
@@ -101,6 +100,29 @@ trait SearchConverterService {
 
     def getEntrySetSeq(hit: JsonObject, fieldPath: String): Seq[Entry[String, JsonElement]] = {
       hit.get(fieldPath).getAsJsonObject.entrySet.asScala.to[Seq]
+    }
+
+    def asSearchableAgreement(domainModel: Agreement): SearchableAgreement = {
+      SearchableAgreement(
+        id = domainModel.id.get,
+        title = domainModel.title,
+        content = domainModel.content,
+        license = domainModel.copyright.license.get
+      )
+    }
+
+    def getAgreementHits(response: JestSearchResult): Seq[api.AgreementSummary] = {
+      response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray.asScala.map(jsonElem => {
+        hitAsAgreementSummary(jsonElem.asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject])
+      }).toSeq
+    }
+
+    def hitAsAgreementSummary(hit: JsonObject): api.AgreementSummary = {
+      val id = hit.get("id").getAsLong
+      val title = hit.get("title").getAsString
+      val license = hit.get("license").getAsString
+
+      api.AgreementSummary(id,title, license)
     }
 
   }

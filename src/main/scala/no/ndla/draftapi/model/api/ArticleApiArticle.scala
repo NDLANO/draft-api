@@ -25,10 +25,17 @@ case class ArticleApiArticle(revision: Option[Int],
                       articleType: Option[String])
 case class ArticleApiTitle(title: String, language: String)
 case class ArticleApiContent(content: String, language: String)
-case class ArticleApiCopyright(license: Option[String], origin: Option[String], authors: Seq[ArticleApiAuthor])
 case class ArticleApiAuthor(`type`: String, name: String)
 case class ArticleApiTag(tags: Seq[String],  language: String)
 case class ArticleApiRequiredLibrary(mediaType: String, name: String, url: String)
 case class ArticleApiVisualElement(resource: String, language: String)
 case class ArticleApiIntroduction(introduction: String, language: String)
 case class ArticleApiMetaDescription(content: String, language: String)
+case class ArticleApiCopyright(license: Option[String],
+                               origin: Option[String],
+                               creators: Seq[ArticleApiAuthor],
+                               processors: Seq[ArticleApiAuthor],
+                               rightsholders: Seq[ArticleApiAuthor],
+                               agreementId: Option[Long],
+                               validFrom: Option[Date],
+                               validTo: Option[Date])

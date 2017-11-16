@@ -118,32 +118,32 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   }
 
   test("validateArticle throws an exception on an article with an invalid license") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("beerware"), None, Seq())))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("beerware"), None, Seq(), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with a valid license") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq())))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle throws an exception on an article with html in copyright origin") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), Some("<h1>origin</h1>"), Seq())))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), Some("<h1>origin</h1>"), Seq(), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with plain text in copyright origin") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq())))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with plain text in authors field") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(Author("author", "John Doe")))))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(Author("author", "John Doe")), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle throws an exception on an article with html in authors field") {
-    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(Author("author", "<h1>john</h1>")))))
+    val article = TestData.sampleArticleWithByNcSa.copy(copyright=Some(Copyright(Some("by-sa"), None, Seq(Author("author", "<h1>john</h1>")), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
@@ -165,6 +165,26 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   test("Validation should not fail with language=unknown if allowUnknownLanguage is set") {
     val article = TestData.sampleArticleWithByNcSa.copy(title = Seq(ArticleTitle("tittele", "unknown")))
     contentValidator.validateArticle(article, true).isSuccess should be (true)
+  }
+
+  test("Validation should fail if agreement title contains html") {
+    val agreement = TestData.sampleDomainAgreement.copy(title = "<h1>HEY TITLE</h1>")
+    contentValidator.validateAgreement(agreement).isSuccess should be (false)
+  }
+
+  test("Validation should succeed if agreement title contains no html") {
+    val agreement = TestData.sampleDomainAgreement.copy(title = "HEY TITLE")
+    contentValidator.validateAgreement(agreement).isSuccess should be (true)
+  }
+
+  test("Validation should fail if agreement content contains html") {
+    val agreement = TestData.sampleDomainAgreement.copy(content = "<h1>HEY CONTENT</h1>")
+    contentValidator.validateAgreement(agreement).isSuccess should be (false)
+  }
+
+  test("Validation should succeed if agreement content contains no html") {
+    val agreement = TestData.sampleDomainAgreement.copy(content = "HEY CONTENT")
+    contentValidator.validateAgreement(agreement).isSuccess should be(true)
   }
 
   test("validation should fail if article does not contain a title") {

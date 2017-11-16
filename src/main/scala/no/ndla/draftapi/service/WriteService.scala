@@ -12,17 +12,20 @@ import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{AccessDeniedException, Article, ArticleStatusException, NotFoundException}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.DraftRepository
-import no.ndla.draftapi.service.search.ArticleIndexService
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import domain.ArticleStatus._
+
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
   this: DraftRepository
+    with AgreementRepository
     with ConverterService
     with ContentValidator
     with ArticleIndexService
+    with AgreementIndexService
     with Clock
     with User
     with ReadService
@@ -32,6 +35,38 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService {
+
+    def updateAgreement(agreementId: Long, updatedAgreement: api.UpdatedAgreement): Try[api.Agreement] = {
+      agreementRepository.withId(agreementId) match {
+        case None => Failure(NotFoundException(s"Agreement with id $agreementId does not exist"))
+        case Some(existing) =>
+          val toUpdate = existing.copy(
+            title = updatedAgreement.title.getOrElse(existing.title),
+            content = updatedAgreement.content.getOrElse(existing.content),
+            copyright = updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
+            updated = clock.now(),
+            updatedBy = authUser.id()
+          )
+
+          for {
+            _ <- contentValidator.validateAgreement(toUpdate)
+            agreement <- agreementRepository.update(toUpdate)
+            _ <- agreementIndexService.indexDocument(agreement)
+          } yield converterService.toApiAgreement(agreement)
+      }
+    }
+
+    def newAgreement(newAgreement: api.NewAgreement): Try[api.Agreement] = {
+      val domainAgreement = converterService.toDomainAgreement(newAgreement)
+      contentValidator.validateAgreement(domainAgreement) match {
+        case Success(_) =>
+          val agreement = agreementRepository.insert(domainAgreement)
+          agreementIndexService.indexDocument(agreement)
+          Success(converterService.toApiAgreement(agreement))
+        case Failure(exception) => Failure(exception)
+      }
+    }
+
     def newArticle(newArticle: api.NewArticle): Try[Article] = {
       for {
         domainArticle <- converterService.toDomainArticle(newArticle)
@@ -80,7 +115,8 @@ trait WriteService {
       val domainStatus = converterService.toDomainStatus(status) match {
         case Success(st) => st
         case Failure(ex) => return Failure(ex)
-      }
+
+       }
 
       withIdAndAccessGranted(id, authRole.requiredRolesForStatusUpdate(domainStatus, _)) match {
         case Success(ex) => updateArticle(ex.copy(status = domainStatus))
