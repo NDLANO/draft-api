@@ -22,6 +22,7 @@ import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
 import ArticleStatus._
 import Language._
+import no.ndla.draftapi.model.api.NewAgreement
 import no.ndla.validation._
 
 import scala.collection.JavaConverters._
@@ -32,6 +33,12 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
+
+    def getAgreementHits(response: JestSearchResult): Seq[api.AgreementSummary] = {
+      response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray.asScala.map(jsonElem => {
+        hitAsAgreementSummary(jsonElem.asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject])
+      }).toSeq
+    }
 
     def getHits(response: JestSearchResult, language: String): Seq[api.ArticleSummary] = {
       var resultList = Seq[api.ArticleSummary]()
@@ -46,6 +53,14 @@ trait ConverterService {
         }
         case _ => Seq()
       }
+    }
+
+    def hitAsAgreementSummary(hit: JsonObject): api.AgreementSummary = {
+      val id = hit.get("id").getAsLong
+      val title = hit.get("title").getAsString
+      val license = hit.get("license").getAsString
+
+      api.AgreementSummary(id,title, license)
     }
 
     def hitAsArticleSummary(hit: JsonObject, language: String): api.ArticleSummary = {
@@ -106,6 +121,18 @@ trait ConverterService {
       )
     }
 
+    def toDomainAgreement(newAgreement: NewAgreement): domain.Agreement = {
+      domain.Agreement(
+        id = None,
+        title = newAgreement.title,
+        content = newAgreement.content,
+        copyright = toDomainCopyright(newAgreement.copyright),
+        created = clock.now(),
+        updated = clock.now(),
+        updatedBy = authUser.id()
+      )
+    }
+
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle = domain.ArticleTitle(articleTitle.title, articleTitle.language)
 
     def toDomainContent(articleContent: api.ArticleContent): domain.ArticleContent = {
@@ -135,8 +162,17 @@ trait ConverterService {
 
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
 
-    def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
-      domain.Copyright(copyright.license.map(_.license), copyright.origin, copyright.authors.map(toDomainAuthor))
+   def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
+      domain.Copyright(
+        copyright.license.map(_.license),
+        copyright.origin,
+        copyright.creators.map(toDomainAuthor),
+        copyright.processors.map(toDomainAuthor),
+        copyright.rightsholders.map(toDomainAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo
+      )
     }
 
     def toDomainAuthor(author: api.Author): domain.Author = domain.Author(author.`type`, author.name)
@@ -191,6 +227,18 @@ trait ConverterService {
       )
     }
 
+    def toApiAgreement(agreement: domain.Agreement): api.Agreement = {
+      api.Agreement(
+        id = agreement.id.get,
+        title = agreement.title,
+        content = agreement.content,
+        copyright = toApiCopyright(agreement.copyright),
+        created = agreement.created,
+        updated = agreement.updated,
+        updatedBy = agreement.updatedBy
+      )
+    }
+
     def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
       val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
       if (invalidStatuses.nonEmpty) {
@@ -208,7 +256,16 @@ trait ConverterService {
     def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
-      api.Copyright(copyright.license.map(toApiLicense), copyright.origin, copyright.authors.map(toApiAuthor))
+      api.Copyright(
+        copyright.license.map(toApiLicense),
+        copyright.origin,
+        copyright.creators.map(toApiAuthor),
+        copyright.processors.map(toApiAuthor),
+        copyright.rightsholders.map(toApiAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo
+      )
     }
 
     def toApiLicense(shortLicense: String): api.License = {

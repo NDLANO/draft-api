@@ -28,21 +28,30 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   val service = new WriteService()
 
   val articleId = 13
+  val agreementId = 14
   val article: Article = TestData.sampleArticleWithPublicDomain.copy(id = Some(articleId), created = yesterday, updated = yesterday)
+  val agreement: Agreement = TestData.sampleDomainAgreement.copy(id = Some(agreementId))
 
   override def beforeEach() = {
-    Mockito.reset(articleIndexService, draftRepository)
+    Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository)
 
     when(draftRepository.withId(articleId)).thenReturn(Option(article))
+    when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
     when(articleIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) => Try(invocation.getArgumentAt(0, article.getClass)))
+    when(agreementIndexService.indexDocument(any[Agreement])).thenAnswer((invocation: InvocationOnMock) => Try(invocation.getArgumentAt(0, agreement.getClass)))
     when(readService.addUrlsOnEmbedResources(any[Article])).thenAnswer((invocation: InvocationOnMock) => invocation.getArgumentAt(0, article.getClass))
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
+    when(contentValidator.validateAgreement(any[Agreement])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
     when(authUser.id()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
     when(draftRepository.update(any[Article])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
       val arg = invocation.getArgumentAt(0, article.getClass)
       Try(arg.copy(revision = Some(arg.revision.get + 1)))
+    })
+    when(agreementRepository.update(any[Agreement])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
+      val arg = invocation.getArgumentAt(0, agreement.getClass)
+      Try(arg)
     })
   }
 
@@ -54,6 +63,15 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.newArticle(TestData.newArticle).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
+  }
+
+  test("newAgreement should insert a given Agreement") {
+    when(agreementRepository.insert(any[Agreement])(any[DBSession])).thenReturn(agreement)
+    when(contentValidator.validateAgreement(any[Agreement])).thenReturn(Success(agreement))
+
+    service.newAgreement(TestData.newAgreement).get.id.toString should equal(agreement.id.get.toString)
+    verify(agreementRepository, times(1)).insert(any[Agreement])
+    verify(agreementIndexService, times(1)).indexDocument(any[Agreement])
   }
 
   test("That mergeLanguageFields returns original list when updated is empty") {
@@ -109,6 +127,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.mergeLanguageFields(existing, updated) should equal(Seq(desc1, desc3, oppdatertDesc2))
   }
 
+  test("That updateAgreement updates only content properly") {
+    val newContent = "NyContentTest"
+    val updatedApiAgreement = api.UpdatedAgreement(None, Some(newContent), None)
+    val expectedAgreement = agreement.copy(content = newContent, updated = today)
+
+    service.updateAgreement(agreementId, updatedApiAgreement).get should equal(converterService.toApiAgreement(expectedAgreement))
+  }
+
   test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
     val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
@@ -133,7 +159,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedIntro = "introintro"
     val updatedMetaId = "1234"
     val updatedVisualElement = "<embed something>"
-    val updatedCopyright = api.Copyright(Some(api.License("a", Some("b"), None)), Some("c"), Seq(api.Author("Opphavsmann", "Jonas")))
+    val updatedCopyright = api.Copyright(Some(api.License("a", Some("b"), None)), Some("c"), Seq(api.Author("Opphavsmann", "Jonas")), List(), List(), None, None, None)
     val updatedRequiredLib = api.RequiredLibrary("tjup", "tjap", "tjim")
 
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(updatedTitle), Some(updatedContent), updatedTags,
@@ -144,7 +170,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       revision = Some(article.revision.get + 1),
       title = Seq(ArticleTitle(updatedTitle, "en")),
       content = Seq(ArticleContent(updatedContent, "en")),
-      copyright = Some(Copyright(Some("a"), Some("c"), Seq(Author("Opphavsmann", "Jonas")))),
+      copyright = Some(Copyright(Some("a"), Some("c"), Seq(Author("Opphavsmann", "Jonas")), List(), List(), None, None, None)),
       tags = Seq(ArticleTag(Seq("en", "to", "tre"), "en")),
       requiredLibraries = Seq(RequiredLibrary("tjup", "tjap", "tjim")),
       visualElement = Seq(VisualElement(updatedVisualElement, "en")),

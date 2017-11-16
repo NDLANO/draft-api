@@ -42,6 +42,13 @@ object DraftApiProperties extends LazyLogging {
     ResourceType.Audio.toString -> s"$Domain/audio-api/v1/audio"
   )
 
+  val internalApiUrls = Map(
+    "article-api" -> "http://article-api.ndla-local/intern",
+    "audio-api" -> "http://audio-api.ndla-local/intern",
+    "draft-api" -> "http://draft-api.ndla-local/intern",
+    "image-api" -> "http://image-api.ndla-local/intern"
+  )
+
   val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
   val NDLABrightcovePlayerId = prop("NDLA_BRIGHTCOVE_PLAYER_ID")
   val NDLABrightcoveVideoScriptUrl = s"//players.brightcove.net/$NDLABrightcoveAccountId/${NDLABrightcovePlayerId}_default/index.min.js"
@@ -53,7 +60,9 @@ object DraftApiProperties extends LazyLogging {
   val RunWithSignedSearchRequests = propOrElse("RUN_WITH_SIGNED_SEARCH_REQUESTS", "true").toBoolean
   val DraftSearchIndex = propOrElse("SEARCH_INDEX_NAME", "draft-articles")
   val ConceptSearchIndex = propOrElse("CONCEPT_SEARCH_INDEX_NAME", "draft-concepts")
+  val AgreementSearchIndex = propOrElse("AGREEMENT_SEARCH_INDEX_NAME", "draft-agreements")
   val DraftSearchDocument = "article-drafts"
+  val AgreementSearchDocument = "agreement-drafts"
   val ConceptSearchDocument = "concept-drafts"
   val DefaultPageSize = 10
   val MaxPageSize = 100

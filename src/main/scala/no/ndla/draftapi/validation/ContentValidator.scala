@@ -34,6 +34,19 @@ trait ContentValidator {
       content match {
         case concept: Concept => validateConcept(concept, allowUnknownLanguage)
         case article: Article => validateArticle(article, allowUnknownLanguage)
+        case agreement: Agreement => validateAgreement(agreement)
+      }
+    }
+
+    def validateAgreement(agreement: Agreement): Try[Agreement] = {
+      val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
+        NoHtmlValidator.validate("content", agreement.content).toList ++
+        validateAgreementCopyright(agreement.copyright)
+
+      if (validationErrors.isEmpty){
+        Success(agreement)
+      } else {
+        Failure(new ValidationException(errors = validationErrors))
       }
     }
 
@@ -136,9 +149,14 @@ trait ContentValidator {
         validateLanguage("language", content.language, allowUnknownLanguage)
     }
 
+    private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
+      val agreementMessage = copyright.agreementId.map(_ => ValidationMessage("copyright.agreementId", "Agreement copyrights cant contain agreements")).toSeq
+      agreementMessage ++ validateCopyright(copyright)
+    }
+
     private def validateCopyright(copyright: Copyright): Seq[ValidationMessage] = {
       val licenseMessage = copyright.license.map(validateLicense).toSeq.flatten
-      val contributorsMessages = copyright.authors.flatMap(validateAuthor)
+      val contributorsMessages = copyright.creators.flatMap(validateAuthor) ++ copyright.processors.flatMap(validateAuthor) ++ copyright.rightsholders.flatMap(validateAuthor)
       val originMessage = copyright.origin.map(origin => NoHtmlValidator.validate("copyright.origin", origin)).toSeq.flatten
 
       licenseMessage ++ contributorsMessages ++ originMessage

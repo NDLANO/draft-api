@@ -10,6 +10,7 @@ package no.ndla.draftapi.model.domain
 import java.util.Date
 
 import no.ndla.draftapi.DraftApiProperties
+import org.joda.time.DateTime
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
@@ -129,5 +130,39 @@ object Concept extends SQLSyntaxSupport[Concept] {
   val JSonSerializer = FieldSerializer[Concept](
     ignore("id") orElse
       ignore("revision")
+  )
+}
+
+case class Agreement(
+                      id: Option[Long],
+                      title: String,
+                      content: String,
+                      copyright: Copyright,
+                      created: Date,
+                      updated: Date,
+                      updatedBy: String) extends Content
+
+
+object Agreement extends SQLSyntaxSupport[Agreement] {
+  implicit val formats = org.json4s.DefaultFormats
+  override val tableName = "agreementdata"
+  override val schemaName = Some(DraftApiProperties.MetaSchema)
+
+  def apply(lp: SyntaxProvider[Agreement])(rs:WrappedResultSet): Agreement = apply(lp.resultName)(rs)
+  def apply(lp: ResultName[Agreement])(rs: WrappedResultSet): Agreement = {
+    val meta = read[Agreement](rs.string(lp.c("document")))
+    Agreement(
+      Some(rs.long(lp.c("id"))),
+      meta.title,
+      meta.content,
+      meta.copyright,
+      meta.created,
+      meta.updated,
+      meta.updatedBy
+    )
+  }
+
+  val JSonSerializer = FieldSerializer[Agreement](
+    ignore("id")
   )
 }

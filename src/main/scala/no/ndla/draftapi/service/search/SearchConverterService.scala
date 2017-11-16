@@ -17,6 +17,14 @@ trait SearchConverterService {
   val searchConverterService: SearchConverterService
 
   class SearchConverterService extends LazyLogging {
+    def asSearchableAgreement(domainModel: Agreement): SearchableAgreement = {
+      SearchableAgreement(
+        id = domainModel.id.get,
+        title = domainModel.title,
+        content = domainModel.content,
+        license = domainModel.copyright.license.get
+      )
+    }
 
     def asSearchableArticle(ai: Article): SearchableArticle = {
       SearchableArticle(
@@ -28,7 +36,7 @@ trait SearchConverterService {
         tags = SearchableLanguageList(ai.tags.map(tag => LanguageValue(tag.language, tag.tags))),
         lastUpdated = ai.updated,
         license = ai.copyright.flatMap(_.license),
-        authors = ai.copyright.map(_.authors).map(a => a.map(_.name)).toSeq.flatten,
+        authors = ai.copyright.map(copy => copy.creators ++ copy.processors ++ copy.rightsholders).map(a => a.map(_.name)).toSeq.flatten,
         articleType = ai.articleType
       )
     }

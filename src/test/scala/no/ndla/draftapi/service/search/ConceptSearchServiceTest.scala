@@ -27,9 +27,9 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
   override val converterService = new ConverterService
   override val searchConverterService = new SearchConverterService
 
-  val byNcSa = Copyright(Some("by-nc-sa"), Some("Gotham City"), List(Author("Forfatter", "DC Comics")))
-  val publicDomain = Copyright(Some("publicdomain"), Some("Metropolis"), List(Author("Forfatter", "Bruce Wayne")))
-  val copyrighted = Copyright(Some("copyrighted"), Some("New York"), List(Author("Forfatter", "Clark Kent")))
+  val byNcSa = Copyright(Some("by-nc-sa"), Some("Gotham City"), List(Author("Forfatter", "DC Comics")), List(), List(), None, None, None)
+  val publicDomain = Copyright(Some("publicdomain"), Some("Metropolis"), List(Author("Forfatter", "Bruce Wayne")), List(), List(), None, None, None)
+  val copyrighted = Copyright(Some("copyrighted"), Some("New York"), List(Author("Forfatter", "Clark Kent")), List(), List(), None, None, None)
 
   val today = DateTime.now()
 
