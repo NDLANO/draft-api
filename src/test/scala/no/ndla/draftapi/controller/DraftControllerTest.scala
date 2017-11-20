@@ -21,15 +21,13 @@ import scala.util.{Failure, Success}
 
 class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFunSuite {
 
-  val jwtHeader = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
+  val legacyAuthHeaderWithWriteRole = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiZHJhZnRzOndyaXRlIl0sIm5kbGFfaWQiOiJhYmMxMjMifSwibmFtZSI6IkRvbmFsZCBEdWNrIiwiaXNzIjoiaHR0cHM6Ly9zb21lLWRvbWFpbi8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEyMyIsImF1ZCI6ImFiYyIsImV4cCI6MTQ4NjA3MDA2MywiaWF0IjoxNDg2MDM0MDYzfQ.eL4ee3tTIxEObXzd5-TXXmADfsyUao9czrq74cRWPhE"
+  val legacyAuthHeaderWithoutAnyRoles = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOltdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30.kXjaQ9QudcRHTqhfrzKr0Zr4pYISBfJoXWHVBreDyO8"
+  val legacyAuthHeaderWithWrongRole = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsic29tZTpvdGhlciJdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30.JsxMW8y0hCmpuu9tpQr6ZdfcqkOS8hRatFi3cTO_PvY"
 
-  val jwtClaims = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiYXJ0aWNsZXM6d3JpdGUiXSwibmRsYV9pZCI6ImFiYzEyMyJ9LCJuYW1lIjoiRG9uYWxkIER1Y2siLCJpc3MiOiJodHRwczovL3NvbWUtZG9tYWluLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTIzIiwiYXVkIjoiYWJjIiwiZXhwIjoxNDg2MDcwMDYzLCJpYXQiOjE0ODYwMzQwNjN9"
-  val jwtClaimsNoRoles = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOltdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
-  val jwtClaimsWrongRole = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsic29tZTpvdGhlciJdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
-
-  val authHeaderWithWriteRole = s"Bearer $jwtHeader.$jwtClaims.VxqM2bu2UF8IAalibIgdRdmsTDDWKEYpKzHPbCJcFzA"
-  val authHeaderWithoutAnyRoles = s"Bearer $jwtHeader.$jwtClaimsNoRoles.kXjaQ9QudcRHTqhfrzKr0Zr4pYISBfJoXWHVBreDyO8"
-  val authHeaderWithWrongRole = s"Bearer $jwtHeader.$jwtClaimsWrongRole.JsxMW8y0hCmpuu9tpQr6ZdfcqkOS8hRatFi3cTO_PvY"
+  val authHeaderWithWriteRole = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9FSTFNVVU0T0RrNU56TTVNekkyTXpaRE9EazFOMFl3UXpkRE1EUXlPRFZDUXpRM1FUSTBNQSJ9.eyJodHRwczovL25kbGEubm8vY2xpZW50X2lkIjoieHh4eXl5IiwiaXNzIjoiaHR0cHM6Ly9uZGxhLmV1LmF1dGgwLmNvbS8iLCJzdWIiOiJ4eHh5eXlAY2xpZW50cyIsImF1ZCI6Im5kbGFfc3lzdGVtIiwiaWF0IjoxNTEwMzA1NzczLCJleHAiOjE1MTAzOTIxNzMsInNjb3BlIjoiZHJhZnRzOndyaXRlIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.i_wvbN24VZMqOTQPiEqvqKZy23-m-2ZxTligof8n33k3z-BjXqn4bhKTv7sFdQG9Wf9TFx8UzjoOQ6efQgpbRzl8blZ-6jAZOy6xDjDW0dIwE0zWD8riG8l27iQ88fbY_uCyIODyYp2JNbVmWZNJ9crKKevKmhcXvMRUTrcyE9g"
+  val authHeaderWithoutAnyRoles = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9FSTFNVVU0T0RrNU56TTVNekkyTXpaRE9EazFOMFl3UXpkRE1EUXlPRFZDUXpRM1FUSTBNQSJ9.eyJodHRwczovL25kbGEubm8vY2xpZW50X2lkIjoieHh4eXl5IiwiaXNzIjoiaHR0cHM6Ly9uZGxhLmV1LmF1dGgwLmNvbS8iLCJzdWIiOiJ4eHh5eXlAY2xpZW50cyIsImF1ZCI6Im5kbGFfc3lzdGVtIiwiaWF0IjoxNTEwMzA1NzczLCJleHAiOjE1MTAzOTIxNzMsInNjb3BlIjoiIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.fb9eTuBwIlbGDgDKBQ5FVpuSUdgDVBZjCenkOrWLzUByVCcaFhbFU8CVTWWKhKJqt6u-09-99hh86szURLqwl3F5rxSX9PrnbyhI9LsPut_3fr6vezs6592jPJRbdBz3-xLN0XY5HIiJElJD3Wb52obTqJCrMAKLZ5x_GLKGhcY"
+  val authHeaderWithWrongRole = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9FSTFNVVU0T0RrNU56TTVNekkyTXpaRE9EazFOMFl3UXpkRE1EUXlPRFZDUXpRM1FUSTBNQSJ9.eyJodHRwczovL25kbGEubm8vY2xpZW50X2lkIjoieHh4eXl5IiwiaXNzIjoiaHR0cHM6Ly9uZGxhLmV1LmF1dGgwLmNvbS8iLCJzdWIiOiJ4eHh5eXlAY2xpZW50cyIsImF1ZCI6Im5kbGFfc3lzdGVtIiwiaWF0IjoxNTEwMzA1NzczLCJleHAiOjE1MTAzOTIxNzMsInNjb3BlIjoic29tZTpvdGhlciIsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyJ9.Hbmh9KX19nx7yT3rEcP9pyzRO0uQJBRucfqH9QEZtLyXjYj_fAyOhsoicOVEbHSES7rtdiJK43-gijSpWWmGWOkE6Ym7nHGhB_nLdvp_25PDgdKHo-KawZdAyIcJFr5_t3CJ2Z2IPVbrXwUd99vuXEBaV0dMwkT0kDtkwHuS-8E"
 
   implicit val formats = org.json4s.DefaultFormats
   implicit val swagger = new DraftSwagger
@@ -62,6 +60,40 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("/<article_id> should return 400 if the article was not found withId") {
     get(s"/test/one") {
       status should equal(400)
+    }
+  }
+
+  test ("That GET /licenses with filter sat to by only returns creative common licenses") {
+    val creativeCommonlicenses = getLicenses.filter(_.license.startsWith("by")).map(l => License(l.license, Option(l.description), l.url)).toSet
+
+    get("/test/licenses", "filter" -> "by") {
+      status should equal (200)
+      val convertedBody = read[Set[License]](body)
+      convertedBody should equal(creativeCommonlicenses)
+    }
+  }
+
+  test ("That GET /licenses with filter not specified returns all licenses") {
+    val allLicenses = getLicenses.map(l => License(l.license, Option(l.description), l.url)).toSet
+
+    get("/test/licenses") {
+      status should equal (200)
+      val convertedBody = read[Set[License]](body)
+      convertedBody should equal(allLicenses)
+    }
+  }
+
+  test("GET / should use size of id-list as page-size if defined") {
+    val searchMock = mock[SearchResult]
+    val searchResultMock = mock[io.searchbox.core.SearchResult]
+    when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
+      .thenReturn(searchMock)
+    when(searchMock.response).thenReturn(searchResultMock)
+    when(converterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
+
+    get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
+      status should equal (200)
+      verify(articleSearchService, times(1)).all(List(1, 2, 3, 4), Language.DefaultLanguage, None, 1, 4, Sort.ByTitleAsc, ArticleType.all)
     }
   }
 
@@ -133,40 +165,6 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test ("That GET /licenses with filter sat to by only returns creative common licenses") {
-    val creativeCommonlicenses = getLicenses.filter(_.license.startsWith("by")).map(l => License(l.license, Option(l.description), l.url)).toSet
-
-    get("/test/licenses", "filter" -> "by") {
-      status should equal (200)
-      val convertedBody = read[Set[License]](body)
-      convertedBody should equal(creativeCommonlicenses)
-    }
-  }
-
-  test ("That GET /licenses with filter not specified returns all licenses") {
-    val allLicenses = getLicenses.map(l => License(l.license, Option(l.description), l.url)).toSet
-
-    get("/test/licenses") {
-      status should equal (200)
-      val convertedBody = read[Set[License]](body)
-      convertedBody should equal(allLicenses)
-    }
-  }
-
-  test("GET / should use size of id-list as page-size if defined") {
-    val searchMock = mock[SearchResult]
-    val searchResultMock = mock[io.searchbox.core.SearchResult]
-    when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
-      .thenReturn(searchMock)
-    when(searchMock.response).thenReturn(searchResultMock)
-    when(converterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
-
-    get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
-      status should equal (200)
-      verify(articleSearchService, times(1)).all(List(1, 2, 3, 4), Language.DefaultLanguage, None, 1, 4, Sort.ByTitleAsc, ArticleType.all)
-    }
-  }
-
   test("PUT /:id/status should return 403 if user does not have the required role") {
     put("/test/1/status", headers=Map("Authorization" -> authHeaderWithoutAnyRoles)) {
       status should equal (403)
@@ -181,6 +179,93 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("PUT /:id/status should return 200 if user has required permissions") {
     when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Success(TestData.apiArticleV2))
     put("/test/1/status", body=write(TestData.statusWithDraft), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (200)
+    }
+  }
+
+  // Legacy tests. May be removed when the legacy token format in ndla.network v0.24 is removed
+  test("LEGACY - POST / should return 400 if body does not contain all required fields") {
+    post("/test/", invalidArticle, headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
+      status should equal(400)
+    }
+  }
+
+  test("LEGACY - POST / should return 201 on created") {
+    when(writeService.newArticle(any[NewArticle])).thenReturn(Success(TestData.sampleArticleV2))
+    post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
+      status should equal(201)
+    }
+  }
+
+  test("LEGACY - That / returns a validation message if article is invalid") {
+    post("/test", headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
+      status should equal (400)
+    }
+  }
+
+  test("LEGACY - That POST / returns 403 if no auth-header") {
+    post("/test") {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - That POST / returns 403 if auth header does not have expected role") {
+    post("/test", headers = Map("Authorization" -> legacyAuthHeaderWithWrongRole)) {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - That POST / returns 403 if auth header does not have any roles") {
+    post("/test", headers = Map("Authorization" -> legacyAuthHeaderWithoutAnyRoles)) {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - That PATCH /:id returns a validation message if article is invalid") {
+    patch("/test/123", invalidArticle, headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
+      status should equal (400)
+    }
+  }
+
+  test("LEGACY - That PATCH /:id returns 403 if no auth-header") {
+    patch("/test/123") {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - That PATCH /:id returns 403 if auth header does not have expected role") {
+    patch("/test/123", headers = Map("Authorization" -> legacyAuthHeaderWithWrongRole)) {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - That PATCH /:id returns 403 if auth header does not have any roles") {
+    patch("/test/123", headers = Map("Authorization" -> legacyAuthHeaderWithoutAnyRoles)) {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - That PATCH /:id returns 200 on success") {
+    when(writeService.updateArticle(any[Long], any[UpdatedArticle])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
+    patch("/test/123", updateTitleJson, headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
+      status should equal (200)
+    }
+  }
+
+  test("LEGACY - PUT /:id/status should return 403 if user does not have the required role") {
+    put("/test/1/status", headers=Map("Authorization" -> legacyAuthHeaderWithoutAnyRoles)) {
+      status should equal (403)
+    }
+
+    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Failure(new AccessDeniedException("no cookie for you")))
+    put("/test/1/status", body=write(TestData.statusWithAwaitingPublishing), headers=Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
+      status should equal (403)
+    }
+  }
+
+  test("LEGACY - PUT /:id/status should return 200 if user has required permissions") {
+    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Success(TestData.apiArticleV2))
+    put("/test/1/status", body=write(TestData.statusWithDraft), headers=Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
       status should equal (200)
     }
   }

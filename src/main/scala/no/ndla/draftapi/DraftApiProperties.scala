@@ -17,8 +17,8 @@ import scala.util.Properties._
 import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
-  val RoleWithWriteAccess = "articles:write"
-  val RoleWithPublishAccess = "articles:publish"
+  val RoleWithWriteAccess = "drafts:write"
+  val RoleWithPublishAccess = "drafts:publish"
   val SecretsFile = "draft-api.secrets"
 
   val ApplicationPort = propOrElse("APPLICATION_PORT", "80").toInt
