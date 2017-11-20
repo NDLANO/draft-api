@@ -32,7 +32,7 @@ trait WriteService {
             content = updatedAgreement.content.getOrElse(existing.content),
             copyright = updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
             updated = clock.now(),
-            updatedBy = authUser.id()
+            updatedBy = authUser.userOrClientId()
           )
 
           for {
@@ -92,7 +92,7 @@ trait WriteService {
             metaDescription = mergeLanguageFields(existing.metaDescription, updatedApiArticle.metaDescription.map(m => converterService.toDomainMetaDescription(m, lang)).toSeq),
             metaImageId = if (updatedApiArticle.metaImageId.isDefined) updatedApiArticle.metaImageId else existing.metaImageId,
             updated = clock.now(),
-            updatedBy = authUser.id()
+            updatedBy = authUser.userOrClientId()
           )
 
           updateArticle(toUpdate)

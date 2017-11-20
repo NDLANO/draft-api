@@ -10,7 +10,7 @@ package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.DraftApiProperties.RoleWithWriteAccess
-import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{Language, Sort}
@@ -25,7 +25,7 @@ import org.scalatra.{Created, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait AgreementController {
-  this: ReadService with WriteService with AgreementSearchService with ConverterService with ReindexClient with Role =>
+  this: ReadService with WriteService with AgreementSearchService with ConverterService with ReindexClient with Role with User =>
   val agreementController: AgreementController
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -135,6 +135,7 @@ trait AgreementController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newAgreement)) {
+      authUser.assertHasId()
       authRole.assertHasRole(RoleWithWriteAccess)
       val newAgreement = extract[NewAgreement](request.body)
       writeService.newAgreement(newAgreement) match {
@@ -158,6 +159,7 @@ trait AgreementController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:agreement_id", operation(updateAgreement)) {
+      authUser.assertHasId()
       authRole.assertHasRole(RoleWithWriteAccess)
 
       val agreementId = long("agreement_id")

@@ -116,7 +116,7 @@ trait ConverterService {
         metaImageId = newArticle.metaImageId,
         created = clock.now(),
         updated = clock.now(),
-        updatedBy = authUser.id(),
+        updatedBy = authUser.userOrClientId(),
         articleType = newArticle.articleType
       )
     }
@@ -129,7 +129,7 @@ trait ConverterService {
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
-        updatedBy = authUser.id()
+        updatedBy = authUser.userOrClientId()
       )
     }
 
