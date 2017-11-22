@@ -134,7 +134,7 @@ trait AgreementController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newAgreement)) {
-      authRole.assertHasRole(authRole.DraftRoleWithWriteAccess)
+      authRole.assertHasWritePermission()
       val newAgreement = extract[NewAgreement](request.body)
       writeService.newAgreement(newAgreement) match {
         case Success(agreement) =>
@@ -157,7 +157,7 @@ trait AgreementController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:agreement_id", operation(updateAgreement)) {
-      authRole.assertHasRole(authRole.DraftRoleWithWriteAccess)
+      authRole.assertHasWritePermission()
 
       val agreementId = long("agreement_id")
       val updatedAgreement = extract[UpdatedAgreement](request.body)

@@ -19,7 +19,7 @@ import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
-import org.scalatra.{Created, NotFound, Ok}
+import org.scalatra.{Created, NoContent, NotFound, Ok}
 
 import scala.util.{Failure, Success}
 
@@ -230,28 +230,29 @@ trait DraftController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newArticle)) {
-      authRole.assertHasRole(authRole.DraftRoleWithWriteAccess)
+      authRole.assertHasWritePermission()
       writeService.newArticle(extract[NewArticle](request.body)) match {
         case Success(article) => Created(body=article)
         case Failure(exception) => errorHandler(exception)
       }
     }
 
-    val updateArticleStatus =
-      (apiOperation[Article]("updateArticleStatus")
-        summary "Update the status of an existing article"
-        notes "Update the status of an existing article"
+    val queueDraftForPublishing =
+      (apiOperation[Article]("queueDraftForPublishing ")
+        summary "Queue the article for publishing"
+        notes "Queue the article for publishing"
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the article that is to be updated"),
+        pathParam[Long]("article_id").description("Id of the article that is to be published"),
         bodyParam[ArticleStatus]
       )
         authorizations "oauth2"
         responseMessages(response400, response403, response404, response500))
 
-    put("/:article_id/status", operation(updateArticleStatus)) {
-      writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body)) match {
-        case Success(s) => s
+    put("/:article_id/publish", operation(queueDraftForPublishing)) {
+      authRole.assertHasPublishPermission()
+      writeService.queueArticleForPublish(long("article_id")) match {
+        case Success(_) => NoContent()
         case Failure(e) => errorHandler(e)
       }
     }
@@ -269,6 +270,7 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
+      authRole.assertHasWritePermission()
       writeService.updateArticle(long("article_id"), extract[UpdatedArticle](request.body)) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)

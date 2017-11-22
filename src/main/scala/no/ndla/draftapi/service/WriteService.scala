@@ -86,8 +86,8 @@ trait WriteService {
     }
 
     def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle): Try[api.Article] = {
-      withIdAndAccessGranted(articleId, authRole.updateDraftRoles) match {
-        case Success(existing) =>
+      draftRepository.withId(articleId) match {
+        case Some(existing) =>
           val lang = updatedApiArticle.language
           val toUpdate = existing.copy(
             revision = Option(updatedApiArticle.revision),
@@ -107,60 +107,33 @@ trait WriteService {
 
           updateArticle(toUpdate)
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
-        case Failure(ex) => Failure(ex)
+        case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
     }
 
-    def updateArticleStatus(id: Long, status: api.ArticleStatus): Try[api.Article] = {
-      val domainStatus = converterService.toDomainStatus(status) match {
-        case Success(st) => st
-        case Failure(ex) => return Failure(ex)
-
-       }
-
-      withIdAndAccessGranted(id, authRole.requiredRolesForStatusUpdate(domainStatus, _)) match {
-        case Success(ex) => updateArticle(ex.copy(status = domainStatus))
-          .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), Language.DefaultLanguage))
-        case Failure(ex) => Failure(ex)
+    def queueArticleForPublish(id: Long): Try[Long] = {
+      draftRepository.withId(id) match {
+        case Some(a) => draftRepository.update(a.copy(status=a.status ++ Set(QUEUED_FOR_PUBLISHING))).map(_ => id)
+        case None => Failure(NotFoundException(s"The article with id $id does not exist"))
       }
     }
 
     def publishArticle(id: Long): Try[domain.Article] = {
-      withIdAndAccessGranted(id, authRole.publishToArticleApiRoles) match {
-        case Success(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
+      draftRepository.withId(id) match {
+        case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
               updateArticle(article.copy(status=article.status.filter(_ != QUEUED_FOR_PUBLISHING)))
             case Failure(ex) => Failure(ex)
           }
-        case Success(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
-        case Failure(ex) => Failure(ex)
+        case Some(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
+        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
       }
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.isEmpty)
-    }
-
-    private def withIdAndAccessGranted(id: Long, requiredRoles: Set[String]): Try[domain.Article] = {
-      if (!authRole.hasRoles(requiredRoles)) {
-        Failure(new AccessDeniedException("User is missing required role(s) to perform this action"))
-      } else {
-        draftRepository.withId(id) match {
-          case Some(a) => Success(a)
-          case None => Failure(NotFoundException(s"Article with id $id does not exist"))
-        }
-      }
-    }
-
-    private def withIdAndAccessGranted(id: Long, requiredRoles: domain.Article => Set[String]): Try[domain.Article] = {
-      draftRepository.withId(id) match {
-        case Some(a) if !authRole.hasRoles(requiredRoles(a)) =>
-          Failure(new AccessDeniedException("User is missing required role(s) to perform this action"))
-        case Some(a) => Success(a)
-        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
-      }
     }
 
   }

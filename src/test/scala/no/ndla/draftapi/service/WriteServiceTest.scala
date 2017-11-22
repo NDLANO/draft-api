@@ -143,7 +143,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
-    AuthUser.setRoles(authRole.updateDraftRoles.toList)
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -152,7 +151,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(newTitle), None, Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
-    AuthUser.setRoles(authRole.updateDraftRoles.toList)
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -187,30 +185,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("That updateArticleStatus returns a failure if user is not permitted to set status") {
-    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
-    service.updateArticleStatus(articleId, status).isFailure should be (true)
-    verify(draftRepository, times(0)).update(any[Article])
-    verify(articleIndexService, times(0)).indexDocument(any[Article])
-  }
-
-  test("That updateArticleStatus returns success if user is permitted to set status") {
-    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
-    AuthUser.setRoles(authRole.setPublishStatusRoles.toList)
-    service.updateArticleStatus(articleId, status).isSuccess should be (true)
-    verify(draftRepository, times(1)).update(any[Article])
-    verify(articleIndexService, times(1)).indexDocument(any[Article])
-  }
-
-  test("publishArticle should return Failure if not permitted to publish to article-api") {
-    AuthUser.setRoles(authRole.setStatusRoles.toList)
-    val res = service.publishArticle(1)
-    res.isFailure should be (true)
-    res.failed.get.isInstanceOf[AccessDeniedException]
-  }
-
   test("publishArticle should return Failure if article is not ready for publishing") {
-    AuthUser.setRoles(authRole.publishToArticleApiRoles.toList)
     val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
 
     when(draftRepository.withId(any[Long])).thenReturn(Some(article))
@@ -221,7 +196,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("publishArticle should return Success if permitted to publish to article-api") {
-    AuthUser.setRoles(authRole.publishToArticleApiRoles.toList)
     val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
     val apiArticle = converterService.toArticleApiArticle(article)
     when(draftRepository.withId(any[Long])).thenReturn(Some(article))

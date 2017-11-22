@@ -17,33 +17,19 @@ trait Role {
 
   class AuthRole {
     val DraftRoleWithWriteAccess = "drafts:write"
-    val DraftRoleWithPublishAccess = "drafts:publish"
-    val ArticleRoleWithWriteAccess = "articles:write"
+    val DraftRoleWithPublishAccess = "drafts:set_to_publish"
     val ArticleRoleWithPublishAccess = "articles:publish"
-
-    def assertHasRole(role: String): Unit = {
-      if (!AuthUser.hasRole(role))
-        throw new AccessDeniedException("User is missing required role to perform this operation")
-    }
 
     def hasRoles(roles: Set[String]): Boolean = roles.map(AuthUser.hasRole).forall(identity)
 
-    def assertHasRoles(roles: Set[String]): Unit = {
-      if (!hasRoles(roles))
+    def assertHasRoles(roles: String*): Unit = {
+      if (!hasRoles(roles.toSet))
         throw new AccessDeniedException("user is missing required role(s) to perform this operation")
     }
 
-    def requiredRolesForStatusUpdate(statusToSet: Set[ArticleStatus.Value], article: domain.Article): Set[String] = {
-      if (statusToSet.contains(ArticleStatus.QUEUED_FOR_PUBLISHING) || article.status.contains(ArticleStatus.QUEUED_FOR_PUBLISHING))
-        authRole.setPublishStatusRoles
-      else
-        authRole.updateDraftRoles
-    }
-
-    val updateDraftRoles: Set[String] = Set(DraftRoleWithWriteAccess)
-    val setStatusRoles: Set[String] = Set(DraftRoleWithWriteAccess)
-    val setPublishStatusRoles: Set[String] = setStatusRoles ++ Set(DraftRoleWithPublishAccess)
-    val publishToArticleApiRoles: Set[String] = setPublishStatusRoles ++ Set(ArticleRoleWithWriteAccess, ArticleRoleWithPublishAccess)
+    def assertHasWritePermission(): Unit = assertHasRoles(DraftRoleWithWriteAccess)
+    def assertHasPublishPermission(): Unit = assertHasRoles(DraftRoleWithWriteAccess, DraftRoleWithPublishAccess)
+    def assertHasArticleApiPublishPermission(): Unit = assertHasRoles(DraftRoleWithWriteAccess, DraftRoleWithPublishAccess, ArticleRoleWithPublishAccess)
   }
 
 }
