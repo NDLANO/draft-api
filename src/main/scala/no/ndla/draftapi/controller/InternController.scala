@@ -23,7 +23,13 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 trait InternController {
-  this: ReadService with ConverterService with DraftRepository with IndexService with ArticleIndexService with ConceptIndexService =>
+  this: ReadService
+    with WriteService
+    with ConverterService
+    with DraftRepository
+    with IndexService
+    with ArticleIndexService
+    with ConceptIndexService =>
   val internController: InternController
 
   class InternController extends NdlaController {
@@ -70,6 +76,14 @@ trait InternController {
       val lang = paramOrDefault("language", Language.AllLanguages)
 
       readService.getArticlesByPage(pageNo, pageSize, lang)
+    }
+
+    post("/empty_article") {
+      throw new NotImplementedError()
+    }
+
+    post("/empty_concept") {
+      throw new NotImplementedError()
     }
 
   }

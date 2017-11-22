@@ -16,7 +16,7 @@ import io.searchbox.core.{SearchResult => JestSearchResult}
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
+import no.ndla.draftapi.model.domain.{ArticleStatus, Language, LanguageField}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.ApplicationUrl
@@ -300,8 +300,8 @@ trait ConverterService {
 
       api.Concept(
         concept.id.get,
-        title,
-        content,
+        Some(title),
+        Some(content),
         concept.copyright.map(toApiCopyright),
         concept.created,
         concept.updated,
@@ -312,6 +312,35 @@ trait ConverterService {
     def toApiConceptTitle(title: domain.ConceptTitle): api.ConceptTitle = api.ConceptTitle(title.title, title.language)
 
     def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent = api.ConceptContent(title.content, title.language)
+
+    def toDomainConcept(concept: api.NewConcept): domain.Concept = {
+      domain.Concept(
+        None,
+        Seq(domain.ConceptTitle(concept.title, concept.language)),
+        concept.content.map(content => Seq(domain.ConceptContent(content, concept.language))).getOrElse(Seq.empty),
+        concept.copyright.map(toDomainCopyright),
+        clock.now(),
+        clock.now()
+      )
+    }
+
+    def toDomainConcept(toMergeInto: domain.Concept, updateConcept: api.UpdatedConcept): domain.Concept = {
+      val domainTitle = updateConcept.title.map(t => domain.ConceptTitle(t, updateConcept.language)).toSeq
+      val domainContent = updateConcept.content.map(c => domain.ConceptContent(c, updateConcept.language)).toSeq
+
+      toMergeInto.copy(
+        title=mergeLanguageFields(toMergeInto.title, domainTitle),
+        content=mergeLanguageFields(toMergeInto.content, domainContent),
+        copyright=updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+        created=toMergeInto.created,
+        updated=clock.now(),
+      )
+    }
+
+    private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
+      val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
+      (toKeep ++ updated).filterNot(_.isEmpty)
+    }
 
   }
 }

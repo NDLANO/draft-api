@@ -8,17 +8,27 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Article, ArticleStatus, NotFoundException}
+import no.ndla.draftapi.model.api.{Article, ArticleStatus, NewConcept, NotFoundException}
 import no.ndla.draftapi.model.domain.{LanguageField, _}
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
-import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
+import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
-  this: DraftRepository with AgreementRepository with ConverterService with ContentValidator with ArticleIndexService with AgreementIndexService with Clock with User with ReadService =>
+  this: DraftRepository
+    with ConceptRepository
+    with AgreementRepository
+    with ConverterService
+    with ContentValidator
+    with ArticleIndexService
+    with AgreementIndexService
+    with ConceptIndexService
+    with Clock
+    with User
+    with ReadService =>
   val writeService: WriteService
 
   class WriteService {
@@ -117,6 +127,29 @@ trait WriteService {
       }
 
       article.map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), Language.DefaultLanguage))
+    }
+
+    // TODO: skille på import validator og vanlig validator. for konsepter og artikler
+    def newConcept(newConcept: NewConcept, externalId: String): Try[api.Concept] = {
+      val concept = converterService.toDomainConcept(newConcept)
+      for {
+        _ <- importValidator.validate(concept)
+        persistedConcept <- Try(conceptRepository.insertWithExternalId(concept, externalId))
+        _ <- conceptIndexService.indexDocument(concept)
+      } yield converterService.toApiConcept(persistedConcept, newConcept.language)
+    }
+
+    def updateConcept(id: Long, updateConcept: api.UpdatedConcept): Try[api.Concept] = {
+      conceptRepository.withId(id) match {
+        case None => Failure(NotFoundException(s"Concept with id $id does not exist"))
+        case Some(concept) =>
+          val domainConcept = converterService.toDomainConcept(concept, updateConcept)
+          for {
+            _ <- importValidator.validate(domainConcept)
+            persistedConcept <- conceptRepository.update(domainConcept, id)
+            _ <- conceptIndexService.indexDocument(concept)
+          } yield converterService.toApiConcept(persistedConcept, updateConcept.language)
+      }
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {

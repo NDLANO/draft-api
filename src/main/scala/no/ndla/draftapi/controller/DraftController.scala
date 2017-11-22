@@ -188,7 +188,7 @@ trait DraftController {
     }
 
     val getInternalIdByExternalId =
-      (apiOperation[ArticleId]("getInternalIdByExternalId")
+      (apiOperation[ContentId]("getInternalIdByExternalId")
         summary "Get internal id of article for a specified ndla_node_id"
         notes "Get internal id of article for a specified ndla_node_id"
         parameters(
@@ -200,7 +200,7 @@ trait DraftController {
 
     get("/external_id/:ndla_node_id", operation(getInternalIdByExternalId)) {
       val externalId = long("ndla_node_id")
-      readService.getInternalIdByExternalId(externalId) match {
+      readService.getInternalArticleIdByExternalId(externalId) match {
         case Some(id) => id
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
       }
