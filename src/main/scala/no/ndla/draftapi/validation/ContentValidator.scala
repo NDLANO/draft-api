@@ -7,22 +7,22 @@
 
 package no.ndla.draftapi.validation
 
-import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl, RoleWithPublishAccess, RoleWithWriteAccess}
-import no.ndla.draftapi.model.domain
-import domain.ArticleStatus._
+import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl}
 import no.ndla.draftapi.auth.Role
-import no.ndla.draftapi.model.api.AccessDeniedException
+import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.api.NotFoundException
+import no.ndla.draftapi.model.domain._
+import no.ndla.draftapi.repository.DraftRepository
+import no.ndla.draftapi.service.ConverterService
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
-import no.ndla.network.AuthUser
 import no.ndla.validation.{HtmlRules, TextValidator, ValidationException, ValidationMessage}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ContentValidator {
-  this: Role =>
+  this: Role with DraftRepository with ConverterService with ArticleApiClient =>
   val contentValidator: ContentValidator
   val importValidator: ContentValidator
 
@@ -59,8 +59,7 @@ trait ContentValidator {
         validateTags(article.tags, allowUnknownLanguage) ++
         article.requiredLibraries.flatMap(validateRequiredLibrary) ++
         article.metaImageId.flatMap(validateMetaImageId) ++
-        article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage)) ++
-        article.articleType.map(validateArticleType).toSeq.flatten
+        article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {
         Success(article)
@@ -70,15 +69,14 @@ trait ContentValidator {
 
     }
 
-    def validateUserAbleToSetStatus(status: Set[domain.ArticleStatus.Value]): Try[Set[domain.ArticleStatus.Value]] = {
-      def fail(message: String) = Failure(new AccessDeniedException(message))
-
-      if (!AuthUser.hasRole(RoleWithWriteAccess))
-        fail("You lack the required roles to statuses")
-      else if (status.contains(QUEUED_FOR_PUBLISHING) && !AuthUser.hasRole(RoleWithPublishAccess))
-        fail(s"You lack the required role to set the status $QUEUED_FOR_PUBLISHING")
-      else
-        Success(status)
+    def validateArticleApiArticle(id: Long): Try[Article] = {
+      draftRepository.withId(id) match {
+        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
+        case Some(art) => ArticleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
+          case Failure(ex) => Failure(ex)
+          case Success(_) => Success(art)
+        }
+      }
     }
 
     private def validateConcept(concept: Concept, allowUnknownLanguage: Boolean): Try[Concept] = {
@@ -89,13 +87,6 @@ trait ContentValidator {
         Success(concept)
       } else {
         Failure(new ValidationException(errors = validationErrors))
-      }
-    }
-
-    private def validateArticleType(articleType: String): Seq[ValidationMessage] = {
-      ArticleType.valueOf(articleType) match {
-        case None => Seq(ValidationMessage("articleType", s"$articleType is not a valid article type. Valid options are ${ArticleType.all.mkString(",")}"))
-        case _ => Seq.empty
       }
     }
 
@@ -208,5 +199,6 @@ trait ContentValidator {
       val languageCodes = get6391CodeFor6392CodeMappings.values.toSeq ++ (if (allowUnknownLanguage) Seq("unknown") else Seq.empty)
       languageCodes.contains(languageCode)
     }
+
   }
 }

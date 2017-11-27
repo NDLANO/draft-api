@@ -12,6 +12,8 @@ import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{Attributes, ResourceType}
 import org.mockito.Mockito._
 
+import scala.util.Success
+
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   val service = new ConverterService
@@ -36,7 +38,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val expectedVisualElement = s"""<embed ${Attributes.DataResource}="${ResourceType.Image}">"""
     val apiArticle = TestData.newArticle.copy(content=Some(content), visualElement=Some(visualElement))
 
-    val result = service.toDomainArticle(apiArticle)
+    when(ArticleApiClient.allocateArticleId).thenReturn(Success(1: Long))
+
+    val Success(result) = service.toDomainArticle(apiArticle)
     result.content.head.content should equal (expectedContent)
     result.visualElement.head.resource should equal (expectedVisualElement)
   }

@@ -7,9 +7,11 @@
 
 package no.ndla.draftapi.service
 
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
+import no.ndla.draftapi.model.api.AccessDeniedException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
@@ -59,6 +61,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
+    when(ArticleApiClient.allocateArticleId).thenReturn(Success(1: Long))
 
     service.newArticle(TestData.newArticle).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
@@ -182,24 +185,26 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("That updateArticleStatus returns a failure if user is not permitted to set status") {
-    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
-      .thenReturn(Failure(new ValidationException(errors=Seq[ValidationMessage]())))
+  test("publishArticle should return Failure if article is not ready for publishing") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
 
-    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
-    service.updateArticleStatus(articleId, status).isFailure should be (true)
-    verify(draftRepository, times(0)).update(any[Article])
-    verify(articleIndexService, times(0)).indexDocument(any[Article])
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+
+    val res = service.publishArticle(1)
+    res.isFailure should be (true)
+    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
-  test("That updateArticleStatus returns success if user is permitted to set status") {
-    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
-      .thenAnswer((a: InvocationOnMock) => Success(a.getArgumentAt(0, classOf[Set[ArticleStatus.Value]])))
+  test("publishArticle should return Success if permitted to publish to article-api") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
+    val apiArticle = converterService.toArticleApiArticle(article)
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(draftRepository.update(any[Article])).thenReturn(Success(article))
+    when(ArticleApiClient.updateArticle(1, apiArticle)).thenReturn(Success(apiArticle))
 
-    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
-    service.updateArticleStatus(articleId, status).isSuccess should be (true)
-    verify(draftRepository, times(1)).update(any[Article])
-    verify(articleIndexService, times(1)).indexDocument(any[Article])
+    val res = service.publishArticle(1)
+    res.isSuccess should be (true)
+    verify(ArticleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
 }

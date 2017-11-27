@@ -71,7 +71,6 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     agreementIndexService.indexDocument(agreement10)
 
     blockUntil(() => {
-      println(s"num docs: ${agreementSearchService.countDocuments}")
       agreementSearchService.countDocuments == 10
     })
   }
@@ -98,7 +97,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That all returns all documents ordered by id ascending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdAsc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(9)
     hits(0).id should be(2)
     hits(1).id should be(3)
@@ -113,7 +112,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That all returns all documents ordered by id descending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdDesc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(9)
     hits.head.id should be (10)
     hits.last.id should be (2)
@@ -121,7 +120,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That all returns all documents ordered by title ascending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleAsc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(9)
     hits(0).id should be(2)
     hits(1).id should be(10)
@@ -136,7 +135,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That all returns all documents ordered by title descending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleDesc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(9)
     hits(0).id should be(5)
     hits(1).id should be(3)
@@ -151,7 +150,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That paging returns only hits on current page and not more than page-size") {
     val page1 = agreementSearchService.all(List(), None, 1, 2, Sort.ByTitleAsc)
-    val hits1 = converterService.getAgreementHits(page1.response)
+    val hits1 = searchConverterService.getAgreementHits(page1.response)
     page1.totalCount should be(9)
     page1.page should be(1)
     hits1.size should be(2)
@@ -159,7 +158,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     hits1.last.id should be(10)
 
     val page2 = agreementSearchService.all(List(), None, 2, 2, Sort.ByTitleAsc)
-    val hits2 = converterService.getAgreementHits(page2.response)
+    val hits2 = searchConverterService.getAgreementHits(page2.response)
     page2.totalCount should be(9)
     page2.page should be(2)
     hits2.size should be(2)
@@ -169,14 +168,14 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That search combined with filter by id only returns documents matching the query with one of the given ids") {
     val results = agreementSearchService.matchingQuery("Du", List(10), None, 1, 10, Sort.ByRelevanceDesc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(1)
     hits.head.id should be(10)
   }
 
   test("That search matches title") {
     val results = agreementSearchService.matchingQuery("Ugler", List(), None, 1, 10, Sort.ByTitleAsc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(1)
     hits.head.id should be(3)
   }
@@ -188,32 +187,32 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
   test("That search returns the only one with license specified as copyrighted") {
     val results = agreementSearchService.all(List(), Some("copyrighted"), 1, 10, Sort.ByTitleAsc)
-    val hits = converterService.getAgreementHits(results.response)
+    val hits = searchConverterService.getAgreementHits(results.response)
     results.totalCount should be(1)
     hits.head.id should be(11)
   }
 
   test("Searching with logical AND only returns results with all terms") {
     val search1 = agreementSearchService.matchingQuery("aper + du", List(), None, 1, 10, Sort.ByIdAsc)
-    val hits1 = converterService.getAgreementHits(search1.response)
+    val hits1 = searchConverterService.getAgreementHits(search1.response)
     hits1.map(_.id) should equal (Seq(2, 7, 8, 9, 10))
 
     val search2 = agreementSearchService.matchingQuery("lurerier + dersom", List(), None, 1, 10, Sort.ByIdAsc)
-    val hits2 = converterService.getAgreementHits(search2.response)
+    val hits2 = searchConverterService.getAgreementHits(search2.response)
     hits2.map(_.id) should equal (Seq(8))
 
     val search3 = agreementSearchService.matchingQuery("tyv + stjeler - Lurerier", List(), None, 1, 10, Sort.ByIdAsc)
-    val hits3 = converterService.getAgreementHits(search3.response)
+    val hits3 = searchConverterService.getAgreementHits(search3.response)
     hits3.map(_.id) should equal (Seq(4, 7, 8))
 
     val search4 = agreementSearchService.matchingQuery("aper -slemme", List(), None, 1, 10, Sort.ByIdAsc)
-    val hits4 = converterService.getAgreementHits(search4.response)
+    val hits4 = searchConverterService.getAgreementHits(search4.response)
     hits4.map(_.id) should equal (Seq(2))
   }
 
   test("search in content should be ranked lower than introduction and title") {
     val search = agreementSearchService.matchingQuery("tyven", List(), None, 1, 10, Sort.ByRelevanceDesc)
-    val hits = converterService.getAgreementHits(search.response)
+    val hits = searchConverterService.getAgreementHits(search.response)
     hits.map(_.id) should equal (Seq(4, 7))
   }
 

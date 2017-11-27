@@ -8,87 +8,27 @@
 
 package no.ndla.draftapi.service
 
-import java.util.Map.Entry
-
-import com.google.gson.{JsonElement, JsonObject}
+import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
-import io.searchbox.core.{SearchResult => JestSearchResult}
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
+import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.api.NewAgreement
+import no.ndla.draftapi.model.domain.ArticleStatus._
+import no.ndla.draftapi.model.domain.Language._
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
-import no.ndla.network.ApplicationUrl
-import ArticleStatus._
-import Language._
-import no.ndla.draftapi.model.api.NewAgreement
 import no.ndla.validation._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
-  this: Clock with DraftRepository with User =>
+  this: Clock with DraftRepository with User with ArticleApiClient =>
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
-
-    def getAgreementHits(response: JestSearchResult): Seq[api.AgreementSummary] = {
-      response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray.asScala.map(jsonElem => {
-        hitAsAgreementSummary(jsonElem.asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject])
-      }).toSeq
-    }
-
-    def getHits(response: JestSearchResult, language: String): Seq[api.ArticleSummary] = {
-      var resultList = Seq[api.ArticleSummary]()
-      response.getTotal match {
-        case count: Integer if count > 0 => {
-          val resultArray = response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray
-          val iterator = resultArray.iterator()
-          while (iterator.hasNext) {
-            resultList = resultList :+ hitAsArticleSummary(iterator.next().asInstanceOf[JsonObject].get("_source").asInstanceOf[JsonObject], language)
-          }
-          resultList
-        }
-        case _ => Seq()
-      }
-    }
-
-    def hitAsAgreementSummary(hit: JsonObject): api.AgreementSummary = {
-      val id = hit.get("id").getAsLong
-      val title = hit.get("title").getAsString
-      val license = hit.get("license").getAsString
-
-      api.AgreementSummary(id,title, license)
-    }
-
-    def hitAsArticleSummary(hit: JsonObject, language: String): api.ArticleSummary = {
-      val titles = getEntrySetSeq(hit, "title").map(entr => domain.ArticleTitle(entr.getValue.getAsString, entr.getKey))
-      val introductions = getEntrySetSeq(hit, "introduction").map(entr => domain.ArticleIntroduction(entr.getValue.getAsString, entr.getKey))
-      val visualElements = getEntrySetSeq(hit, "visualElement").map(entr => domain.VisualElement(entr.getValue.getAsString, entr.getKey))
-
-      val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
-
-      val title = findByLanguageOrBestEffort(titles, language).map(toApiArticleTitle).getOrElse(api.ArticleTitle("", DefaultLanguage))
-      val visualElement = findByLanguageOrBestEffort(visualElements, language).map(toApiVisualElement)
-      val introduction = findByLanguageOrBestEffort(introductions, language).map(toApiArticleIntroduction)
-
-      api.ArticleSummary(
-        hit.get("id").getAsLong,
-        title,
-        visualElement,
-        introduction,
-        ApplicationUrl.get + hit.get("id").getAsString,
-        hit.get("license").getAsString,
-        hit.get("articleType").getAsString,
-        supportedLanguages
-      )
-    }
-
-    def getEntrySetSeq(hit: JsonObject, fieldPath: String): Seq[Entry[String, JsonElement]] = {
-      hit.get(fieldPath).getAsJsonObject.entrySet.asScala.to[Seq]
-    }
 
     def getValueByFieldAndLanguage(hit: JsonObject, fieldPath: String, searchLanguage: String): String = {
       hit.get(fieldPath).getAsJsonObject.entrySet.asScala.to[Seq].find(entr => entr.getKey == searchLanguage) match {
@@ -97,28 +37,32 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(newArticle: api.NewArticle): domain.Article = {
-      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
-      val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
+    def toDomainArticle(newArticle: api.NewArticle): Try[domain.Article] = {
+      ArticleApiClient.allocateArticleId match {
+        case Failure(ex) => Failure(ex)
+        case Success(id) =>
+          val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
+          val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
 
-      domain.Article(
-        id = None,
-        revision = None,
-        ArticleStatus.ValueSet(CREATED),
-        title = domainTitles,
-        content = domainContent,
-        copyright = newArticle.copyright.map(toDomainCopyright),
-        tags = toDomainTag(newArticle.tags, newArticle.language),
-        requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
-        visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-        introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-        metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-        metaImageId = newArticle.metaImageId,
-        created = clock.now(),
-        updated = clock.now(),
-        updatedBy = authUser.id(),
-        articleType = newArticle.articleType
-      )
+          Success(domain.Article(
+            id = Some(id),
+            revision = None,
+            ArticleStatus.ValueSet(CREATED),
+            title = domainTitles,
+            content = domainContent,
+            copyright = newArticle.copyright.map(toDomainCopyright),
+            tags = toDomainTag(newArticle.tags, newArticle.language),
+            requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
+            visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
+            introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
+            metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
+            metaImageId = newArticle.metaImageId,
+            created = clock.now(),
+            updated = clock.now(),
+            updatedBy = authUser.id(),
+            articleType = newArticle.articleType.map(ArticleType.valueOfOrError)
+          ))
+      }
     }
 
     def toDomainAgreement(newAgreement: NewAgreement): domain.Agreement = {
@@ -222,7 +166,7 @@ trait ConverterService {
         article.created,
         article.updated,
         article.updatedBy,
-        article.articleType,
+        article.articleType.map(_.toString),
         supportedLanguages
       )
     }
@@ -312,6 +256,38 @@ trait ConverterService {
     def toApiConceptTitle(title: domain.ConceptTitle): api.ConceptTitle = api.ConceptTitle(title.title, title.language)
 
     def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent = api.ConceptContent(title.content, title.language)
+
+    def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
+      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
+      api.ArticleApiCopyright(copyright.license,
+        copyright.origin,
+        copyright.creators.map(toArticleApiAuthor),
+        copyright.processors.map(toArticleApiAuthor),
+        copyright.rightsholders.map(toArticleApiAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo
+      )
+    }
+
+    def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
+      api.ArticleApiArticle(
+        revision = article.revision,
+        title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
+        content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
+        copyright = article.copyright.map(toArticleApiCopyright),
+        tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
+        requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
+        visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
+        introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
+        metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
+        metaImageId = article.metaImageId,
+        created = article.created,
+        updated = article.updated,
+        updatedBy = article.updatedBy,
+        articleType = article.articleType.map(_.toString)
+      )
+    }
 
   }
 }

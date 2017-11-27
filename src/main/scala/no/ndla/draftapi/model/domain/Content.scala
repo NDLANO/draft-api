@@ -39,11 +39,11 @@ case class Article(id: Option[Long],
                    created: Date,
                    updated: Date,
                    updatedBy: String,
-                   articleType: Option[String]) extends Content
+                   articleType: Option[ArticleType.Value]) extends Content
 
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus)
+  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(ArticleType)
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 

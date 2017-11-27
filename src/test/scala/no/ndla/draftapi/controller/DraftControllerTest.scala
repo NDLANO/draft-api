@@ -8,13 +8,14 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchResult, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.scalatra.test.scalatest.ScalatraFunSuite
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import no.ndla.mapping.License.getLicenses
+import no.ndla.network.AuthUser
 import org.json4s.native.Serialization.{read, write}
 
 import scala.util.{Failure, Success}
@@ -23,10 +24,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   val jwtHeader = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
 
-  val jwtClaims = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiYXJ0aWNsZXM6d3JpdGUiXSwibmRsYV9pZCI6ImFiYzEyMyJ9LCJuYW1lIjoiRG9uYWxkIER1Y2siLCJpc3MiOiJodHRwczovL3NvbWUtZG9tYWluLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTIzIiwiYXVkIjoiYWJjIiwiZXhwIjoxNDg2MDcwMDYzLCJpYXQiOjE0ODYwMzQwNjN9"
+  val jwtClaims = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiZHJhZnRzOndyaXRlIl0sIm5kbGFfaWQiOiJhYmMxMjMifSwibmFtZSI6IkRvbmFsZCBEdWNrIiwiaXNzIjoiaHR0cHM6Ly9zb21lLWRvbWFpbi8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEyMyIsImF1ZCI6ImFiYyIsImV4cCI6MTQ4NjA3MDA2MywiaWF0IjoxNDg2MDM0MDYzfQ"
+  val jwtClainsAllRoles = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsiYXJ0aWNsZXM6cHVibGlzaCIsImRyYWZ0czp3cml0ZSIsImRyYWZ0czpzZXRfdG9fcHVibGlzaCJdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
   val jwtClaimsNoRoles = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOltdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
   val jwtClaimsWrongRole = "eyJhcHBfbWV0YWRhdGEiOnsicm9sZXMiOlsic29tZTpvdGhlciJdLCJuZGxhX2lkIjoiYWJjMTIzIn0sIm5hbWUiOiJEb25hbGQgRHVjayIsImlzcyI6Imh0dHBzOi8vc29tZS1kb21haW4vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMjMiLCJhdWQiOiJhYmMiLCJleHAiOjE0ODYwNzAwNjMsImlhdCI6MTQ4NjAzNDA2M30"
 
+  val authHeadWithAllRoles = s"Bearer $jwtHeader.$jwtClainsAllRoles.PXApIH0rT2YlGDNZfvNdSDJyDu6_HC5sQ99UXM1TBdc"
   val authHeaderWithWriteRole = s"Bearer $jwtHeader.$jwtClaims.VxqM2bu2UF8IAalibIgdRdmsTDDWKEYpKzHPbCJcFzA"
   val authHeaderWithoutAnyRoles = s"Bearer $jwtHeader.$jwtClaimsNoRoles.kXjaQ9QudcRHTqhfrzKr0Zr4pYISBfJoXWHVBreDyO8"
   val authHeaderWithWrongRole = s"Bearer $jwtHeader.$jwtClaimsWrongRole.JsxMW8y0hCmpuu9tpQr6ZdfcqkOS8hRatFi3cTO_PvY"
@@ -108,20 +111,10 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("That PATCH /:id returns 403 if no auth-header") {
-    patch("/test/123") {
-      status should equal (403)
-    }
-  }
+  test("That PATCH /:id returns 403 if access denied") {
+    when(writeService.updateArticle(any[Long], any[api.UpdatedArticle])).thenReturn(Failure(new AccessDeniedException("Not today")))
 
-  test("That PATCH /:id returns 403 if auth header does not have expected role") {
-    patch("/test/123", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
-      status should equal (403)
-    }
-  }
-
-  test("That PATCH /:id returns 403 if auth header does not have any roles") {
-    patch("/test/123", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+    patch("/test/123", body=write(TestData.sampleApiUpdateArticle)) {
       status should equal (403)
     }
   }
@@ -154,12 +147,11 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("GET / should use size of id-list as page-size if defined") {
-    val searchMock = mock[SearchResult]
+    val searchMock = mock[api.SearchResult]
     val searchResultMock = mock[io.searchbox.core.SearchResult]
     when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
       .thenReturn(searchMock)
-    when(searchMock.response).thenReturn(searchResultMock)
-    when(converterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
+    when(searchConverterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal (200)
@@ -167,21 +159,17 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("PUT /:id/status should return 403 if user does not have the required role") {
-    put("/test/1/status", headers=Map("Authorization" -> authHeaderWithoutAnyRoles)) {
-      status should equal (403)
-    }
-
-    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Failure(new AccessDeniedException("no cookie for you")))
-    put("/test/1/status", body=write(TestData.statusWithAwaitingPublishing), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("PUT /:id/publish should return 403 if user does not have the required role") {
+    when(writeService.queueArticleForPublish(any[Long])).thenReturn(Failure(new AccessDeniedException("Not today")))
+    put("/test/1/publish") {
       status should equal (403)
     }
   }
 
-  test("PUT /:id/status should return 200 if user has required permissions") {
-    when(writeService.updateArticleStatus(any[Long], any[ArticleStatus])).thenReturn(Success(TestData.apiArticleV2))
-    put("/test/1/status", body=write(TestData.statusWithDraft), headers=Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (200)
+  test("PUT /:id/publish should return 204 if user has required permissions") {
+    when(writeService.queueArticleForPublish(any[Long])).thenReturn(Success(1: Long))
+    put("/test/1/publish", headers=Map("Authorization" -> authHeadWithAllRoles)) {
+      status should equal (204)
     }
   }
 
