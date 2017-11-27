@@ -38,7 +38,7 @@ trait AgreementSearchService {
     override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
 
     override def hitToApiModel(hit: JsonObject, language: String): api.AgreementSummary = {
-      converterService.hitAsAgreementSummary(hit)
+      searchConverterService.hitAsAgreementSummary(hit)
     }
 
     def all(withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {

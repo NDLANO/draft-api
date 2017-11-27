@@ -148,7 +148,7 @@ trait ConceptController {
         responseMessages(response404, response500))
 
     post("/", operation(newConcept)) {
-      authRole.assertHasRole(DraftApiProperties.RoleWithWriteAccess)
+      authRole.assertHasWritePermission()
       val nid = params("externalId")
       writeService.newConcept(extract[NewConcept](request.body), nid) match {
         case Success(c) => c
@@ -170,7 +170,7 @@ trait ConceptController {
         responseMessages(response404, response500))
 
     patch("/:id", operation(updateConcept)) {
-      authRole.assertHasRole(DraftApiProperties.RoleWithWriteAccess)
+      authRole.assertHasWritePermission()
       writeService.updateConcept(long("id"), extract[UpdatedConcept](request.body)) match {
         case Success(c) => c
         case Failure(ex) => errorHandler(ex)

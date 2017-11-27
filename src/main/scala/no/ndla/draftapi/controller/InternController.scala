@@ -10,6 +10,7 @@ package no.ndla.draftapi.controller
 
 import java.util.concurrent.TimeUnit
 
+import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
@@ -29,7 +30,8 @@ trait InternController {
     with DraftRepository
     with IndexService
     with ArticleIndexService
-    with ConceptIndexService =>
+    with ConceptIndexService
+    with Role =>
   val internController: InternController
 
   class InternController extends NdlaController {
@@ -76,6 +78,14 @@ trait InternController {
       val lang = paramOrDefault("language", Language.AllLanguages)
 
       readService.getArticlesByPage(pageNo, pageSize, lang)
+    }
+
+    post("/article/:id/publish/?") {
+      authRole.assertHasPublishPermission()
+      writeService.publishArticle(long("id")) match {
+        case Success(s) => s
+        case Failure(ex) => errorHandler(ex)
+      }
     }
 
     post("/empty_article") {

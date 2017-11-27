@@ -49,7 +49,8 @@ trait TestEnvironment
     with ContentValidator
     with Clock
     with User
-    with Role {
+    with Role
+    with ArticleApiClient {
   val articleSearchService = mock[ArticleSearchService]
   val articleIndexService = mock[ArticleIndexService]
   val conceptSearchService = mock[ConceptSearchService]
@@ -84,4 +85,6 @@ trait TestEnvironment
   val clock = mock[SystemClock]
   val authUser = mock[AuthUser]
   val authRole = new AuthRole
+
+  val ArticleApiClient = mock[ArticleApiClient]
 }
