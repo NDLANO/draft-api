@@ -11,6 +11,8 @@ package no.ndla.draftapi.controller
 import java.util.concurrent.TimeUnit
 
 import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.api.{ContentId, NewArticle}
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
@@ -83,7 +85,7 @@ trait InternController {
     post("/article/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishArticle(long("id")) match {
-        case Success(s) => s
+        case Success(s) => s.id.map(ContentId)
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -91,17 +93,26 @@ trait InternController {
     post("/concept/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishConcept(long("id")) match {
-        case Success(s) => s
+        case Success(s) => s.id.map(ContentId)
         case Failure(ex) => errorHandler(ex)
       }
     }
 
     post("/empty_article") {
-      throw new NotImplementedError()
+      val externalId = params("external-id")
+      val externalSubjectIds = paramAsListOfString("external-subject-id")
+      writeService.newEmptyArticle(externalId, externalSubjectIds) match {
+        case Success(id) => id
+        case Failure(ex) => errorHandler(ex)
+      }
     }
 
     post("/empty_concept") {
-      throw new NotImplementedError()
+      val externalId = params("external-id")
+      writeService.newEmptyConcept(externalId) match {
+        case Success(id) => id
+        case Failure(ex) => errorHandler(ex)
+      }
     }
 
   }

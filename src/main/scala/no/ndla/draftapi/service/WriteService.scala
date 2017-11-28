@@ -89,24 +89,10 @@ trait WriteService {
     def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) =>
-          val lang = updatedApiArticle.language
-          val toUpdate = existing.copy(
-            revision = Option(updatedApiArticle.revision),
-            title = mergeLanguageFields(existing.title, updatedApiArticle.title.toSeq.map(t => converterService.toDomainTitle(api.ArticleTitle(t, lang)))),
-            content = mergeLanguageFields(existing.content, updatedApiArticle.content.toSeq.map(c => converterService.toDomainContent(api.ArticleContent(c, lang)))),
-            copyright = updatedApiArticle.copyright.map(converterService.toDomainCopyright).orElse(existing.copyright),
-            tags = mergeLanguageFields(existing.tags, converterService.toDomainTag(updatedApiArticle.tags, lang)),
-            requiredLibraries = updatedApiArticle.requiredLibraries.map(converterService.toDomainRequiredLibraries),
-            visualElement = mergeLanguageFields(existing.visualElement, updatedApiArticle.visualElement.map(c => converterService.toDomainVisualElement(c, lang)).toSeq),
-            introduction = mergeLanguageFields(existing.introduction, updatedApiArticle.introduction.map(i => converterService.toDomainIntroduction(i, lang)).toSeq),
-            metaDescription = mergeLanguageFields(existing.metaDescription, updatedApiArticle.metaDescription.map(m => converterService.toDomainMetaDescription(m, lang)).toSeq),
-            metaImageId = if (updatedApiArticle.metaImageId.isDefined) updatedApiArticle.metaImageId else existing.metaImageId,
-            updated = clock.now(),
-            updatedBy = authUser.id(),
-            articleType = updatedApiArticle.articleType.map(ArticleType.valueOfOrError).orElse(existing.articleType)
-          )
-
-          updateArticle(toUpdate)
+          updateArticle(converterService.toDomainArticle(existing, updatedApiArticle))
+            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
+        case None if draftRepository.exists(articleId) =>
+          updateArticle(converterService.toDomainArticle(articleId, updatedApiArticle))
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
@@ -127,8 +113,10 @@ trait WriteService {
               updateArticle(article.copy(status=article.status.filter(_ != QUEUED_FOR_PUBLISHING)))
             case Failure(ex) => Failure(ex)
           }
-        case Some(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
-        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
+        case Some(_) =>
+          Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
+        case None =>
+          Failure(NotFoundException(s"Article with id $id does not exist"))
       }
     }
 
@@ -139,14 +127,13 @@ trait WriteService {
             case Success(_) => Success(concept)
             case Failure(ex) => Failure(ex)
           }
-        case Some(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
       }
     }
 
     def newConcept(newConcept: NewConcept, externalId: String): Try[api.Concept] = {
-      val concept = converterService.toDomainConcept(newConcept)
       for {
+        concept <- converterService.toDomainConcept(newConcept)
         _ <- importValidator.validate(concept)
         persistedConcept <- Try(conceptRepository.insertWithExternalId(concept, externalId))
         _ <- conceptIndexService.indexDocument(concept)
@@ -169,6 +156,16 @@ trait WriteService {
     private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.isEmpty)
+    }
+
+    def newEmptyArticle(externalId: String, externalSubjectIds: Seq[String]): Try[Long] = {
+      ArticleApiClient.allocateArticleId(Some(externalId), externalSubjectIds)
+        .flatMap(id => draftRepository.newEmptyArticle(id, externalId, externalSubjectIds))
+    }
+
+    def newEmptyConcept(externalId: String): Try[Long] = {
+      ArticleApiClient.allocateConceptId(Some(externalId))
+        .flatMap(id => conceptRepository.newEmptyConcept(id, externalId))
     }
 
   }

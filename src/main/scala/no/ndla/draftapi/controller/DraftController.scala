@@ -159,7 +159,7 @@ trait DraftController {
     }
 
     val getArticleById =
-      (apiOperation[List[Article]]("getArticleById")
+      (apiOperation[Article]("getArticleById")
         summary "Show article with a specified Id"
         notes "Shows the article for the specified id."
         parameters(
@@ -251,8 +251,9 @@ trait DraftController {
 
     put("/:article_id/publish", operation(queueDraftForPublishing)) {
       authRole.assertHasPublishPermission()
-      writeService.queueArticleForPublish(long("article_id")) match {
-        case Success(_) => NoContent()
+      val id = long("article_id")
+      writeService.queueArticleForPublish(id) match {
+        case Success(_) => ContentId(id)
         case Failure(e) => errorHandler(e)
       }
     }
