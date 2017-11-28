@@ -292,6 +292,16 @@ trait ConverterService {
       )
     }
 
+    def toArticleApiConcept(article: domain.Concept): api.ArticleApiConcept = {
+      api.ArticleApiConcept(
+        title = article.title.map(t => api.ArticleApiConceptTitle(t.title, t.language)),
+        content = article.content.map(c => api.ArticleApiConceptContent(c.content, c.language)),
+        copyright = article.copyright.map(toArticleApiCopyright),
+        created = article.created,
+        updated = article.updated
+      )
+    }
+
     def toDomainConcept(concept: api.NewConcept): domain.Concept = {
       domain.Concept(
         None,
@@ -312,7 +322,7 @@ trait ConverterService {
         content=mergeLanguageFields(toMergeInto.content, domainContent),
         copyright=updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
         created=toMergeInto.created,
-        updated=clock.now(),
+        updated=clock.now()
       )
     }
 

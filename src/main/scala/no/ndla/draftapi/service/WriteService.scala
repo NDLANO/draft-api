@@ -132,6 +132,18 @@ trait WriteService {
       }
     }
 
+    def publishConcept(id: Long): Try[domain.Concept] = {
+      conceptRepository.withId(id) match {
+        case Some(concept) =>
+          ArticleApiClient.updateConcept(id, converterService.toArticleApiConcept(concept)) match {
+            case Success(_) => Success(concept)
+            case Failure(ex) => Failure(ex)
+          }
+        case Some(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
+        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
+      }
+    }
+
     def newConcept(newConcept: NewConcept, externalId: String): Try[api.Concept] = {
       val concept = converterService.toDomainConcept(newConcept)
       for {

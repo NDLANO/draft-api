@@ -88,6 +88,14 @@ trait InternController {
       }
     }
 
+    post("/concept/:id/publish/?") {
+      authRole.assertHasPublishPermission()
+      writeService.publishConcept(long("id")) match {
+        case Success(s) => s
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
     post("/empty_article") {
       throw new NotImplementedError()
     }

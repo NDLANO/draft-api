@@ -9,7 +9,7 @@ package no.ndla.draftapi.integration
 
 import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.ArticleId
+import no.ndla.draftapi.model.api.{Concept, ContentId}
 import no.ndla.draftapi.model.domain.Article
 import no.ndla.network.NdlaClient
 import no.ndla.validation.ValidationMessage
@@ -29,12 +29,17 @@ trait ArticleApiClient {
 
     def allocateArticleId: Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
-      post[ArticleId, String](s"$InternalEndpoint/id/article/allocate", "").map(_.id)
+      post[ContentId, String](s"$InternalEndpoint/id/article/allocate", "").map(_.id)
     }
 
     def getValidationErrors(article: Article): Try[Set[ValidationMessage]] = {
       implicit val formats = Article.formats
       post[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
+    }
+
+    def updateConcept(id: Long, concept: api.ArticleApiConcept): Try[api.ArticleApiConcept] = {
+      implicit val format = org.json4s.DefaultFormats
+      post[api.ArticleApiConcept, api.ArticleApiConcept](s"$InternalEndpoint/concept/$id", concept)
     }
 
     def updateArticle(id: Long, article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
