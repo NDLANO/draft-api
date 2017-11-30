@@ -9,12 +9,11 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.DraftApiProperties.RoleWithWriteAccess
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{Language, Sort}
-import no.ndla.draftapi.service.search.AgreementSearchService
+import no.ndla.draftapi.service.search.{AgreementSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
@@ -25,7 +24,7 @@ import org.scalatra.{Created, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait AgreementController {
-  this: ReadService with WriteService with AgreementSearchService with ConverterService with ReindexClient with Role with User =>
+  this: ReadService with WriteService with AgreementSearchService with ConverterService with SearchConverterService with ReindexClient with Role with User =>
   val agreementController: AgreementController
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -61,7 +60,7 @@ trait AgreementController {
         )
       }
 
-      val hitResult = converterService.getAgreementHits(searchResult.response)
+      val hitResult = searchConverterService.getAgreementHits(searchResult.response)
       AgreementSearchResult(
         searchResult.totalCount,
         searchResult.page,
@@ -136,7 +135,7 @@ trait AgreementController {
 
     post("/", operation(newAgreement)) {
       authUser.assertHasId()
-      authRole.assertHasRole(RoleWithWriteAccess)
+      authRole.assertHasWritePermission()
       val newAgreement = extract[NewAgreement](request.body)
       writeService.newAgreement(newAgreement) match {
         case Success(agreement) =>
@@ -160,7 +159,7 @@ trait AgreementController {
 
     patch("/:agreement_id", operation(updateAgreement)) {
       authUser.assertHasId()
-      authRole.assertHasRole(RoleWithWriteAccess)
+      authRole.assertHasWritePermission()
 
       val agreementId = long("agreement_id")
       val updatedAgreement = extract[UpdatedAgreement](request.body)
