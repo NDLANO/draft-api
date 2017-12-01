@@ -11,7 +11,7 @@ package no.ndla.draftapi.controller
 import java.util.concurrent.TimeUnit
 
 import no.ndla.draftapi.auth.Role
-import no.ndla.draftapi.model.domain.Language
+import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{ArticleIndexService, ConceptIndexService, IndexService}
@@ -21,7 +21,7 @@ import org.scalatra.{InternalServerError, NotFound, Ok}
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait InternController {
   this: ReadService
@@ -83,6 +83,13 @@ trait InternController {
     post("/article/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishArticle(long("id")) match {
+        case Success(s) => s
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    get("/articles/?") {
+      readService.articlesWithStatus(paramOrDefault("status", ArticleStatus.QUEUED_FOR_PUBLISHING.toString)) match {
         case Success(s) => s
         case Failure(ex) => errorHandler(ex)
       }

@@ -77,7 +77,7 @@ object Article extends SQLSyntaxSupport[Article] {
 }
 
 object ArticleStatus extends Enumeration {
-  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH = Value
+  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH, PUBLISHED = Value
 
   def valueOfOrError(s: String): Try[ArticleStatus.Value] =
     valueOf(s) match {
@@ -133,14 +133,13 @@ object Concept extends SQLSyntaxSupport[Concept] {
   )
 }
 
-case class Agreement(
-                      id: Option[Long],
-                      title: String,
-                      content: String,
-                      copyright: Copyright,
-                      created: Date,
-                      updated: Date,
-                      updatedBy: String) extends Content
+case class Agreement(id: Option[Long],
+                     title: String,
+                     content: String,
+                     copyright: Copyright,
+                     created: Date,
+                     updated: Date,
+                     updatedBy: String) extends Content
 
 
 object Agreement extends SQLSyntaxSupport[Agreement] {

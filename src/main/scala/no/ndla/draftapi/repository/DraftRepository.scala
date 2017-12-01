@@ -61,6 +61,9 @@ trait DraftRepository {
     def withId(articleId: Long): Option[Article] =
       articleWhere(sqls"ar.id=${articleId.toInt}")
 
+    def withStatus(status: ArticleStatus.Value): Seq[Article] =
+      articlesWhere(sqls"(ar.document->>'status')::jsonb ?? ${status.toString}")
+
     def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {
       sql"select id from ${Article.table} where external_id=${externalId}"
         .map(rs => rs.long("id")).single.apply()
@@ -132,7 +135,7 @@ trait DraftRepository {
 
     private def articlesWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Seq[Article] = {
       val ar = Article.syntax("ar")
-      sql"select ${ar.result.*} from ${Article.as(ar)} where $whereClause".map(Article(ar)).list.apply()
+      sql"select ${ar.result.*} from ${Article.as(ar)} where document is not NULL and $whereClause".map(Article(ar)).list.apply()
     }
 
   }
