@@ -98,11 +98,6 @@ trait ReadService {
     def agreementWithId(id: Long): Option[api.Agreement] =
       agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))
 
-    def articlesWithStatus(status: String): Try[Seq[Long]] = {
-      domain.ArticleStatus.valueOfOrError(status)
-        .map(draftRepository.withStatus)
-        .map(_.map(_.id.get))
-    }
-
+    def articlesWithStatus(status: domain.ArticleStatus.Value): Seq[Long] = draftRepository.withStatus(status).map(_.id.get)
   }
 }

@@ -27,6 +27,7 @@ object Error {
   val RESOURCE_OUTDATED = "RESOURCE_OUTDATED"
   val ACCESS_DENIED = "ACCESS DENIED"
   val WINDOW_TOO_LARGE = "RESULT_WINDOW_TOO_LARGE"
+  val PUBLISH = "PUBLISH"
 
   val VALIDATION_DESCRIPTION = "Validation Error"
   val GENERIC_DESCRIPTION = s"Ooops. Something we didn't anticipate occured. We have logged the error, and will look into it. But feel free to contact ${DraftApiProperties.ContactEmail} if the error persists."
@@ -40,6 +41,7 @@ object Error {
 
 case class NotFoundException(message: String) extends RuntimeException(message)
 case class ImportException(message: String) extends RuntimeException(message)
+case class ArticlePublishException(message: String) extends RuntimeException(message)
 
 class ArticleStatusException(message: String) extends RuntimeException(message)
 class AccessDeniedException(message: String) extends RuntimeException(message)

@@ -11,6 +11,7 @@ package no.ndla.draftapi.controller
 import java.util.concurrent.TimeUnit
 
 import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.model.api.ArticlePublishException
 import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
@@ -80,20 +81,19 @@ trait InternController {
       readService.getArticlesByPage(pageNo, pageSize, lang)
     }
 
+    post("/articles/publish/?") {
+      authRole.assertHasPublishPermission()
+      writeService.publishArticles()
+    }
+
     post("/article/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishArticle(long("id")) match {
-        case Success(s) => s
-        case Failure(ex) => errorHandler(ex)
+        case Right(s) => s
+        case Left(fail) => errorHandler(ArticlePublishException(fail.message))
       }
     }
 
-    get("/articles/?") {
-      readService.articlesWithStatus(paramOrDefault("status", ArticleStatus.QUEUED_FOR_PUBLISHING.toString)) match {
-        case Success(s) => s
-        case Failure(ex) => errorHandler(ex)
-      }
-    }
 
   }
 }
