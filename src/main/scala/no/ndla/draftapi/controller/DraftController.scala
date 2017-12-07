@@ -9,7 +9,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.ArticleSearchService
@@ -24,7 +24,7 @@ import org.scalatra.{Created, NoContent, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait DraftController {
-  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role with ContentValidator =>
+  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role with User with ContentValidator =>
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -230,6 +230,7 @@ trait DraftController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newArticle)) {
+      authUser.assertHasId()
       authRole.assertHasWritePermission()
       writeService.newArticle(extract[NewArticle](request.body)) match {
         case Success(article) => Created(body=article)
@@ -271,6 +272,7 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
+      authUser.assertHasId()
       authRole.assertHasWritePermission()
       writeService.updateArticle(long("article_id"), extract[UpdatedArticle](request.body)) match {
         case Success(article) => Ok(body=article)

@@ -46,7 +46,7 @@ trait WriteService {
             content = updatedAgreement.content.getOrElse(existing.content),
             copyright = updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
             updated = clock.now(),
-            updatedBy = authUser.id()
+            updatedBy = authUser.userOrClientId()
           )
 
           for {

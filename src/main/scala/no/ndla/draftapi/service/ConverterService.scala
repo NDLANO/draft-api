@@ -63,7 +63,7 @@ trait ConverterService {
             metaImageId = newArticle.metaImageId,
             created = clock.now(),
             updated = clock.now(),
-            updatedBy = authUser.id(),
+            updatedBy = authUser.userOrClientId(),
             articleType = newArticle.articleType.map(ArticleType.valueOfOrError)
           ))
       }
@@ -77,7 +77,7 @@ trait ConverterService {
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
-        updatedBy = authUser.id()
+        updatedBy = authUser.userOrClientId()
       )
     }
 
@@ -338,7 +338,7 @@ trait ConverterService {
         metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => converterService.toDomainMetaDescription(m, lang)).toSeq),
         metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
         updated = clock.now(),
-        updatedBy = authUser.id(),
+        updatedBy = authUser.userOrClientId(),
         articleType = article.articleType.map(ArticleType.valueOfOrError).orElse(toMergeInto.articleType)
       )
     }
@@ -360,7 +360,7 @@ trait ConverterService {
         metaImageId = article.metaImageId,
         created = clock.now(),
         updated = clock.now(),
-        authUser.id(),
+        authUser.userOrClientId(),
         articleType = article.articleType.map(ArticleType.valueOfOrError)
       )
     }
