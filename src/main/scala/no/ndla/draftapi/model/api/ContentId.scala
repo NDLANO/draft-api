@@ -12,4 +12,4 @@ import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 import scala.annotation.meta.field
 
 @ApiModel(description = "Id for a single Article")
-case class ArticleId(@(ApiModelProperty@field)(description = "The unique id of the article") id: Long)
+case class ContentId(@(ApiModelProperty@field)(description = "The unique id of the article") id: Long)

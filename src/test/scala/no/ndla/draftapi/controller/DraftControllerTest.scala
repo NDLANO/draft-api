@@ -167,7 +167,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("PUT /:id/publish should return 204 if user has required permissions") {
     when(writeService.queueArticleForPublish(any[Long])).thenReturn(Success(1: Long))
     put("/test/1/publish", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
-      status should equal (204)
+      status should equal (200)
     }
   }
 
@@ -250,7 +250,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("LEGACY - PUT /:id/publish should return 204 if user has required permissions") {
     when(writeService.queueArticleForPublish(any[Long])).thenReturn(Success(1: Long))
     put("/test/1/publish", headers=Map("Authorization" -> legacyAuthHeaderWithAllRoles)) {
-      status should equal (204)
+      status should equal (200)
     }
   }
 

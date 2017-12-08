@@ -48,14 +48,38 @@ trait ConceptRepository {
       }
     }
 
+    def newEmptyConcept(id: Long, externalId: String)(implicit session: DBSession = AutoSession): Try[Long] = {
+      Try(sql"insert into ${Concept.table} (id, external_id) values (${id}, ${externalId})".update.apply) match {
+        case Success(_) =>
+          logger.info(s"Inserted new empty article: $id")
+          Success(id)
+        case Failure(ex) => Failure(ex)
+      }
+    }
+
+    def update(concept: Concept, id: Long)(implicit session: DBSession = AutoSession): Try[Concept] = {
+      val dataObject = new PGobject()
+      dataObject.setType("jsonb")
+      dataObject.setValue(write(concept))
+
+      Try(sql"update ${Concept.table} set document=${dataObject} where id=${id}".updateAndReturnGeneratedKey.apply) match {
+        case Success(id) => Success(concept.copy(id=Some(id)))
+        case Failure(ex) =>
+          logger.warn(s"Failed to update concept with id $id: ${ex.getMessage}")
+          Failure(ex)
+      }
+    }
+
     def withId(id: Long): Option[Concept] =
       conceptWhere(sqls"co.id=${id.toInt}")
 
+    def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {
+      sql"select id from ${Concept.table} where external_id=${externalId}"
+        .map(rs => rs.long("id")).single.apply()
+    }
+
     def withExternalId(externalId: String): Option[Concept] =
       conceptWhere(sqls"co.external_id=$externalId")
-
-    def exists(externalId: String): Boolean =
-      conceptWhere(sqls"co.external_id=$externalId").isDefined
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
       sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Concept.table}".map(rs => {
@@ -71,12 +95,12 @@ trait ConceptRepository {
 
     private def conceptWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Option[Concept] = {
       val co = Concept.syntax("co")
-      sql"select ${co.result.*} from ${Concept.as(co)} where $whereClause".map(Concept(co)).single.apply()
+      sql"select ${co.result.*} from ${Concept.as(co)} where co.document is not NULL and $whereClause".map(Concept(co)).single.apply()
     }
 
     private def conceptsWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): List[Concept] = {
       val co = Concept.syntax("co")
-      sql"select ${co.result.*} from ${Concept.as(co)} where $whereClause".map(Concept(co)).list.apply()
+      sql"select ${co.result.*} from ${Concept.as(co)} where co.document is not NULL and $whereClause".map(Concept(co)).list.apply()
     }
 
   }

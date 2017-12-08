@@ -40,6 +40,15 @@ trait DraftRepository {
       article.copy(revision=Some(startRevision))
     }
 
+    def newEmptyArticle(id: Long, externalId: String, externalSubjectIds: Seq[String])(implicit session: DBSession = AutoSession): Try[Long] = {
+      Try(sql"insert into ${Article.table} (id, external_id, external_subject_id) values (${id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[])".update.apply) match {
+        case Success(_) =>
+          logger.info(s"Inserted new empty article: $id")
+          Success(id)
+        case Failure(ex) => Failure(ex)
+      }
+    }
+
     def update(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
@@ -61,6 +70,10 @@ trait DraftRepository {
     def withId(articleId: Long): Option[Article] =
       articleWhere(sqls"ar.id=${articleId.toInt}")
 
+    def exists(id: Long)(implicit session: DBSession = AutoSession): Boolean = {
+      sql"select id from ${Article.table} where id=${id}".map(rs => rs.long("id")).single.apply().isDefined
+    }
+
     def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {
       sql"select id from ${Article.table} where external_id=${externalId}"
         .map(rs => rs.long("id")).single.apply()
@@ -76,16 +89,16 @@ trait DraftRepository {
     }
 
     def articleCount(implicit session: DBSession = AutoSession): Long = {
-      sql"select count(*) from ${Article.table}".map(rs => rs.long("count")).single().apply().getOrElse(0)
+      sql"select count(*) from ${Article.table} where document is not NULL".map(rs => rs.long("count")).single().apply().getOrElse(0)
     }
 
     def getArticlesByPage(pageSize: Int, offset: Int)(implicit session: DBSession = AutoSession): Seq[Article] = {
       val ar = Article.syntax("ar")
-      sql"select ${ar.result.*} from ${Article.as(ar)} offset $offset limit $pageSize".map(Article(ar)).list.apply()
+      sql"select ${ar.result.*} from ${Article.as(ar)} where document is not NULL offset $offset limit $pageSize".map(Article(ar)).list.apply()
     }
 
     def allTags(implicit session: DBSession = AutoSession): Seq[ArticleTag] = {
-      val allTags = sql"""select document->>'tags' from ${Article.table}""".map(rs => rs.string(1)).list.apply
+      val allTags = sql"""select document->>'tags' from ${Article.table} where document is not NULL""".map(rs => rs.string(1)).list.apply
 
       allTags.flatMap(tag => parse(tag).extract[List[ArticleTag]]).groupBy(_.language)
         .map { case (language, tags) =>
@@ -102,37 +115,17 @@ trait DraftRepository {
       }
     }
 
-    def applyToAll(func: (List[Article]) => Unit)(implicit session: DBSession = AutoSession): Unit = {
-      val (minId, maxId) = minMaxId
-      val groupRanges = Seq.range(minId, maxId).grouped(DraftApiProperties.IndexBulkSize).map(group => (group.head, group.last + 1))
-      val ar = Article.syntax("ar")
-
-      groupRanges.foreach(range => {
-        func(
-          sql"select ${ar.result.*} from ${Article.as(ar)} where ${ar.id} between ${range._1} and ${range._2}".map(Article(ar)).toList.apply
-        )
-      })
-    }
-
-    def all(implicit session: DBSession = AutoSession): List[Article] = {
-      val ar = Article.syntax("ar")
-      sql"select ${ar.result.*} from ${Article.as(ar)}".map(Article(ar)).list.apply()
-    }
-
-    def allWithExternalSubjectId(externalSubjectId: String): Seq[Article] =
-      articlesWhere(sqls"$externalSubjectId=ANY(ar.external_subject_id)")
-
     override def documentsWithIdBetween(min: Long, max: Long): List[Article] =
       articlesWhere(sqls"ar.id between $min and $max").toList
 
     private def articleWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Option[Article] = {
       val ar = Article.syntax("ar")
-      sql"select ${ar.result.*} from ${Article.as(ar)} where $whereClause".map(Article(ar)).single.apply()
+      sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause".map(Article(ar)).single.apply()
     }
 
     private def articlesWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Seq[Article] = {
       val ar = Article.syntax("ar")
-      sql"select ${ar.result.*} from ${Article.as(ar)} where $whereClause".map(Article(ar)).list.apply()
+      sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause".map(Article(ar)).list.apply()
     }
 
   }
