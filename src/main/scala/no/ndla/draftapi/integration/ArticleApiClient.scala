@@ -66,11 +66,11 @@ trait ArticleApiClient {
     }
 
     private def post[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
-      ndlaClient.fetch[A](Http(endpointUrl).method("POST").params(params.toMap))
+      ndlaClient.fetchWithForwardedAuth[A](Http(endpointUrl).method("POST").params(params.toMap))
     }
 
     private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
-      ndlaClient.fetch[A](
+      ndlaClient.fetchWithForwardedAuth[A](
         Http(endpointUrl)
           .postData(write(data))
           .method("POST")
