@@ -48,7 +48,7 @@ trait ArticleApiClient {
     }
 
     private def post[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
-      ndlaClient.fetch[A](
+      ndlaClient.fetchWithForwardedAuth[A](
         Http(endpointUrl)
           .postData(write(data))
           .method("POST")
