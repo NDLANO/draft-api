@@ -12,7 +12,7 @@ import java.util.Date
 case class ArticleApiArticle(revision: Option[Int],
                       title: Seq[ArticleApiTitle],
                       content: Seq[ArticleApiContent],
-                      copyright: Option[ArticleApiCopyright],
+                      copyright: Option[ArticleApiOldCopyright],
                       tags: Seq[ArticleApiTag],
                       requiredLibraries: Seq[ArticleApiRequiredLibrary],
                       visualElement: Seq[ArticleApiVisualElement],
@@ -39,3 +39,7 @@ case class ArticleApiCopyright(license: Option[String],
                                agreementId: Option[Long],
                                validFrom: Option[Date],
                                validTo: Option[Date])
+
+case class ArticleApiOldCopyright(license: Option[String],
+                               origin: String,
+                               authors: Seq[ArticleApiAuthor])

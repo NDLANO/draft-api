@@ -8,16 +8,19 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.model.api.{ConceptSearchParams, ConceptSearchResult, Error}
+import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.model.api.{ContentId, Concept, ConceptSearchParams, ConceptSearchResult, Error, NewConcept, UpdatedConcept}
 import no.ndla.draftapi.model.domain.{Language, Sort}
-import no.ndla.draftapi.service.ReadService
+import no.ndla.draftapi.service.{ReadService, WriteService}
 import no.ndla.draftapi.service.search.ConceptSearchService
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.NotFound
 import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
 
+import scala.util.{Failure, Success}
+
 trait ConceptController {
-  this: ReadService with ConceptSearchService =>
+  this: ReadService with WriteService with ConceptSearchService with Role =>
   val conceptController: ConceptController
 
   class ConceptController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -128,6 +131,68 @@ trait ConceptController {
       readService.conceptWithId(conceptId, language) match {
         case Some(concept) => concept
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No concept with id $conceptId found"))
+      }
+    }
+
+    val newConcept =
+      (apiOperation[Concept]("newConceptById")
+        summary "Create new concept"
+        notes "Create new concept"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        headerParam[Option[String]]("app-key").description("Your app-key. May be omitted to access api anonymously, but rate limiting applies on anonymous access."),
+        queryParam[String]("externalId").description("The external node id of this concept"),
+        bodyParam[NewConcept]
+      )
+        authorizations "oauth2"
+        responseMessages(response404, response500))
+
+    post("/", operation(newConcept)) {
+      authRole.assertHasWritePermission()
+      val nid = params("externalId")
+      writeService.newConcept(extract[NewConcept](request.body), nid) match {
+        case Success(c) => c
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    val updateConcept =
+      (apiOperation[Concept]("updateConceptById")
+        summary "Update a concept"
+        notes "Update a concept"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        headerParam[Option[String]]("app-key").description("Your app-key. May be omitted to access api anonymously, but rate limiting applies on anonymous access."),
+        queryParam[String]("externalId").description("The external node id of this concept"),
+        bodyParam[NewConcept]
+      )
+        authorizations "oauth2"
+        responseMessages(response404, response500))
+
+    patch("/:id", operation(updateConcept)) {
+      authRole.assertHasWritePermission()
+      writeService.updateConcept(long("id"), extract[UpdatedConcept](request.body)) match {
+        case Success(c) => c
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    val getInternalIdByExternalId =
+      (apiOperation[ContentId]("getInternalIdByExternalId")
+        summary "Get internal id of concept for a specified ndla_node_id"
+        notes "Get internal id of concept for a specified ndla_node_id"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        pathParam[Long]("ndla_node_id").description("Id of old NDLA node")
+      )
+        authorizations "oauth2"
+        responseMessages(response404, response500))
+
+    get("/external_id/:ndla_node_id", operation(getInternalIdByExternalId)) {
+      val externalId = long("ndla_node_id")
+      readService.getInternalConceptIdByExternalId(externalId) match {
+        case Some(id) => id
+        case None => NotFound(body = Error(Error.NOT_FOUND, s"No concept with external id $externalId"))
       }
     }
 
