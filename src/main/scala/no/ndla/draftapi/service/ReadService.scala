@@ -27,8 +27,11 @@ trait ReadService {
   val readService: ReadService
 
   class ReadService {
-    def getInternalIdByExternalId(externalId: Long): Option[api.ArticleId] =
-      draftRepository.getIdFromExternalId(externalId.toString).map(api.ArticleId)
+    def getInternalArticleIdByExternalId(externalId: Long): Option[api.ContentId] =
+      draftRepository.getIdFromExternalId(externalId.toString).map(api.ContentId)
+
+    def getInternalConceptIdByExternalId(externalId: Long): Option[api.ContentId] =
+      conceptRepository.getIdFromExternalId(externalId.toString).map(api.ContentId)
 
     def withId(id: Long, language: String): Option[api.Article] = {
       draftRepository.withId(id)

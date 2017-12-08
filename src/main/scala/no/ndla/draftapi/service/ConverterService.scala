@@ -11,6 +11,9 @@ package no.ndla.draftapi.service
 import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.User
+import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.domain.{ArticleStatus, Language, LanguageField}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.NewAgreement
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -38,8 +41,9 @@ trait ConverterService {
     }
 
     def toDomainArticle(newArticle: api.NewArticle): Try[domain.Article] = {
-      ArticleApiClient.allocateArticleId match {
-        case Failure(ex) => Failure(ex)
+      ArticleApiClient.allocateArticleId(None, Seq.empty) match {
+        case Failure(ex) =>
+          Failure(ex)
         case Success(id) =>
           val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
           val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
@@ -59,7 +63,7 @@ trait ConverterService {
             metaImageId = newArticle.metaImageId,
             created = clock.now(),
             updated = clock.now(),
-            updatedBy = authUser.id(),
+            updatedBy = authUser.userOrClientId(),
             articleType = newArticle.articleType.map(ArticleType.valueOfOrError)
           ))
       }
@@ -73,7 +77,7 @@ trait ConverterService {
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
-        updatedBy = authUser.id()
+        updatedBy = authUser.userOrClientId()
       )
     }
 
@@ -244,8 +248,8 @@ trait ConverterService {
 
       api.Concept(
         concept.id.get,
-        title,
-        content,
+        Some(title),
+        Some(content),
         concept.copyright.map(toApiCopyright),
         concept.created,
         concept.updated,
@@ -270,12 +274,18 @@ trait ConverterService {
       )
     }
 
+    def toArticleApiOldCopyright(copyright: domain.Copyright): api.ArticleApiOldCopyright = {
+      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
+      val authors = copyright.creators ++ copyright.processors ++ copyright.rightsholders
+      api.ArticleApiOldCopyright(copyright.license, copyright.origin.getOrElse(""), authors.map(toArticleApiAuthor))
+    }
+
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
         revision = article.revision,
         title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
         content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
-        copyright = article.copyright.map(toArticleApiCopyright),
+        copyright = article.copyright.map(toArticleApiOldCopyright),
         tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
         requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
@@ -287,6 +297,90 @@ trait ConverterService {
         updatedBy = article.updatedBy,
         articleType = article.articleType.map(_.toString)
       )
+    }
+
+    def toArticleApiConcept(article: domain.Concept): api.ArticleApiConcept = {
+      api.ArticleApiConcept(
+        title = article.title.map(t => api.ArticleApiConceptTitle(t.title, t.language)),
+        content = article.content.map(c => api.ArticleApiConceptContent(c.content, c.language)),
+        copyright = article.copyright.map(toArticleApiCopyright),
+        created = article.created,
+        updated = article.updated
+      )
+    }
+
+    def toDomainConcept(concept: api.NewConcept): Try[domain.Concept] = {
+      ArticleApiClient.allocateConceptId(None) match {
+        case Failure(ex) => Failure(ex)
+        case Success(id) =>
+          Success(domain.Concept(
+            Some(id),
+            Seq(domain.ConceptTitle(concept.title, concept.language)),
+            concept.content.map(content => Seq(domain.ConceptContent(content, concept.language))).getOrElse(Seq.empty),
+            concept.copyright.map(toDomainCopyright),
+            clock.now(),
+            clock.now()
+          ))
+      }
+    }
+
+    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle): domain.Article = {
+      val lang = article.language
+      toMergeInto.copy(
+        revision = Option(article.revision),
+        title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => converterService.toDomainTitle(api.ArticleTitle(t, lang)))),
+        content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => converterService.toDomainContent(api.ArticleContent(c, lang)))),
+        copyright = article.copyright.map(converterService.toDomainCopyright).orElse(toMergeInto.copyright),
+        tags = mergeLanguageFields(toMergeInto.tags, converterService.toDomainTag(article.tags, lang)),
+        requiredLibraries = article.requiredLibraries.map(converterService.toDomainRequiredLibraries),
+        visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => converterService.toDomainVisualElement(c, lang)).toSeq),
+        introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => converterService.toDomainIntroduction(i, lang)).toSeq),
+        metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => converterService.toDomainMetaDescription(m, lang)).toSeq),
+        metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
+        updated = clock.now(),
+        updatedBy = authUser.userOrClientId(),
+        articleType = article.articleType.map(ArticleType.valueOfOrError).orElse(toMergeInto.articleType)
+      )
+    }
+
+    def toDomainArticle(id: Long, article: api.UpdatedArticle): domain.Article = {
+      val lang = article.language
+      domain.Article(
+        id = Some(id),
+        revision = Some(1),
+        status = Set(ArticleStatus.CREATED),
+        title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
+        content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
+        copyright = article.copyright.map(toDomainCopyright),
+        tags = Seq(domain.ArticleTag(article.tags, lang)),
+        requiredLibraries = article.requiredLibraries.map(toDomainRequiredLibraries),
+        visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
+        introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
+        metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
+        metaImageId = article.metaImageId,
+        created = clock.now(),
+        updated = clock.now(),
+        authUser.userOrClientId(),
+        articleType = article.articleType.map(ArticleType.valueOfOrError)
+      )
+    }
+
+    def toDomainConcept(toMergeInto: domain.Concept, updateConcept: api.UpdatedConcept): domain.Concept = {
+      val domainTitle = updateConcept.title.map(t => domain.ConceptTitle(t, updateConcept.language)).toSeq
+      val domainContent = updateConcept.content.map(c => domain.ConceptContent(c, updateConcept.language)).toSeq
+
+      toMergeInto.copy(
+        title=mergeLanguageFields(toMergeInto.title, domainTitle),
+        content=mergeLanguageFields(toMergeInto.content, domainContent),
+        copyright=updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+        created=toMergeInto.created,
+        updated=clock.now()
+      )
+    }
+
+    private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
+      val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
+      (toKeep ++ updated).filterNot(_.isEmpty)
     }
 
   }

@@ -8,7 +8,7 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.model.api.AccessDeniedException
+import no.ndla.draftapi.model.api.{AccessDeniedException, ContentId}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
@@ -45,7 +45,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(contentValidator.validateAgreement(any[Agreement])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
-    when(authUser.id()).thenReturn("ndalId54321")
+    when(authUser.userOrClientId()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
     when(draftRepository.update(any[Article])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
       val arg = invocation.getArgumentAt(0, article.getClass)
@@ -61,7 +61,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(ArticleApiClient.allocateArticleId).thenReturn(Success(1: Long))
+    when(ArticleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
     service.newArticle(TestData.newArticle).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])

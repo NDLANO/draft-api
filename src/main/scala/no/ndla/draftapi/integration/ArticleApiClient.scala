@@ -9,7 +9,7 @@ package no.ndla.draftapi.integration
 
 import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.ArticleId
+import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.Article
 import no.ndla.network.NdlaClient
 import no.ndla.validation.ValidationMessage
@@ -27,28 +27,50 @@ trait ArticleApiClient {
   class ArticleApiClient {
     private val InternalEndpoint = s"http://$ArticleApiHost/intern"
 
-    def allocateArticleId: Try[Long] = {
+    def allocateArticleId(externalId: Option[String], externalSubjectIds: Seq[String]): Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
-      post[ArticleId, String](s"$InternalEndpoint/id/article/allocate", "").map(_.id)
+      val params = externalId match {
+        case Some(nid) => Seq("external-id" -> nid, "external-subject-id" -> externalSubjectIds.mkString(","))
+        case None => Seq.empty
+      }
+      post[ContentId](s"$InternalEndpoint/id/article/allocate", params: _*).map(_.id)
+    }
+
+    def allocateConceptId(externalId: Option[String]): Try[Long] = {
+      implicit val format = org.json4s.DefaultFormats
+      val params = externalId match {
+        case Some(nid) => Seq("external-id" -> nid)
+        case None => Seq.empty
+      }
+      post[ContentId](s"$InternalEndpoint/id/concept/allocate", params: _*).map(_.id)
     }
 
     def getValidationErrors(article: Article): Try[Set[ValidationMessage]] = {
       implicit val formats = Article.formats
-      post[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
+      postWithData[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
+    }
+
+    def updateConcept(id: Long, concept: api.ArticleApiConcept): Try[api.ArticleApiConcept] = {
+      implicit val format = org.json4s.DefaultFormats
+      postWithData[api.ArticleApiConcept, api.ArticleApiConcept](s"$InternalEndpoint/concept/$id", concept)
     }
 
     def updateArticle(id: Long, article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
       implicit val format = org.json4s.DefaultFormats
-      post[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id", article)
+      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id", article)
     }
 
     def validateArticle(article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
       implicit val format = org.json4s.DefaultFormats
-      post[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article)
+      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article)
     }
 
-    private def post[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
-      ndlaClient.fetch[A](
+    private def post[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
+      ndlaClient.fetchWithForwardedAuth[A](Http(endpointUrl).method("POST").params(params.toMap))
+    }
+
+    private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
+      ndlaClient.fetchWithForwardedAuth[A](
         Http(endpointUrl)
           .postData(write(data))
           .method("POST")

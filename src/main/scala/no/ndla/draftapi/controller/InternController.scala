@@ -11,18 +11,18 @@ package no.ndla.draftapi.controller
 import java.util.concurrent.TimeUnit
 
 import no.ndla.draftapi.auth.Role
-import no.ndla.draftapi.model.api.ArticlePublishException
-import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
+import no.ndla.draftapi.model.api.ContentId
+import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{ArticleIndexService, ConceptIndexService, IndexService}
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
-import ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 trait InternController {
   this: ReadService
@@ -90,6 +90,33 @@ trait InternController {
       authRole.assertHasPublishPermission()
       writeService.publishArticle(long("id")) match {
         case Success(s) => s
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    post("/concept/:id/publish/?") {
+      authRole.assertHasPublishPermission()
+      writeService.publishConcept(long("id")) match {
+        case Success(s) => s.id.map(ContentId)
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    post("/empty_article") {
+      authRole.assertHasWritePermission()
+      val externalId = params("external-Id")
+      val externalSubjectIds = paramAsListOfString("external-subject-id")
+      writeService.newEmptyArticle(externalId, externalSubjectIds) match {
+        case Success(id) => id
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    post("/empty_concept") {
+      authRole.assertHasWritePermission()
+      val externalId = params("externalId")
+      writeService.newEmptyConcept(externalId) match {
+        case Success(id) => id
         case Failure(ex) => errorHandler(ex)
       }
     }
