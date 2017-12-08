@@ -15,7 +15,7 @@ import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import domain.ArticleStatus._
-import no.ndla.draftapi.model.api.{ArticlePublishReport, FailedArticlePublish, NotFoundException}
+import no.ndla.draftapi.model.api.{ArticleStatus => _, _}
 
 import scala.util.{Failure, Success, Try}
 
@@ -118,29 +118,29 @@ trait WriteService {
       }
     }
 
-    def publishArticle(id: Long): Either[FailedArticlePublish, Long] = {
+    def publishArticle(id: Long): Try[ArticleId] = {
       draftRepository.withId(id) match {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
               updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING))) match {
-                case Success(_) => Right(id)
-                case Failure(ex) => Left(FailedArticlePublish(id, ex.getMessage))
+                case Success(_) => Success(ArticleId(id))
+                case Failure(ex) => Failure(ex)
               }
-            case Failure(ex) => Left(FailedArticlePublish(id, ex.getMessage))
+            case Failure(ex) => Failure(ex)
           }
-        case Some(_) => Left(FailedArticlePublish(id, s"Article with id $id is not marked for publishing"))
-        case None => Left(FailedArticlePublish(id, s"Article with id $id does not exist"))
+        case Some(_) => Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
+        case None => Failure(NotFoundException(s"Article with id $id does not exist"))
       }
     }
 
     def publishArticles(): ArticlePublishReport = {
-      val publishedArticles = readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING).map(publishArticle)
+      val articlesToPublish = readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING)
 
-      publishedArticles.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
-        curr match {
-          case Right(success) => result.addSuccessful(success)
-          case Left(fail) => result.addFailed(fail)
+      articlesToPublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
+        publishArticle(curr) match {
+          case Success(id) => result.addSuccessful(id.id)
+          case Failure(ex) => result.addFailed(FailedArticlePublish(curr, ex.getMessage))
         }
       })
     }

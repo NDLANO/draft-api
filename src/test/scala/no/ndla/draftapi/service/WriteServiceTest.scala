@@ -191,7 +191,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.withId(any[Long])).thenReturn(Some(article))
 
     val res = service.publishArticle(1)
-    res.isLeft should be (true)
+    res.isFailure should be (true)
     verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
@@ -206,7 +206,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("publishArticle should return Right if permitted to publish to article-api") {
     setupSuccessfulPublishMock(1)
     val res = service.publishArticle(1)
-    res.isRight should be (true)
+    res.isSuccess should be (true)
     verify(ArticleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
