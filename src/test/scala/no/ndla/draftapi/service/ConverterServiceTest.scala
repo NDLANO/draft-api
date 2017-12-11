@@ -40,7 +40,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     when(ArticleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    val Success(result) = service.toDomainArticle(apiArticle)
+    val Success(result) = service.toDomainArticle(apiArticle, None)
     result.content.head.content should equal (expectedContent)
     result.visualElement.head.resource should equal (expectedVisualElement)
   }

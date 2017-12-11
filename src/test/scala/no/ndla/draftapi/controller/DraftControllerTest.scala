@@ -106,7 +106,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("POST / should return 201 on created") {
-    when(writeService.newArticle(any[NewArticle])).thenReturn(Success(TestData.sampleArticleV2))
+    when(writeService.newArticle(any[NewArticle], any[Option[String]], any[Seq[String]])).thenReturn(Success(TestData.sampleArticleV2))
     post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(201)
     }
@@ -179,7 +179,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("LEGACY - POST / should return 201 on created") {
-    when(writeService.newArticle(any[NewArticle])).thenReturn(Success(TestData.sampleArticleV2))
+    when(writeService.newArticle(any[NewArticle], any[Option[String]], any[Seq[String]])).thenReturn(Success(TestData.sampleArticleV2))
     post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
       status should equal(201)
     }

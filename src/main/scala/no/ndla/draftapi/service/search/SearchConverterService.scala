@@ -36,7 +36,7 @@ trait SearchConverterService {
         lastUpdated = ai.updated,
         license = ai.copyright.flatMap(_.license),
         authors = ai.copyright.map(copy => copy.creators ++ copy.processors ++ copy.rightsholders).map(a => a.map(_.name)).toSeq.flatten,
-        articleType = ai.articleType.map(_.toString)
+        articleType = ai.articleType.toString
       )
     }
 
