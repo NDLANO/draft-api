@@ -69,7 +69,7 @@ trait ConverterService {
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.userOrClientId(),
-            articleType = newArticle.articleType.map(ArticleType.valueOfOrError)
+            articleType = ArticleType.valueOfOrError(newArticle.articleType)
           ))
       }
     }
@@ -175,7 +175,7 @@ trait ConverterService {
         article.created,
         article.updated,
         article.updatedBy,
-        article.articleType.map(_.toString),
+        article.articleType.toString,
         supportedLanguages
       )
     }
@@ -300,7 +300,7 @@ trait ConverterService {
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
-        articleType = article.articleType.map(_.toString)
+        articleType = Some(article.articleType.toString)
       )
     }
 
@@ -346,7 +346,7 @@ trait ConverterService {
         metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
         updated = clock.now(),
         updatedBy = authUser.userOrClientId(),
-        articleType = article.articleType.map(ArticleType.valueOfOrError).orElse(toMergeInto.articleType)
+        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType)
       )
     }
 
@@ -368,7 +368,7 @@ trait ConverterService {
         created = clock.now(),
         updated = clock.now(),
         authUser.userOrClientId(),
-        articleType = article.articleType.map(ArticleType.valueOfOrError)
+        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard)
       )
     }
 
