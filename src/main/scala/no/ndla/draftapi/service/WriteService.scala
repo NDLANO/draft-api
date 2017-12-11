@@ -15,7 +15,7 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
-import no.ndla.draftapi.model.domain.ArticleStatus.QUEUED_FOR_PUBLISHING
+import no.ndla.draftapi.model.domain.ArticleStatus.{QUEUED_FOR_PUBLISHING, PUBLISHED}
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
@@ -68,11 +68,16 @@ trait WriteService {
       }
     }
 
-    def newArticle(newArticle: api.NewArticle): Try[Article] = {
+    def newArticle(newArticle: api.NewArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[Article] = {
+      val insertNewArticleFunction = externalId match {
+        case None => draftRepository.insert _
+        case Some(nid) => (a: domain.Article) => draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
+      }
+
       for {
-        domainArticle <- converterService.toDomainArticle(newArticle)
+        domainArticle <- converterService.toDomainArticle(newArticle, externalId)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
-        insertedArticle <- Try(draftRepository.insert(domainArticle))
+        insertedArticle <- Try(insertNewArticleFunction(domainArticle))
         _ <- articleIndexService.indexDocument(insertedArticle)
         apiArticle <- Success(converterService.toApiArticle(insertedArticle, newArticle.language))
       } yield apiArticle
@@ -110,7 +115,7 @@ trait WriteService {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
-              updateArticle(article.copy(status=article.status.filter(_ != QUEUED_FOR_PUBLISHING)))
+              updateArticle(article.copy(status=article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED))
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>

@@ -232,7 +232,9 @@ trait DraftController {
     post("/", operation(newArticle)) {
       authUser.assertHasId()
       authRole.assertHasWritePermission()
-      writeService.newArticle(extract[NewArticle](request.body)) match {
+      val externalId = paramOrNone("externalId")
+      val externalSubjectids = paramAsListOfString("externalSubjectIds")
+      writeService.newArticle(extract[NewArticle](request.body), externalId, externalSubjectids) match {
         case Success(article) => Created(body=article)
         case Failure(exception) => errorHandler(exception)
       }
@@ -244,8 +246,7 @@ trait DraftController {
         notes "Queue the article for publishing"
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the article that is to be published"),
-        bodyParam[ArticleStatus]
+        pathParam[Long]("article_id").description("Id of the article that is to be published")
       )
         authorizations "oauth2"
         responseMessages(response400, response403, response404, response500))

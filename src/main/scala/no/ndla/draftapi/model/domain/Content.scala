@@ -77,7 +77,7 @@ object Article extends SQLSyntaxSupport[Article] {
 }
 
 object ArticleStatus extends Enumeration {
-  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH = Value
+  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH, PUBLISHED = Value
 
   def valueOfOrError(s: String): Try[ArticleStatus.Value] =
     valueOf(s) match {

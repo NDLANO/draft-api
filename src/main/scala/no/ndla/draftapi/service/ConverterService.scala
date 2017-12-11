@@ -40,7 +40,7 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(newArticle: api.NewArticle): Try[domain.Article] = {
+    def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String]): Try[domain.Article] = {
       ArticleApiClient.allocateArticleId(None, Seq.empty) match {
         case Failure(ex) =>
           Failure(ex)
@@ -48,10 +48,15 @@ trait ConverterService {
           val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
           val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
 
+          val status = externalId match {
+            case Some(_) => Set(CREATED, IMPORTED)
+            case None => Set(CREATED)
+          }
+
           Success(domain.Article(
             id = Some(id),
             revision = None,
-            ArticleStatus.ValueSet(CREATED),
+            status,
             title = domainTitles,
             content = domainContent,
             copyright = newArticle.copyright.map(toDomainCopyright),
@@ -326,7 +331,9 @@ trait ConverterService {
 
     def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle): domain.Article = {
       val lang = article.language
+      val status = toMergeInto.status.filterNot(_ == CREATED) + DRAFT
       toMergeInto.copy(
+        status = status,
         revision = Option(article.revision),
         title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => converterService.toDomainTitle(api.ArticleTitle(t, lang)))),
         content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => converterService.toDomainContent(api.ArticleContent(c, lang)))),
