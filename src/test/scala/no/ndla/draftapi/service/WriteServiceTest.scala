@@ -185,7 +185,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("publishArticle should return Left if article is not ready for publishing") {
+  test("publishArticle should return Failure if article is not ready for publishing") {
     val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
 
     when(draftRepository.withId(any[Long])).thenReturn(Some(article))
@@ -203,7 +203,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(ArticleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
   }
 
-  test("publishArticle should return Right if permitted to publish to article-api") {
+  test("publishArticle should return Success if permitted to publish to article-api") {
     setupSuccessfulPublishMock(1)
     val res = service.publishArticle(1)
     res.isSuccess should be (true)
