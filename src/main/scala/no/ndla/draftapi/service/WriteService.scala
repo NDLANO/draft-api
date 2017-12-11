@@ -9,13 +9,14 @@ package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{Article, ArticleStatusException, NewConcept, NotFoundException}
+import no.ndla.draftapi.model.api.{Article, ArticleStatusException, NewConcept, NotFoundException, AccessDeniedException}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
-import no.ndla.draftapi.model.domain.ArticleStatus.{QUEUED_FOR_PUBLISHING, PUBLISHED}
+import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
+
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
@@ -93,6 +94,8 @@ trait WriteService {
 
     def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle): Try[api.Article] = {
       draftRepository.withId(articleId) match {
+        case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) =>
+          Failure(new AccessDeniedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           updateArticle(converterService.toDomainArticle(existing, updatedApiArticle))
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))

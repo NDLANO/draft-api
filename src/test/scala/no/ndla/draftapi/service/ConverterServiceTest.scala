@@ -8,10 +8,12 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{Attributes, ResourceType}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+
 import scala.util.Success
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
@@ -43,6 +45,12 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val Success(result) = service.toDomainArticle(apiArticle, None)
     result.content.head.content should equal (expectedContent)
     result.visualElement.head.resource should equal (expectedVisualElement)
+  }
+
+  test("toDomainArticle should remove PUBLISHED when merging an UpdatedArticle into an existing") {
+    val existing = TestData.sampleArticleWithByNcSa.copy(status = Set(DRAFT, PUBLISHED))
+    val res = service.toDomainArticle(existing, TestData.sampleApiUpdateArticle.copy(language = "en"))
+    res.status should equal(Set(DRAFT))
   }
 
 }
