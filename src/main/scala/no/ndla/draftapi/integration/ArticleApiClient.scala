@@ -12,10 +12,12 @@ import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.Article
 import no.ndla.network.NdlaClient
-import no.ndla.validation.ValidationMessage
+import no.ndla.network.model.HttpRequestException
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.native.Serialization.write
+import org.json4s.jackson.JsonMethods.parse
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scalaj.http.Http
 
 case class ArticleApiId(id: Long)
@@ -62,7 +64,12 @@ trait ArticleApiClient {
 
     def validateArticle(article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
       implicit val format = org.json4s.DefaultFormats
-      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article)
+      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article) match {
+        case Failure(ex: HttpRequestException) =>
+          val validateionMessages = ex.httpResponse.map(r => parse(r.body).extract[Seq[ValidationMessage]]).getOrElse(Seq.empty)
+          Failure(new ValidationException("Failed to validate article in article-api", validateionMessages))
+        case x => x
+      }
     }
 
     private def post[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {

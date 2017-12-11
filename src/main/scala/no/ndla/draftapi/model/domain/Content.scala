@@ -39,7 +39,7 @@ case class Article(id: Option[Long],
                    created: Date,
                    updated: Date,
                    updatedBy: String,
-                   articleType: Option[ArticleType.Value]) extends Content
+                   articleType: ArticleType.Value) extends Content
 
 
 object Article extends SQLSyntaxSupport[Article] {

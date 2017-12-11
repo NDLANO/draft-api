@@ -40,6 +40,18 @@ trait DraftRepository {
       article.copy(revision=Some(startRevision))
     }
 
+    def insertWithExternalId(article: Article, externalId: String, externalSubjectIds: Seq[String])(implicit session: DBSession = AutoSession): Article = {
+      val startRevision = 1
+      val dataObject = new PGobject()
+      dataObject.setType("jsonb")
+      dataObject.setValue(write(article))
+
+      val articleId: Long = sql"insert into ${Article.table} (id, external_id, document, revision) values (${article.id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)".updateAndReturnGeneratedKey().apply
+
+      logger.info(s"Inserted new article: $articleId")
+      article.copy(revision=Some(startRevision))
+    }
+
     def newEmptyArticle(id: Long, externalId: String, externalSubjectIds: Seq[String])(implicit session: DBSession = AutoSession): Try[Long] = {
       Try(sql"insert into ${Article.table} (id, external_id, external_subject_id) values (${id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[])".update.apply) match {
         case Success(_) =>

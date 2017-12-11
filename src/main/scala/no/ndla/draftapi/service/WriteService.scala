@@ -9,13 +9,13 @@ package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{ArticleStatusException, NewConcept, NotFoundException, ArticleStatus => _, _}
-import no.ndla.draftapi.model.domain.ArticleStatus.QUEUED_FOR_PUBLISHING
+import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
+import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
 
 import scala.util.{Failure, Success, Try}
 
@@ -69,11 +69,15 @@ trait WriteService {
       }
     }
 
-    def newArticle(newArticle: api.NewArticle): Try[api.Article] = {
+    def newArticle(newArticle: api.NewArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[api.Article] = {
+      val insertNewArticleFunction = externalId match {
+        case None => draftRepository.insert _
+        case Some(nid) => (a: domain.Article) => draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
+      }
       for {
-        domainArticle <- converterService.toDomainArticle(newArticle)
+        domainArticle <- converterService.toDomainArticle(newArticle, externalId)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
-        insertedArticle <- Try(draftRepository.insert(domainArticle))
+        insertedArticle <- Try(insertNewArticleFunction(domainArticle))
         _ <- articleIndexService.indexDocument(insertedArticle)
         apiArticle <- Success(converterService.toApiArticle(insertedArticle, newArticle.language))
       } yield apiArticle
@@ -111,7 +115,7 @@ trait WriteService {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
-              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING))) match {
+              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED)) match {
                 case Success(_) => Success(ContentId(id))
                 case Failure(ex) => Failure(ex)
               }
@@ -125,7 +129,7 @@ trait WriteService {
     }
 
     def publishArticles(): ArticlePublishReport = {
-      val articlesToPublish = readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING)
+      val articlesToPublish = readService.articlesWithStatus(QUEUED_FOR_PUBLISHING)
 
       articlesToPublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
         publishArticle(curr) match {

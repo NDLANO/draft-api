@@ -104,7 +104,7 @@ class DraftSearchServiceTest extends UnitSuite with TestEnvironment {
     tags = List(ArticleTag(List("baldur"), "nb")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
-    articleType = Some(ArticleType.TopicArticle)
+    articleType = ArticleType.TopicArticle
   )
   val article9 = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(9),
@@ -114,7 +114,7 @@ class DraftSearchServiceTest extends UnitSuite with TestEnvironment {
     tags = List(ArticleTag(List("baldur"), "nb")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
-    articleType = Some(ArticleType.TopicArticle)
+    articleType = ArticleType.TopicArticle
   )
 
   override def beforeAll = {
