@@ -85,7 +85,7 @@ trait InternController {
     post("/article/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishArticle(long("id")) match {
-        case Success(s) => s.id.map(ContentId)
+        case Success(s) => converterService.toApiStatus(s.status)
         case Failure(ex) => errorHandler(ex)
       }
     }
