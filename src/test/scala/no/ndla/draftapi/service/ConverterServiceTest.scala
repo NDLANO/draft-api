@@ -51,6 +51,10 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val existing = TestData.sampleArticleWithByNcSa.copy(status = Set(DRAFT, PUBLISHED))
     val res = service.toDomainArticle(existing, TestData.sampleApiUpdateArticle.copy(language = "en"))
     res.status should equal(Set(DRAFT))
+
+    val existing2 = TestData.sampleArticleWithByNcSa.copy(status = Set(CREATED, QUEUED_FOR_PUBLISHING))
+    val res2 = service.toDomainArticle(existing2, TestData.sampleApiUpdateArticle.copy(language = "en"))
+    res2.status should equal(Set(DRAFT, QUEUED_FOR_PUBLISHING))
   }
 
 }
