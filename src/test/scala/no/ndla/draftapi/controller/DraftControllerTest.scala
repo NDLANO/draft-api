@@ -171,6 +171,13 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
+  test("PUT /:id/validate should return 204 if user has required permissions") {
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(TestData.sampleDomainArticle))
+    put("/test/1/validate", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
+      status should equal (204)
+    }
+  }
+
   // Legacy tests. May be removed when the legacy token format in ndla.network v0.24 is removed
   test("LEGACY - POST / should return 400 if body does not contain all required fields") {
     post("/test/", invalidArticle, headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
