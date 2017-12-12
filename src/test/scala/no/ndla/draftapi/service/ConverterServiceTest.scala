@@ -8,10 +8,12 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.domain.ArticleStatus
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
-import no.ndla.validation.{Attributes, ResourceType}
+import no.ndla.validation.{ResourceType, TagAttributes}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+
 import scala.util.Success
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
@@ -32,10 +34,10 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("toDomainArticleShould should remove unneeded attributes on embed-tags") {
-    val content = s"""<h1>hello</h1><embed ${Attributes.DataResource}="${ResourceType.Image}" ${Attributes.DataUrl}="http://some-url" data-random="hehe" />"""
-    val expectedContent = s"""<h1>hello</h1><embed ${Attributes.DataResource}="${ResourceType.Image}">"""
-    val visualElement = s"""<embed ${Attributes.DataResource}="${ResourceType.Image}" ${Attributes.DataUrl}="http://some-url" data-random="hehe" />"""
-    val expectedVisualElement = s"""<embed ${Attributes.DataResource}="${ResourceType.Image}">"""
+    val content = s"""<h1>hello</h1><embed ${TagAttributes.DataResource}="${ResourceType.Image}" ${TagAttributes.DataUrl}="http://some-url" data-random="hehe" />"""
+    val expectedContent = s"""<h1>hello</h1><embed ${TagAttributes.DataResource}="${ResourceType.Image}">"""
+    val visualElement = s"""<embed ${TagAttributes.DataResource}="${ResourceType.Image}" ${TagAttributes.DataUrl}="http://some-url" data-random="hehe" />"""
+    val expectedVisualElement = s"""<embed ${TagAttributes.DataResource}="${ResourceType.Image}">"""
     val apiArticle = TestData.newArticle.copy(content=Some(content), visualElement=Some(visualElement))
 
     when(ArticleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
@@ -43,6 +45,14 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val Success(result) = service.toDomainArticle(apiArticle, None)
     result.content.head.content should equal (expectedContent)
     result.visualElement.head.resource should equal (expectedVisualElement)
+  }
+
+  test("toDomainArticle should set IMPORTED status if being imported") {
+    val importRes = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), TestData.sampleApiUpdateArticle, isImported = true)
+    importRes.status should equal(Set(ArticleStatus.IMPORTED))
+
+    val regularUpdate = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set(ArticleStatus.IMPORTED)), TestData.sampleApiUpdateArticle, isImported = false)
+    regularUpdate.status should equal(Set(ArticleStatus.IMPORTED, ArticleStatus.DRAFT))
   }
 
 }

@@ -143,7 +143,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 403 if access denied") {
-    when(writeService.updateArticle(any[Long], any[api.UpdatedArticle])).thenReturn(Failure(new AccessDeniedException("Not today")))
+    when(writeService.updateArticle(any[Long], any[api.UpdatedArticle], any[Option[String]], any[Seq[String]])).thenReturn(Failure(new AccessDeniedException("Not today")))
 
     patch("/test/123", body=write(TestData.sampleApiUpdateArticle)) {
       status should equal (403)
@@ -151,7 +151,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 200 on success") {
-    when(writeService.updateArticle(any[Long], any[UpdatedArticle])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
+    when(writeService.updateArticle(any[Long], any[UpdatedArticle], any[Option[String]], any[Seq[String]])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
     patch("/test/123", updateTitleJson, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal (200)
     }
@@ -234,7 +234,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("LEGACY - That PATCH /:id returns 200 on success") {
-    when(writeService.updateArticle(any[Long], any[UpdatedArticle])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
+    when(writeService.updateArticle(any[Long], any[UpdatedArticle], any[Option[String]], any[Seq[String]])).thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
     patch("/test/123", updateTitleJson, headers = Map("Authorization" -> legacyAuthHeaderWithWriteRole)) {
       status should equal (200)
     }

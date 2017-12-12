@@ -14,7 +14,7 @@ import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
-import no.ndla.validation.{Attributes, HtmlRules}
+import no.ndla.validation.{HtmlTagRules, TagAttributes}
 import org.jsoup.nodes.Element
 
 import scala.math.max
@@ -63,20 +63,20 @@ trait ReadService {
     })
 
     private[service] def addUrlOnResource(content: String): String = {
-      val doc = HtmlRules.stringToJsoupDocument(content)
+      val doc = HtmlTagRules.stringToJsoupDocument(content)
 
       val embedTags = doc.select(s"$resourceHtmlEmbedTag").asScala.toList
       embedTags.foreach(addUrlOnEmbedTag)
-      HtmlRules.jsoupDocumentToString(doc)
+      HtmlTagRules.jsoupDocumentToString(doc)
     }
 
     private def addUrlOnEmbedTag(embedTag: Element) = {
-      val resourceIdAttrName = Attributes.DataResource_Id.toString
+      val resourceIdAttrName = TagAttributes.DataResource_Id.toString
       embedTag.hasAttr(resourceIdAttrName) match {
         case false =>
         case true => {
-          val (resourceType, id) = (embedTag.attr(s"${Attributes.DataResource}"), embedTag.attr(resourceIdAttrName))
-          embedTag.attr(s"${Attributes.DataUrl}", s"${externalApiUrls(resourceType)}/$id")
+          val (resourceType, id) = (embedTag.attr(s"${TagAttributes.DataResource}"), embedTag.attr(resourceIdAttrName))
+          embedTag.attr(s"${TagAttributes.DataUrl}", s"${externalApiUrls(resourceType)}/$id")
         }
       }
     }
