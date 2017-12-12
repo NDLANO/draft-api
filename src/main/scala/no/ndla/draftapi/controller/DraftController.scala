@@ -294,7 +294,7 @@ trait DraftController {
 
     put("/:article_id/validate", operation(validateArticle)) {
       contentValidator.validateArticleApiArticle(long("article_id")) match {
-        case Success(_) => Ok()
+        case Success(_) => NoContent()
         case Failure(ex) => errorHandler(ex)
       }
     }
