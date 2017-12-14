@@ -189,6 +189,18 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
 
     when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(article))
+
+    val res = service.publishArticle(1)
+    res.isFailure should be (true)
+    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
+  }
+
+  test("publishArticle should return Failure if article does not pass validation") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
+
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Failure(new RuntimeException("Validation error")))
 
     val res = service.publishArticle(1)
     res.isFailure should be (true)
@@ -219,6 +231,15 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val res = service.publishArticles()
     res.succeeded should be (Seq(1, 2))
     res.failed.map(_.id) should be (Seq(3))
+  }
+
+  test("queueArticleForPublishing should return updated article status") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(ArticleStatus.DRAFT, ArticleStatus.PUBLISHED))
+    when(draftRepository.withId(1)).thenReturn(Some(article))
+    when(contentValidator.validateArticleApiArticle(1)).thenReturn(Success(article))
+
+    val Success(res) = service.queueArticleForPublish(1)
+    res.status should equal(Set("DRAFT", "QUEUED_FOR_PUBLISHING"))
   }
 
 }

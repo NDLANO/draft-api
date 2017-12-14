@@ -45,5 +45,6 @@ case class ArticlePublishException(message: String) extends RuntimeException(mes
 
 class ArticleStatusException(message: String) extends RuntimeException(message)
 class AccessDeniedException(message: String) extends RuntimeException(message)
+class OperationNotAllowedException(message: String) extends RuntimeException(message)
 class OptimisticLockException(message: String = Error.RESOURCE_OUTDATED_DESCRIPTION) extends RuntimeException(message)
 class ResultWindowTooLargeException(message: String = Error.WINDOW_TOO_LARGE_DESCRIPTION) extends RuntimeException(message)

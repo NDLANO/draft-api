@@ -93,6 +93,8 @@ trait WriteService {
 
     def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle): Try[api.Article] = {
       draftRepository.withId(articleId) match {
+        case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
+          Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           updateArticle(converterService.toDomainArticle(existing, updatedApiArticle))
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
@@ -103,22 +105,25 @@ trait WriteService {
       }
     }
 
-    def queueArticleForPublish(id: Long): Try[Long] = {
+    def queueArticleForPublish(id: Long): Try[ArticleStatus] = {
       draftRepository.withId(id) match {
-        case Some(a) => draftRepository.update(a.copy(status=a.status ++ Set(QUEUED_FOR_PUBLISHING))).map(_ => id)
+        case Some(a) =>
+          contentValidator.validateArticleApiArticle(id) match {
+            case Success(_) =>
+              val newStatus = a.status.filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
+              draftRepository.update(a.copy(status=newStatus)).map(a => converterService.toApiStatus(a.status))
+            case Failure(ex) => Failure(ex)
+          }
         case None => Failure(NotFoundException(s"The article with id $id does not exist"))
       }
     }
 
-    def publishArticle(id: Long): Try[ContentId] = {
+    def publishArticle(id: Long): Try[domain.Article] = {
       draftRepository.withId(id) match {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
-              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED)) match {
-                case Success(_) => Success(ContentId(id))
-                case Failure(ex) => Failure(ex)
-              }
+              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED))
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>
@@ -133,7 +138,7 @@ trait WriteService {
 
       articlesToPublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
         publishArticle(curr) match {
-          case Success(id) => result.addSuccessful(id.id)
+          case Success(_) => result.addSuccessful(curr)
           case Failure(ex) => result.addFailed(FailedArticlePublish(curr, ex.getMessage))
         }
       })

@@ -204,6 +204,8 @@ trait ConverterService {
         Success(validStatuses.map(_.get))
     }
 
+    def toApiStatus(status: Set[ArticleStatus.Value]): api.ArticleStatus = api.ArticleStatus(status.map(_.toString))
+
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)
 
     def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
@@ -331,18 +333,18 @@ trait ConverterService {
 
     def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle): domain.Article = {
       val lang = article.language
-      val status = toMergeInto.status.filterNot(_ == CREATED) + DRAFT
+      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + DRAFT
       toMergeInto.copy(
         status = status,
         revision = Option(article.revision),
-        title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => converterService.toDomainTitle(api.ArticleTitle(t, lang)))),
-        content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => converterService.toDomainContent(api.ArticleContent(c, lang)))),
-        copyright = article.copyright.map(converterService.toDomainCopyright).orElse(toMergeInto.copyright),
-        tags = mergeLanguageFields(toMergeInto.tags, converterService.toDomainTag(article.tags, lang)),
-        requiredLibraries = article.requiredLibraries.map(converterService.toDomainRequiredLibraries),
-        visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => converterService.toDomainVisualElement(c, lang)).toSeq),
-        introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => converterService.toDomainIntroduction(i, lang)).toSeq),
-        metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => converterService.toDomainMetaDescription(m, lang)).toSeq),
+        title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
+        content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
+        copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+        tags = mergeLanguageFields(toMergeInto.tags, toDomainTag(article.tags, lang)),
+        requiredLibraries = article.requiredLibraries.map(toDomainRequiredLibraries),
+        visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
+        introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
+        metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
         metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
         updated = clock.now(),
         updatedBy = authUser.userOrClientId(),
