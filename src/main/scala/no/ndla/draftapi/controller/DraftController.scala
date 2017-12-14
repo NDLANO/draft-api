@@ -241,7 +241,7 @@ trait DraftController {
     }
 
     val queueDraftForPublishing =
-      (apiOperation[Article]("queueDraftForPublishing ")
+      (apiOperation[ArticleStatus]("queueDraftForPublishing ")
         summary "Queue the article for publishing"
         notes "Queue the article for publishing"
         parameters(
@@ -255,7 +255,7 @@ trait DraftController {
       authRole.assertHasPublishPermission()
       val id = long("article_id")
       writeService.queueArticleForPublish(id) match {
-        case Success(_) => ContentId(id)
+        case Success(s) => s
         case Failure(e) => errorHandler(e)
       }
     }
@@ -294,7 +294,7 @@ trait DraftController {
 
     put("/:article_id/validate", operation(validateArticle)) {
       contentValidator.validateArticleApiArticle(long("article_id")) match {
-        case Success(_) => Ok()
+        case Success(_) => NoContent()
         case Failure(ex) => errorHandler(ex)
       }
     }

@@ -9,14 +9,13 @@ package no.ndla.draftapi.service
 
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{Article, ArticleStatusException, NewConcept, NotFoundException, OperationNotAllowedException}
+import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
-import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
-
+import no.ndla.draftapi.model.domain.ArticleStatus.{QUEUED_FOR_PUBLISHING, PUBLISHED}
 import scala.util.{Failure, Success, Try}
 
 trait WriteService {
@@ -69,7 +68,7 @@ trait WriteService {
       }
     }
 
-    def newArticle(newArticle: api.NewArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[Article] = {
+    def newArticle(newArticle: api.NewArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[api.Article] = {
       val insertNewArticleFunction = externalId match {
         case None => draftRepository.insert _
         case Some(nid) => (a: domain.Article) => draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
@@ -106,9 +105,15 @@ trait WriteService {
       }
     }
 
-    def queueArticleForPublish(id: Long): Try[Long] = {
+    def queueArticleForPublish(id: Long): Try[ArticleStatus] = {
       draftRepository.withId(id) match {
-        case Some(a) => draftRepository.update(a.copy(status=a.status ++ Set(QUEUED_FOR_PUBLISHING))).map(_ => id)
+        case Some(a) =>
+          contentValidator.validateArticleApiArticle(id) match {
+            case Success(_) =>
+              val newStatus = a.status.filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
+              draftRepository.update(a.copy(status=newStatus)).map(a => converterService.toApiStatus(a.status))
+            case Failure(ex) => Failure(ex)
+          }
         case None => Failure(NotFoundException(s"The article with id $id does not exist"))
       }
     }
