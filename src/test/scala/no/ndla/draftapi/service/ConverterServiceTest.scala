@@ -8,12 +8,11 @@
 package no.ndla.draftapi.service
 
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.ArticleStatus
+import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-
 import scala.util.Success
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
@@ -47,12 +46,23 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     result.visualElement.head.resource should equal (expectedVisualElement)
   }
 
+  test("toDomainArticle should remove PUBLISHED when merging an UpdatedArticle into an existing") {
+    val existing = TestData.sampleArticleWithByNcSa.copy(status = Set(DRAFT, PUBLISHED))
+    val res = service.toDomainArticle(existing, TestData.sampleApiUpdateArticle.copy(language = "en"), isImported = false
+    )
+    res.status should equal(Set(DRAFT))
+
+    val existing2 = TestData.sampleArticleWithByNcSa.copy(status = Set(CREATED, QUEUED_FOR_PUBLISHING))
+    val res2 = service.toDomainArticle(existing2, TestData.sampleApiUpdateArticle.copy(language = "en"), isImported = false)
+    res2.status should equal(Set(DRAFT, QUEUED_FOR_PUBLISHING))
+  }
+
   test("toDomainArticle should set IMPORTED status if being imported") {
     val importRes = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), TestData.sampleApiUpdateArticle, isImported = true)
-    importRes.status should equal(Set(ArticleStatus.IMPORTED))
+    importRes.status should equal(Set(IMPORTED))
 
-    val regularUpdate = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set(ArticleStatus.IMPORTED)), TestData.sampleApiUpdateArticle, isImported = false)
-    regularUpdate.status should equal(Set(ArticleStatus.IMPORTED, ArticleStatus.DRAFT))
+    val regularUpdate = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set(IMPORTED)), TestData.sampleApiUpdateArticle, isImported = false)
+    regularUpdate.status should equal(Set(IMPORTED, DRAFT))
   }
 
 }

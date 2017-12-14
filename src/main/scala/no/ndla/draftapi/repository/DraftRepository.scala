@@ -100,6 +100,9 @@ trait DraftRepository {
     def withId(articleId: Long): Option[Article] =
       articleWhere(sqls"ar.id=${articleId.toInt}")
 
+    def withStatus(status: ArticleStatus.Value): Seq[Article] =
+      articlesWhere(sqls"(ar.document->>'status')::jsonb ?? ${status.toString}")
+
     def exists(id: Long)(implicit session: DBSession = AutoSession): Boolean = {
       sql"select id from ${Article.table} where id=${id}".map(rs => rs.long("id")).single.apply().isDefined
     }

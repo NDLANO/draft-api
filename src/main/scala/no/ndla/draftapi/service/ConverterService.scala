@@ -333,7 +333,7 @@ trait ConverterService {
 
     def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
       val lang = article.language
-      val status = toMergeInto.status.filterNot(_ == CREATED) + (if (!isImported) DRAFT else IMPORTED)
+      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
       toMergeInto.copy(
         status = status,
         revision = Option(article.revision),

@@ -11,8 +11,7 @@ package no.ndla.draftapi.controller
 import java.util.concurrent.TimeUnit
 
 import no.ndla.draftapi.auth.Role
-import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{ContentId, NewArticle}
+import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
@@ -20,8 +19,8 @@ import no.ndla.draftapi.service.search.{ArticleIndexService, ConceptIndexService
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
-import ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
@@ -82,6 +81,11 @@ trait InternController {
       readService.getArticlesByPage(pageNo, pageSize, lang)
     }
 
+    post("/articles/publish/?") {
+      authRole.assertHasPublishPermission()
+      writeService.publishArticles()
+    }
+
     post("/article/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishArticle(long("id")) match {
@@ -116,6 +120,7 @@ trait InternController {
         case Failure(ex) => errorHandler(ex)
       }
     }
+
 
   }
 }

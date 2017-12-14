@@ -133,14 +133,13 @@ object Concept extends SQLSyntaxSupport[Concept] {
   )
 }
 
-case class Agreement(
-                      id: Option[Long],
-                      title: String,
-                      content: String,
-                      copyright: Copyright,
-                      created: Date,
-                      updated: Date,
-                      updatedBy: String) extends Content
+case class Agreement(id: Option[Long],
+                     title: String,
+                     content: String,
+                     copyright: Copyright,
+                     created: Date,
+                     updated: Date,
+                     updatedBy: String) extends Content
 
 
 object Agreement extends SQLSyntaxSupport[Agreement] {

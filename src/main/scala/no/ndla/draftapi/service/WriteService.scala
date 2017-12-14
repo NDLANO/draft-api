@@ -74,7 +74,6 @@ trait WriteService {
         case None => draftRepository.insert _
         case Some(nid) => (a: domain.Article) => draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
       }
-
       for {
         domainArticle <- converterService.toDomainArticle(newArticle, externalId)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
@@ -99,6 +98,8 @@ trait WriteService {
 
     def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
+        case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
+          Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           updateArticle(converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined))
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
@@ -128,7 +129,7 @@ trait WriteService {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
-              updateArticle(article.copy(status=article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED))
+              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED))
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>
@@ -136,6 +137,17 @@ trait WriteService {
         case None =>
           Failure(NotFoundException(s"Article with id $id does not exist"))
       }
+    }
+
+    def publishArticles(): ArticlePublishReport = {
+      val articlesToPublish = readService.articlesWithStatus(QUEUED_FOR_PUBLISHING)
+
+      articlesToPublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
+        publishArticle(curr) match {
+          case Success(_) => result.addSuccessful(curr)
+          case Failure(ex) => result.addFailed(FailedArticlePublish(curr, ex.getMessage))
+        }
+      })
     }
 
     def publishConcept(id: Long): Try[domain.Concept] = {

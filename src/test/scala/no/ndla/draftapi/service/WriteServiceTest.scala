@@ -207,16 +207,30 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
-  test("publishArticle should return Success if permitted to publish to article-api") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
+  private def setupSuccessfulPublishMock(id: Long): Unit = {
+    val article = TestData.sampleArticleWithByNcSa.copy(id=Some(id), status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
     val apiArticle = converterService.toArticleApiArticle(article)
-    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(draftRepository.withId(id)).thenReturn(Some(article))
     when(draftRepository.update(any[Article])).thenReturn(Success(article))
-    when(ArticleApiClient.updateArticle(1, apiArticle)).thenReturn(Success(apiArticle))
+    when(ArticleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
+  }
 
+  test("publishArticle should return Success if permitted to publish to article-api") {
+    setupSuccessfulPublishMock(1)
     val res = service.publishArticle(1)
     res.isSuccess should be (true)
     verify(ArticleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
+  }
+
+  test("publishArticles should publish all articles marked for publishing") {
+    when(readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING)).thenReturn(Seq[Long](1, 2, 3))
+    when(draftRepository.withId(3)).thenReturn(None)
+    setupSuccessfulPublishMock(1)
+    setupSuccessfulPublishMock(2)
+
+    val res = service.publishArticles()
+    res.succeeded should be (Seq(1, 2))
+    res.failed.map(_.id) should be (Seq(3))
   }
 
   test("queueArticleForPublishing should return updated article status") {

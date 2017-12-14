@@ -20,16 +20,17 @@ trait Role {
     val DraftRoleWithPublishAccess = "drafts:set_to_publish"
     val ArticleRoleWithPublishAccess = "articles:publish"
 
-    def hasRoles(roles: Set[String]): Boolean = roles.map(AuthUser.hasRole).forall(identity)
+    private def hasRoles(roles: String*): Boolean = roles.map(AuthUser.hasRole).forall(identity)
 
-    def assertHasRoles(roles: String*): Unit = {
-      if (!hasRoles(roles.toSet))
+    private def assert(hasRoles: Boolean): Unit = {
+      if (!hasRoles)
         throw new AccessDeniedException("user is missing required role(s) to perform this operation")
     }
 
-    def assertHasWritePermission(): Unit = assertHasRoles(DraftRoleWithWriteAccess)
-    def assertHasPublishPermission(): Unit = assertHasRoles(DraftRoleWithWriteAccess, DraftRoleWithPublishAccess)
-    def assertHasArticleApiPublishPermission(): Unit = assertHasRoles(DraftRoleWithWriteAccess, DraftRoleWithPublishAccess, ArticleRoleWithPublishAccess)
+    def assertHasWritePermission(): Unit = assert(hasRoles(DraftRoleWithWriteAccess))
+    def hasPublishPermission(): Boolean = hasRoles(DraftRoleWithWriteAccess, DraftRoleWithPublishAccess)
+    def assertHasPublishPermission(): Unit = assert(hasPublishPermission())
+    def assertHasArticleApiPublishPermission(): Unit = assert(hasRoles(DraftRoleWithWriteAccess, DraftRoleWithPublishAccess, ArticleRoleWithPublishAccess))
   }
 
 }
