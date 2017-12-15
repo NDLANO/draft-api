@@ -275,7 +275,11 @@ trait DraftController {
     patch("/:article_id", operation(updateArticle)) {
       authUser.assertHasId()
       authRole.assertHasWritePermission()
-      writeService.updateArticle(long("article_id"), extract[UpdatedArticle](request.body)) match {
+      val externalId = paramOrNone("externalId")
+      val externalSubjectIds = paramAsListOfString("externalSubjectIds")
+      val id = long("article_id")
+      val updateArticle = extract[UpdatedArticle](request.body)
+      writeService.updateArticle(id, updateArticle, externalId, externalSubjectIds) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)
       }

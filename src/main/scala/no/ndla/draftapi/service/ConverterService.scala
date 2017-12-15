@@ -137,14 +137,14 @@ trait ConverterService {
     private def getLinkToOldNdla(id: Long): Option[String] = draftRepository.getExternalIdFromId(id).map(createLinkToOldNdla)
 
     private def removeUnknownEmbedTagAttributes(html: String): String = {
-      val document = HtmlRules.stringToJsoupDocument(html)
+      val document = HtmlTagRules.stringToJsoupDocument(html)
       document.select("embed").asScala.map(el => {
-        ResourceType.valueOf(el.attr(Attributes.DataResource.toString))
+        ResourceType.valueOf(el.attr(TagAttributes.DataResource.toString))
           .map(EmbedTagRules.attributesForResourceType)
-          .map(knownAttributes => HtmlRules.removeIllegalAttributes(el, knownAttributes.all.map(_.toString)))
+          .map(knownAttributes => HtmlTagRules.removeIllegalAttributes(el, knownAttributes.all.map(_.toString)))
       })
 
-      HtmlRules.jsoupDocumentToString(document)
+      HtmlTagRules.jsoupDocumentToString(document)
     }
 
     def toApiArticle(article: domain.Article, language: String): api.Article = {
@@ -331,9 +331,9 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle): domain.Article = {
+    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
       val lang = article.language
-      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + DRAFT
+      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
       toMergeInto.copy(
         status = status,
         revision = Option(article.revision),
@@ -352,12 +352,14 @@ trait ConverterService {
       )
     }
 
-    def toDomainArticle(id: Long, article: api.UpdatedArticle): domain.Article = {
+    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
       val lang = article.language
+      val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
+
       domain.Article(
         id = Some(id),
         revision = Some(1),
-        status = Set(ArticleStatus.CREATED),
+        status = status,
         title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
         content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
         copyright = article.copyright.map(toDomainCopyright),

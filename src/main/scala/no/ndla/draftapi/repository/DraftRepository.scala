@@ -79,6 +79,24 @@ trait DraftRepository {
       }
     }
 
+    def updateWithExternalIds(article: Article, externalId: String, externalSubjectIds: Seq[String])(implicit session: DBSession = AutoSession): Try[Article] = {
+      val dataObject = new PGobject()
+      dataObject.setType("jsonb")
+      dataObject.setValue(write(article))
+
+      val newRevision = article.revision.getOrElse(0) + 1
+      val count = sql"update ${Article.table} set document=${dataObject}, revision=$newRevision, external_id=$externalId, external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id} and revision=${article.revision}".update.apply
+
+      if (count != 1) {
+        val message = s"Found revision mismatch when attempting to update article ${article.id}"
+        logger.info(message)
+        Failure(new OptimisticLockException)
+      } else {
+        logger.info(s"Updated article ${article.id}")
+        Success(article.copy(revision=Some(newRevision)))
+      }
+    }
+
     def withId(articleId: Long): Option[Article] =
       articleWhere(sqls"ar.id=${articleId.toInt}")
 

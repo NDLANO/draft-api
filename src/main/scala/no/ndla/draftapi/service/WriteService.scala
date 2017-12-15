@@ -83,23 +83,29 @@ trait WriteService {
       } yield apiArticle
     }
 
-    private def updateArticle(toUpdate: domain.Article): Try[domain.Article] = {
+    private def updateArticle(toUpdate: domain.Article, externalId: Option[String] = None, externalSubjectIds: Seq[String] = Seq.empty): Try[domain.Article] = {
+      val updateFunc = externalId match {
+        case None => draftRepository.update _
+        case Some(nid) => (a: domain.Article) => draftRepository.updateWithExternalIds(a, nid, externalSubjectIds)
+      }
+
       for {
         _ <- contentValidator.validateArticle(toUpdate, allowUnknownLanguage = true)
-        domainArticle <- draftRepository.update(toUpdate)
+        domainArticle <- updateFunc(toUpdate)
         _ <- articleIndexService.indexDocument(domainArticle)
       } yield domainArticle
     }
 
-    def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle): Try[api.Article] = {
+    def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
-          updateArticle(converterService.toDomainArticle(existing, updatedApiArticle))
+          updateArticle(converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined))
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
         case None if draftRepository.exists(articleId) =>
-          updateArticle(converterService.toDomainArticle(articleId, updatedApiArticle))
+          val article = converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
+          updateArticle(article, externalId, externalSubjectIds)
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
