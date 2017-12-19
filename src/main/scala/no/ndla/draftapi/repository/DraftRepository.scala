@@ -46,7 +46,7 @@ trait DraftRepository {
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
 
-      val articleId: Long = sql"insert into ${Article.table} (id, external_id, document, revision) values (${article.id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)".updateAndReturnGeneratedKey().apply
+      val articleId: Long = sql"insert into ${Article.table} (id, external_id, external_subject_id, document, revision) values (${article.id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)".updateAndReturnGeneratedKey().apply
 
       logger.info(s"Inserted new article: $articleId")
       article.copy(revision=Some(startRevision))
