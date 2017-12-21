@@ -57,7 +57,7 @@ trait ContentValidator {
     }
 
     def validateDate(fieldName: String, dateString: String): Seq[ValidationMessage] = {
-      val parser = ISODateTimeFormat.dateTimeParser()
+      val parser = ISODateTimeFormat.dateOptionalTimeParser()
       try {
         parser.parseDateTime(dateString)
         Seq.empty

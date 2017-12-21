@@ -165,7 +165,7 @@ trait ConverterService {
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
       val (validFrom, validTo) = try {
-        val parser = ISODateTimeFormat.dateTimeParser()
+        val parser = ISODateTimeFormat.dateOptionalTimeParser()
         val validFrom = newCopyright.validFrom.map(parser.parseDateTime(_).toDate)
         val validTo = newCopyright.validTo.map(parser.parseDateTime(_).toDate)
         (validFrom, validTo)

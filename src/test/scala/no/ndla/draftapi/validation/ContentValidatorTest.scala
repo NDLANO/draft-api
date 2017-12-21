@@ -212,4 +212,11 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     contentValidator.validateUserAbleToSetStatus(TestData.statusWithAwaitingPublishing).isSuccess should be (true)
   }
 
+  test("validation should fail if validFrom can not be parsed") {
+    val agreementCopyright = TestData.newAgreement.copyright.copy(validFrom = Some("abc"), validTo = Some("def"))
+    val errors = contentValidator.validateDates(agreementCopyright)
+
+    errors.size should be (2)
+  }
+
 }
