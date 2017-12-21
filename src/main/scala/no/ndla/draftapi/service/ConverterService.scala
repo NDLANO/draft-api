@@ -24,6 +24,7 @@ import ArticleStatus._
 import Language._
 import no.ndla.draftapi.model.api.NewAgreement
 import no.ndla.validation._
+import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -60,7 +61,7 @@ trait ConverterService {
       val title = hit.get("title").getAsString
       val license = hit.get("license").getAsString
 
-      api.AgreementSummary(id,title, license)
+      api.AgreementSummary(id, title, license)
     }
 
     def hitAsArticleSummary(hit: JsonObject, language: String): api.ArticleSummary = {
@@ -162,7 +163,25 @@ trait ConverterService {
 
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
 
-   def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
+    def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
+      val parser = ISODateTimeFormat.dateTimeParser()
+      val validFrom = newCopyright.validFrom.map(parser.parseDateTime(_).toDate)
+      val validTo = newCopyright.validTo.map(parser.parseDateTime(_).toDate)
+
+      val apiCopyright = api.Copyright(
+        newCopyright.license,
+        newCopyright.origin,
+        newCopyright.creators,
+        newCopyright.processors,
+        newCopyright.rightsholders,
+        newCopyright.agreementId,
+        validFrom,
+        validTo
+      )
+      toDomainCopyright(apiCopyright)
+    }
+
+    def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
       domain.Copyright(
         copyright.license.map(_.license),
         copyright.origin,
@@ -246,7 +265,7 @@ trait ConverterService {
           case Failure(ex: ValidationException) => ex.errors
           case Failure(ex) => Set(ValidationMessage("status", ex.getMessage))
         }
-        Failure(new ValidationException(errors=errors.toSeq))
+        Failure(new ValidationException(errors = errors.toSeq))
       } else
         Success(validStatuses.map(_.get))
     }
@@ -314,4 +333,5 @@ trait ConverterService {
     def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent = api.ConceptContent(title.content, title.language)
 
   }
+
 }

@@ -12,11 +12,12 @@ import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveV
 import no.ndla.draftapi.model.domain
 import domain.ArticleStatus._
 import no.ndla.draftapi.auth.Role
-import no.ndla.draftapi.model.api.AccessDeniedException
+import no.ndla.draftapi.model.api.{AccessDeniedException, NewAgreementCopyright}
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.AuthUser
 import no.ndla.validation.{HtmlRules, TextValidator, ValidationException, ValidationMessage}
+import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -48,6 +49,22 @@ trait ContentValidator {
       } else {
         Failure(new ValidationException(errors = validationErrors))
       }
+    }
+
+    def validateDates(newCopyright: NewAgreementCopyright): Seq[ValidationMessage] = {
+      newCopyright.validFrom.map(dateString => validateDate("copyright.validFrom", dateString)).toSeq.flatten ++
+      newCopyright.validTo.map(dateString => validateDate("copyright.validTo", dateString)).toSeq.flatten
+    }
+
+    def validateDate(fieldName: String, dateString: String): Seq[ValidationMessage] = {
+      val parser = ISODateTimeFormat.dateTimeParser()
+      try {
+        parser.parseDateTime(dateString)
+        Seq.empty
+      } catch {
+        case _: IllegalArgumentException => Seq(ValidationMessage(fieldName, "Date field needs to be in ISO 8601"))
+      }
+
     }
 
     def validateArticle(article: Article, allowUnknownLanguage: Boolean): Try[Article] = {

@@ -259,7 +259,7 @@ object TestData {
     updatedBy = "ndalId54321"
   )
 
-  val newAgreement = NewAgreement("newTitle", "newString", api.Copyright(Some(api.License("by-sa", None, None)), Some(""), List(),List(),List(), None, None, None))
+  val newAgreement = NewAgreement("newTitle", "newString", api.NewAgreementCopyright(Some(api.License("by-sa", None, None)), Some(""), List(),List(),List(), None, None, None))
   val statusWithAwaitingPublishing = Set(ArticleStatus.DRAFT, ArticleStatus.QUEUED_FOR_PUBLISHING)
   val statusWithDraft = Set(ArticleStatus.DRAFT)
 
