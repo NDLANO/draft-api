@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi
 
+import no.ndla.draftapi.auth.Role
 import org.scalatra.ScalatraServlet
 import org.scalatra.swagger._
 
@@ -26,6 +27,8 @@ object DraftApiInfo {
     "http://www.gnu.org/licenses/gpl-3.0.en.html")
 }
 
-class DraftSwagger extends Swagger("2.0", "0.8", DraftApiInfo.apiInfo) {
-  addAuthorization(OAuth(List("articles:all"), List(ApplicationGrant(TokenEndpoint("/auth/tokens", "access_token")))))
+class DraftSwagger extends Swagger("2.0", "0.8", DraftApiInfo.apiInfo) with Role {
+  def createRoleInTestEnv(role: String): String = role.replace(":", "-test:")
+
+  addAuthorization(OAuth(List(createRoleInTestEnv(authRole.DraftRoleWithWriteAccess), createRoleInTestEnv(authRole.DraftRoleWithPublishAccess), createRoleInTestEnv(authRole.ArticleRoleWithPublishAccess)), List(ImplicitGrant(LoginEndpoint(DraftApiProperties.Auth0LoginEndpoint), "access_token"))))
 }
