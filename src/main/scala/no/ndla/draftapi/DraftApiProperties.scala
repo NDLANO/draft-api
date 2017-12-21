@@ -18,6 +18,9 @@ import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
   val Auth0LoginEndpoint = "https://ndla.eu.auth0.com/authorize"
+  val DraftRoleWithWriteAccess = "drafts:write"
+  val DraftRoleWithPublishAccess = "drafts:set_to_publish"
+  val ArticleRoleWithPublishAccess = "articles:publish"
 
   val SecretsFile = "draft-api.secrets"
 
