@@ -164,21 +164,27 @@ trait ConverterService {
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
-      val parser = ISODateTimeFormat.dateTimeParser()
-      val validFrom = newCopyright.validFrom.map(parser.parseDateTime(_).toDate)
-      val validTo = newCopyright.validTo.map(parser.parseDateTime(_).toDate)
+      val (validFrom, validTo) = try {
+        val parser = ISODateTimeFormat.dateTimeParser()
+        val validFrom = newCopyright.validFrom.map(parser.parseDateTime(_).toDate)
+        val validTo = newCopyright.validTo.map(parser.parseDateTime(_).toDate)
+        (validFrom, validTo)
+      } catch {
+        case _ : IllegalArgumentException =>
+          (None, None)
+      }
 
-      val apiCopyright = api.Copyright(
-        newCopyright.license,
-        newCopyright.origin,
-        newCopyright.creators,
-        newCopyright.processors,
-        newCopyright.rightsholders,
-        newCopyright.agreementId,
-        validFrom,
-        validTo
-      )
-      toDomainCopyright(apiCopyright)
+        val apiCopyright = api.Copyright(
+          newCopyright.license,
+          newCopyright.origin,
+          newCopyright.creators,
+          newCopyright.processors,
+          newCopyright.rightsholders,
+          newCopyright.agreementId,
+          validFrom,
+          validTo
+        )
+        toDomainCopyright(apiCopyright)
     }
 
     def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {

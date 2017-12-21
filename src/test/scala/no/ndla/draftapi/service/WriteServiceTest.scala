@@ -41,7 +41,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(agreementIndexService.indexDocument(any[Agreement])).thenAnswer((invocation: InvocationOnMock) => Try(invocation.getArgumentAt(0, agreement.getClass)))
     when(readService.addUrlsOnEmbedResources(any[Article])).thenAnswer((invocation: InvocationOnMock) => invocation.getArgumentAt(0, article.getClass))
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(contentValidator.validateAgreement(any[Agreement])).thenReturn(Success(agreement))
+    when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
     when(authUser.id()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
@@ -67,7 +67,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("newAgreement should insert a given Agreement") {
     when(agreementRepository.insert(any[Agreement])(any[DBSession])).thenReturn(agreement)
-    when(contentValidator.validateAgreement(any[Agreement])).thenReturn(Success(agreement))
+    when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
 
     service.newAgreement(TestData.newAgreement).get.id.toString should equal(agreement.id.get.toString)
     verify(agreementRepository, times(1)).insert(any[Agreement])

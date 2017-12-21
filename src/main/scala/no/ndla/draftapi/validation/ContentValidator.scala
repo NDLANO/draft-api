@@ -12,7 +12,7 @@ import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveV
 import no.ndla.draftapi.model.domain
 import domain.ArticleStatus._
 import no.ndla.draftapi.auth.Role
-import no.ndla.draftapi.model.api.{AccessDeniedException, NewAgreementCopyright}
+import no.ndla.draftapi.model.api.{AccessDeniedException, NewAgreement, NewAgreementCopyright}
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.AuthUser
@@ -39,9 +39,9 @@ trait ContentValidator {
       }
     }
 
-    def validateAgreement(agreement: Agreement): Try[Agreement] = {
+    def validateAgreement(agreement: Agreement, preExistingErrors: Seq[ValidationMessage] = Seq.empty): Try[Agreement] = {
       val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
-        NoHtmlValidator.validate("content", agreement.content).toList ++
+        NoHtmlValidator.validate("content", agreement.content).toList ++ preExistingErrors.toList
         validateAgreementCopyright(agreement.copyright)
 
       if (validationErrors.isEmpty){
