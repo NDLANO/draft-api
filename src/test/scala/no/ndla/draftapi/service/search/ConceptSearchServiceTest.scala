@@ -89,7 +89,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
   }
 
   override def afterAll() = {
-    conceptIndexService.deleteIndex(Some(DraftApiProperties.DraftSearchIndex))
+    conceptIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftSearchIndex))
   }
 
   test("That getStartAtAndNumResults returns SEARCH_MAX_PAGE_SIZE for value greater than SEARCH_MAX_PAGE_SIZE") {

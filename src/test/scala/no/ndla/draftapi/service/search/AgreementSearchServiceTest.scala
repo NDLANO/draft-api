@@ -76,7 +76,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   }
 
   override def afterAll() = {
-    agreementIndexService.deleteIndex(Some(DraftApiProperties.AgreementSearchIndex))
+    agreementIndexService.deleteIndexWithName(Some(DraftApiProperties.AgreementSearchIndex))
   }
 
   test("That getStartAtAndNumResults returns SEARCH_MAX_PAGE_SIZE for value greater than SEARCH_MAX_PAGE_SIZE") {
