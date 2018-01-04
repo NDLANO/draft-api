@@ -28,6 +28,7 @@ import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
+import scala.util.control.Exception.allCatch
 
 trait ConverterService {
   this: Clock with DraftRepository with User =>
@@ -164,27 +165,21 @@ trait ConverterService {
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
-      val (validFrom, validTo) = try {
-        val parser = ISODateTimeFormat.dateOptionalTimeParser()
-        val validFrom = newCopyright.validFrom.map(parser.parseDateTime(_).toDate)
-        val validTo = newCopyright.validTo.map(parser.parseDateTime(_).toDate)
-        (validFrom, validTo)
-      } catch {
-        case _ : IllegalArgumentException =>
-          (None, None)
-      }
+      val parser = ISODateTimeFormat.dateOptionalTimeParser()
+      val validFrom = newCopyright.validFrom.flatMap(date => allCatch.opt(parser.parseDateTime(date).toDate))
+      val validTo = newCopyright.validTo.flatMap(date => allCatch.opt(parser.parseDateTime(date).toDate))
 
-        val apiCopyright = api.Copyright(
-          newCopyright.license,
-          newCopyright.origin,
-          newCopyright.creators,
-          newCopyright.processors,
-          newCopyright.rightsholders,
-          newCopyright.agreementId,
-          validFrom,
-          validTo
-        )
-        toDomainCopyright(apiCopyright)
+      val apiCopyright = api.Copyright(
+        newCopyright.license,
+        newCopyright.origin,
+        newCopyright.creators,
+        newCopyright.processors,
+        newCopyright.rightsholders,
+        newCopyright.agreementId,
+        validFrom,
+        validTo
+      )
+      toDomainCopyright(apiCopyright)
     }
 
     def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {

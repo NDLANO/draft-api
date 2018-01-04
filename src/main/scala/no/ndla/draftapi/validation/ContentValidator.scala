@@ -41,7 +41,8 @@ trait ContentValidator {
 
     def validateAgreement(agreement: Agreement, preExistingErrors: Seq[ValidationMessage] = Seq.empty): Try[Agreement] = {
       val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
-        NoHtmlValidator.validate("content", agreement.content).toList ++ preExistingErrors.toList
+        NoHtmlValidator.validate("content", agreement.content).toList ++
+        preExistingErrors.toList ++
         validateAgreementCopyright(agreement.copyright)
 
       if (validationErrors.isEmpty){
@@ -58,11 +59,9 @@ trait ContentValidator {
 
     def validateDate(fieldName: String, dateString: String): Seq[ValidationMessage] = {
       val parser = ISODateTimeFormat.dateOptionalTimeParser()
-      try {
-        parser.parseDateTime(dateString)
-        Seq.empty
-      } catch {
-        case _: IllegalArgumentException => Seq(ValidationMessage(fieldName, "Date field needs to be in ISO 8601"))
+      Try(parser.parseDateTime(dateString)) match {
+        case Success(_) => Seq.empty
+        case Failure(_) => Seq(ValidationMessage(fieldName, "Date field needs to be in ISO 8601"))
       }
 
     }
