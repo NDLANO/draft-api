@@ -10,20 +10,14 @@ package no.ndla.draftapi.service.search
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
-import com.typesafe.scalalogging.LazyLogging
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.IndexDefinition
 import com.sksamuel.elastic4s.mappings.MappingDefinition
-import io.searchbox.core.{Bulk, Delete, Index}
-import io.searchbox.indices.aliases.{AddAliasMapping, GetAliases, ModifyAliases, RemoveAliasMapping}
-import io.searchbox.indices.mapping.PutMapping
-import io.searchbox.indices.{CreateIndex, DeleteIndex, IndicesExists}
-import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
-import no.ndla.draftapi.model.domain.{Content, NdlaSearchException, ReindexResult}
+import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi._
+import no.ndla.draftapi.integration.Elastic4sClient
+import no.ndla.draftapi.model.domain.{Content, ReindexResult}
 import no.ndla.draftapi.repository.Repository
-
 import scala.util.{Failure, Success, Try}
 
 trait IndexService {

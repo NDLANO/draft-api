@@ -10,15 +10,14 @@ package no.ndla.draftapi.service.search
 
 import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
-import io.searchbox.core.Search
-import io.searchbox.params.Parameters
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.integration.ElasticClient
+import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.service.ConverterService
-import org.apache.lucene.search.join.ScoreMode
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.index.IndexNotFoundException
 import org.elasticsearch.index.query._
@@ -29,11 +28,11 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait AgreementSearchService {
-  this: ElasticClient with SearchConverterService with SearchService with AgreementIndexService with ConverterService =>
+  this: Elastic4sClient with ElasticClient with SearchConverterService with SearchService with AgreementIndexService with ConverterService =>
   val agreementSearchService: AgreementSearchService
 
   class AgreementSearchService extends LazyLogging with SearchService[api.AgreementSummary] {
-    private val noCopyright = QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("license", "copyrighted"))
+    private val noCopyright = boolQuery().not(termQuery("license", "copyrighted"))
 
     override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
 
@@ -42,50 +41,47 @@ trait AgreementSearchService {
     }
 
     def all(withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
-      val fullSearch = QueryBuilders.boolQuery()
+      val fullSearch = boolQuery()
       executeSearch(withIdIn, license, sort, page, pageSize, fullSearch)
     }
 
     def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
-      val fullQuery = QueryBuilders.boolQuery()
-        .must(QueryBuilders.boolQuery()
-            .should(QueryBuilders.queryStringQuery(query).field("title")).boost(2)
-            .should(QueryBuilders.queryStringQuery(query).field("content")).boost(1)
+      val fullQuery = boolQuery()
+        .must(boolQuery()
+            .should(queryStringQuery(query).field("title")).boost(2)
+            .should(queryStringQuery(query).field("content")).boost(1)
         )
 
       executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
     }
 
-    def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryBuilder): SearchResult = {
+    def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition): SearchResult = {
 
-      val filteredSearch = license match {
-        case None => queryBuilder.filter(noCopyright)
-        case Some(lic) => queryBuilder.filter(QueryBuilders.termQuery("license", lic))
+      val licenseFilter = license match {
+        case None => Some(noCopyright)
+        case Some(lic) => Some(termQuery("license", lic))
       }
 
-      val idFilteredSearch = withIdIn match {
-        case head :: tail => filteredSearch.filter(QueryBuilders.idsQuery(DraftApiProperties.AgreementSearchDocument).addIds(head.toString :: tail.map(_.toString): _*))
-        case Nil => filteredSearch
-      }
+      val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
 
-      val searchQuery = new SearchSourceBuilder().query(idFilteredSearch).sort(getSortDefinition(sort))
+      val filters = List(licenseFilter, idFilter)
+      val filteredSearch = queryBuilder.filter(filters.flatten)
 
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
-      val request = new Search.Builder(searchQuery.toString)
-        .addIndex(searchIndex)
-        .setParameter(Parameters.SIZE, numResults)
-        .setParameter("from", startAt)
-
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
         logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested ${requestedResultWindow}")
         throw new ResultWindowTooLargeException()
       }
 
-      jestClient.execute(request.build()) match {
-        case Success(response) => SearchResult(response.getTotal.toLong, page, numResults, Language.NoLanguage, response)
-        case Failure(f) => errorHandler(Failure(f))
+      e4sClient.execute{
+        search(searchIndex)
+          .size(numResults)
+          .from(startAt)
+          .query(filteredSearch)
+          .sortBy(getSortDefinition(sort))
       }
+
     }
 
     protected def errorHandler[T](failure: Failure[T]) = {

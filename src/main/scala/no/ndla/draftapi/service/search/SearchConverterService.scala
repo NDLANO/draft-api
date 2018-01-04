@@ -9,6 +9,8 @@ package no.ndla.draftapi.service.search
 
 import com.google.gson.{JsonElement, JsonObject}
 import java.util.Map.Entry
+
+import com.sksamuel.elastic4s.http.search.SearchHit
 import io.searchbox.core.{SearchResult => JestSearchResult}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.model.domain._
@@ -16,6 +18,7 @@ import no.ndla.draftapi.model.search._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.network.ApplicationUrl
 import org.jsoup.Jsoup
+
 import scala.collection.JavaConverters._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.service.ConverterService
@@ -123,6 +126,40 @@ trait SearchConverterService {
       val license = hit.get("license").getAsString
 
       api.AgreementSummary(id,title, license)
+    }
+
+    def getLanguageFromHit(result: SearchHit): Option[String] = {
+      val sortedInnerHits = result.innerHits.toList.filter(ih => ih._2.total > 0).sortBy{
+        case (_, hit) => hit.max_score
+      }.reverse
+
+      val matchLanguage = sortedInnerHits.headOption.flatMap{
+        case (_, innerHit) =>
+          innerHit.hits.sortBy(hit => hit.score).reverse.headOption.flatMap(hit => {
+            hit.highlight.headOption.map(hl => {
+                hl._1.split('.').filterNot(_ == "raw").last
+            })
+          })
+      }
+
+      matchLanguage match {
+        case Some(lang) =>
+          Some(lang)
+        case _ =>
+          val title = result.sourceAsMap.get("title")
+          val titleMap = title.map(tm => {
+            tm.asInstanceOf[Map[String, _]]
+          })
+
+          val languages = titleMap.map(title => title.keySet.toList)
+
+          languages.flatMap(languageList => {
+            languageList.sortBy(lang => {
+              val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
+              languagePriority.indexOf(lang)
+            }).lastOption
+          })
+      }
     }
 
   }

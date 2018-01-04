@@ -9,7 +9,7 @@
 package no.ndla.draftapi.service.search
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.mappings.MappingContentBuilder
+import com.sksamuel.elastic4s.mappings.MappingDefinition
 import com.typesafe.scalalogging.LazyLogging
 import io.searchbox.core.Index
 import no.ndla.draftapi.DraftApiProperties
@@ -33,13 +33,13 @@ trait AgreementIndexService {
       new Index.Builder(source).index(indexName).`type`(documentType).id(domainModel.id.get.toString).build
     }
 
-    def getMapping: String = {
-      MappingContentBuilder.buildWithName(mapping(documentType).fields(
+    def getMapping: MappingDefinition = {
+      mapping(documentType).fields(
         intField("id"),
-        textField("title").fielddata(true) fields (keywordField("raw") index "not_analyzed"),
+        textField("title").fielddata(true).fields(keywordField("raw")),
         textField("content").fielddata(true),
-        keywordField("license") index "not_analyzed"
-      ), DraftApiProperties.AgreementSearchDocument).string()
+        keywordField("license")
+      )
     }
   }
 }
