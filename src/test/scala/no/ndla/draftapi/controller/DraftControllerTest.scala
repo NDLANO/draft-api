@@ -91,7 +91,6 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     val searchResultMock = mock[io.searchbox.core.SearchResult]
     when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
       .thenReturn(searchMock)
-    when(searchConverterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal (200)
