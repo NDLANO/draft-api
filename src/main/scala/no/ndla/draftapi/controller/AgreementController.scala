@@ -42,7 +42,7 @@ trait AgreementController {
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
     private def search(query: Option[String], sort: Option[Sort.Value], license: Option[String], page: Int, pageSize: Int, idList: List[Long]) = {
-      val searchResult = query match {
+      query match {
         case Some(q) => agreementSearchService.matchingQuery(
           query = q,
           withIdIn = idList,
@@ -59,15 +59,6 @@ trait AgreementController {
           sort = sort.getOrElse(Sort.ByTitleAsc)
         )
       }
-
-      val hitResult = searchConverterService.getAgreementHits(searchResult.response)
-      AgreementSearchResult(
-        searchResult.totalCount,
-        searchResult.page,
-        searchResult.pageSize,
-        searchResult.language,
-        hitResult
-      )
     }
 
     val getAllAgreements =

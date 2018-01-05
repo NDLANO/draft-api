@@ -8,14 +8,11 @@
 
 package no.ndla.draftapi.service.search
 
-import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
-import io.searchbox.core.Search
-import io.searchbox.params.Parameters
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.{ArticleSearchResult, ResultWindowTooLargeException}
+import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.service.ConverterService
 import no.ndla.network.ApplicationUrl
@@ -24,8 +21,6 @@ import com.sksamuel.elastic4s.searches.ScoreMode
 import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, QueryDefinition}
 import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.index.IndexNotFoundException
-import org.elasticsearch.index.query._
-import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -40,7 +35,8 @@ trait ArticleSearchService {
 
     override val searchIndex: String = DraftApiProperties.DraftSearchIndex
 
-    override def hitToApiModel(hit: JsonObject, language: String): api.ArticleSummary = searchConverterService.hitAsArticleSummary(hit, language)
+    override def hitToApiModel(hit: String, language: String): api.ArticleSummary =
+      searchConverterService.hitAsArticleSummary(hit, language)
 
     def all(withIdIn: List[Long], language: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): api.SearchResult = {
       executeSearch(withIdIn, language, license, sort, page, pageSize, boolQuery(), articleTypes)
@@ -53,14 +49,17 @@ trait ArticleSearchService {
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
       val tagSearch = simpleStringQuery(query).field(s"tags.$language", 1)
 
+      val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
+      val ih = innerHits("inner_hits").highlighting(hi)
+
       val fullQuery = boolQuery()
         .must(
           boolQuery()
             .should(
-              nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2),
-              nestedQuery("introduction", introSearch).scoreMode(ScoreMode.Avg).boost(2),
-              nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1),
-              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2)
+              nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih),
+              nestedQuery("introduction", introSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih),
+              nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(ih),
+              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih)
             )
         )
 
@@ -69,7 +68,7 @@ trait ArticleSearchService {
 
     def executeSearch(withIdIn: List[Long], language: String, license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition, articleTypes: Seq[String]): api.SearchResult = {
 
-      val articleTypesFilter = if (articleTypes.nonEmpty) articleTypes else ArticleType.all
+      val articleTypesFilter = if (articleTypes.nonEmpty) Some(constantScoreQuery(termsQuery("articleType", articleTypes))) else None
 
       val licenseFilter = license match {
         case None => Some(noCopyright)
@@ -103,22 +102,24 @@ trait ArticleSearchService {
           .sortBy(getSortDefinition(sort, searchLanguage))
       } match {
         case Success(response) =>
-          ArticleSearchResult(response.result.totalHits, page, numResults, language, getHits(response.result, language, hitToApiModel))
+          api.SearchResult(response.result.totalHits, page, numResults, language, getHits(response.result, language, hitToApiModel))
+        case Failure(ex) =>
+          errorHandler(Failure(ex))
       }
 
     }
 
     protected def errorHandler[T](failure: Failure[T]) = {
       failure match {
-        case Failure(e: NdlaSearchException) =>
-          e.getResponse.getResponseCode match {
+        case Failure(e: Ndla4sSearchException) =>
+          e.rf.status match {
             case notFound: Int if notFound == 404 =>
               logger.error(s"Index $searchIndex not found. Scheduling a reindex.")
               scheduleIndexDocuments()
               throw new IndexNotFoundException(s"Index $searchIndex not found. Scheduling a reindex")
             case _ =>
-              logger.error(e.getResponse.getErrorMessage)
-              throw new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getResponse.getErrorMessage)
+              logger.error(e.getMessage)
+              throw new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getMessage)
           }
         case Failure(t: Throwable) => throw t
       }

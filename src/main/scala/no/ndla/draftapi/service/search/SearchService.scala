@@ -10,24 +10,24 @@ package no.ndla.draftapi.service.search
 
 import java.lang.Math.max
 
-import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import no.ndla.draftapi.DraftApiProperties.{DefaultPageSize, MaxPageSize}
-import no.ndla.draftapi.integration.ElasticClient
+import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain._
-import org.elasticsearch.search.sort.{FieldSortBuilder, SortBuilders}
+
+import scala.util.{Failure, Success}
 
 trait SearchService {
-  this: ElasticClient with SearchConverterService with LazyLogging =>
+  this: ElasticClient with Elastic4sClient with SearchConverterService with LazyLogging =>
 
   trait SearchService[T] {
     val searchIndex: String
 
-    def hitToApiModel(hit: JsonObject, language: String): T
+    def hitToApiModel(hit: String, language: String): T
 
     def getHits(response: SearchResponse, language: String, hitToApi:(String, String) => T): Seq[T] = {
       response.totalHits match {
@@ -86,11 +86,15 @@ trait SearchService {
       }
     }
 
-    def countDocuments: Int = {
-      val ret = jestClient.execute(
-        new Count.Builder().addIndex(searchIndex).build()
-      ).map(result => result.getCount.toInt)
-      ret.getOrElse(0)
+    def countDocuments: Long = {
+      val response = e4sClient.execute{
+        catCount(searchIndex)
+      }
+
+      response match {
+        case Success(resp) => resp.result.count
+        case Failure(_) => 0
+      }
     }
 
     def getStartAtAndNumResults(page: Int, pageSize: Int): (Int, Int) = {

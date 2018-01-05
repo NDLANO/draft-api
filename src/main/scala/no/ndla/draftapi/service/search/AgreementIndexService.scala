@@ -9,9 +9,9 @@
 package no.ndla.draftapi.service.search
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.indexes.IndexDefinition
 import com.sksamuel.elastic4s.mappings.MappingDefinition
 import com.typesafe.scalalogging.LazyLogging
-import io.searchbox.core.Index
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Agreement
 import no.ndla.draftapi.model.search.{SearchableArticle, SearchableLanguageFormats}
@@ -28,9 +28,9 @@ trait AgreementIndexService {
     override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
     override val repository: Repository[Agreement] = agreementRepository
 
-    override def createIndexRequest(domainModel: Agreement, indexName: String): Index = {
+    override def createIndexRequest(domainModel: Agreement, indexName: String): IndexDefinition = {
       val source = write(searchConverterService.asSearchableAgreement(domainModel))
-      new Index.Builder(source).index(indexName).`type`(documentType).id(domainModel.id.get.toString).build
+      indexInto(indexName / documentType).doc(source).id(domainModel.id.get.toString)
     }
 
     def getMapping: MappingDefinition = {

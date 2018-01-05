@@ -10,7 +10,7 @@ package no.ndla.draftapi.service.search
 
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi._
-import no.ndla.draftapi.integration.JestClientFactory
+import no.ndla.draftapi.integration.Elastic4sClientFactory
 import no.ndla.draftapi.model.domain._
 import no.ndla.tag.IntegrationTest
 import org.joda.time.DateTime
@@ -20,7 +20,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
 
   val esPort = 9200
 
-  override val jestClient = JestClientFactory.getClient(searchServer = s"http://localhost:$esPort")
+  override val e4sClient = Elastic4sClientFactory.getClient(searchServer = s"http://localhost:$esPort")
 
   override val conceptSearchService = new ConceptSearchService
   override val conceptIndexService = new ConceptIndexService

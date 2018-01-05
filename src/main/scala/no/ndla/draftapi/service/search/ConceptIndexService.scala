@@ -9,9 +9,9 @@
 package no.ndla.draftapi.service.search
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.indexes.IndexDefinition
 import com.sksamuel.elastic4s.mappings.{MappingDefinition, NestedFieldDefinition}
 import com.typesafe.scalalogging.LazyLogging
-import io.searchbox.core.Index
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Concept
 import no.ndla.draftapi.model.domain.Language.languageAnalyzers
@@ -29,9 +29,9 @@ trait ConceptIndexService {
     override val searchIndex: String = DraftApiProperties.ConceptSearchIndex
     override val repository: Repository[Concept] = conceptRepository
 
-    override def createIndexRequest(concept: Concept, indexName: String): Index = {
+    override def createIndexRequest(concept: Concept, indexName: String): IndexDefinition = {
       val source = write(searchConverterService.asSearchableConcept(concept))
-      new Index.Builder(source).index(indexName).`type`(documentType).id(concept.id.get.toString).build
+      indexInto(indexName / documentType).doc(source).id(concept.id.get.toString)
     }
 
     def getMapping: MappingDefinition = {

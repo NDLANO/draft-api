@@ -198,6 +198,7 @@ trait ConverterService {
         val errors = invalidStatuses.flatMap {
           case Failure(ex: ValidationException) => ex.errors
           case Failure(ex) => Set(ValidationMessage("status", ex.getMessage))
+          case Success(_) => Set()
         }
         Failure(new ValidationException(errors=errors.toSeq))
       } else

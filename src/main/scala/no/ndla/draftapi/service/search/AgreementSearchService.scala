@@ -8,20 +8,17 @@
 
 package no.ndla.draftapi.service.search
 
-import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.ResultWindowTooLargeException
+import no.ndla.draftapi.model.api.{AgreementSearchResult, ResultWindowTooLargeException}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.service.ConverterService
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.index.IndexNotFoundException
-import org.elasticsearch.index.query._
-import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -36,16 +33,16 @@ trait AgreementSearchService {
 
     override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
 
-    override def hitToApiModel(hit: JsonObject, language: String): api.AgreementSummary = {
+    override def hitToApiModel(hit: String, language: String): api.AgreementSummary = {
       searchConverterService.hitAsAgreementSummary(hit)
     }
 
-    def all(withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
+    def all(withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): AgreementSearchResult = {
       val fullSearch = boolQuery()
       executeSearch(withIdIn, license, sort, page, pageSize, fullSearch)
     }
 
-    def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): SearchResult = {
+    def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): AgreementSearchResult = {
       val fullQuery = boolQuery()
         .must(boolQuery()
             .should(queryStringQuery(query).field("title")).boost(2)
@@ -55,7 +52,7 @@ trait AgreementSearchService {
       executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
     }
 
-    def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition): SearchResult = {
+    def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition): AgreementSearchResult = {
 
       val licenseFilter = license match {
         case None => Some(noCopyright)
@@ -70,7 +67,7 @@ trait AgreementSearchService {
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
-        logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested ${requestedResultWindow}")
+        logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
         throw new ResultWindowTooLargeException()
       }
 
@@ -80,6 +77,12 @@ trait AgreementSearchService {
           .from(startAt)
           .query(filteredSearch)
           .sortBy(getSortDefinition(sort))
+      } match {
+        case Success(response) =>
+          AgreementSearchResult(response.result.totalHits, page, numResults, Language.NoLanguage, getHits(response.result, Language.NoLanguage, hitToApiModel))
+
+        case Failure(ex) =>
+          errorHandler(Failure(ex))
       }
 
     }
