@@ -50,7 +50,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   val agreement4 = sampleAgreement.copy(id=Some(5), title="Vi får låne bildene", content = "Vi får låne bildene av kjeltringene")
   val agreement5 = sampleAgreement.copy(id=Some(6), title="Kjeltringer er ikke velkomne", content = "De er slemmere enn kjeft")
   val agreement6 = sampleAgreement.copy(id=Some(7), title="Du er en tyv", content = "Det er du som er tyven")
-  val agreement7 = sampleAgreement.copy(id=Some(8), title="Lurerier er ikke lov", content = "Lurerier er bare lov dersom du er en tyv")
+  val agreement7 = sampleAgreement.copy(id=Some(8), title="Lurerier er ikke bra", content = "Lurerier er bare lov dersom du er en tyv")
   val agreement8 = sampleAgreement.copy(id=Some(9), title="Hvorfor er aper så slemme", content = "Har du blitt helt ape")
   val agreement9 = sampleAgreement.copy(id=Some(10), title="Du er en av dem du", content = "Det er ikke snilt å være en av dem")
   val agreement10 = sampleAgreement.copy(id=Some(11), title="Woopie", content = "This agreement is copyrighted", copyright = copyrighted)
@@ -210,10 +210,10 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     hits4.map(_.id) should equal (Seq(2))
   }
 
-  test("search in content should be ranked lower than introduction and title") {
-    val search = agreementSearchService.matchingQuery("tyven", List(), None, 1, 10, Sort.ByRelevanceDesc)
+  test("search in content should be ranked lower than title") {
+    val search = agreementSearchService.matchingQuery("lov", List(), None, 1, 10, Sort.ByRelevanceDesc)
     val hits = search.results
-    hits.map(_.id) should equal (Seq(4, 7))
+    hits.map(_.id) should equal (Seq(8, 2))
   }
 
   def blockUntil(predicate: () => Boolean) = {

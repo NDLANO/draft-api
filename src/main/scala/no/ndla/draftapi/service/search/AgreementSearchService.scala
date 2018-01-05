@@ -45,8 +45,10 @@ trait AgreementSearchService {
     def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): AgreementSearchResult = {
       val fullQuery = boolQuery()
         .must(boolQuery()
-            .should(queryStringQuery(query).field("title")).boost(2)
-            .should(queryStringQuery(query).field("content")).boost(1)
+            .should(
+              queryStringQuery(query).field("title").boost(2),
+              queryStringQuery(query).field("content").boost(1)
+            )
         )
 
       executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
