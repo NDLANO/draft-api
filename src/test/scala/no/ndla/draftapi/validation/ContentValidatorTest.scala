@@ -194,4 +194,11 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     errors.failed.get.asInstanceOf[ValidationException].errors.head.message should equal ("An article must contain at least one title. Perhaps you tried to delete the only title in the article?")
   }
 
+  test("validation should fail if validFrom can not be parsed") {
+    val agreementCopyright = TestData.newAgreement.copyright.copy(validFrom = Some("abc"), validTo = Some("def"))
+    val errors = contentValidator.validateDates(agreementCopyright)
+
+    errors.size should be (2)
+  }
+
 }

@@ -23,9 +23,11 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.validation._
+import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
+import scala.util.control.Exception.allCatch
 
 trait ConverterService {
   this: Clock with DraftRepository with User with ArticleApiClient =>
@@ -115,7 +117,25 @@ trait ConverterService {
 
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
 
-   def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
+    def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
+      val parser = ISODateTimeFormat.dateOptionalTimeParser()
+      val validFrom = newCopyright.validFrom.flatMap(date => allCatch.opt(parser.parseDateTime(date).toDate))
+      val validTo = newCopyright.validTo.flatMap(date => allCatch.opt(parser.parseDateTime(date).toDate))
+
+      val apiCopyright = api.Copyright(
+        newCopyright.license,
+        newCopyright.origin,
+        newCopyright.creators,
+        newCopyright.processors,
+        newCopyright.rightsholders,
+        newCopyright.agreementId,
+        validFrom,
+        validTo
+      )
+      toDomainCopyright(apiCopyright)
+    }
+
+    def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
       domain.Copyright(
         copyright.license.map(_.license),
         copyright.origin,
@@ -199,7 +219,7 @@ trait ConverterService {
           case Failure(ex: ValidationException) => ex.errors
           case Failure(ex) => Set(ValidationMessage("status", ex.getMessage))
         }
-        Failure(new ValidationException(errors=errors.toSeq))
+        Failure(new ValidationException(errors = errors.toSeq))
       } else
         Success(validStatuses.map(_.get))
     }
@@ -395,4 +415,5 @@ trait ConverterService {
     }
 
   }
+
 }

@@ -14,8 +14,11 @@ import no.ndla.draftapi.model.api.NotFoundException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.ConverterService
+import no.ndla.draftapi.model.api.{AccessDeniedException, NewAgreement, NewAgreementCopyright}
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
+import no.ndla.network.AuthUser
+import org.joda.time.format.ISODateTimeFormat
 import no.ndla.validation._
 
 import scala.collection.JavaConverters._
@@ -38,9 +41,10 @@ trait ContentValidator {
       }
     }
 
-    def validateAgreement(agreement: Agreement): Try[Agreement] = {
+    def validateAgreement(agreement: Agreement, preExistingErrors: Seq[ValidationMessage] = Seq.empty): Try[Agreement] = {
       val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
         NoHtmlValidator.validate("content", agreement.content).toList ++
+        preExistingErrors.toList ++
         validateAgreementCopyright(agreement.copyright)
 
       if (validationErrors.isEmpty){
@@ -48,6 +52,20 @@ trait ContentValidator {
       } else {
         Failure(new ValidationException(errors = validationErrors))
       }
+    }
+
+    def validateDates(newCopyright: NewAgreementCopyright): Seq[ValidationMessage] = {
+      newCopyright.validFrom.map(dateString => validateDate("copyright.validFrom", dateString)).toSeq.flatten ++
+      newCopyright.validTo.map(dateString => validateDate("copyright.validTo", dateString)).toSeq.flatten
+    }
+
+    def validateDate(fieldName: String, dateString: String): Seq[ValidationMessage] = {
+      val parser = ISODateTimeFormat.dateOptionalTimeParser()
+      Try(parser.parseDateTime(dateString)) match {
+        case Success(_) => Seq.empty
+        case Failure(_) => Seq(ValidationMessage(fieldName, "Date field needs to be in ISO 8601"))
+      }
+
     }
 
     def validateArticle(article: Article, allowUnknownLanguage: Boolean): Try[Article] = {

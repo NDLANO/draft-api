@@ -59,8 +59,10 @@ trait WriteService {
     }
 
     def newAgreement(newAgreement: api.NewAgreement): Try[api.Agreement] = {
+      val apiErrors = contentValidator.validateDates(newAgreement.copyright)
+
       val domainAgreement = converterService.toDomainAgreement(newAgreement)
-      contentValidator.validateAgreement(domainAgreement) match {
+      contentValidator.validateAgreement(domainAgreement, preExistingErrors = apiErrors) match {
         case Success(_) =>
           val agreement = agreementRepository.insert(domainAgreement)
           agreementIndexService.indexDocument(agreement)
