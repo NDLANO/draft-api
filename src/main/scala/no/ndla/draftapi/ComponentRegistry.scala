@@ -33,7 +33,6 @@ object ComponentRegistry
     with DraftRepository
     with AgreementRepository
     with ConceptRepository
-    with ElasticClient
     with Elastic4sClient
     with ReindexClient
     with ArticleSearchService
@@ -94,7 +93,6 @@ object ComponentRegistry
   lazy val writeService = new WriteService
   lazy val reindexClient = new ReindexClient
 
-  lazy val jestClient: NdlaJestClient = JestClientFactory.getClient()
   lazy val e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()
 
   lazy val clock = new SystemClock

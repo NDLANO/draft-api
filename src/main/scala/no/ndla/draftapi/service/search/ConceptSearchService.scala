@@ -10,7 +10,7 @@ package no.ndla.draftapi.service.search
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
+import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.service.ConverterService
@@ -29,7 +29,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait ConceptSearchService {
-  this: ElasticClient with Elastic4sClient with SearchService with ConceptIndexService with ConverterService with SearchConverterService =>
+  this: Elastic4sClient with SearchService with ConceptIndexService with ConverterService with SearchConverterService =>
   val conceptSearchService: ConceptSearchService
 
   class ConceptSearchService extends LazyLogging with SearchService[api.ConceptSummary] {
@@ -109,14 +109,14 @@ trait ConceptSearchService {
     protected def errorHandler[T](failure: Failure[T]) = {
       failure match {
         case Failure(e: NdlaSearchException) =>
-          e.getResponse.getResponseCode match {
+          e.rf.status match {
             case notFound: Int if notFound == 404 =>
               logger.error(s"Index $searchIndex not found. Scheduling a reindex.")
               scheduleIndexDocuments()
               throw new IndexNotFoundException(s"Index $searchIndex not found. Scheduling a reindex")
             case _ =>
-              logger.error(e.getResponse.getErrorMessage)
-              throw new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getResponse.getErrorMessage)
+              logger.error(e.getMessage)
+              throw new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getMessage)
           }
         case Failure(t: Throwable) => throw t
       }

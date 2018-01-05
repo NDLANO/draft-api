@@ -10,7 +10,7 @@ package no.ndla.draftapi.service.search
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
+import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
@@ -27,7 +27,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait ArticleSearchService {
-  this: ElasticClient with Elastic4sClient with SearchConverterService with SearchService with ArticleIndexService with SearchConverterService =>
+  this: Elastic4sClient with SearchConverterService with SearchService with ArticleIndexService with SearchConverterService =>
   val articleSearchService: ArticleSearchService
 
   class ArticleSearchService extends LazyLogging with SearchService[api.ArticleSummary] {
@@ -111,7 +111,7 @@ trait ArticleSearchService {
 
     protected def errorHandler[T](failure: Failure[T]) = {
       failure match {
-        case Failure(e: Ndla4sSearchException) =>
+        case Failure(e: NdlaSearchException) =>
           e.rf.status match {
             case notFound: Int if notFound == 404 =>
               logger.error(s"Index $searchIndex not found. Scheduling a reindex.")

@@ -15,14 +15,14 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.searches.sort.{FieldSortDefinition, SortOrder}
 import no.ndla.draftapi.DraftApiProperties.{DefaultPageSize, MaxPageSize}
-import no.ndla.draftapi.integration.{Elastic4sClient, ElasticClient}
+import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain._
 
 import scala.util.{Failure, Success}
 
 trait SearchService {
-  this: ElasticClient with Elastic4sClient with SearchConverterService with LazyLogging =>
+  this: Elastic4sClient with SearchConverterService with LazyLogging =>
 
   trait SearchService[T] {
     val searchIndex: String

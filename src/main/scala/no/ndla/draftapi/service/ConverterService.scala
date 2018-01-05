@@ -8,7 +8,6 @@
 
 package no.ndla.draftapi.service
 
-import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.domain
@@ -32,13 +31,6 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
-
-    def getValueByFieldAndLanguage(hit: JsonObject, fieldPath: String, searchLanguage: String): String = {
-      hit.get(fieldPath).getAsJsonObject.entrySet.asScala.to[Seq].find(entr => entr.getKey == searchLanguage) match {
-        case Some(element) => element.getValue.getAsString
-        case None => ""
-      }
-    }
 
     def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String]): Try[domain.Article] = {
       ArticleApiClient.allocateArticleId(None, Seq.empty) match {
