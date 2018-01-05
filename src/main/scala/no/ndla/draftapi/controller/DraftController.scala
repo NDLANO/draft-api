@@ -9,22 +9,22 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.DraftApiProperties.RoleWithWriteAccess
-import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
+import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
-import org.scalatra.{Created, NotFound, Ok}
+import org.scalatra.{Created, NoContent, NotFound, Ok}
 
 import scala.util.{Failure, Success}
 
 trait DraftController {
-  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role =>
+  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role with User with ContentValidator =>
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -70,37 +70,30 @@ trait DraftController {
     }
 
     private def search(query: Option[String], sort: Option[Sort.Value], language: String, license: Option[String], page: Int, pageSize: Int, idList: List[Long], articleTypesFilter: Seq[String]) = {
-      val searchResult = query match {
-        case Some(q) => articleSearchService.matchingQuery(
-          query = q,
-          withIdIn = idList,
-          searchLanguage = language,
-          license = license,
-          page = page,
-          pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByRelevanceDesc),
-          if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
-        )
+      query match {
+        case Some(q) =>
+          articleSearchService.matchingQuery(
+            query = q,
+            withIdIn = idList,
+            searchLanguage = language,
+            license = license,
+            page = page,
+            pageSize = if (idList.isEmpty) pageSize else idList.size,
+            sort = sort.getOrElse(Sort.ByRelevanceDesc),
+            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
+          )
 
-        case None => articleSearchService.all(
-          withIdIn = idList,
-          language = language,
-          license = license,
-          page = page,
-          pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByTitleAsc),
-          if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
-        )
+        case None =>
+          articleSearchService.all(
+            withIdIn = idList,
+            language = language,
+            license = license,
+            page = page,
+            pageSize = if (idList.isEmpty) pageSize else idList.size,
+            sort = sort.getOrElse(Sort.ByTitleAsc),
+            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
+          )
       }
-
-      val hitResult = converterService.getHits(searchResult.response, language)
-      SearchResult(
-        searchResult.totalCount,
-        searchResult.page,
-        searchResult.pageSize,
-        searchResult.language,
-        hitResult
-      )
     }
 
     val getAllArticles =
@@ -166,7 +159,7 @@ trait DraftController {
     }
 
     val getArticleById =
-      (apiOperation[List[Article]]("getArticleById")
+      (apiOperation[Article]("getArticleById")
         summary "Show article with a specified Id"
         notes "Shows the article for the specified id."
         parameters(
@@ -188,7 +181,7 @@ trait DraftController {
     }
 
     val getInternalIdByExternalId =
-      (apiOperation[ArticleId]("getInternalIdByExternalId")
+      (apiOperation[ContentId]("getInternalIdByExternalId")
         summary "Get internal id of article for a specified ndla_node_id"
         notes "Get internal id of article for a specified ndla_node_id"
         parameters(
@@ -200,7 +193,7 @@ trait DraftController {
 
     get("/external_id/:ndla_node_id", operation(getInternalIdByExternalId)) {
       val externalId = long("ndla_node_id")
-      readService.getInternalIdByExternalId(externalId) match {
+      readService.getInternalArticleIdByExternalId(externalId) match {
         case Some(id) => id
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
       }
@@ -237,29 +230,31 @@ trait DraftController {
         responseMessages(response400, response403, response500))
 
     post("/", operation(newArticle)) {
-      authRole.assertHasRole(RoleWithWriteAccess)
-      val newArticle = extract[NewArticle](request.body)
-      writeService.newArticle(newArticle) match {
+      authUser.assertHasId()
+      authRole.assertHasWritePermission()
+      val externalId = paramOrNone("externalId")
+      val externalSubjectids = paramAsListOfString("externalSubjectIds")
+      writeService.newArticle(extract[NewArticle](request.body), externalId, externalSubjectids) match {
         case Success(article) => Created(body=article)
         case Failure(exception) => errorHandler(exception)
       }
     }
 
-    val updateArticleStatus =
-      (apiOperation[Article]("updateArticleStatus")
-        summary "Update the status of an existing article"
-        notes "Update the status of an existing article"
+    val queueDraftForPublishing =
+      (apiOperation[ArticleStatus]("queueDraftForPublishing ")
+        summary "Queue the article for publishing"
+        notes "Queue the article for publishing"
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the article that is to be updated"),
-        bodyParam[ArticleStatus]
+        pathParam[Long]("article_id").description("Id of the article that is to be published")
       )
         authorizations "oauth2"
         responseMessages(response400, response403, response404, response500))
 
-    put("/:article_id/status", operation(updateArticleStatus)) {
-      authRole.assertHasRole(RoleWithWriteAccess)
-      writeService.updateArticleStatus(long("article_id"), extract[ArticleStatus](request.body)) match {
+    put("/:article_id/publish", operation(queueDraftForPublishing)) {
+      authRole.assertHasPublishPermission()
+      val id = long("article_id")
+      writeService.queueArticleForPublish(id) match {
         case Success(s) => s
         case Failure(e) => errorHandler(e)
       }
@@ -278,13 +273,33 @@ trait DraftController {
         responseMessages(response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
-      authRole.assertHasRole(RoleWithWriteAccess)
-
-      val articleId = long("article_id")
-      val updatedArticle = extract[UpdatedArticle](request.body)
-      writeService.updateArticle(articleId, updatedArticle) match {
+      authUser.assertHasId()
+      authRole.assertHasWritePermission()
+      val externalId = paramOrNone("externalId")
+      val externalSubjectIds = paramAsListOfString("externalSubjectIds")
+      val id = long("article_id")
+      val updateArticle = extract[UpdatedArticle](request.body)
+      writeService.updateArticle(id, updateArticle, externalId, externalSubjectIds) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)
+      }
+    }
+
+    val validateArticle =
+      (apiOperation[Unit]("validateArticle")
+        summary "Validate an article"
+        notes "Validate an article"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        pathParam[Long]("article_id").description("Id of the article that is to be validated")
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response404, response500))
+
+    put("/:article_id/validate", operation(validateArticle)) {
+      contentValidator.validateArticleApiArticle(long("article_id")) match {
+        case Success(_) => NoContent()
+        case Failure(ex) => errorHandler(ex)
       }
     }
 

@@ -40,8 +40,23 @@ object TestData {
     created = new DateTime(2017, 1, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     updated = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     updatedBy = "me",
-    articleType = Some("standard"),
+    articleType = "standard",
     supportedLanguages = Seq("nb")
+  )
+
+  val sampleApiUpdateArticle = api.UpdatedArticle(
+    1,
+    "nb",
+    Some("tittel"),
+    None,
+    Seq.empty,
+    None,
+    None,
+    None,
+    None,
+    None,
+    Seq.empty,
+    None
   )
 
   val articleHit1 = """
@@ -89,7 +104,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some("standard"),
+    "standard",
     Seq("nb")
   )
 
@@ -109,7 +124,7 @@ object TestData {
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
     "ndalId54321",
-    Some(ArticleType.Standard.toString))
+    ArticleType.Standard)
 
   val sampleDomainArticle = Article(
     Option(articleId),
@@ -127,7 +142,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some(ArticleType.Standard.toString)
+    ArticleType.Standard
   )
 
   val sampleDomainArticle2 = Article(
@@ -146,7 +161,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some(ArticleType.Standard.toString)
+    ArticleType.Standard
   )
 
   val newArticle = api.NewArticle(
@@ -160,7 +175,7 @@ object TestData {
     None,
     Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
-    Some("standard")
+    "standard"
   )
 
   val sampleArticleWithByNcSa = sampleArticleWithPublicDomain.copy(copyright=Some(byNcSaCopyright))
@@ -187,7 +202,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    Some(ArticleType.Standard.toString)
+    ArticleType.Standard
   )
 
   val apiArticleWithHtmlFaultV2 = api.Article(
@@ -211,7 +226,7 @@ object TestData {
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
     "ndalId54321",
-    Some("standard"),
+    "standard",
     Seq("en")
   )
 
@@ -231,8 +246,8 @@ object TestData {
 
   val sampleApiConcept = api.Concept(
     1,
-    api.ConceptTitle("Tittel for begrep", "nb"),
-    api.ConceptContent("Innhold for begrep", "nb"),
+    Some(api.ConceptTitle("Tittel for begrep", "nb")),
+    Some(api.ConceptContent("Innhold for begrep", "nb")),
     Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,

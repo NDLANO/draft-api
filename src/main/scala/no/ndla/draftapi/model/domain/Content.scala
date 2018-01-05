@@ -39,11 +39,11 @@ case class Article(id: Option[Long],
                    created: Date,
                    updated: Date,
                    updatedBy: String,
-                   articleType: Option[String]) extends Content
+                   articleType: ArticleType.Value) extends Content
 
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus)
+  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(ArticleType)
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
@@ -77,7 +77,7 @@ object Article extends SQLSyntaxSupport[Article] {
 }
 
 object ArticleStatus extends Enumeration {
-  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH = Value
+  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH, PUBLISHED = Value
 
   def valueOfOrError(s: String): Try[ArticleStatus.Value] =
     valueOf(s) match {
@@ -133,14 +133,13 @@ object Concept extends SQLSyntaxSupport[Concept] {
   )
 }
 
-case class Agreement(
-                      id: Option[Long],
-                      title: String,
-                      content: String,
-                      copyright: Copyright,
-                      created: Date,
-                      updated: Date,
-                      updatedBy: String) extends Content
+case class Agreement(id: Option[Long],
+                     title: String,
+                     content: String,
+                     copyright: Copyright,
+                     created: Date,
+                     updated: Date,
+                     updatedBy: String) extends Content
 
 
 object Agreement extends SQLSyntaxSupport[Agreement] {

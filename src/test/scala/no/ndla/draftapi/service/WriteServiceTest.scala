@@ -7,9 +7,11 @@
 
 package no.ndla.draftapi.service
 
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
+import no.ndla.draftapi.model.api.{AccessDeniedException, ContentId}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
@@ -43,7 +45,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
-    when(authUser.id()).thenReturn("ndalId54321")
+    when(authUser.userOrClientId()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
     when(draftRepository.update(any[Article])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
       val arg = invocation.getArgumentAt(0, article.getClass)
@@ -59,8 +61,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
+    when(ArticleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    service.newArticle(TestData.newArticle).get.id.toString should equal(article.id.get.toString)
+    service.newArticle(TestData.newArticle, None, Seq.empty).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
   }
@@ -140,7 +143,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates only title properly") {
@@ -148,7 +151,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, "en", Some(newTitle), None, Seq(), None, None, None, None, None, Seq(), None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates multiple fields properly") {
@@ -179,27 +182,64 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaImageId = Some(updatedMetaId),
       updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("That updateArticleStatus returns a failure if user is not permitted to set status") {
-    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
-      .thenReturn(Failure(new ValidationException(errors=Seq[ValidationMessage]())))
+  test("publishArticle should return Failure if article is not ready for publishing") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
 
-    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
-    service.updateArticleStatus(articleId, status).isFailure should be (true)
-    verify(draftRepository, times(0)).update(any[Article])
-    verify(articleIndexService, times(0)).indexDocument(any[Article])
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(article))
+
+    val res = service.publishArticle(1)
+    res.isFailure should be (true)
+    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
-  test("That updateArticleStatus returns success if user is permitted to set status") {
-    when(contentValidator.validateUserAbleToSetStatus(any[Set[ArticleStatus.Value]]))
-      .thenAnswer((a: InvocationOnMock) => Success(a.getArgumentAt(0, classOf[Set[ArticleStatus.Value]])))
+  test("publishArticle should return Failure if article does not pass validation") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(domain.ArticleStatus.DRAFT))
 
-    val status = api.ArticleStatus(Set(ArticleStatus.QUEUED_FOR_PUBLISHING.toString))
-    service.updateArticleStatus(articleId, status).isSuccess should be (true)
-    verify(draftRepository, times(1)).update(any[Article])
-    verify(articleIndexService, times(1)).indexDocument(any[Article])
+    when(draftRepository.withId(any[Long])).thenReturn(Some(article))
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Failure(new RuntimeException("Validation error")))
+
+    val res = service.publishArticle(1)
+    res.isFailure should be (true)
+    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
+  }
+
+  private def setupSuccessfulPublishMock(id: Long): Unit = {
+    val article = TestData.sampleArticleWithByNcSa.copy(id=Some(id), status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
+    val apiArticle = converterService.toArticleApiArticle(article)
+    when(draftRepository.withId(id)).thenReturn(Some(article))
+    when(draftRepository.update(any[Article])).thenReturn(Success(article))
+    when(ArticleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
+  }
+
+  test("publishArticle should return Success if permitted to publish to article-api") {
+    setupSuccessfulPublishMock(1)
+    val res = service.publishArticle(1)
+    res.isSuccess should be (true)
+    verify(ArticleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
+  }
+
+  test("publishArticles should publish all articles marked for publishing") {
+    when(readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING)).thenReturn(Seq[Long](1, 2, 3))
+    when(draftRepository.withId(3)).thenReturn(None)
+    setupSuccessfulPublishMock(1)
+    setupSuccessfulPublishMock(2)
+
+    val res = service.publishArticles()
+    res.succeeded should be (Seq(1, 2))
+    res.failed.map(_.id) should be (Seq(3))
+  }
+
+  test("queueArticleForPublishing should return updated article status") {
+    val article = TestData.sampleArticleWithByNcSa.copy(status=Set(ArticleStatus.DRAFT, ArticleStatus.PUBLISHED))
+    when(draftRepository.withId(1)).thenReturn(Some(article))
+    when(contentValidator.validateArticleApiArticle(1)).thenReturn(Success(article))
+
+    val Success(res) = service.queueArticleForPublish(1)
+    res.status should equal(Set("DRAFT", "QUEUED_FOR_PUBLISHING"))
   }
 
 }

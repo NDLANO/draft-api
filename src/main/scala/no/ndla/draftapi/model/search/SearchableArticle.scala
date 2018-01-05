@@ -35,7 +35,7 @@ case class SearchableArticle(
   lastUpdated: Date,
   license: Option[String],
   authors: Seq[String],
-  articleType: Option[String]
+  articleType: String
 )
 
 case class SearchableConcept(

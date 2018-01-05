@@ -17,8 +17,11 @@ import scala.util.Properties._
 import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
-  val RoleWithWriteAccess = "articles:write"
-  val RoleWithPublishAccess = "articles:publish"
+  val Auth0LoginEndpoint = "https://ndla.eu.auth0.com/authorize"
+  val DraftRoleWithWriteAccess = "drafts:write"
+  val DraftRoleWithPublishAccess = "drafts:set_to_publish"
+  val ArticleRoleWithPublishAccess = "articles:publish"
+
   val SecretsFile = "draft-api.secrets"
 
   val ApplicationPort = propOrElse("APPLICATION_PORT", "80").toInt
@@ -55,7 +58,7 @@ object DraftApiProperties extends LazyLogging {
   val H5PResizerScriptUrl = "//ndla.no/sites/all/modules/h5p/library/js/h5p-resizer.js"
   val NRKVideoScriptUrl = Seq("//www.nrk.no/serum/latest/js/video_embed.js", "//nrk.no/serum/latest/js/video_embed.js")
 
-  val SearchServer = propOrElse("SEARCH_SERVER", "http://search-article-api.ndla-local")
+  val SearchServer = propOrElse("SEARCH_SERVER", "http://search-draft-api.ndla-local")
   val SearchRegion = propOrElse("SEARCH_REGION", "eu-central-1")
   val RunWithSignedSearchRequests = propOrElse("RUN_WITH_SIGNED_SEARCH_REQUESTS", "true").toBoolean
   val DraftSearchIndex = propOrElse("SEARCH_INDEX_NAME", "draft-articles")
@@ -71,6 +74,8 @@ object DraftApiProperties extends LazyLogging {
 
   val CorrelationIdKey = "correlationID"
   val CorrelationIdHeader = "X-Correlation-ID"
+
+  val ArticleApiHost = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
 
   lazy val Domain = Domains.get(Environment)
 

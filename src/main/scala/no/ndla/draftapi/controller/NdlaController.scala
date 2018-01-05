@@ -12,8 +12,9 @@ import javax.servlet.http.HttpServletRequest
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
-import no.ndla.draftapi.model.api.{AccessDeniedException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
+import no.ndla.draftapi.model.api.{AccessDeniedException, ArticlePublishException, ArticleStatusException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
 import no.ndla.draftapi.model.domain.emptySomeToNone
+import no.ndla.network.model.HttpRequestException
 import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.apache.logging.log4j.ThreadContext
@@ -21,7 +22,7 @@ import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json.NativeJsonSupport
-import org.scalatra.{BadRequest, InternalServerError, NotFound, ScalatraServlet, Forbidden, Conflict, UnprocessableEntity}
+import org.scalatra._
 
 import scala.util.{Failure, Success, Try}
 
@@ -47,10 +48,19 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
   error {
     case a: AccessDeniedException => Forbidden(body = Error(Error.ACCESS_DENIED, a.getMessage))
     case v: ValidationException => BadRequest(body=ValidationError(messages=v.errors))
+    case as: ArticleStatusException => BadRequest(body=Error(Error.VALIDATION, as.getMessage))
     case e: IndexNotFoundException => InternalServerError(body=Error.IndexMissingError)
     case n: NotFoundException => NotFound(body=Error(Error.NOT_FOUND, n.getMessage))
     case o: OptimisticLockException => Conflict(body=Error(Error.RESOURCE_OUTDATED, o.getMessage))
     case rw: ResultWindowTooLargeException => UnprocessableEntity(body=Error(Error.WINDOW_TOO_LARGE, rw.getMessage))
+    case pf: ArticlePublishException => BadRequest(body=Error(Error.PUBLISH, pf.getMessage))
+    case h: HttpRequestException =>
+      h.httpResponse match {
+        case Some(resp) if resp.is4xx => BadRequest(body=resp.body)
+        case _ =>
+          logger.error(s"Problem with remote service: ${h.getMessage}")
+          BadGateway(body=Error.GenericError)
+      }
     case t: Throwable => {
       logger.error(Error.GenericError.toString, t)
       InternalServerError(body=Error.GenericError)

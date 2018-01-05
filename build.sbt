@@ -10,6 +10,7 @@ val AwsSdkversion = "1.11.46"
 val MockitoVersion = "1.10.19"
 val Elastic4sVersion = "5.2.8"
 val ElasticsearchVersion = "5.1.1"
+val Json4SVersion = "3.5.3"
 
 val appProperties = settingKey[Properties]("The application properties")
 
@@ -32,9 +33,9 @@ lazy val draft_api = (project in file(".")).
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(
-      "ndla" %% "network" % "0.25",
+      "ndla" %% "network" % "0.26",
       "ndla" %% "mapping" % "0.4",
-      "ndla" %% "validation" % "0.1",
+      "ndla" %% "validation" % "0.10",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",
@@ -42,7 +43,7 @@ lazy val draft_api = (project in file(".")).
       "javax.servlet" % "javax.servlet-api" % "3.1.0" % "container;provided;test",
       "org.scalatra" %% "scalatra-json" % Scalatraversion,
       "org.scalatra" %% "scalatra-scalatest" % Scalatraversion % "test",
-      "org.json4s"   %% "json4s-native" % "3.5.0",
+      "org.json4s"   %% "json4s-native" % Json4SVersion,
       "org.scalatra" %% "scalatra-swagger"  % Scalatraversion,
       "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
       "org.apache.logging.log4j" % "log4j-api" % Log4JVersion,
