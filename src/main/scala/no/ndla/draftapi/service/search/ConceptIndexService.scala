@@ -38,6 +38,7 @@ trait ConceptIndexService {
       mapping(documentType).fields(
         intField("id"),
         languageSupportedField("title", keepRaw = true),
+        keywordField("defaultTitle"),
         languageSupportedField("content")
       )
     }

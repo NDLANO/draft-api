@@ -28,6 +28,12 @@ trait SearchConverterService {
   class SearchConverterService extends LazyLogging {
     implicit val formats = DefaultFormats
     def asSearchableArticle(ai: Article): SearchableArticle = {
+
+      val defaultTitle = ai.title.sortBy(title => {
+        val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
+        languagePriority.indexOf(title.language)
+      }).lastOption
+
       SearchableArticle(
         id = ai.id.get,
         title = SearchableLanguageValues(ai.title.map(title => LanguageValue(title.language, title.title))),
@@ -38,7 +44,8 @@ trait SearchConverterService {
         lastUpdated = ai.updated,
         license = ai.copyright.flatMap(_.license),
         authors = ai.copyright.map(copy => copy.creators ++ copy.processors ++ copy.rightsholders).map(a => a.map(_.name)).toSeq.flatten,
-        articleType = ai.articleType.toString
+        articleType = ai.articleType.toString,
+        defaultTitle = defaultTitle.map(_.title)
       )
     }
 
@@ -55,10 +62,16 @@ trait SearchConverterService {
     private def createUrlToArticle(id: Long): String = s"${ApplicationUrl.get}$id"
 
     def asSearchableConcept(c: Concept): SearchableConcept = {
+      val defaultTitle = c.title.sortBy(title => {
+        val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
+        languagePriority.indexOf(title.language)
+      }).lastOption
+
       SearchableConcept(
-        c.id.get,
-        SearchableLanguageValues(c.title.map(title => LanguageValue(title.language, title.title))),
-        SearchableLanguageValues(c.content.map(content => LanguageValue(content.language, content.content)))
+        id = c.id.get,
+        title = SearchableLanguageValues(c.title.map(title => LanguageValue(title.language, title.title))),
+        content = SearchableLanguageValues(c.content.map(content => LanguageValue(content.language, content.content))),
+        defaultTitle = defaultTitle.map(_.title)
       )
     }
 

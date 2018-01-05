@@ -44,6 +44,7 @@ trait ArticleIndexService {
         languageSupportedField("tags"),
         dateField("lastUpdated"),
         keywordField("license"),
+        keywordField("defaultTitle"),
         textField("authors") fielddata true,
         textField("articleType") analyzer "keyword"
       )

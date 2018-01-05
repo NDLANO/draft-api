@@ -51,8 +51,10 @@ trait ConceptSearchService {
     }
 
     def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, page: Int, pageSize: Int, sort: Sort.Value): api.ConceptSearchResult = {
-      val titleSearch = simpleStringQuery(query).field(s"title.$searchLanguage", 1)
-      val contentSearch = simpleStringQuery(query).field(s"content.$searchLanguage", 1)
+      val language = if (searchLanguage == Language.AllLanguages) "*" else searchLanguage
+
+      val titleSearch = simpleStringQuery(query).field(s"title.$language", 1)
+      val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
 
       val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
       val ih = innerHits("inner_hits").highlighting(hi)
@@ -65,7 +67,7 @@ trait ConceptSearchService {
           )
         )
 
-      executeSearch(withIdIn, searchLanguage, sort, page, pageSize, fullQuery)
+      executeSearch(withIdIn, language, sort, page, pageSize, fullQuery)
     }
 
     def executeSearch(withIdIn: List[Long], language: String, sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition): api.ConceptSearchResult = {
