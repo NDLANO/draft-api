@@ -35,11 +35,13 @@ case class SearchableArticle(
   lastUpdated: Date,
   license: Option[String],
   authors: Seq[String],
-  articleType: String
+  articleType: String,
+  defaultTitle: Option[String]
 )
 
 case class SearchableConcept(
   id: Long,
   title: SearchableLanguageValues,
-  content: SearchableLanguageValues
+  content: SearchableLanguageValues,
+  defaultTitle: Option[String]
 )

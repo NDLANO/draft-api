@@ -9,7 +9,7 @@ package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchResult, Sort}
+import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.scalatra.test.scalatest.ScalatraFunSuite
 import org.mockito.Mockito._
@@ -88,10 +88,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   test("GET / should use size of id-list as page-size if defined") {
     val searchMock = mock[api.SearchResult]
-    val searchResultMock = mock[io.searchbox.core.SearchResult]
     when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
       .thenReturn(searchMock)
-    when(searchConverterService.getHits(searchResultMock, "nb")).thenReturn(Seq.empty)
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal (200)
