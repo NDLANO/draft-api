@@ -402,6 +402,19 @@ trait ConverterService {
       )
     }
 
+    def toDomainConcept(id: Long, article: api.UpdatedConcept): domain.Concept = {
+      val lang = article.language
+
+      domain.Concept(
+        id = Some(id),
+        title = article.title.map(t => domain.ConceptTitle(t, lang)).toSeq,
+        content = article.content.map(c => domain.ConceptContent(c, lang)).toSeq,
+        copyright = article.copyright.map(toDomainCopyright),
+        created = clock.now(),
+        updated = clock.now(),
+      )
+    }
+
     private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.isEmpty)
