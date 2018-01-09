@@ -59,7 +59,7 @@ trait ConverterService {
             visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
             introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
             metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-            metaImageId = newArticle.metaImageId,
+            metaImageId = newArticle.metaImageId.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.userOrClientId(),
@@ -108,6 +108,8 @@ trait ConverterService {
     }
 
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
+
+    def toDomainMetaImage(imageId: String, language: String): domain.ArticleMetaImage = domain.ArticleMetaImage(imageId, language)
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
       val parser = ISODateTimeFormat.dateOptionalTimeParser()
@@ -170,6 +172,7 @@ trait ConverterService {
       val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
       val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
       val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
+      val metaImage = findByLanguageOrBestEffort(article.metaImageId, language).map(toApiArticleMetaImage)
 
       api.Article(
         article.id.get,
@@ -184,6 +187,7 @@ trait ConverterService {
         visualElement,
         introduction,
         meta,
+        metaImage,
         article.created,
         article.updated,
         article.updatedBy,
@@ -222,6 +226,8 @@ trait ConverterService {
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)
 
     def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
+
+    def toApiArticleMetaImage(meta: domain.ArticleMetaImage): api.ArticleMetaImage = api.ArticleMetaImage(meta.imageId, meta.language)
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
       api.Copyright(
@@ -311,7 +317,7 @@ trait ConverterService {
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
         introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
         metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
-        metaImageId = article.metaImageId,
+        metaImageId = article.metaImageId.map(m => api.ArticleApiMetaImage(m.imageId, m.language)),
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
@@ -358,7 +364,7 @@ trait ConverterService {
         visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
         introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
         metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-        metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
+        metaImageId = mergeLanguageFields(toMergeInto.metaImageId, article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq),
         updated = clock.now(),
         updatedBy = authUser.userOrClientId(),
         articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType)
@@ -381,7 +387,7 @@ trait ConverterService {
         visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
         introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
         metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-        metaImageId = article.metaImageId,
+        metaImageId = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
         created = clock.now(),
         updated = clock.now(),
         authUser.userOrClientId(),

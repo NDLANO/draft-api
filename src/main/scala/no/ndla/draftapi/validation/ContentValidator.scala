@@ -198,9 +198,9 @@ trait ContentValidator {
       }
     }
 
-    private def validateMetaImageId(metaImageId: String): Option[ValidationMessage] = {
+    private def validateMetaImageId(metaImageId: ArticleMetaImage): Option[ValidationMessage] = {
       def isAllDigits(x: String) = x forall Character.isDigit
-      isAllDigits(metaImageId) match {
+      isAllDigits(metaImageId.imageId) match {
         case true => None
         case false => Some(ValidationMessage("metaImageId", "Meta image ID must be a number"))
       }

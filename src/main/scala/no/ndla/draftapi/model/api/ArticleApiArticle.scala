@@ -18,7 +18,7 @@ case class ArticleApiArticle(revision: Option[Int],
                       visualElement: Seq[ArticleApiVisualElement],
                       introduction: Seq[ArticleApiIntroduction],
                       metaDescription: Seq[ArticleApiMetaDescription],
-                      metaImageId: Option[String],
+                      metaImageId: Seq[ArticleApiMetaImage],
                       created: Date,
                       updated: Date,
                       updatedBy: String,
@@ -31,6 +31,7 @@ case class ArticleApiRequiredLibrary(mediaType: String, name: String, url: Strin
 case class ArticleApiVisualElement(resource: String, language: String)
 case class ArticleApiIntroduction(introduction: String, language: String)
 case class ArticleApiMetaDescription(content: String, language: String)
+case class ArticleApiMetaImage(imageId: String, language: String)
 case class ArticleApiCopyright(license: Option[String],
                                origin: Option[String],
                                creators: Seq[ArticleApiAuthor],

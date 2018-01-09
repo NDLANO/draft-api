@@ -26,6 +26,7 @@ case class Article(@(ApiModelProperty@field)(description = "The unique id of the
                    @(ApiModelProperty@field)(description = "A visual element article") visualElement: Option[VisualElement],
                    @(ApiModelProperty@field)(description = "An introduction for the article") introduction: Option[ArticleIntroduction],
                    @(ApiModelProperty@field)(description = "Meta description for the article") metaDescription: Option[ArticleMetaDescription],
+                   @(ApiModelProperty@field)(description = "Meta image for the article") metaImage: Option[ArticleMetaImage],
                    @(ApiModelProperty@field)(description = "When the article was created") created: Date,
                    @(ApiModelProperty@field)(description = "When the article was last updated") updated: Date,
                    @(ApiModelProperty@field)(description = "By whom the article was last updated") updatedBy: String,
