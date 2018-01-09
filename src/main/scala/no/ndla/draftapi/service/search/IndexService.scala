@@ -82,7 +82,7 @@ trait IndexService {
     def getRanges:Try[List[(Long, Long)]] = {
       Try {
         val (minId, maxId) = repository.minMaxId
-        Seq.range(minId, maxId).grouped(DraftApiProperties.IndexBulkSize).map(group => (group.head, group.last + 1)).toList
+        Seq.range(minId, maxId + 1).grouped(DraftApiProperties.IndexBulkSize).map(group => (group.head, group.last)).toList
       }
     }
 
