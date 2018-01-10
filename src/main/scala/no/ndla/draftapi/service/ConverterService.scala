@@ -9,15 +9,13 @@
 package no.ndla.draftapi.service
 
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.{ArticleStatus, Language, LanguageField}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.NewAgreement
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, LanguageField}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
@@ -25,8 +23,8 @@ import no.ndla.validation._
 import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
 import scala.util.control.Exception.allCatch
+import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
   this: Clock with DraftRepository with User with ArticleApiClient =>
@@ -227,7 +225,9 @@ trait ConverterService {
 
     def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
 
-    def toApiArticleMetaImage(meta: domain.ArticleMetaImage): api.ArticleMetaImage = api.ArticleMetaImage(meta.imageId, meta.language)
+    def toApiArticleMetaImage(metaImage: domain.ArticleMetaImage): api.ArticleMetaImage = {
+      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.language)
+    }
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
       api.Copyright(
