@@ -72,7 +72,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
   val concept10 = TestData.sampleConcept.copy(
     id = Option(10),
     title = List(ConceptTitle("Unrelated", "en"), ConceptTitle("Urelatert", "nb")),
-    content = List(ConceptContent("Unrelated", "en"), ConceptContent("Urelatert", "nb")))
+    content = List(ConceptContent("Pompel", "en"), ConceptContent("Pilt", "nb")))
   val concept11 = TestData.sampleConcept.copy(
     id = Option(11),
     title = List(ConceptTitle("englando", "en")),
@@ -251,14 +251,14 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
     searchEn.results.head.title.language should be("en")
     searchEn.results.head.title.title should be("Unrelated")
     searchEn.results.head.content.language should be("en")
-    searchEn.results.head.content.content should be("Unrelated")
+    searchEn.results.head.content.content should be("Pompel")
 
 
     searchNb.totalCount should be(1)
     searchNb.results.head.title.language should be("nb")
     searchNb.results.head.title.title should be("Urelatert")
     searchNb.results.head.content.language should be("nb")
-    searchNb.results.head.content.content should be("Urelatert")
+    searchNb.results.head.content.content should be("Pilt")
   }
 
   test("Search for all languages should return all concepts in correct language") {
