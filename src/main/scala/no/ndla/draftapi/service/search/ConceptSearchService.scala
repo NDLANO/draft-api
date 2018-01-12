@@ -98,7 +98,7 @@ trait ConceptSearchService {
 
       } match {
         case Success(response) =>
-          api.ConceptSearchResult(response.result.totalHits, page, numResults, language, getHits(response.result, language, hitToApiModel))
+          api.ConceptSearchResult(response.result.totalHits, page, numResults, if (searchLanguage == "*") Language.AllLanguages else searchLanguage, getHits(response.result, language, hitToApiModel))
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }
