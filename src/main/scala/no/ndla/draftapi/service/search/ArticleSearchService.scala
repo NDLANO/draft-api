@@ -101,7 +101,7 @@ trait ArticleSearchService {
           .sortBy(getSortDefinition(sort, searchLanguage))
       } match {
         case Success(response) =>
-          api.SearchResult(response.result.totalHits, page, numResults, language, getHits(response.result, language, hitToApiModel))
+          api.SearchResult(response.result.totalHits, page, numResults, if (searchLanguage == "*") Language.AllLanguages else searchLanguage, getHits(response.result, language, hitToApiModel))
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }
