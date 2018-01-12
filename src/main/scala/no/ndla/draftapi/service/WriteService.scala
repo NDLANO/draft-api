@@ -50,8 +50,10 @@ trait WriteService {
             updatedBy = authUser.userOrClientId()
           )
 
+          val dateErrors = updatedAgreement.copyright.map(updatedCopyright => contentValidator.validateDates(updatedCopyright)).getOrElse(Seq.empty)
+
           for {
-            _ <- contentValidator.validateAgreement(toUpdate)
+            _ <- contentValidator.validateAgreement(toUpdate, preExistingErrors = dateErrors)
             agreement <- agreementRepository.update(toUpdate)
             _ <- agreementIndexService.indexDocument(agreement)
           } yield converterService.toApiAgreement(agreement)

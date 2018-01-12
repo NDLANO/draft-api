@@ -400,8 +400,8 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("Searching with query for all languages should return language that matched") {
-    val searchEn = articleSearchService.matchingQuery("Cats", List(), "all", None, 1, 10, Sort.ByRelevanceDesc, Seq.empty)
-    val searchNb = articleSearchService.matchingQuery("Katter", List(), "all", None, 1, 10, Sort.ByRelevanceDesc, Seq.empty)
+    val searchEn = articleSearchService.matchingQuery("Big", List(), "all", None, 1, 10, Sort.ByRelevanceDesc, Seq.empty)
+    val searchNb = articleSearchService.matchingQuery("Store", List(), "all", None, 1, 10, Sort.ByRelevanceDesc, Seq.empty)
 
     searchEn.totalCount should equal(1)
     searchEn.results.head.id should equal(11)

@@ -50,16 +50,15 @@ trait ArticleSearchService {
       val tagSearch = simpleStringQuery(query).field(s"tags.$language", 1)
 
       val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
-      val ih = innerHits("inner_hits").highlighting(hi)
 
       val fullQuery = boolQuery()
         .must(
           boolQuery()
             .should(
-              nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih),
-              nestedQuery("introduction", introSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih),
-              nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(ih),
-              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih)
+              nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("title").highlighting(hi)),
+              nestedQuery("introduction", introSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("introduction").highlighting(hi)),
+              nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(innerHits("content").highlighting(hi)),
+              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("tags").highlighting(hi))
             )
         )
 

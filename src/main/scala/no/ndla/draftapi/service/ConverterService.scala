@@ -411,7 +411,7 @@ trait ConverterService {
         content = article.content.map(c => domain.ConceptContent(c, lang)).toSeq,
         copyright = article.copyright.map(toDomainCopyright),
         created = clock.now(),
-        updated = clock.now(),
+        updated = clock.now()
       )
     }
 
