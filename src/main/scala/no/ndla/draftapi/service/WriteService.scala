@@ -105,7 +105,7 @@ trait WriteService {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
-          updateArticle(converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined))
+          updateArticle(converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined), externalId, externalSubjectIds)
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
         case None if draftRepository.exists(articleId) =>
           val article = converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
@@ -174,16 +174,30 @@ trait WriteService {
       } yield converterService.toApiConcept(persistedConcept, newConcept.language)
     }
 
-    def updateConcept(id: Long, updateConcept: api.UpdatedConcept): Try[api.Concept] = {
+    private def updateConcept(toUpdate: domain.Concept, externalId: Option[String] = None): Try[domain.Concept] = {
+      val updateFunc = externalId match {
+        case None => conceptRepository.update _
+        case Some(nid) => (a: domain.Concept) => conceptRepository.updateWithExternalId(a, nid)
+      }
+
+      for {
+        _ <- contentValidator.validate(toUpdate, allowUnknownLanguage = true)
+        domainConcept <- updateFunc(toUpdate)
+        _ <- conceptIndexService.indexDocument(domainConcept)
+      } yield domainConcept
+    }
+
+    def updateConcept(id: Long, updatedConcept: api.UpdatedConcept, externalId: Option[String]): Try[api.Concept] = {
       conceptRepository.withId(id) match {
-        case None => Failure(NotFoundException(s"Concept with id $id does not exist"))
         case Some(concept) =>
-          val domainConcept = converterService.toDomainConcept(concept, updateConcept)
-          for {
-            _ <- importValidator.validate(domainConcept)
-            persistedConcept <- conceptRepository.update(domainConcept, id)
-            _ <- conceptIndexService.indexDocument(concept)
-          } yield converterService.toApiConcept(persistedConcept, updateConcept.language)
+          val domainConcept = converterService.toDomainConcept(concept, updatedConcept)
+          updateConcept(domainConcept, externalId)
+            .map(x => converterService.toApiConcept(x, updatedConcept.language))
+        case None if conceptRepository.exists(id) =>
+          val concept = converterService.toDomainConcept(id, updatedConcept)
+          updateConcept(concept, externalId)
+            .map(concept => converterService.toApiConcept(concept, updatedConcept.language))
+        case None => Failure(NotFoundException(s"Concept with id $id does not exist"))
       }
     }
 
