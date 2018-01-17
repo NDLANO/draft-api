@@ -10,9 +10,10 @@ package no.ndla.draftapi.service
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
-import no.ndla.validation.{ResourceType, TagAttributes}
+import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+
 import scala.util.Success
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
@@ -63,6 +64,22 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     val Success(regularUpdate) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set(IMPORTED)), TestData.sampleApiUpdateArticle, isImported = false)
     regularUpdate.status should equal(Set(IMPORTED, DRAFT))
+  }
+
+  test("toDomainArticle should fail if trying to update language fields without language being set") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language=None, title=Some("kakemonster"))
+    val res = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), updatedArticle, isImported = false)
+    res.isFailure should be (true)
+
+    val errors = res.failed.get.asInstanceOf[ValidationException].errors
+    errors.length should be (1)
+    errors.head.message should equal ("This field must be specified when updating language fields")
+  }
+
+  test("toDomainArticle should succeed if trying to update language fields with language being set") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language=Some("nb"), title=Some("kakemonster"))
+    val Success(res) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), updatedArticle, isImported = false)
+    res.title.find(_.language == "nb").get.title should equal("kakemonster")
   }
 
 }

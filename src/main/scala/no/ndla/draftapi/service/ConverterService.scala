@@ -370,7 +370,7 @@ trait ConverterService {
       article.language match {
         case None if languageFieldIsDefined(article) =>
           val error = ValidationMessage("language", "This field must be specified when updating language fields")
-          Failure(new ValidationException(errors=Seq(error)))
+          Failure(new ValidationException(errors = Seq(error)))
         case None => Success(partiallyConverted)
         case Some(lang) =>
           Success(partiallyConverted.copy(
@@ -380,7 +380,7 @@ trait ConverterService {
             visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
             introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
             metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-            metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
+            metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId
           ))
       }
     }
