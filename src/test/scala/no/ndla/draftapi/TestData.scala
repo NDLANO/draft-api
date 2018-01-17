@@ -41,21 +41,23 @@ object TestData {
     updated = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     updatedBy = "me",
     articleType = "standard",
-    supportedLanguages = Seq("nb")
+    supportedLanguages = Seq("nb"),
+    Seq.empty
   )
 
   val sampleApiUpdateArticle = api.UpdatedArticle(
     1,
-    "nb",
+    Some("nb"),
     Some("tittel"),
     None,
-    Seq.empty,
     None,
     None,
     None,
     None,
     None,
-    Seq.empty,
+    None,
+    None,
+    None,
     None
   )
 
@@ -105,7 +107,8 @@ object TestData {
     today,
     "ndalId54321",
     "standard",
-    Seq("nb")
+    Seq("nb"),
+    Seq.empty
   )
 
   val sampleArticleWithPublicDomain = Article(
@@ -124,7 +127,8 @@ object TestData {
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
     "ndalId54321",
-    ArticleType.Standard)
+    ArticleType.Standard,
+    Seq.empty)
 
   val sampleDomainArticle = Article(
     Option(articleId),
@@ -142,7 +146,8 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    ArticleType.Standard
+    ArticleType.Standard,
+    Seq.empty
   )
 
   val sampleDomainArticle2 = Article(
@@ -161,7 +166,8 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    ArticleType.Standard
+    ArticleType.Standard,
+    Seq.empty
   )
 
   val newArticle = api.NewArticle(
@@ -175,7 +181,8 @@ object TestData {
     None,
     Some(api.Copyright(Some(api.License("publicdomain", None, None)), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
-    "standard"
+    "standard",
+    Seq.empty
   )
 
   val sampleArticleWithByNcSa = sampleArticleWithPublicDomain.copy(copyright=Some(byNcSaCopyright))
@@ -202,7 +209,8 @@ object TestData {
     today,
     today,
     "ndalId54321",
-    ArticleType.Standard
+    ArticleType.Standard,
+    Seq.empty
   )
 
   val apiArticleWithHtmlFaultV2 = api.Article(
@@ -227,7 +235,8 @@ object TestData {
     DateTime.now().minusDays(2).toDate,
     "ndalId54321",
     "standard",
-    Seq("en")
+    Seq("en"),
+    Seq.empty
   )
 
   val (nodeId, nodeId2) = ("1234", "4321")
