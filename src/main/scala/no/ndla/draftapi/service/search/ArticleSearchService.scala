@@ -48,6 +48,7 @@ trait ArticleSearchService {
       val introSearch = simpleStringQuery(query).field(s"introduction.$language", 1)
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
       val tagSearch = simpleStringQuery(query).field(s"tags.$language", 1)
+      val notesSearch = simpleStringQuery(query).field("notes", 1)
 
       val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
 
@@ -58,7 +59,8 @@ trait ArticleSearchService {
               nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("title").highlighting(hi)),
               nestedQuery("introduction", introSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("introduction").highlighting(hi)),
               nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(innerHits("content").highlighting(hi)),
-              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("tags").highlighting(hi))
+              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("tags").highlighting(hi)),
+              notesSearch
             )
         )
 
@@ -105,7 +107,6 @@ trait ArticleSearchService {
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }
-
     }
 
     protected def errorHandler[T](failure: Failure[T]) = {
