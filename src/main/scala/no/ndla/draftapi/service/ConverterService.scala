@@ -283,8 +283,9 @@ trait ConverterService {
 
     def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
       def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
-      api.ArticleApiCopyright(copyright.license,
-        copyright.origin,
+      api.ArticleApiCopyright(
+        copyright.license.getOrElse(""),
+        copyright.origin.getOrElse(""),
         copyright.creators.map(toArticleApiAuthor),
         copyright.processors.map(toArticleApiAuthor),
         copyright.rightsholders.map(toArticleApiAuthor),
@@ -294,18 +295,12 @@ trait ConverterService {
       )
     }
 
-    def toArticleApiOldCopyright(copyright: domain.Copyright): api.ArticleApiOldCopyright = {
-      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
-      val authors = copyright.creators ++ copyright.processors ++ copyright.rightsholders
-      api.ArticleApiOldCopyright(copyright.license, copyright.origin.getOrElse(""), authors.map(toArticleApiAuthor))
-    }
-
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
         revision = article.revision,
         title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
         content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
-        copyright = article.copyright.map(toArticleApiOldCopyright),
+        copyright = article.copyright.map(toArticleApiCopyright),
         tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
         requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
@@ -315,7 +310,7 @@ trait ConverterService {
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
-        articleType = Some(article.articleType.toString)
+        articleType = article.articleType.toString
       )
     }
 
