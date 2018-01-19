@@ -16,6 +16,7 @@ import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, Draf
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
+import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 
 import scala.util.{Failure, Success, Try}
 
@@ -105,12 +106,13 @@ trait WriteService {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
-          updateArticle(converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined), externalId, externalSubjectIds)
-            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
+          converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
+            .flatMap(updateArticle(_, externalId, externalSubjectIds))
+            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
         case None if draftRepository.exists(articleId) =>
           val article = converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
-          updateArticle(article, externalId, externalSubjectIds)
-            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language))
+          article.flatMap(updateArticle(_, externalId, externalSubjectIds))
+            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
     }

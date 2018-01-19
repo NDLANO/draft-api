@@ -63,7 +63,8 @@ trait ConverterService {
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.userOrClientId(),
-            articleType = ArticleType.valueOfOrError(newArticle.articleType)
+            articleType = ArticleType.valueOfOrError(newArticle.articleType),
+            newArticle.notes
           ))
       }
     }
@@ -188,7 +189,8 @@ trait ConverterService {
         article.updated,
         article.updatedBy,
         article.articleType.toString,
-        supportedLanguages
+        supportedLanguages,
+        article.notes
       )
     }
 
@@ -339,49 +341,72 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
-      val lang = article.language
-      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
-      toMergeInto.copy(
-        status = status,
-        revision = Option(article.revision),
-        title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
-        content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
-        copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
-        tags = mergeLanguageFields(toMergeInto.tags, toDomainTag(article.tags, lang)),
-        requiredLibraries = article.requiredLibraries.map(toDomainRequiredLibraries),
-        visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
-        introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
-        metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-        metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId,
-        updated = clock.now(),
-        updatedBy = authUser.userOrClientId(),
-        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType)
-      )
+    private def languageFieldIsDefined(article: api.UpdatedArticle): Boolean = {
+      val langFields: Seq[Option[_]] = Seq(article.title, article.content, article.tags, article.introduction,
+        article.metaDescription, article.metaImageId, article.visualElement)
+
+      langFields.foldRight(false)((curr, res) => res || curr.isDefined)
     }
 
-    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
-      val lang = article.language
-      val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
+    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): Try[domain.Article] = {
+      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
 
-      domain.Article(
-        id = Some(id),
-        revision = Some(1),
+      val partiallyConverted = toMergeInto.copy(
         status = status,
-        title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
-        content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
-        copyright = article.copyright.map(toDomainCopyright),
-        tags = Seq(domain.ArticleTag(article.tags, lang)),
-        requiredLibraries = article.requiredLibraries.map(toDomainRequiredLibraries),
-        visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
-        introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
-        metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-        metaImageId = article.metaImageId,
-        created = clock.now(),
+        revision = Option(article.revision),
+        copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+        requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
         updated = clock.now(),
-        authUser.userOrClientId(),
-        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard)
+        updatedBy = authUser.userOrClientId(),
+        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
+        notes = article.notes.getOrElse(toMergeInto.notes)
       )
+
+      article.language match {
+        case None if languageFieldIsDefined(article) =>
+          val error = ValidationMessage("language", "This field must be specified when updating language fields")
+          Failure(new ValidationException(errors = Seq(error)))
+        case None => Success(partiallyConverted)
+        case Some(lang) =>
+          Success(partiallyConverted.copy(
+            title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
+            content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
+            tags = article.tags.map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang))).getOrElse(toMergeInto.tags),
+            visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
+            introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
+            metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
+            metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId
+          ))
+      }
+    }
+
+    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean): Try[domain.Article] = {
+      article.language match {
+        case None =>
+          val error = ValidationMessage("language", "This field must be specified when updating language fields")
+          Failure(new ValidationException(errors=Seq(error)))
+        case Some(lang) =>
+          val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
+          Success(domain.Article(
+            id = Some(id),
+            revision = Some(1),
+            status = status,
+            title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
+            content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
+            copyright = article.copyright.map(toDomainCopyright),
+            tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
+            requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
+            visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
+            introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
+            metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
+            metaImageId = article.metaImageId,
+            created = clock.now(),
+            updated = clock.now(),
+            authUser.userOrClientId(),
+            articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
+            article.notes.getOrElse(Seq.empty)
+          ))
+      }
     }
 
     def toDomainConcept(toMergeInto: domain.Concept, updateConcept: api.UpdatedConcept): domain.Concept = {

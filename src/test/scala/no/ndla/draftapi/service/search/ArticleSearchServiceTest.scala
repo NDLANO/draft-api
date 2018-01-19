@@ -74,7 +74,8 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     content = List(ArticleContent("<p>Bilde av hulk</p><p> som <strong>løfter</strong> en rød bil.</p>", "nb")),
     tags = List(ArticleTag(List("hulk"), "nb")),
     created = today.minusDays(40).toDate,
-    updated = today.minusDays(35).toDate
+    updated = today.minusDays(35).toDate,
+    notes = Seq("kakemonster")
   )
   val article6 = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(6),
@@ -370,6 +371,12 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     val search = articleSearchService.matchingQuery("mareritt + ragnarok", List(), "nb", None, 1, 10, Sort.ByRelevanceDesc, Seq.empty)
     val hits = search.results
     hits.map(_.id) should equal (Seq(9, 8))
+  }
+
+  test("searching for notes should return relevant results") {
+    val search = articleSearchService.matchingQuery("kakemonster", List(), "nb", None, 1, 10, Sort.ByRelevanceDesc, Seq.empty)
+    search.totalCount should be (1)
+    search.results.head.id should be (5)
   }
 
   test("Search for all languages should return all articles in correct language") {
