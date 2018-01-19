@@ -30,5 +30,6 @@ case class Article(@(ApiModelProperty@field)(description = "The unique id of the
                    @(ApiModelProperty@field)(description = "When the article was last updated") updated: Date,
                    @(ApiModelProperty@field)(description = "By whom the article was last updated") updatedBy: String,
                    @(ApiModelProperty@field)(description = "The type of article this is. Possible values are topic-article,standard") articleType: String,
-                   @(ApiModelProperty@field)(description = "The languages this article supports") supportedLanguages: Seq[String]
+                   @(ApiModelProperty@field)(description = "The languages this article supports") supportedLanguages: Seq[String],
+                   @(ApiModelProperty@field)(description = "The notes for this article draft") notes: Seq[String]
                   )

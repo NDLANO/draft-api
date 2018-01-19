@@ -45,6 +45,7 @@ trait SearchConverterService {
         license = ai.copyright.flatMap(_.license),
         authors = ai.copyright.map(copy => copy.creators ++ copy.processors ++ copy.rightsholders).map(a => a.map(_.name)).toSeq.flatten,
         articleType = ai.articleType.toString,
+        notes = ai.notes,
         defaultTitle = defaultTitle.map(_.title)
       )
     }
@@ -81,6 +82,7 @@ trait SearchConverterService {
       val introductions = (hit \ "introduction").extract[Map[String, String]].map(intro => domain.ArticleIntroduction(intro._2, intro._1)).toSeq
       val visualElements = (hit \ "visualElement").extract[Map[String, String]].map(visual => domain.VisualElement(visual._2, visual._1)).toSeq
 
+      val notes = (hit \ "notes").extract[Seq[String]]
       val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
 
       val title = findByLanguageOrBestEffort(titles, language).map(converterService.toApiArticleTitle).getOrElse(api.ArticleTitle("", DefaultLanguage))
@@ -95,7 +97,8 @@ trait SearchConverterService {
         ApplicationUrl.get + (hit \ "id").extract[Long],
         (hit \ "license").extract[String],
         (hit \ "articleType").extract[String],
-        supportedLanguages
+        supportedLanguages,
+        notes
       )
     }
 
