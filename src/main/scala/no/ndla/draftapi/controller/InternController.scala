@@ -93,7 +93,9 @@ trait InternController {
 
     post("/article/:id/publish/?") {
       authRole.assertHasPublishPermission()
-      writeService.publishArticle(long("id")) match {
+      val importPublish = booleanOrDefault("import_publish", default = false)
+
+      writeService.publishArticle(long("id"), importPublish) match {
         case Success(s) => converterService.toApiStatus(s.status)
         case Failure(ex) => errorHandler(ex)
       }

@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
-import no.ndla.draftapi.model.api.{AccessDeniedException, ArticlePublishException, ArticleStatusException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
+import no.ndla.draftapi.model.api.{AccessDeniedException, ArticlePublishException, ArticleStatusException, Error, ImportException, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
 import no.ndla.draftapi.model.domain.emptySomeToNone
 import no.ndla.network.model.HttpRequestException
 import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
@@ -54,6 +54,7 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case o: OptimisticLockException => Conflict(body=Error(Error.RESOURCE_OUTDATED, o.getMessage))
     case rw: ResultWindowTooLargeException => UnprocessableEntity(body=Error(Error.WINDOW_TOO_LARGE, rw.getMessage))
     case pf: ArticlePublishException => BadRequest(body=Error(Error.PUBLISH, pf.getMessage))
+    case ie: ImportException => Conflict(body=Error(Error.IMPORT, ie.getMessage))
     case h: HttpRequestException =>
       h.httpResponse match {
         case Some(resp) if resp.is4xx => BadRequest(body=resp.body)

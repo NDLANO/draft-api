@@ -156,14 +156,14 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("PUT /:id/publish should return 403 if user does not have the required role") {
-    when(writeService.queueArticleForPublish(any[Long])).thenReturn(Failure(new AccessDeniedException("Not today")))
+    when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Failure(new AccessDeniedException("Not today")))
     put("/test/1/publish") {
       status should equal (403)
     }
   }
 
   test("PUT /:id/publish should return 204 if user has required permissions") {
-    when(writeService.queueArticleForPublish(any[Long])).thenReturn(Success(api.ArticleStatus(Set.empty)))
+    when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Success(api.ArticleStatus(Set.empty)))
     put("/test/1/publish", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
       status should equal (200)
     }
@@ -246,14 +246,14 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("LEGACY - PUT /:id/publish should return 403 if user does not have the required role") {
-    when(writeService.queueArticleForPublish(any[Long])).thenReturn(Failure(new AccessDeniedException("Not today")))
+    when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Failure(new AccessDeniedException("Not today")))
     put("/test/1/publish") {
       status should equal (403)
     }
   }
 
   test("LEGACY - PUT /:id/publish should return 204 if user has required permissions") {
-    when(writeService.queueArticleForPublish(any[Long])).thenReturn(Success(api.ArticleStatus(Set.empty)))
+    when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Success(api.ArticleStatus(Set.empty)))
     put("/test/1/publish", headers=Map("Authorization" -> legacyAuthHeaderWithAllRoles)) {
       status should equal (200)
     }

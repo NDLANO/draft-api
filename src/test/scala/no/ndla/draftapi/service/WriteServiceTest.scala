@@ -47,7 +47,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
     when(authUser.userOrClientId()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
-    when(draftRepository.update(any[Article])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
+    when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
       val arg = invocation.getArgumentAt(0, article.getClass)
       Try(arg.copy(revision = Some(arg.revision.get + 1)))
     })
@@ -211,7 +211,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val article = TestData.sampleArticleWithByNcSa.copy(id=Some(id), status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
     val apiArticle = converterService.toArticleApiArticle(article)
     when(draftRepository.withId(id)).thenReturn(Some(article))
-    when(draftRepository.update(any[Article])).thenReturn(Success(article))
+    when(draftRepository.update(any[Article], any[Boolean])).thenReturn(Success(article))
     when(ArticleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
   }
 

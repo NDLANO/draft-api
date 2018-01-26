@@ -261,7 +261,8 @@ trait DraftController {
     put("/:article_id/publish", operation(queueDraftForPublishing)) {
       authRole.assertHasPublishPermission()
       val id = long("article_id")
-      writeService.queueArticleForPublish(id) match {
+      val isImported = booleanOrDefault("import_publish", false)
+      writeService.queueArticleForPublish(id, isImported) match {
         case Success(s) => s
         case Failure(e) => errorHandler(e)
       }
