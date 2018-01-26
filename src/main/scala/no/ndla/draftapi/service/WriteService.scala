@@ -90,7 +90,7 @@ trait WriteService {
 
     private def updateArticle(toUpdate: domain.Article, externalId: Option[String] = None, externalSubjectIds: Seq[String] = Seq.empty, isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalId match {
-        case None => (a: domain.Article)  => draftRepository.update(a, isImported = isImported)
+        case None => (a: domain.Article) => draftRepository.update(a, isImported = isImported)
         case Some(nid) => (a: domain.Article) => draftRepository.updateWithExternalIds(a, nid, externalSubjectIds)
       }
 
@@ -106,13 +106,9 @@ trait WriteService {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
-          existing.revision match {
-            case Some(rev) if rev > 1 && externalId.isDefined => Failure(ImportException(Error.ARTICLE_EDITED_DESCRIPTION))
-            case _ =>
-              converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
-                .flatMap(updateArticle(_, externalId, externalSubjectIds, isImported = externalId.isDefined))
-                .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
-          }
+          converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
+            .flatMap(updateArticle(_, externalId, externalSubjectIds, isImported = externalId.isDefined))
+            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
         case None if draftRepository.exists(articleId) =>
           val article = converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
           article.flatMap(updateArticle(_, externalId, externalSubjectIds))
@@ -127,7 +123,7 @@ trait WriteService {
           contentValidator.validateArticleApiArticle(id) match {
             case Success(_) =>
               val newStatus = a.status.filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
-              draftRepository.update(a.copy(status=newStatus), isImported = isImported).map(a => converterService.toApiStatus(a.status))
+              draftRepository.update(a.copy(status = newStatus), isImported = isImported).map(a => converterService.toApiStatus(a.status))
             case Failure(ex) => Failure(ex)
           }
         case None => Failure(NotFoundException(s"The article with id $id does not exist"))
@@ -223,4 +219,5 @@ trait WriteService {
     }
 
   }
+
 }
