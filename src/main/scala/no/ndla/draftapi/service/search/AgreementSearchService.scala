@@ -29,8 +29,6 @@ trait AgreementSearchService {
   val agreementSearchService: AgreementSearchService
 
   class AgreementSearchService extends LazyLogging with SearchService[api.AgreementSummary] {
-    private val noCopyright = boolQuery().not(termQuery("license", "copyrighted"))
-
     override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
 
     override def hitToApiModel(hit: String, language: String): api.AgreementSummary = {
@@ -55,15 +53,9 @@ trait AgreementSearchService {
     }
 
     def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition): AgreementSearchResult = {
-
-      val licenseFilter = license match {
-        case None => Some(noCopyright)
-        case Some(lic) => Some(termQuery("license", lic))
-      }
-
       val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
 
-      val filters = List(licenseFilter, idFilter)
+      val filters = List(idFilter)
       val filteredSearch = queryBuilder.filter(filters.flatten)
 
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
