@@ -86,7 +86,7 @@ trait DraftRepository {
       dataObject.setValue(write(article))
 
       val newRevision = article.revision.getOrElse(0) + 1
-      val count = sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=$externalId, external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id} and revision=1".update.apply
+      val count = sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=$externalId, external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"
