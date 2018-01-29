@@ -61,13 +61,14 @@ trait DraftRepository {
       }
     }
 
-    def update(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
+    def update(article: Article, isImported: Boolean = false)(implicit session: DBSession = AutoSession): Try[Article] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
 
-      val newRevision = article.revision.getOrElse(0) + 1
-      val count = sql"update ${Article.table} set document=${dataObject}, revision=$newRevision where id=${article.id} and revision=${article.revision}".update.apply
+      val newRevision = if (isImported) 1 else article.revision.getOrElse(0) + 1
+      val oldRevision = if (isImported) 1 else article.revision
+      val count = sql"update ${Article.table} set document=${dataObject}, revision=$newRevision where id=${article.id} and revision=${oldRevision}".update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"
@@ -85,7 +86,7 @@ trait DraftRepository {
       dataObject.setValue(write(article))
 
       val newRevision = article.revision.getOrElse(0) + 1
-      val count = sql"update ${Article.table} set document=${dataObject}, revision=$newRevision, external_id=$externalId, external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id} and revision=${article.revision}".update.apply
+      val count = sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=$externalId, external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"

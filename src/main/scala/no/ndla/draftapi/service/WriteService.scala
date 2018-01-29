@@ -88,9 +88,9 @@ trait WriteService {
       } yield apiArticle
     }
 
-    private def updateArticle(toUpdate: domain.Article, externalId: Option[String] = None, externalSubjectIds: Seq[String] = Seq.empty): Try[domain.Article] = {
+    private def updateArticle(toUpdate: domain.Article, externalId: Option[String] = None, externalSubjectIds: Seq[String] = Seq.empty, isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalId match {
-        case None => draftRepository.update _
+        case None => (a: domain.Article) => draftRepository.update(a, isImported = isImported)
         case Some(nid) => (a: domain.Article) => draftRepository.updateWithExternalIds(a, nid, externalSubjectIds)
       }
 
@@ -107,7 +107,7 @@ trait WriteService {
           Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
-            .flatMap(updateArticle(_, externalId, externalSubjectIds))
+            .flatMap(updateArticle(_, externalId, externalSubjectIds, isImported = externalId.isDefined))
             .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
         case None if draftRepository.exists(articleId) =>
           val article = converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
@@ -117,25 +117,25 @@ trait WriteService {
       }
     }
 
-    def queueArticleForPublish(id: Long): Try[ArticleStatus] = {
+    def queueArticleForPublish(id: Long, isImported: Boolean = false): Try[ArticleStatus] = {
       draftRepository.withId(id) match {
         case Some(a) =>
           contentValidator.validateArticleApiArticle(id) match {
             case Success(_) =>
               val newStatus = a.status.filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
-              draftRepository.update(a.copy(status=newStatus)).map(a => converterService.toApiStatus(a.status))
+              draftRepository.update(a.copy(status = newStatus), isImported = isImported).map(a => converterService.toApiStatus(a.status))
             case Failure(ex) => Failure(ex)
           }
         case None => Failure(NotFoundException(s"The article with id $id does not exist"))
       }
     }
 
-    def publishArticle(id: Long): Try[domain.Article] = {
+    def publishArticle(id: Long, isImported: Boolean = false): Try[domain.Article] = {
       draftRepository.withId(id) match {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
-              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED))
+              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED), isImported = isImported)
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>
@@ -219,4 +219,5 @@ trait WriteService {
     }
 
   }
+
 }
