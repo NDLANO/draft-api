@@ -53,7 +53,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   val agreement7 = sampleAgreement.copy(id=Some(8), title="Lurerier er ikke bra", content = "Lurerier er bare lov dersom du er en tyv")
   val agreement8 = sampleAgreement.copy(id=Some(9), title="Hvorfor er aper så slemme", content = "Har du blitt helt ape")
   val agreement9 = sampleAgreement.copy(id=Some(10), title="Du er en av dem du", content = "Det er ikke snilt å være en av dem")
-  val agreement10 = sampleAgreement.copy(id=Some(11), title="Woopie", content = "This agreement is copyrighted", copyright = copyrighted)
+  val agreement10 = sampleAgreement.copy(id=Some(11), title="Woopie", content = "This agreement is not copyrighted")
 
 
   override def beforeAll = {
@@ -98,7 +98,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   test("That all returns all documents ordered by id ascending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdAsc)
     val hits = results.results
-    results.totalCount should be(9)
+    results.totalCount should be(10)
     hits(0).id should be(2)
     hits(1).id should be(3)
     hits(2).id should be(4)
@@ -108,20 +108,21 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     hits(6).id should be(8)
     hits(7).id should be(9)
     hits(8).id should be(10)
+    hits(9).id should be(11)
   }
 
   test("That all returns all documents ordered by id descending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdDesc)
     val hits = results.results
-    results.totalCount should be(9)
-    hits.head.id should be (10)
+    results.totalCount should be(10)
+    hits.head.id should be (11)
     hits.last.id should be (2)
   }
 
   test("That all returns all documents ordered by title ascending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleAsc)
     val hits = results.results
-    results.totalCount should be(9)
+    results.totalCount should be(10)
     hits(0).id should be(2)
     hits(1).id should be(10)
     hits(2).id should be(7)
@@ -136,22 +137,23 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   test("That all returns all documents ordered by title descending") {
     val results = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleDesc)
     val hits = results.results
-    results.totalCount should be(9)
-    hits(0).id should be(5)
-    hits(1).id should be(3)
-    hits(2).id should be(4)
-    hits(3).id should be(8)
-    hits(4).id should be(6)
-    hits(5).id should be(9)
-    hits(6).id should be(7)
-    hits(7).id should be(10)
-    hits(8).id should be(2)
+    results.totalCount should be(10)
+    hits(0).id should be(11)
+    hits(1).id should be(5)
+    hits(2).id should be(3)
+    hits(3).id should be(4)
+    hits(4).id should be(8)
+    hits(5).id should be(6)
+    hits(6).id should be(9)
+    hits(7).id should be(7)
+    hits(8).id should be(10)
+    hits(9).id should be(2)
   }
 
   test("That paging returns only hits on current page and not more than page-size") {
     val page1 = agreementSearchService.all(List(), None, 1, 2, Sort.ByTitleAsc)
     val hits1 = page1.results
-    page1.totalCount should be(9)
+    page1.totalCount should be(10)
     page1.page should be(1)
     hits1.size should be(2)
     hits1.head.id should be(2)
@@ -159,7 +161,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
 
     val page2 = agreementSearchService.all(List(), None, 2, 2, Sort.ByTitleAsc)
     val hits2 = page2.results
-    page2.totalCount should be(9)
+    page2.totalCount should be(10)
     page2.page should be(2)
     hits2.size should be(2)
     hits2.head.id should be(7)
@@ -183,13 +185,6 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   test("That search does not return superman since it has license copyrighted and license is not specified") {
     val results = agreementSearchService.matchingQuery("supermann", List(), None, 1, 10, Sort.ByTitleAsc)
     results.totalCount should be(0)
-  }
-
-  test("That search returns the only one with license specified as copyrighted") {
-    val results = agreementSearchService.all(List(), Some("copyrighted"), 1, 10, Sort.ByTitleAsc)
-    val hits = results.results
-    results.totalCount should be(1)
-    hits.head.id should be(11)
   }
 
   test("Searching with logical AND only returns results with all terms") {
