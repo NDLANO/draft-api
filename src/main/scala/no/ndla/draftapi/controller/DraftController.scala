@@ -121,7 +121,7 @@ trait DraftController {
     get("/", operation(getAllArticles)) {
       val query = paramOrNone("query")
       val sort = Sort.valueOf(paramOrDefault("sort", ""))
-      val language = paramOrDefault("language", Language.DefaultLanguage)
+      val language = paramOrDefault("language", Language.AllLanguages)
       val license = paramOrNone("license")
       val pageSize = intOrDefault("page-size", DraftApiProperties.DefaultPageSize)
       val page = intOrDefault("page", 1)
@@ -148,7 +148,7 @@ trait DraftController {
 
       val query = searchParams.query
       val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-      val language = searchParams.language.getOrElse(Language.DefaultLanguage)
+      val language = searchParams.language.getOrElse(Language.AllLanguages)
       val license = searchParams.license
       val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
       val page = searchParams.page.getOrElse(1)
