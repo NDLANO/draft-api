@@ -8,7 +8,7 @@
 
 package no.ndla.draftapi.controller
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{Executors, TimeUnit}
 
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.model.api.ContentId
@@ -19,7 +19,6 @@ import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexServi
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
@@ -41,6 +40,7 @@ trait InternController {
     protected implicit override val jsonFormats: Formats = DefaultFormats
 
     post("/index") {
+      implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val indexResults = for {
         articleIndex <- Future { articleIndexService.indexDocuments }
         conceptIndex <- Future { conceptIndexService.indexDocuments }
