@@ -76,7 +76,7 @@ trait ContentValidator {
         article.copyright.map(x => validateCopyright(x)).toSeq.flatten ++
         validateTags(article.tags, allowUnknownLanguage) ++
         article.requiredLibraries.flatMap(validateRequiredLibrary) ++
-        article.metaImageId.flatMap(validateMetaImageId) ++
+        article.metaImage.flatMap(validateMetaImageId) ++
         article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {

@@ -96,12 +96,12 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   }
 
   test("validateArticle does not throw an exception on an article where metaImageId is a number") {
-    val article = TestData.sampleArticleWithByNcSa.copy(metaImageId=Seq(ArticleMetaImage("123", "en")))
+    val article = TestData.sampleArticleWithByNcSa.copy(metaImage=Seq(ArticleMetaImage("123", "en")))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle throws an exception on an article where metaImageId is not a number") {
-    val article = TestData.sampleArticleWithByNcSa.copy(metaImageId=Seq(ArticleMetaImage("not a number", "en")))
+    val article = TestData.sampleArticleWithByNcSa.copy(metaImage=Seq(ArticleMetaImage("not a number", "en")))
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
