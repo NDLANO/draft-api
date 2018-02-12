@@ -57,13 +57,12 @@ trait ConceptSearchService {
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
 
       val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
-      val ih = innerHits("inner_hits").highlighting(hi)
 
       val fullQuery = boolQuery()
         .must(boolQuery()
           .should(
-            nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(ih),
-            nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(ih)
+            nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("title").highlighting(hi)),
+            nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(innerHits("content").highlighting(hi))
           )
         )
 
@@ -99,7 +98,7 @@ trait ConceptSearchService {
 
       } match {
         case Success(response) =>
-          api.ConceptSearchResult(response.result.totalHits, page, numResults, language, getHits(response.result, language, hitToApiModel))
+          api.ConceptSearchResult(response.result.totalHits, page, numResults, if (searchLanguage == "*") Language.AllLanguages else searchLanguage, getHits(response.result, language, hitToApiModel))
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }

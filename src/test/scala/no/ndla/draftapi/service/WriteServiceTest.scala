@@ -47,7 +47,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
     when(authUser.userOrClientId()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
-    when(draftRepository.update(any[Article])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
+    when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
       val arg = invocation.getArgumentAt(0, article.getClass)
       Try(arg.copy(revision = Some(arg.revision.get + 1)))
     })
@@ -140,7 +140,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
-    val updatedApiArticle = api.UpdatedArticle(1, "en", None, Some(newContent), Seq(), None, None, None, None, None, Seq(), None)
+    val updatedApiArticle = api.UpdatedArticle(1, Some("en"), None, Some(newContent), None, None, None, None, None, None, None, None, None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
     service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
@@ -148,7 +148,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("That updateArticle updates only title properly") {
     val newTitle = "NyTittelTest"
-    val updatedApiArticle = api.UpdatedArticle(1, "en", Some(newTitle), None, Seq(), None, None, None, None, None, Seq(), None)
+    val updatedApiArticle = api.UpdatedArticle(1, Some("en"), Some(newTitle), None, None, None, None, None, None, None, None, None, None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
     service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
@@ -165,9 +165,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedCopyright = api.Copyright(Some(api.License("a", Some("b"), None)), Some("c"), Seq(api.Author("Opphavsmann", "Jonas")), List(), List(), None, None, None)
     val updatedRequiredLib = api.RequiredLibrary("tjup", "tjap", "tjim")
 
-    val updatedApiArticle = api.UpdatedArticle(1, "en", Some(updatedTitle), Some(updatedContent), updatedTags,
+    val updatedApiArticle = api.UpdatedArticle(1, Some("en"), Some(updatedTitle), Some(updatedContent), Some(updatedTags),
       Some(updatedIntro), Some(updatedMetaDescription), Some(updatedMetaId), Some(updatedVisualElement),
-      Some(updatedCopyright), Seq(updatedRequiredLib), None)
+      Some(updatedCopyright), Some(Seq(updatedRequiredLib)), None, None)
 
     val expectedArticle = article.copy(
       revision = Some(article.revision.get + 1),
@@ -211,7 +211,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val article = TestData.sampleArticleWithByNcSa.copy(id=Some(id), status=Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
     val apiArticle = converterService.toArticleApiArticle(article)
     when(draftRepository.withId(id)).thenReturn(Some(article))
-    when(draftRepository.update(any[Article])).thenReturn(Success(article))
+    when(draftRepository.update(any[Article], any[Boolean])).thenReturn(Success(article))
     when(ArticleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
   }
 

@@ -171,7 +171,9 @@ trait ConceptController {
 
     patch("/:id", operation(updateConcept)) {
       authRole.assertHasWritePermission()
-      writeService.updateConcept(long("id"), extract[UpdatedConcept](request.body)) match {
+      val externalId = paramOrNone("externalId")
+
+      writeService.updateConcept(long("id"), extract[UpdatedConcept](request.body), externalId) match {
         case Success(c) => c
         case Failure(ex) => errorHandler(ex)
       }

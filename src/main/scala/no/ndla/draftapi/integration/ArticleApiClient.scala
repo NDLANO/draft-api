@@ -9,7 +9,7 @@ package no.ndla.draftapi.integration
 
 import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.ContentId
+import no.ndla.draftapi.model.api.{ArticleApiValidationError, ContentId}
 import no.ndla.draftapi.model.domain.Article
 import no.ndla.network.NdlaClient
 import no.ndla.network.model.HttpRequestException
@@ -66,8 +66,8 @@ trait ArticleApiClient {
       implicit val format = org.json4s.DefaultFormats
       postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article) match {
         case Failure(ex: HttpRequestException) =>
-          val validateionMessages = ex.httpResponse.map(r => parse(r.body).extract[Seq[ValidationMessage]]).getOrElse(Seq.empty)
-          Failure(new ValidationException("Failed to validate article in article-api", validateionMessages))
+          val validationError = ex.httpResponse.map(r => parse(r.body).extract[ArticleApiValidationError])
+          Failure(new ValidationException("Failed to validate article in article-api", validationError.map(_.messages).getOrElse(Seq.empty)))
         case x => x
       }
     }

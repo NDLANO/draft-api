@@ -61,7 +61,8 @@ trait ConverterService {
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.userOrClientId(),
-            articleType = ArticleType.valueOfOrError(newArticle.articleType)
+            articleType = ArticleType.valueOfOrError(newArticle.articleType),
+            newArticle.notes
           ))
       }
     }
@@ -190,7 +191,8 @@ trait ConverterService {
         article.updated,
         article.updatedBy,
         article.articleType.toString,
-        supportedLanguages
+        supportedLanguages,
+        article.notes
       )
     }
 
@@ -289,8 +291,9 @@ trait ConverterService {
 
     def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
       def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
-      api.ArticleApiCopyright(copyright.license,
-        copyright.origin,
+      api.ArticleApiCopyright(
+        copyright.license.getOrElse(""),
+        copyright.origin.getOrElse(""),
         copyright.creators.map(toArticleApiAuthor),
         copyright.processors.map(toArticleApiAuthor),
         copyright.rightsholders.map(toArticleApiAuthor),
@@ -300,18 +303,12 @@ trait ConverterService {
       )
     }
 
-    def toArticleApiOldCopyright(copyright: domain.Copyright): api.ArticleApiOldCopyright = {
-      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
-      val authors = copyright.creators ++ copyright.processors ++ copyright.rightsholders
-      api.ArticleApiOldCopyright(copyright.license, copyright.origin.getOrElse(""), authors.map(toArticleApiAuthor))
-    }
-
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
         revision = article.revision,
         title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
         content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
-        copyright = article.copyright.map(toArticleApiOldCopyright),
+        copyright = article.copyright.map(toArticleApiCopyright),
         tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
         requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
@@ -321,7 +318,7 @@ trait ConverterService {
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
-        articleType = Some(article.articleType.toString)
+        articleType = article.articleType.toString
       )
     }
 
@@ -350,49 +347,72 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
-      val lang = article.language
-      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
-      toMergeInto.copy(
-        status = status,
-        revision = Option(article.revision),
-        title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
-        content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
-        copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
-        tags = mergeLanguageFields(toMergeInto.tags, toDomainTag(article.tags, lang)),
-        requiredLibraries = article.requiredLibraries.map(toDomainRequiredLibraries),
-        visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
-        introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
-        metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-        metaImageId = mergeLanguageFields(toMergeInto.metaImageId, article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq),
-        updated = clock.now(),
-        updatedBy = authUser.userOrClientId(),
-        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType)
-      )
+    private def languageFieldIsDefined(article: api.UpdatedArticle): Boolean = {
+      val langFields: Seq[Option[_]] = Seq(article.title, article.content, article.tags, article.introduction,
+        article.metaDescription, article.metaImageId, article.visualElement)
+
+      langFields.foldRight(false)((curr, res) => res || curr.isDefined)
     }
 
-    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean): domain.Article = {
-      val lang = article.language
-      val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
+    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): Try[domain.Article] = {
+      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
 
-      domain.Article(
-        id = Some(id),
-        revision = Some(1),
+      val partiallyConverted = toMergeInto.copy(
         status = status,
-        title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
-        content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
-        copyright = article.copyright.map(toDomainCopyright),
-        tags = Seq(domain.ArticleTag(article.tags, lang)),
-        requiredLibraries = article.requiredLibraries.map(toDomainRequiredLibraries),
-        visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
-        introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
-        metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-        metaImageId = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
-        created = clock.now(),
+        revision = Option(article.revision),
+        copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+        requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
         updated = clock.now(),
-        authUser.userOrClientId(),
-        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard)
+        updatedBy = authUser.userOrClientId(),
+        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
+        notes = article.notes.getOrElse(toMergeInto.notes)
       )
+
+      article.language match {
+        case None if languageFieldIsDefined(article) =>
+          val error = ValidationMessage("language", "This field must be specified when updating language fields")
+          Failure(new ValidationException(errors = Seq(error)))
+        case None => Success(partiallyConverted)
+        case Some(lang) =>
+          Success(partiallyConverted.copy(
+            title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
+            content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
+            tags = article.tags.map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang))).getOrElse(toMergeInto.tags),
+            visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
+            introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
+            metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
+            metaImageId = mergeLanguageFields(toMergeInto.metaImageId, article.metaImageId.map(toDomainMetaImage(_, lang)).toSeq)
+          ))
+      }
+    }
+
+    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean): Try[domain.Article] = {
+      article.language match {
+        case None =>
+          val error = ValidationMessage("language", "This field must be specified when updating language fields")
+          Failure(new ValidationException(errors=Seq(error)))
+        case Some(lang) =>
+          val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
+          Success(domain.Article(
+            id = Some(id),
+            revision = Some(1),
+            status = status,
+            title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
+            content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
+            copyright = article.copyright.map(toDomainCopyright),
+            tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
+            requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
+            visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
+            introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
+            metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
+            metaImageId = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
+            created = clock.now(),
+            updated = clock.now(),
+            authUser.userOrClientId(),
+            articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
+            article.notes.getOrElse(Seq.empty)
+          ))
+      }
     }
 
     def toDomainConcept(toMergeInto: domain.Concept, updateConcept: api.UpdatedConcept): domain.Concept = {
@@ -405,6 +425,19 @@ trait ConverterService {
         copyright=updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
         created=toMergeInto.created,
         updated=clock.now()
+      )
+    }
+
+    def toDomainConcept(id: Long, article: api.UpdatedConcept): domain.Concept = {
+      val lang = article.language
+
+      domain.Concept(
+        id = Some(id),
+        title = article.title.map(t => domain.ConceptTitle(t, lang)).toSeq,
+        content = article.content.map(c => domain.ConceptContent(c, lang)).toSeq,
+        copyright = article.copyright.map(toDomainCopyright),
+        created = clock.now(),
+        updated = clock.now()
       )
     }
 

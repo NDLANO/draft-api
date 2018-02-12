@@ -40,7 +40,6 @@ object Error {
 }
 
 case class NotFoundException(message: String) extends RuntimeException(message)
-case class ImportException(message: String) extends RuntimeException(message)
 case class ArticlePublishException(message: String) extends RuntimeException(message)
 
 class ArticleStatusException(message: String) extends RuntimeException(message)

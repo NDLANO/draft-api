@@ -46,7 +46,8 @@ trait ArticleIndexService {
         keywordField("license"),
         keywordField("defaultTitle"),
         textField("authors") fielddata true,
-        textField("articleType") analyzer "keyword"
+        textField("articleType") analyzer "keyword",
+        textField("notes") fielddata true
       )
     }
 

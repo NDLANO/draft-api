@@ -121,7 +121,7 @@ trait DraftController {
     get("/", operation(getAllArticles)) {
       val query = paramOrNone("query")
       val sort = Sort.valueOf(paramOrDefault("sort", ""))
-      val language = paramOrDefault("language", Language.DefaultLanguage)
+      val language = paramOrDefault("language", Language.AllLanguages)
       val license = paramOrNone("license")
       val pageSize = intOrDefault("page-size", DraftApiProperties.DefaultPageSize)
       val page = intOrDefault("page", 1)
@@ -148,7 +148,7 @@ trait DraftController {
 
       val query = searchParams.query
       val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-      val language = searchParams.language.getOrElse(Language.DefaultLanguage)
+      val language = searchParams.language.getOrElse(Language.AllLanguages)
       val license = searchParams.license
       val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
       val page = searchParams.page.getOrElse(1)
@@ -205,14 +205,21 @@ trait DraftController {
         notes "Shows all valid licenses"
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        queryParam[Option[String]]("filter").description("A filter on the license keys. May be omitted"))
+        queryParam[Option[String]]("filter").description("A filter to include a specific license key. May be omitted"),
+        queryParam[Option[String]]("filterNot").description("A filter to remove a specific license key. May be omitted"))
         responseMessages(response403, response500)
         authorizations "oauth2")
 
     get("/licenses", operation(getLicenses)) {
-      val licenses: Seq[LicenseDefinition] = paramOrNone("filter") match {
-        case None => mapping.License.getLicenses
-        case Some(filter) => mapping.License.getLicenses.filter(_.license.contains(filter))
+      val filterNot = paramOrNone("filterNot")
+      val filter = paramOrNone("filter")
+
+      val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses.filter {
+        case license: LicenseDefinition if filter.isDefined => license.license.contains(filter.get)
+        case _ => true
+      }.filterNot {
+        case license: LicenseDefinition if filterNot.isDefined => license.license.contains(filterNot.get)
+        case _ => false
       }
 
       licenses.map(x => License(x.license, Option(x.description), x.url))
@@ -254,7 +261,8 @@ trait DraftController {
     put("/:article_id/publish", operation(queueDraftForPublishing)) {
       authRole.assertHasPublishPermission()
       val id = long("article_id")
-      writeService.queueArticleForPublish(id) match {
+      val isImported = booleanOrDefault("import_publish", false)
+      writeService.queueArticleForPublish(id, isImported) match {
         case Success(s) => s
         case Failure(e) => errorHandler(e)
       }

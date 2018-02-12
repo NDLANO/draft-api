@@ -36,6 +36,7 @@ case class SearchableArticle(
   license: Option[String],
   authors: Seq[String],
   articleType: String,
+  notes: Seq[String],
   defaultTitle: Option[String]
 )
 

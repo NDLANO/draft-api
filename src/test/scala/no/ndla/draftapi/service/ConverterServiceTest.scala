@@ -9,10 +9,12 @@ package no.ndla.draftapi.service
 
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain.ArticleStatus._
+import no.ndla.draftapi.model.domain.ArticleTitle
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
-import no.ndla.validation.{ResourceType, TagAttributes}
+import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+
 import scala.util.Success
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
@@ -32,6 +34,12 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     service.toApiArticle(TestData.sampleDomainArticle, "nb") should equal(TestData.apiArticleV2)
   }
 
+  test("that toApiArticle returns sorted supportedLanguages") {
+    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    val result = service.toApiArticle(TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title :+ ArticleTitle("hehe", "unknown")), "nb")
+    result.supportedLanguages should be(Seq("unknown", "nb"))
+  }
+
   test("toDomainArticleShould should remove unneeded attributes on embed-tags") {
     val content = s"""<h1>hello</h1><embed ${TagAttributes.DataResource}="${ResourceType.Image}" ${TagAttributes.DataUrl}="http://some-url" data-random="hehe" />"""
     val expectedContent = s"""<h1>hello</h1><embed ${TagAttributes.DataResource}="${ResourceType.Image}">"""
@@ -48,21 +56,37 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("toDomainArticle should remove PUBLISHED when merging an UpdatedArticle into an existing") {
     val existing = TestData.sampleArticleWithByNcSa.copy(status = Set(DRAFT, PUBLISHED))
-    val res = service.toDomainArticle(existing, TestData.sampleApiUpdateArticle.copy(language = "en"), isImported = false
+    val Success(res) = service.toDomainArticle(existing, TestData.sampleApiUpdateArticle.copy(language = Some("en")), isImported = false
     )
     res.status should equal(Set(DRAFT))
 
     val existing2 = TestData.sampleArticleWithByNcSa.copy(status = Set(CREATED, QUEUED_FOR_PUBLISHING))
-    val res2 = service.toDomainArticle(existing2, TestData.sampleApiUpdateArticle.copy(language = "en"), isImported = false)
+    val Success(res2) = service.toDomainArticle(existing2, TestData.sampleApiUpdateArticle.copy(language = Some("en")), isImported = false)
     res2.status should equal(Set(DRAFT, QUEUED_FOR_PUBLISHING))
   }
 
   test("toDomainArticle should set IMPORTED status if being imported") {
-    val importRes = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), TestData.sampleApiUpdateArticle, isImported = true)
+    val Success(importRes) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), TestData.sampleApiUpdateArticle, isImported = true)
     importRes.status should equal(Set(IMPORTED))
 
-    val regularUpdate = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set(IMPORTED)), TestData.sampleApiUpdateArticle, isImported = false)
+    val Success(regularUpdate) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set(IMPORTED)), TestData.sampleApiUpdateArticle, isImported = false)
     regularUpdate.status should equal(Set(IMPORTED, DRAFT))
+  }
+
+  test("toDomainArticle should fail if trying to update language fields without language being set") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language=None, title=Some("kakemonster"))
+    val res = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), updatedArticle, isImported = false)
+    res.isFailure should be (true)
+
+    val errors = res.failed.get.asInstanceOf[ValidationException].errors
+    errors.length should be (1)
+    errors.head.message should equal ("This field must be specified when updating language fields")
+  }
+
+  test("toDomainArticle should succeed if trying to update language fields with language being set") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language=Some("nb"), title=Some("kakemonster"))
+    val Success(res) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status=Set()), updatedArticle, isImported = false)
+    res.title.find(_.language == "nb").get.title should equal("kakemonster")
   }
 
 }
