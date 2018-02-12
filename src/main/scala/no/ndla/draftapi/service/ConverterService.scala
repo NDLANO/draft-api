@@ -314,7 +314,7 @@ trait ConverterService {
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
         introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
         metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
-        metaImageId = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.language)),
+        metaImage = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.language)),
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
