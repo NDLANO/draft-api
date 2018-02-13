@@ -10,6 +10,7 @@ package no.ndla.draftapi.service.search
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
+
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.IndexDefinition
 import com.sksamuel.elastic4s.mappings.MappingDefinition
@@ -18,6 +19,7 @@ import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.domain.{Content, ReindexResult}
 import no.ndla.draftapi.repository.Repository
+
 import scala.util.{Failure, Success, Try}
 
 trait IndexService {
