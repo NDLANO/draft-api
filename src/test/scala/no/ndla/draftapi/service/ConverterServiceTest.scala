@@ -40,6 +40,20 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     result.get.supportedLanguages should be(Seq("unknown", "nb"))
   }
 
+  test("that toApiArticleV2 returns none if article does not exist on language, and fallback is not specified") {
+    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    val result = service.toApiArticle(TestData.sampleDomainArticle, "en")
+    result.isFailure should be (true)
+  }
+
+  test("That toApiArticleV2 returns article on existing language if fallback is specified even if selected language does not exist") {
+    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    val result = service.toApiArticle(TestData.sampleDomainArticle, "en", fallback = true)
+    result.get.title.get.language should be("nb")
+    result.get.title.get.title should be(TestData.sampleDomainArticle.title.head.title)
+    result.isFailure should be (false)
+  }
+
   test("toDomainArticleShould should remove unneeded attributes on embed-tags") {
     val content = s"""<h1>hello</h1><embed ${TagAttributes.DataResource}="${ResourceType.Image}" ${TagAttributes.DataUrl}="http://some-url" data-random="hehe" />"""
     val expectedContent = s"""<h1>hello</h1><embed ${TagAttributes.DataResource}="${ResourceType.Image}">"""
