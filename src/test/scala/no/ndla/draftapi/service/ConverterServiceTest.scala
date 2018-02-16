@@ -31,13 +31,13 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("toApiArticle converts a domain.Article to an api.ArticleV2") {
     when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
-    service.toApiArticle(TestData.sampleDomainArticle, "nb") should equal(TestData.apiArticleV2)
+    service.toApiArticle(TestData.sampleDomainArticle, "nb") should equal(Success(TestData.apiArticleV2))
   }
 
   test("that toApiArticle returns sorted supportedLanguages") {
     when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
     val result = service.toApiArticle(TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title :+ ArticleTitle("hehe", "unknown")), "nb")
-    result.supportedLanguages should be(Seq("unknown", "nb"))
+    result.get.supportedLanguages should be(Seq("unknown", "nb"))
   }
 
   test("toDomainArticleShould should remove unneeded attributes on embed-tags") {

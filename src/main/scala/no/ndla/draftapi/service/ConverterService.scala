@@ -14,7 +14,7 @@ import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain.{ArticleStatus, Language, LanguageField}
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.NewAgreement
+import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
@@ -160,38 +160,44 @@ trait ConverterService {
       HtmlTagRules.jsoupDocumentToString(document)
     }
 
-    def toApiArticle(article: domain.Article, language: String): api.Article = {
+    def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
       val supportedLanguages = getSupportedLanguages(
         Seq(article.title, article.visualElement, article.introduction, article.metaDescription, article.tags, article.content)
       )
+      val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
+      val lang = if (language == AllLanguages) getSearchLanguage(language, supportedLanguages) else language
 
-      val meta = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
-      val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
-      val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
-      val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
-      val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
-      val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
+      if (supportedLanguages.contains(lang) || isLanguageNeutral || fallback) {
+        val meta = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
+        val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
+        val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
+        val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
+        val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
+        val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
 
-      api.Article(
-        article.id.get,
-        article.id.flatMap(getLinkToOldNdla),
-        article.revision.get,
-        article.status.map(_.toString),
-        title,
-        articleContent,
-        article.copyright.map(toApiCopyright),
-        tags,
-        article.requiredLibraries.map(toApiRequiredLibrary),
-        visualElement,
-        introduction,
-        meta,
-        article.created,
-        article.updated,
-        article.updatedBy,
-        article.articleType.toString,
-        supportedLanguages,
-        article.notes
-      )
+        Success(api.Article(
+          article.id.get,
+          article.id.flatMap(getLinkToOldNdla),
+          article.revision.get,
+          article.status.map(_.toString),
+          title,
+          articleContent,
+          article.copyright.map(toApiCopyright),
+          tags,
+          article.requiredLibraries.map(toApiRequiredLibrary),
+          visualElement,
+          introduction,
+          meta,
+          article.created,
+          article.updated,
+          article.updatedBy,
+          article.articleType.toString,
+          supportedLanguages,
+          article.notes
+        ))
+      } else {
+        Failure(NotFoundException(s"The article with id ${article.id.get} and language $language was not found", supportedLanguages))
+      }
     }
 
     def toApiAgreement(agreement: domain.Agreement): api.Agreement = {

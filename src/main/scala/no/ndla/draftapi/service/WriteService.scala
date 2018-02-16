@@ -84,7 +84,7 @@ trait WriteService {
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
         insertedArticle <- Try(insertNewArticleFunction(domainArticle))
         _ <- articleIndexService.indexDocument(insertedArticle)
-        apiArticle <- Success(converterService.toApiArticle(insertedArticle, newArticle.language))
+        apiArticle <- converterService.toApiArticle(insertedArticle, newArticle.language)
       } yield apiArticle
     }
 
@@ -106,13 +106,18 @@ trait WriteService {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
-          converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
-            .flatMap(updateArticle(_, externalId, externalSubjectIds, isImported = externalId.isDefined))
-            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
+          for {
+            domainArticle <- converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
+            updatedArticle <- updateArticle(domainArticle, externalId, externalSubjectIds, isImported = externalId.isDefined)
+            apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle), updatedApiArticle.language.getOrElse(UnknownLanguage))
+          } yield apiArticle
+
         case None if draftRepository.exists(articleId) =>
-          val article = converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
-          article.flatMap(updateArticle(_, externalId, externalSubjectIds))
-            .map(article => converterService.toApiArticle(readService.addUrlsOnEmbedResources(article), updatedApiArticle.language.getOrElse(UnknownLanguage)))
+          for {
+            article <- converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
+            updatedArticle <- updateArticle(article, externalId, externalSubjectIds)
+            apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle), updatedApiArticle.language.getOrElse(UnknownLanguage))
+          } yield apiArticle
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
     }
