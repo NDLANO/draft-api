@@ -165,9 +165,8 @@ trait ConverterService {
         Seq(article.title, article.visualElement, article.introduction, article.metaDescription, article.tags, article.content)
       )
       val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
-      val lang = if (language == AllLanguages) getSearchLanguage(language, supportedLanguages) else language
 
-      if (supportedLanguages.contains(lang) || isLanguageNeutral || fallback) {
+      if (supportedLanguages.contains(language) || language == AllLanguages || isLanguageNeutral || fallback) {
         val meta = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
         val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
         val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
