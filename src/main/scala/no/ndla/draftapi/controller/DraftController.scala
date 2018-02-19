@@ -49,7 +49,7 @@ trait DraftController {
         parameters(
           queryParam[Option[Int]]("size").description("Limit the number of results to this many elements"),
           headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-          queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb")
+          queryParam[Option[String]]("language").description("Only return results on the given language. Default is all languages.")
         )
         responseMessages response500
         authorizations "oauth2")
@@ -105,7 +105,7 @@ trait DraftController {
         queryParam[Option[String]]("articleTypes").description("Return only articles of specific type(s). To provide multiple types, separate by comma (,)."),
         queryParam[Option[String]]("query").description("Return only articles with content matching the specified query."),
         queryParam[Option[String]]("ids").description("Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,)."),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb"),
+        queryParam[Option[String]]("language").description("Only return results on the given language. Default is all languages."),
         queryParam[Option[String]]("license").description("Return only articles with provided license."),
         queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
         queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page."),
@@ -137,7 +137,7 @@ trait DraftController {
         notes "Shows all articles. You can search it too."
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb"),
+        queryParam[Option[String]]("language").description("Only return results on the given language. Default is all languages."),
         bodyParam[ArticleSearchParams]
       )
         authorizations "oauth2"
@@ -165,7 +165,8 @@ trait DraftController {
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
         pathParam[Long]("article_id").description("Id of the article that is to be returned"),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is nb")
+        queryParam[Option[String]]("language").description("Only return results on the given language. Default is any language."),
+        queryParam[Option[Boolean]]("fallback").description("Fallback to existing language if language is specified.")
       )
         authorizations "oauth2"
         responseMessages(response404, response500))
@@ -173,10 +174,11 @@ trait DraftController {
     get("/:article_id", operation(getArticleById)) {
       val articleId = long("article_id")
       val language = paramOrDefault("language", Language.AllLanguages)
+      val fallback = booleanOrDefault("fallback", false)
 
-      readService.withId(articleId, language) match {
-        case Some(article) => article
-        case None => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $articleId and language $language found"))
+      readService.withId(articleId, language, fallback) match {
+        case Success(article) => article
+        case Failure(ex) => errorHandler(ex)
       }
     }
 

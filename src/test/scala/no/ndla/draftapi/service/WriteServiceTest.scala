@@ -143,7 +143,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, Some("en"), None, Some(newContent), None, None, None, None, None, None, None, None, None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates only title properly") {
@@ -151,7 +151,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, Some("en"), Some(newTitle), None, None, None, None, None, None, None, None, None, None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates multiple fields properly") {
@@ -182,7 +182,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaImageId = Some(updatedMetaId),
       updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("publishArticle should return Failure if article is not ready for publishing") {

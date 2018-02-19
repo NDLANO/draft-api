@@ -40,7 +40,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   val articleId = 1
 
   test("/<article_id> should return 200 if the cover was found withId") {
-    when(readService.withId(articleId, lang)).thenReturn(Some(TestData.sampleArticleV2))
+    when(readService.withId(articleId, lang)).thenReturn(Success(TestData.sampleArticleV2))
 
     get(s"/test/$articleId?language=$lang") {
       status should equal(200)
@@ -48,7 +48,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("/<article_id> should return 404 if the article was not found withId") {
-    when(readService.withId(articleId, lang)).thenReturn(None)
+    when(readService.withId(articleId, lang)).thenReturn(Failure(NotFoundException("not found yo")))
 
     get(s"/test/$articleId?language=$lang") {
       status should equal(404)
