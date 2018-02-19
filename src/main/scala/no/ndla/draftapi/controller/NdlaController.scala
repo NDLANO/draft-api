@@ -11,6 +11,7 @@ package no.ndla.draftapi.controller
 import javax.servlet.http.HttpServletRequest
 
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.ComponentRegistry
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
 import no.ndla.draftapi.model.api.{AccessDeniedException, ArticlePublishException, ArticleStatusException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
 import no.ndla.draftapi.model.domain.emptySomeToNone
@@ -21,8 +22,10 @@ import org.apache.logging.log4j.ThreadContext
 import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
+import org.postgresql.util.PSQLException
 import org.scalatra.json.NativeJsonSupport
 import org.scalatra._
+import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 
 import scala.util.{Failure, Success, Try}
 
@@ -54,6 +57,9 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case o: OptimisticLockException => Conflict(body=Error(Error.RESOURCE_OUTDATED, o.getMessage))
     case rw: ResultWindowTooLargeException => UnprocessableEntity(body=Error(Error.WINDOW_TOO_LARGE, rw.getMessage))
     case pf: ArticlePublishException => BadRequest(body=Error(Error.PUBLISH, pf.getMessage))
+    case _: PSQLException =>
+      ComponentRegistry.connectToDatabase()
+      InternalServerError(Error(Error.DATABASE_UNAVAILABLE, Error.DATABASE_UNAVAILABLE_DESCRIPTION))
     case h: HttpRequestException =>
       h.httpResponse match {
         case Some(resp) if resp.is4xx => BadRequest(body=resp.body)
