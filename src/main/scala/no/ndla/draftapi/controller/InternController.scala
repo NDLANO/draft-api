@@ -17,6 +17,7 @@ import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
 import scala.concurrent._
@@ -35,8 +36,8 @@ trait InternController {
     with Role =>
   val internController: InternController
 
-  class InternController extends NdlaController {
-
+  class InternController(implicit val swagger: Swagger) extends NdlaController {
+    protected val applicationDescription = "API for accessing internal functionality in draft API"
     protected implicit override val jsonFormats: Formats = DefaultFormats
 
     post("/index") {

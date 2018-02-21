@@ -212,7 +212,7 @@ trait DraftController {
         parameters(
         asHeaderParam[Option[String]](correlationId),
         asQueryParam[Option[String]](filter),
-        asQueryParam[Option[String]](filterNot),
+        asQueryParam[Option[String]](filterNot)
       )
         responseMessages(response403, response500)
         authorizations "oauth2")

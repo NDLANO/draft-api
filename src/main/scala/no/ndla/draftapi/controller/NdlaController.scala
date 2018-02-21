@@ -27,7 +27,6 @@ import org.scalatra.json.NativeJsonSupport
 import org.scalatra._
 import org.scalatra.swagger.SwaggerSupport
 import org.scalatra.util.NotNothing
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 
 import scala.util.{Failure, Success, Try}
 
