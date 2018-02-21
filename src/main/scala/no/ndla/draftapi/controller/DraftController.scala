@@ -18,7 +18,7 @@ import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
 import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
+import org.scalatra.swagger.{ResponseMessage, Swagger}
 import org.scalatra.{Created, NoContent, NotFound, Ok}
 
 import scala.util.{Failure, Success}
@@ -27,7 +27,7 @@ trait DraftController {
   this: ReadService with WriteService with ArticleSearchService with ConverterService with Role with User with ContentValidator =>
   val draftController: DraftController
 
-  class DraftController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
+  class DraftController(implicit val swagger: Swagger) extends NdlaController {
     protected implicit override val jsonFormats: Formats = DefaultFormats
     protected val applicationDescription = "API for accessing draft articles from ndla.no."
 
@@ -41,20 +41,29 @@ trait DraftController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
+    private val query = Param("query","Return only articles with content matching the specified query.")
+    private val articleId = Param("article_id","Id of the article that is to be fecthed")
+    private val size = Param("size", "Limit the number of results to this many elements")
+    private val articleTypes = Param("articleTypes", "Return only articles of specific type(s). To provide multiple types, separate by comma (,).")
+    private val articleIds = Param("ids","Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,).")
+    private val fallback = Param("fallback", "Fallback to existing language if language is specified.")
+    private val filter = Param("filter", "A filter to include a specific entry")
+    private val filterNot = Param("filterNot", "A filter to remove a specific entry")
+
 
     val getTags =
       (apiOperation[ArticleTag]("getTags")
         summary "Retrieves a list of all previously used tags in articles"
         notes "Retrieves a list of all previously used tags in articles"
         parameters(
-          queryParam[Option[Int]]("size").description("Limit the number of results to this many elements"),
-          headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-          queryParam[Option[String]]("language").description("Only return results on the given language. Default is all languages.")
+          asHeaderParam[Option[String]](correlationId),
+          asQueryParam[Option[Int]](size),
+          asQueryParam[Option[String]](language)
         )
         responseMessages response500
         authorizations "oauth2")
 
-    get("/tags/?", operation(getTags)) {
+    get("/tags/", operation(getTags)) {
       val defaultSize = 20
       val language = paramOrDefault("language", Language.AllLanguages)
       val size = intOrDefault("size", defaultSize) match {
@@ -82,7 +91,6 @@ trait DraftController {
             sort = sort.getOrElse(Sort.ByRelevanceDesc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
           )
-
         case None =>
           articleSearchService.all(
             withIdIn = idList,
@@ -101,32 +109,28 @@ trait DraftController {
         summary "Show all articles"
         notes "Shows all articles. You can search it too."
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        queryParam[Option[String]]("articleTypes").description("Return only articles of specific type(s). To provide multiple types, separate by comma (,)."),
-        queryParam[Option[String]]("query").description("Return only articles with content matching the specified query."),
-        queryParam[Option[String]]("ids").description("Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,)."),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is all languages."),
-        queryParam[Option[String]]("license").description("Return only articles with provided license."),
-        queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
-        queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page."),
-        queryParam[Option[String]]("sort").description(
-          """The sorting used on results.
-             Default is by -relevance (desc) when querying.
-             When browsing, the default is title (asc).
-             The following are supported: relevance, -relevance, title, -title, lastUpdated, -lastUpdated, id, -id""".stripMargin)
+        asHeaderParam[Option[String]](correlationId),
+        asQueryParam[Option[String]](articleTypes),
+        asQueryParam[Option[String]](query),
+        asQueryParam[Option[String]](articleIds),
+        asQueryParam[Option[String]](language),
+        asQueryParam[Option[String]](license),
+        asQueryParam[Option[Int]](pageNo),
+        asQueryParam[Option[Int]](pageSize),
+        asQueryParam[Option[String]](sort)
       )
         authorizations "oauth2"
         responseMessages(response500))
 
     get("/", operation(getAllArticles)) {
-      val query = paramOrNone("query")
-      val sort = Sort.valueOf(paramOrDefault("sort", ""))
-      val language = paramOrDefault("language", Language.AllLanguages)
-      val license = paramOrNone("license")
-      val pageSize = intOrDefault("page-size", DraftApiProperties.DefaultPageSize)
-      val page = intOrDefault("page", 1)
-      val idList = paramAsListOfLong("ids")
-      val articleTypesFilter = paramAsListOfString("articleTypes")
+      val query = paramOrNone(this.query.paramName)
+      val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val license = paramOrNone(this.license.paramName)
+      val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
+      val page = intOrDefault(this.pageNo.paramName, 1)
+      val idList = paramAsListOfLong(this.articleIds.paramName)
+      val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
 
       search(query, sort, language, license, page, pageSize, idList, articleTypesFilter)
     }
@@ -136,8 +140,8 @@ trait DraftController {
         summary "Show all articles"
         notes "Shows all articles. You can search it too."
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is all languages."),
+        asHeaderParam[Option[String]](correlationId),
+        asQueryParam[Option[String]](language),
         bodyParam[ArticleSearchParams]
       )
         authorizations "oauth2"
@@ -163,18 +167,18 @@ trait DraftController {
         summary "Show article with a specified Id"
         notes "Shows the article for the specified id."
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        pathParam[Long]("article_id").description("Id of the article that is to be returned"),
-        queryParam[Option[String]]("language").description("Only return results on the given language. Default is any language."),
-        queryParam[Option[Boolean]]("fallback").description("Fallback to existing language if language is specified.")
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[Long](articleId),
+        asQueryParam[Option[String]](language),
+        asQueryParam[Option[Boolean]](fallback)
       )
         authorizations "oauth2"
         responseMessages(response404, response500))
 
     get("/:article_id", operation(getArticleById)) {
-      val articleId = long("article_id")
-      val language = paramOrDefault("language", Language.AllLanguages)
-      val fallback = booleanOrDefault("fallback", false)
+      val articleId = long(this.articleId.paramName)
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val fallback = booleanOrDefault(this.fallback.paramName, false)
 
       readService.withId(articleId, language, fallback) match {
         case Success(article) => article
@@ -187,14 +191,14 @@ trait DraftController {
         summary "Get internal id of article for a specified ndla_node_id"
         notes "Get internal id of article for a specified ndla_node_id"
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        pathParam[Long]("ndla_node_id").description("Id of old NDLA node")
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[Long](deprecatedNodeId)
       )
         authorizations "oauth2"
         responseMessages(response404, response500))
 
-    get("/external_id/:ndla_node_id", operation(getInternalIdByExternalId)) {
-      val externalId = long("ndla_node_id")
+    get("/external_id/:deprecated_node_id", operation(getInternalIdByExternalId)) {
+      val externalId = long(this.deprecatedNodeId.paramName)
       readService.getInternalArticleIdByExternalId(externalId) match {
         case Some(id) => id
         case None => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
@@ -206,15 +210,16 @@ trait DraftController {
         summary "Show all valid licenses"
         notes "Shows all valid licenses"
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
-        queryParam[Option[String]]("filter").description("A filter to include a specific license key. May be omitted"),
-        queryParam[Option[String]]("filterNot").description("A filter to remove a specific license key. May be omitted"))
+        asHeaderParam[Option[String]](correlationId),
+        asQueryParam[Option[String]](filter),
+        asQueryParam[Option[String]](filterNot),
+      )
         responseMessages(response403, response500)
         authorizations "oauth2")
 
-    get("/licenses", operation(getLicenses)) {
-      val filterNot = paramOrNone("filterNot")
-      val filter = paramOrNone("filter")
+    get("/licenses/", operation(getLicenses)) {
+      val filterNot = paramOrNone(this.filterNot.paramName)
+      val filter = paramOrNone(this.filter.paramName)
 
       val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses.filter {
         case license: LicenseDefinition if filter.isDefined => license.license.contains(filter.get)
@@ -232,7 +237,7 @@ trait DraftController {
         summary "Create a new article"
         notes "Creates a new article"
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
+        asHeaderParam[Option[String]](correlationId),
         bodyParam[NewArticle]
       )
         authorizations "oauth2"
@@ -254,16 +259,17 @@ trait DraftController {
         summary "Queue the article for publishing"
         notes "Queue the article for publishing"
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the article that is to be published")
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[Long](articleId)
       )
         authorizations "oauth2"
         responseMessages(response400, response403, response404, response500))
 
-    put("/:article_id/publish", operation(queueDraftForPublishing)) {
+    put("/:article_id/publish/", operation(queueDraftForPublishing)) {
       authRole.assertHasPublishPermission()
-      val id = long("article_id")
+      val id = long(this.articleId.paramName)
       val isImported = booleanOrDefault("import_publish", false)
+
       writeService.queueArticleForPublish(id, isImported) match {
         case Success(s) => s
         case Failure(e) => errorHandler(e)
@@ -275,8 +281,8 @@ trait DraftController {
         summary "Update an existing article"
         notes "Update an existing article"
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the article that is to be updated"),
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[Long](articleId),
         bodyParam[UpdatedArticle]
       )
         authorizations "oauth2"
@@ -287,8 +293,9 @@ trait DraftController {
       authRole.assertHasWritePermission()
       val externalId = paramOrNone("externalId")
       val externalSubjectIds = paramAsListOfString("externalSubjectIds")
-      val id = long("article_id")
+      val id = long(this.articleId.paramName)
       val updateArticle = extract[UpdatedArticle](request.body)
+
       writeService.updateArticle(id, updateArticle, externalId, externalSubjectIds) match {
         case Success(article) => Ok(body=article)
         case Failure(exception) => errorHandler(exception)
@@ -300,14 +307,14 @@ trait DraftController {
         summary "Validate an article"
         notes "Validate an article"
         parameters(
-        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
-        pathParam[Long]("article_id").description("Id of the article that is to be validated")
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[Long](articleId)
       )
         authorizations "oauth2"
         responseMessages(response400, response403, response404, response500))
 
-    put("/:article_id/validate", operation(validateArticle)) {
-      contentValidator.validateArticleApiArticle(long("article_id")) match {
+    put("/:article_id/validate/", operation(validateArticle)) {
+      contentValidator.validateArticleApiArticle(long(this.articleId.paramName)) match {
         case Success(_) => NoContent()
         case Failure(ex) => errorHandler(ex)
       }
