@@ -16,6 +16,7 @@ import no.ndla.network.ApplicationUrl
 import org.jsoup.Jsoup
 import org.json4s._
 import org.json4s.native.JsonMethods._
+import org.json4s.native.Serialization.read
 
 import scala.collection.JavaConverters._
 import no.ndla.draftapi.model.domain.Language._
@@ -77,12 +78,15 @@ trait SearchConverterService {
     }
 
     def hitAsArticleSummary(hitString: String, language: String): api.ArticleSummary = {
-      val hit = parse(hitString)
-      val titles = (hit \ "title").extract[Map[String, String]].map(title => domain.ArticleTitle(title._2, title._1)).toSeq
-      val introductions = (hit \ "introduction").extract[Map[String, String]].map(intro => domain.ArticleIntroduction(intro._2, intro._1)).toSeq
-      val visualElements = (hit \ "visualElement").extract[Map[String, String]].map(visual => domain.VisualElement(visual._2, visual._1)).toSeq
 
-      val notes = (hit \ "notes").extract[Seq[String]]
+
+      val searchableArticle = read[SearchableArticle](hitString)
+
+      val titles = searchableArticle.title.languageValues.map(lv => domain.ArticleTitle(lv.value, lv.lang))
+      val introductions = searchableArticle.introduction.languageValues.map(lv => domain.ArticleIntroduction(lv.value, lv.lang))
+      val visualElements = searchableArticle.visualElement.languageValues.map(lv => domain.VisualElement(lv.value, lv.lang))
+      val notes = searchableArticle.notes
+
       val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
 
       val title = findByLanguageOrBestEffort(titles, language).map(converterService.toApiArticleTitle).getOrElse(api.ArticleTitle("", DefaultLanguage))
@@ -90,13 +94,13 @@ trait SearchConverterService {
       val introduction = findByLanguageOrBestEffort(introductions, language).map(converterService.toApiArticleIntroduction)
 
       api.ArticleSummary(
-        (hit \ "id").extract[Long],
+        searchableArticle.id,
         title,
         visualElement,
         introduction,
-        ApplicationUrl.get + (hit \ "id").extract[Long],
-        (hit \ "license").extract[String],
-        (hit \ "articleType").extract[String],
+        ApplicationUrl.get + searchableArticle.id,
+        searchableArticle.license.getOrElse(""), //TODO: consider making this optional in model
+        searchableArticle.articleType,
         supportedLanguages,
         notes
       )

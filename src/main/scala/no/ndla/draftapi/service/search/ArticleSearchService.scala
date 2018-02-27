@@ -51,16 +51,14 @@ trait ArticleSearchService {
       val tagSearch = simpleStringQuery(query).field(s"tags.$language", 1)
       val notesSearch = simpleStringQuery(query).field("notes", 1)
 
-      val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
-
       val fullQuery = boolQuery()
         .must(
           boolQuery()
             .should(
-              nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("title").highlighting(hi)),
-              nestedQuery("introduction", introSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("introduction").highlighting(hi)),
-              nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(innerHits("content").highlighting(hi)),
-              nestedQuery("tags", tagSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("tags").highlighting(hi)),
+              titleSearch,
+              introSearch,
+              contentSearch,
+              tagSearch,
               notesSearch
             )
         )
@@ -83,7 +81,7 @@ trait ArticleSearchService {
         case "" | Language.AllLanguages =>
           (None, "*")
         case lang =>
-          (Some(nestedQuery("title", existsQuery(s"title.$lang")).scoreMode(ScoreMode.Avg)), lang)
+          (Some(existsQuery(s"title.$lang")), lang)
       }
 
       val filters = List(licenseFilter, idFilter, languageFilter, articleTypesFilter)
@@ -96,13 +94,18 @@ trait ArticleSearchService {
         throw new ResultWindowTooLargeException()
       }
 
-      e4sClient.execute{
+      val hi = highlight("*")
+      val searchExec =
         search(searchIndex)
           .size(numResults)
           .from(startAt)
           .query(filteredSearch)
           .sortBy(getSortDefinition(sort, searchLanguage))
-      } match {
+          .highlighting(hi)
+
+      val json = e4sClient.httpClient.show(searchExec) //TODO: remove
+
+      e4sClient.execute(searchExec) match {
         case Success(response) =>
           api.SearchResult(response.result.totalHits, page, numResults, if (searchLanguage == "*") Language.AllLanguages else searchLanguage, getHits(response.result, language, hitToApiModel))
         case Failure(ex) =>

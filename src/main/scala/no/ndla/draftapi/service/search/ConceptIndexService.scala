@@ -36,19 +36,12 @@ trait ConceptIndexService {
 
     def getMapping: MappingDefinition = {
       mapping(documentType).fields(
-        intField("id"),
-        languageSupportedField("title", keepRaw = true),
-        keywordField("defaultTitle"),
-        languageSupportedField("content")
-      )
-    }
-
-    private def languageSupportedField(fieldName: String, keepRaw: Boolean = false) = {
-      NestedFieldDefinition(fieldName).fields(
-        keepRaw match {
-          case true => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang).fielddata(true).analyzer(langAnalyzer.analyzer).fields(keywordField("raw")))
-          case false => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang).fielddata(true).analyzer(langAnalyzer.analyzer))
-        }
+        List(
+          intField("id"),
+          keywordField("defaultTitle")
+        ) ++
+          generateLanguageSupportedFieldList("title", keepRaw = true) ++
+          generateLanguageSupportedFieldList("content")
       )
     }
 

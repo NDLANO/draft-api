@@ -36,29 +36,22 @@ trait ArticleIndexService {
 
     def getMapping: MappingDefinition = {
       mapping(documentType).fields(
-        intField("id"),
-        languageSupportedField("title", keepRaw = true),
-        languageSupportedField("content"),
-        languageSupportedField("visualElement"),
-        languageSupportedField("introduction"),
-        languageSupportedField("tags"),
-        dateField("lastUpdated"),
-        keywordField("license"),
-        keywordField("defaultTitle"),
-        textField("authors") fielddata true,
-        textField("articleType") analyzer "keyword",
-        textField("notes") fielddata true
+        List(
+          intField("id"),
+          dateField("lastUpdated"),
+          keywordField("license"),
+          keywordField("defaultTitle"),
+          textField("authors") fielddata true,
+          textField("articleType") analyzer "keyword",
+          textField("notes") fielddata true
+        ) ++
+          generateLanguageSupportedFieldList("title", keepRaw = true) ++
+          generateLanguageSupportedFieldList("content") ++
+          generateLanguageSupportedFieldList("visualElement") ++
+          generateLanguageSupportedFieldList("introduction") ++
+          generateLanguageSupportedFieldList("tags")
       )
     }
-
-    private def languageSupportedField(fieldName: String, keepRaw: Boolean = false) = {
-      NestedFieldDefinition(fieldName).fields(
-        keepRaw match {
-          case true => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang).fielddata(true).analyzer(langAnalyzer.analyzer).fields(keywordField("raw")))
-          case false => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang).fielddata(true).analyzer(langAnalyzer.analyzer))
-        }
-      )
-    }
-
   }
+
 }
