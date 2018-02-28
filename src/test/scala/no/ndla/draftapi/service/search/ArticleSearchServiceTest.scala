@@ -424,6 +424,18 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     searchNb.results.head.title.language should equal("nb")
   }
 
+  test("That searching with fallback parameter returns article in language priority even if doesnt match on language") {
+    val Success(search) = articleSearchService.all(List(9, 10, 11), "en", None, 1, 10, Sort.ByIdAsc, Seq.empty, fallback = true)
+
+    search.totalCount should equal(3)
+    search.results.head.id should equal(9)
+    search.results.head.title.language should equal("nb")
+    search.results(1).id should equal(10)
+    search.results(1).title.language should equal("en")
+    search.results(2).id should equal(11)
+    search.results(2).title.language should equal("en")
+  }
+
   def blockUntil(predicate: () => Boolean) = {
     var backoff = 0
     var done = false
