@@ -16,16 +16,11 @@ import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.service.ConverterService
-import no.ndla.network.ApplicationUrl
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.ScoreMode
-import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, QueryDefinition}
-import org.elasticsearch.ElasticsearchException
-import org.elasticsearch.index.IndexNotFoundException
+import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait ArticleSearchService {
   this: Elastic4sClient with SearchConverterService with SearchService with ArticleIndexService with SearchConverterService =>
@@ -39,11 +34,26 @@ trait ArticleSearchService {
     override def hitToApiModel(hit: String, language: String): api.ArticleSummary =
       searchConverterService.hitAsArticleSummary(hit, language)
 
-    def all(withIdIn: List[Long], language: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): api.SearchResult = {
-      executeSearch(withIdIn, language, license, sort, page, pageSize, boolQuery(), articleTypes)
-    }
+    def all(withIdIn: List[Long],
+            language: String,
+            license: Option[String],
+            page: Int,
+            pageSize: Int,
+            sort: Sort.Value,
+            articleTypes: Seq[String],
+            fallback: Boolean): Try[api.SearchResult] =
+      executeSearch(withIdIn, language, license, sort, page, pageSize, boolQuery(), articleTypes, fallback)
 
-    def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): api.SearchResult = {
+    def matchingQuery(query: String,
+                      withIdIn: List[Long],
+                      searchLanguage: String,
+                      license: Option[String],
+                      page: Int,
+                      pageSize: Int,
+                      sort: Sort.Value,
+                      articleTypes: Seq[String],
+                      fallback: Boolean): Try[api.SearchResult] = {
+
       val language = if (searchLanguage == Language.AllLanguages) "*" else searchLanguage
       val titleSearch = simpleStringQuery(query).field(s"title.$language", 2)
       val introSearch = simpleStringQuery(query).field(s"introduction.$language", 2)
@@ -64,12 +74,21 @@ trait ArticleSearchService {
             )
         )
 
-      executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery, articleTypes)
+      executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery, articleTypes, fallback)
     }
 
-    def executeSearch(withIdIn: List[Long], language: String, license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition, articleTypes: Seq[String]): api.SearchResult = {
+    def executeSearch(withIdIn: List[Long],
+                      language: String,
+                      license: Option[String],
+                      sort: Sort.Value,
+                      page: Int,
+                      pageSize: Int,
+                      queryBuilder: BoolQueryDefinition,
+                      articleTypes: Seq[String],
+                      fallback: Boolean): Try[api.SearchResult] = {
 
-      val articleTypesFilter = if (articleTypes.nonEmpty) Some(constantScoreQuery(termsQuery("articleType", articleTypes))) else None
+      val articleTypesFilter =
+        if (articleTypes.nonEmpty) Some(constantScoreQuery(termsQuery("articleType", articleTypes))) else None
 
       val licenseFilter = license match {
         case None => Some(noCopyright)
@@ -82,7 +101,10 @@ trait ArticleSearchService {
         case "" | Language.AllLanguages =>
           (None, "*")
         case lang =>
-          (Some(existsQuery(s"title.$lang")), lang)
+          fallback match {
+            case true => (None, "*")
+            case false => (Some(existsQuery(s"title.$lang")), lang)
+          }
       }
 
       val filters = List(licenseFilter, idFilter, languageFilter, articleTypesFilter)
@@ -92,47 +114,31 @@ trait ArticleSearchService {
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
         logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
-        throw new ResultWindowTooLargeException()
-      }
-
-      val searchExec = search(searchIndex)
+        Failure(new ResultWindowTooLargeException())
+      } else {
+        val searchExec = search(searchIndex)
           .size(numResults)
           .from(startAt)
           .query(filteredSearch)
           .highlighting(highlight("*"))
           .sortBy(getSortDefinition(sort, searchLanguage))
 
-      e4sClient.execute(searchExec) match {
-        case Success(response) =>
-          api.SearchResult(
-            response.result.totalHits,
-            page,
-            numResults,
-            if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
-            getHits(response.result, language)
-          )
-        case Failure(ex) =>
-          errorHandler(Failure(ex))
+        e4sClient.execute(searchExec) match {
+          case Success(response) =>
+            Success(api.SearchResult(
+              response.result.totalHits,
+              page,
+              numResults,
+              if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
+              getHits(response.result, language)
+            ))
+          case Failure(ex) =>
+            errorHandler(ex)
+        }
       }
     }
 
-    protected def errorHandler[T](failure: Failure[T]) = {
-      failure match {
-        case Failure(e: NdlaSearchException) =>
-          e.rf.status match {
-            case notFound: Int if notFound == 404 =>
-              logger.error(s"Index $searchIndex not found. Scheduling a reindex.")
-              scheduleIndexDocuments()
-              throw new IndexNotFoundException(s"Index $searchIndex not found. Scheduling a reindex")
-            case _ =>
-              logger.error(e.getMessage)
-              throw new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getMessage)
-          }
-        case Failure(t: Throwable) => throw t
-      }
-    }
-
-    private def scheduleIndexDocuments() = {
+    override def scheduleIndexDocuments() = {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val f = Future {
         articleIndexService.indexDocuments

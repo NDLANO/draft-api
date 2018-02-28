@@ -18,6 +18,8 @@ import no.ndla.draftapi.DraftApiProperties.{DefaultPageSize, MaxPageSize}
 import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain._
+import org.elasticsearch.ElasticsearchException
+import org.elasticsearch.index.IndexNotFoundException
 
 import scala.util.{Failure, Success}
 
@@ -104,5 +106,22 @@ trait SearchService {
       (startAt, numResults)
     }
 
+    protected def scheduleIndexDocuments(): Unit
+
+    protected def errorHandler[U](failure: Throwable): Failure[U] = {
+      failure match {
+        case e: NdlaSearchException =>
+          e.rf.status match {
+            case notFound: Int if notFound == 404 =>
+              logger.error(s"Index $searchIndex not found. Scheduling a reindex.")
+              scheduleIndexDocuments()
+              Failure(new IndexNotFoundException(s"Index $searchIndex not found. Scheduling a reindex"))
+            case _ =>
+              logger.error(e.getMessage)
+              Failure(new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getMessage))
+          }
+        case t: Throwable => Failure(t)
+      }
+    }
   }
 }
