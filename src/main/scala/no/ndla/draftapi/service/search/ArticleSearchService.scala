@@ -45,11 +45,12 @@ trait ArticleSearchService {
 
     def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, license: Option[String], page: Int, pageSize: Int, sort: Sort.Value, articleTypes: Seq[String]): api.SearchResult = {
       val language = if (searchLanguage == Language.AllLanguages) "*" else searchLanguage
-      val titleSearch = simpleStringQuery(query).field(s"title.$language", 1)
-      val introSearch = simpleStringQuery(query).field(s"introduction.$language", 1)
+      val titleSearch = simpleStringQuery(query).field(s"title.$language", 2)
+      val introSearch = simpleStringQuery(query).field(s"introduction.$language", 2)
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
-      val tagSearch = simpleStringQuery(query).field(s"tags.$language", 1)
+      val tagSearch = simpleStringQuery(query).field(s"tags.$language", 2)
       val notesSearch = simpleStringQuery(query).field("notes", 1)
+
 
       val fullQuery = boolQuery()
         .must(
@@ -94,20 +95,22 @@ trait ArticleSearchService {
         throw new ResultWindowTooLargeException()
       }
 
-      val hi = highlight("*")
-      val searchExec =
-        search(searchIndex)
+      val searchExec = search(searchIndex)
           .size(numResults)
           .from(startAt)
           .query(filteredSearch)
+          .highlighting(highlight("*"))
           .sortBy(getSortDefinition(sort, searchLanguage))
-          .highlighting(hi)
-
-      val json = e4sClient.httpClient.show(searchExec) //TODO: remove
 
       e4sClient.execute(searchExec) match {
         case Success(response) =>
-          api.SearchResult(response.result.totalHits, page, numResults, if (searchLanguage == "*") Language.AllLanguages else searchLanguage, getHits(response.result, language, hitToApiModel))
+          api.SearchResult(
+            response.result.totalHits,
+            page,
+            numResults,
+            if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
+            getHits(response.result, language)
+          )
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }

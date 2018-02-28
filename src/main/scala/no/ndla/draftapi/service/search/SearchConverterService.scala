@@ -21,13 +21,14 @@ import org.json4s.native.Serialization.read
 import scala.collection.JavaConverters._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.service.ConverterService
+import no.ndla.mapping.ISO639
 
 trait SearchConverterService {
   this: ConverterService =>
   val searchConverterService: SearchConverterService
 
   class SearchConverterService extends LazyLogging {
-    implicit val formats = DefaultFormats
+    implicit val formats: Formats = SearchableLanguageFormats.JSonFormats
     def asSearchableArticle(ai: Article): SearchableArticle = {
 
       val defaultTitle = ai.title.sortBy(title => {
@@ -51,16 +52,6 @@ trait SearchConverterService {
       )
     }
 
-    def asArticleSummary(searchableArticle: SearchableArticle): ArticleSummary = {
-      ArticleSummary(
-        id = searchableArticle.id,
-        title = searchableArticle.title.languageValues.map(lv => ArticleTitle(lv.value, lv.lang)),
-        visualElement = searchableArticle.visualElement.languageValues.map(lv => VisualElement(lv.value, lv.lang)),
-        introduction = searchableArticle.introduction.languageValues.map(lv => ArticleIntroduction(lv.value, lv.lang)),
-        url = createUrlToArticle(searchableArticle.id),
-        license = searchableArticle.license)
-    }
-
     private def createUrlToArticle(id: Long): String = s"${ApplicationUrl.get}$id"
 
     def asSearchableConcept(c: Concept): SearchableConcept = {
@@ -78,8 +69,6 @@ trait SearchConverterService {
     }
 
     def hitAsArticleSummary(hitString: String, language: String): api.ArticleSummary = {
-
-
       val searchableArticle = read[SearchableArticle](hitString)
 
       val titles = searchableArticle.title.languageValues.map(lv => domain.ArticleTitle(lv.value, lv.lang))
@@ -89,7 +78,7 @@ trait SearchConverterService {
 
       val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
 
-      val title = findByLanguageOrBestEffort(titles, language).map(converterService.toApiArticleTitle).getOrElse(api.ArticleTitle("", DefaultLanguage))
+      val title = findByLanguageOrBestEffort(titles, language).map(converterService.toApiArticleTitle).getOrElse(api.ArticleTitle("", UnknownLanguage))
       val visualElement = findByLanguageOrBestEffort(visualElements, language).map(converterService.toApiVisualElement)
       val introduction = findByLanguageOrBestEffort(introductions, language).map(converterService.toApiArticleIntroduction)
 
@@ -99,7 +88,7 @@ trait SearchConverterService {
         visualElement,
         introduction,
         ApplicationUrl.get + searchableArticle.id,
-        searchableArticle.license.getOrElse(""), //TODO: consider making this optional in model
+        searchableArticle.license.getOrElse(""),
         searchableArticle.articleType,
         supportedLanguages,
         notes
@@ -108,17 +97,18 @@ trait SearchConverterService {
 
 
     def hitAsConceptSummary(hitString: String, language: String): api.ConceptSummary = {
-      val hit = parse(hitString)
-      val titles = (hit \ "title").extract[Map[String, String]].map(title => domain.ConceptTitle(title._2, title._1)).toSeq
-      val contents = (hit \ "content").extract[Map[String, String]].map(content => domain.ConceptContent(content._2, content._1)).toSeq
 
-      val supportedLanguages = (titles union contents).map(_.language).toSet
+      val searchableConcept = read[SearchableConcept](hitString)
+      val titles = searchableConcept.title.languageValues.map(lv => domain.ConceptTitle(lv.value, lv.lang))
+      val contents = searchableConcept.content.languageValues.map(lv => domain.ConceptContent(lv.value, lv.lang))
 
-      val title = Language.findByLanguageOrBestEffort(titles, language).map(converterService.toApiConceptTitle).getOrElse(api.ConceptTitle("", Language.DefaultLanguage))
-      val concept = Language.findByLanguageOrBestEffort(contents, language).map(converterService.toApiConceptContent).getOrElse(api.ConceptContent("", Language.DefaultLanguage))
+      val supportedLanguages = getSupportedLanguages(Seq(titles, contents))
+
+      val title = Language.findByLanguageOrBestEffort(titles, language).map(converterService.toApiConceptTitle).getOrElse(api.ConceptTitle("", Language.UnknownLanguage))
+      val concept = Language.findByLanguageOrBestEffort(contents, language).map(converterService.toApiConceptContent).getOrElse(api.ConceptContent("", Language.UnknownLanguage))
 
       api.ConceptSummary(
-        (hit \ "id").extract[Long],
+        searchableConcept.id,
         title,
         concept,
         supportedLanguages
@@ -143,37 +133,31 @@ trait SearchConverterService {
       api.AgreementSummary(id,title, license)
     }
 
+    /**
+      * Attempts to extract language that hit from highlights in elasticsearch response.
+      * @param result Elasticsearch hit.
+      * @return Language if found.
+      */
     def getLanguageFromHit(result: SearchHit): Option[String] = {
-      val sortedInnerHits = result.innerHits.toList.filter(ih => ih._2.total > 0).sortBy{
-        case (_, hit) => hit.max_score
-      }.reverse
+      def keyToLanguage(keys: Iterable[String]): Option[String] = {
+        val keyLanguages = keys.toList.flatMap(key => key.split('.').toList match {
+          case _ :: language :: _ => Some(language)
+          case _ => None
+        })
 
-      val matchLanguage = sortedInnerHits.headOption.flatMap{
-        case (_, innerHit) =>
-          innerHit.hits.sortBy(hit => hit.score).reverse.headOption.flatMap(hit => {
-            hit.highlight.headOption.map(hl => {
-                hl._1.split('.').filterNot(_ == "raw").last
-            })
-          })
+        keyLanguages.sortBy(lang => {
+          ISO639.languagePriority.reverse.indexOf(lang)
+        }).lastOption
       }
+
+      val highlightKeys: Option[Map[String, _]] = Option(result.highlight)
+      val matchLanguage = keyToLanguage(highlightKeys.getOrElse(Map()).keys)
 
       matchLanguage match {
         case Some(lang) =>
           Some(lang)
         case _ =>
-          val title = result.sourceAsMap.get("title")
-          val titleMap = title.map(tm => {
-            tm.asInstanceOf[Map[String, _]]
-          })
-
-          val languages = titleMap.map(title => title.keySet.toList)
-
-          languages.flatMap(languageList => {
-            languageList.sortBy(lang => {
-              val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
-              languagePriority.indexOf(lang)
-            }).lastOption
-          })
+          keyToLanguage(result.sourceAsMap.keys)
       }
     }
 

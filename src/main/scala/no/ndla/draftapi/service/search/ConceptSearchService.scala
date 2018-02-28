@@ -37,14 +37,6 @@ trait ConceptSearchService {
   class ConceptSearchService extends LazyLogging with SearchService[api.ConceptSummary] {
     override val searchIndex: String = DraftApiProperties.ConceptSearchIndex
 
-    private def getSearchLanguage(supportedLanguages: Seq[String], language: String): String = {
-      language match {
-        case Language.NoLanguage if supportedLanguages.contains(Language.DefaultLanguage) => Language.DefaultLanguage
-        case Language.NoLanguage if supportedLanguages.nonEmpty => supportedLanguages.head
-        case lang => lang
-      }
-    }
-
     override def hitToApiModel(hitString: String, language: String): api.ConceptSummary =
       searchConverterService.hitAsConceptSummary(hitString, language)
 
@@ -55,16 +47,14 @@ trait ConceptSearchService {
     def matchingQuery(query: String, withIdIn: List[Long], searchLanguage: String, page: Int, pageSize: Int, sort: Sort.Value): api.ConceptSearchResult = {
       val language = if (searchLanguage == Language.AllLanguages) "*" else searchLanguage
 
-      val titleSearch = simpleStringQuery(query).field(s"title.$language", 1)
+      val titleSearch = simpleStringQuery(query).field(s"title.$language", 2)
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
-
-      val hi = highlight("*").preTag("").postTag("").numberOfFragments(0)
 
       val fullQuery = boolQuery()
         .must(boolQuery()
           .should(
-            nestedQuery("title", titleSearch).scoreMode(ScoreMode.Avg).boost(2).inner(innerHits("title").highlighting(hi)),
-            nestedQuery("content", contentSearch).scoreMode(ScoreMode.Avg).boost(1).inner(innerHits("content").highlighting(hi))
+            titleSearch,
+            contentSearch
           )
         )
 
@@ -78,7 +68,7 @@ trait ConceptSearchService {
         case "" | Language.AllLanguages | "*" =>
           (None, "*")
         case lang =>
-          (Some(nestedQuery("title", existsQuery(s"title.$lang")).scoreMode(ScoreMode.Avg)), lang)
+          (Some(existsQuery(s"title.$lang")), lang)
       }
 
       val filters = List(idFilter, languageFilter)
@@ -91,16 +81,22 @@ trait ConceptSearchService {
         throw new ResultWindowTooLargeException()
       }
 
-      e4sClient.execute{
+      val searchExec =
         search(searchIndex)
           .size(numResults)
           .from(startAt)
           .query(filteredSearch)
+          .highlighting(highlight("*"))
           .sortBy(getSortDefinition(sort, searchLanguage))
 
-      } match {
+      e4sClient.execute(searchExec) match {
         case Success(response) =>
-          api.ConceptSearchResult(response.result.totalHits, page, numResults, if (searchLanguage == "*") Language.AllLanguages else searchLanguage, getHits(response.result, language, hitToApiModel))
+          api.ConceptSearchResult(
+            response.result.totalHits,
+            page,
+            numResults,
+            if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
+            getHits(response.result, language))
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }

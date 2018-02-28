@@ -29,7 +29,7 @@ trait SearchService {
 
     def hitToApiModel(hit: String, language: String): T
 
-    def getHits(response: SearchResponse, language: String, hitToApi:(String, String) => T): Seq[T] = {
+    def getHits(response: SearchResponse, language: String): Seq[T] = {
       response.totalHits match {
         case count if count > 0 =>
           val resultArray = response.hits.hits
@@ -41,7 +41,7 @@ trait SearchService {
               case _ => language
             }
 
-            hitToApi(result.sourceAsString, matchedLanguage)
+            hitToApiModel(result.sourceAsString, matchedLanguage)
           })
         case _ => Seq()
       }

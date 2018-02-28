@@ -74,8 +74,7 @@ trait AgreementSearchService {
           .sortBy(getSortDefinition(sort))
       } match {
         case Success(response) =>
-          AgreementSearchResult(response.result.totalHits, page, numResults, Language.NoLanguage, getHits(response.result, Language.NoLanguage, hitToApiModel))
-
+          AgreementSearchResult(response.result.totalHits, page, numResults, Language.NoLanguage, getHits(response.result, Language.NoLanguage))
         case Failure(ex) =>
           errorHandler(Failure(ex))
       }
