@@ -24,7 +24,14 @@ import org.scalatra.{Created, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait AgreementController {
-  this: ReadService with WriteService with AgreementSearchService with ConverterService with SearchConverterService with ReindexClient with Role with User =>
+  this: ReadService
+    with WriteService
+    with AgreementSearchService
+    with ConverterService
+    with SearchConverterService
+    with ReindexClient
+    with Role
+    with User =>
   val agreementController: AgreementController
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -41,8 +48,14 @@ trait AgreementController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    private def search(query: Option[String], sort: Option[Sort.Value], license: Option[String], page: Int, pageSize: Int, idList: List[Long]) = {
-      query match {
+    private def search(query: Option[String],
+                       sort: Option[Sort.Value],
+                       license: Option[String],
+                       page: Int,
+                       pageSize: Int,
+                       idList: List[Long],
+                       fallback: Boolean) = {
+      val result = query match {
         case Some(q) => agreementSearchService.matchingQuery(
           query = q,
           withIdIn = idList,
@@ -58,6 +71,11 @@ trait AgreementController {
           pageSize = if (idList.isEmpty) pageSize else idList.size,
           sort = sort.getOrElse(Sort.ByTitleAsc)
         )
+      }
+
+      result match {
+        case Success(searchResult) => searchResult
+        case Failure(ex) => errorHandler(ex)
       }
     }
 
@@ -89,8 +107,9 @@ trait AgreementController {
       val pageSize = intOrDefault("page-size", DraftApiProperties.DefaultPageSize)
       val page = intOrDefault("page", 1)
       val idList = paramAsListOfLong("ids")
+      val fallback = booleanOrDefault("fallback", default = false)
 
-      search(query, sort, license, page, pageSize, idList)
+      search(query, sort, license, page, pageSize, idList, fallback)
     }
 
     val getAgreementById =

@@ -13,12 +13,13 @@ import java.util.Calendar
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.IndexDefinition
-import com.sksamuel.elastic4s.mappings.MappingDefinition
+import com.sksamuel.elastic4s.mappings.{FieldDefinition, MappingDefinition}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.domain.{Content, ReindexResult}
 import no.ndla.draftapi.repository.Repository
+import no.ndla.draftapi.model.domain.Language.languageAnalyzers
 
 import scala.util.{Failure, Success, Try}
 
@@ -198,6 +199,21 @@ trait IndexService {
     }
 
     def getTimestamp: String = new SimpleDateFormat("yyyyMMddHHmmss").format(Calendar.getInstance.getTime)
+
+    /**
+      * Returns Sequence of FieldDefinitions for a given field.
+      *
+      * @param fieldName Name of field in mapping.
+      * @param keepRaw   Whether to add a keywordField named raw.
+      *                  Usually used for sorting, aggregations or scripts.
+      * @return Sequence of FieldDefinitions for a field.
+      */
+    protected def generateLanguageSupportedFieldList(fieldName: String, keepRaw: Boolean = false): Seq[FieldDefinition] = {
+      keepRaw match {
+        case true => languageAnalyzers.map(langAnalyzer => textField(s"$fieldName.${langAnalyzer.lang}").fielddata(false).analyzer(langAnalyzer.analyzer).fields(keywordField("raw")))
+        case false => languageAnalyzers.map(langAnalyzer => textField(s"$fieldName.${langAnalyzer.lang}").fielddata(false).analyzer(langAnalyzer.analyzer))
+      }
+    }
 
   }
 }

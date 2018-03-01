@@ -83,12 +83,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   test("GET / should use size of id-list as page-size if defined") {
     val searchMock = mock[api.SearchResult]
-    when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]]))
-      .thenReturn(searchMock)
+    when(articleSearchService.all(any[List[Long]], any[String], any[Option[String]], any[Int], any[Int], any[Sort.Value], any[Seq[String]], any[Boolean]))
+      .thenReturn(Success(searchMock))
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal (200)
-      verify(articleSearchService, times(1)).all(List(1, 2, 3, 4), Language.DefaultLanguage, None, 1, 4, Sort.ByTitleAsc, ArticleType.all)
+      verify(articleSearchService, times(1)).all(List(1, 2, 3, 4), Language.DefaultLanguage, None, 1, 4, Sort.ByTitleAsc, ArticleType.all, fallback = false)
     }
   }
 

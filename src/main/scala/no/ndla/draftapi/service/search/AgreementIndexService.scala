@@ -36,8 +36,8 @@ trait AgreementIndexService {
     def getMapping: MappingDefinition = {
       mapping(documentType).fields(
         intField("id"),
-        textField("title").fielddata(true).fields(keywordField("raw")),
-        textField("content").fielddata(true),
+        textField("title").fielddata(false).fields(keywordField("raw")),
+        textField("content").fielddata(false),
         keywordField("license")
       )
     }
