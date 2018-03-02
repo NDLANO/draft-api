@@ -11,6 +11,7 @@ package no.ndla.draftapi.controller
 import java.util.concurrent.{Executors, TimeUnit}
 
 import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
@@ -32,6 +33,7 @@ trait InternController {
     with ArticleIndexService
     with ConceptIndexService
     with AgreementIndexService
+    with ArticleApiClient
     with Role =>
   val internController: InternController
 
@@ -102,10 +104,26 @@ trait InternController {
       }
     }
 
+    delete("/article/:id/") {
+      authRole.assertHasWritePermission()
+      articleApiClient.deleteArticle(long("id")).flatMap(id => writeService.deleteArticle(id.id)) match {
+        case Success(a) => a
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
     post("/concept/:id/publish/?") {
       authRole.assertHasPublishPermission()
       writeService.publishConcept(long("id")) match {
         case Success(s) => s.id.map(ContentId)
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    delete("/concept/:id/") {
+      authRole.assertHasWritePermission()
+      articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
+        case Success(c) => c
         case Failure(ex) => errorHandler(ex)
       }
     }

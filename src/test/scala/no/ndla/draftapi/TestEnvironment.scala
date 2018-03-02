@@ -86,5 +86,5 @@ trait TestEnvironment
   val authUser = mock[AuthUser]
   val authRole = new AuthRole
 
-  val ArticleApiClient = mock[ArticleApiClient]
+  val articleApiClient = mock[ArticleApiClient]
 }

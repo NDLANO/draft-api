@@ -101,5 +101,5 @@ object ComponentRegistry
   lazy val authRole = new AuthRole
   lazy val authUser = new AuthUser
 
-  lazy val ArticleApiClient = new ArticleApiClient
+  lazy val articleApiClient = new ArticleApiClient
 }

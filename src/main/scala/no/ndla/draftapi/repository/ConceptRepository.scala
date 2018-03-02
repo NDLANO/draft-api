@@ -9,7 +9,7 @@ package no.ndla.draftapi.repository
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.integration.DataSource
-import no.ndla.draftapi.model.api.OptimisticLockException
+import no.ndla.draftapi.model.api.{NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain.{Article, Concept}
 import org.json4s.Formats
 import org.postgresql.util.PGobject
@@ -68,6 +68,15 @@ trait ConceptRepository {
         case Failure(ex) =>
           logger.warn(s"Failed to update concept with id ${concept.id}: ${ex.getMessage}")
           Failure(ex)
+      }
+    }
+
+    def delete(conceptId: Long)(implicit session: DBSession = AutoSession): Try[Long] = {
+      val numRows = sql"delete from ${Concept.table} where id = $conceptId".update().apply
+      if (numRows == 1) {
+        Success(conceptId)
+      } else {
+        Failure(NotFoundException(s"Concept with id $conceptId does not exist"))
       }
     }
 
