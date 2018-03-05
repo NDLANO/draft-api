@@ -61,7 +61,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val expectedVisualElement = s"""<embed ${TagAttributes.DataResource}="${ResourceType.Image}">"""
     val apiArticle = TestData.newArticle.copy(content=Some(content), visualElement=Some(visualElement))
 
-    when(ArticleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(articleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
     val Success(result) = service.toDomainArticle(apiArticle, None)
     result.content.head.content should equal (expectedContent)
