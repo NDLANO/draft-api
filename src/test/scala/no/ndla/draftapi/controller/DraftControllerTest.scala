@@ -61,20 +61,20 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test ("That GET /licenses with filter sat to by only returns creative common licenses") {
+  test ("That GET /licenses/ with filter sat to by only returns creative common licenses") {
     val creativeCommonlicenses = getLicenses.filter(_.license.startsWith("by")).map(l => License(l.license, Option(l.description), l.url)).toSet
 
-    get("/test/licenses", "filter" -> "by") {
+    get("/test/licenses/", "filter" -> "by") {
       status should equal (200)
       val convertedBody = read[Set[License]](body)
       convertedBody should equal(creativeCommonlicenses)
     }
   }
 
-  test ("That GET /licenses with filter not specified returns all licenses") {
+  test ("That GET /licenses/ with filter not specified returns all licenses") {
     val allLicenses = getLicenses.map(l => License(l.license, Option(l.description), l.url)).toSet
 
-    get("/test/licenses") {
+    get("/test/licenses/") {
       status should equal (200)
       val convertedBody = read[Set[License]](body)
       convertedBody should equal(allLicenses)
@@ -150,23 +150,23 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("PUT /:id/publish should return 403 if user does not have the required role") {
+  test("PUT /:id/publish/ should return 403 if user does not have the required role") {
     when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Failure(new AccessDeniedException("Not today")))
-    put("/test/1/publish") {
+    put("/test/1/publish/") {
       status should equal (403)
     }
   }
 
-  test("PUT /:id/publish should return 204 if user has required permissions") {
+  test("PUT /:id/publish/ should return 204 if user has required permissions") {
     when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Success(api.ArticleStatus(Set.empty)))
-    put("/test/1/publish", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
+    put("/test/1/publish/", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
       status should equal (200)
     }
   }
 
-  test("PUT /:id/validate should return 204 if user has required permissions") {
+  test("PUT /:id/validate/ should return 204 if user has required permissions") {
     when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(TestData.sampleDomainArticle))
-    put("/test/1/validate", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
+    put("/test/1/validate/", headers=Map("Authorization" -> authHeaderWithAllRoles)) {
       status should equal (204)
     }
   }

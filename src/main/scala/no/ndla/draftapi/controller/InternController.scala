@@ -18,6 +18,7 @@ import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
 import scala.concurrent._
@@ -37,8 +38,8 @@ trait InternController {
     with Role =>
   val internController: InternController
 
-  class InternController extends NdlaController {
-
+  class InternController(implicit val swagger: Swagger) extends NdlaController {
+    protected val applicationDescription = "API for accessing internal functionality in draft API"
     protected implicit override val jsonFormats: Formats = DefaultFormats
 
     post("/index") {
@@ -89,12 +90,12 @@ trait InternController {
       readService.getArticlesByPage(pageNo, pageSize, lang, fallback)
     }
 
-    post("/articles/publish/?") {
+    post("/articles/publish/") {
       authRole.assertHasPublishPermission()
       writeService.publishArticles()
     }
 
-    post("/article/:id/publish/?") {
+    post("/article/:id/publish/") {
       authRole.assertHasPublishPermission()
       val importPublish = booleanOrDefault("import_publish", default = false)
 
@@ -112,7 +113,7 @@ trait InternController {
       }
     }
 
-    post("/concept/:id/publish/?") {
+    post("/concept/:id/publish/") {
       authRole.assertHasPublishPermission()
       writeService.publishConcept(long("id")) match {
         case Success(s) => s.id.map(ContentId)
@@ -128,7 +129,7 @@ trait InternController {
       }
     }
 
-    post("/empty_article") {
+    post("/empty_article/") {
       authRole.assertHasWritePermission()
       val externalId = params("externalId")
       val externalSubjectIds = paramAsListOfString("externalSubjectId")
@@ -138,7 +139,7 @@ trait InternController {
       }
     }
 
-    post("/empty_concept") {
+    post("/empty_concept/") {
       authRole.assertHasWritePermission()
       val externalId = params("externalId")
       writeService.newEmptyConcept(externalId) match {
