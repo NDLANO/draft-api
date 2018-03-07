@@ -23,7 +23,7 @@ import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.index.IndexNotFoundException
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait AgreementSearchService {
   this: Elastic4sClient with SearchConverterService with SearchService with AgreementIndexService with ConverterService =>
@@ -36,12 +36,21 @@ trait AgreementSearchService {
       searchConverterService.hitAsAgreementSummary(hit)
     }
 
-    def all(withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): AgreementSearchResult = {
-      val fullSearch = boolQuery()
-      executeSearch(withIdIn, license, sort, page, pageSize, fullSearch)
+    def all(withIdIn: List[Long],
+            license: Option[String],
+            page: Int,
+            pageSize: Int,
+            sort: Sort.Value): Try[AgreementSearchResult] = {
+      executeSearch(withIdIn, license, sort, page, pageSize, boolQuery())
     }
 
-    def matchingQuery(query: String, withIdIn: List[Long], license: Option[String], page: Int, pageSize: Int, sort: Sort.Value): AgreementSearchResult = {
+    def matchingQuery(query: String,
+                      withIdIn: List[Long],
+                      license: Option[String],
+                      page: Int,
+                      pageSize: Int,
+                      sort: Sort.Value): Try[AgreementSearchResult] = {
+
       val fullQuery = boolQuery()
         .must(boolQuery()
             .should(
@@ -53,7 +62,12 @@ trait AgreementSearchService {
       executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
     }
 
-    def executeSearch(withIdIn: List[Long], license: Option[String], sort: Sort.Value, page: Int, pageSize: Int, queryBuilder: BoolQueryDefinition): AgreementSearchResult = {
+    def executeSearch(withIdIn: List[Long],
+                      license: Option[String],
+                      sort: Sort.Value,
+                      page: Int,
+                      pageSize: Int,
+                      queryBuilder: BoolQueryDefinition): Try[AgreementSearchResult] = {
       val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
 
       val filters = List(idFilter)
@@ -63,42 +77,30 @@ trait AgreementSearchService {
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
         logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
-        throw new ResultWindowTooLargeException()
-      }
-
-      e4sClient.execute{
-        search(searchIndex)
-          .size(numResults)
-          .from(startAt)
-          .query(filteredSearch)
-          .sortBy(getSortDefinition(sort))
-      } match {
-        case Success(response) =>
-          AgreementSearchResult(response.result.totalHits, page, numResults, Language.NoLanguage, getHits(response.result, Language.NoLanguage, hitToApiModel))
-
-        case Failure(ex) =>
-          errorHandler(Failure(ex))
-      }
-
-    }
-
-    protected def errorHandler[T](failure: Failure[T]) = {
-      failure match {
-        case Failure(e: NdlaSearchException) =>
-          e.rf.status match {
-            case notFound: Int if notFound == 404 =>
-              logger.error(s"Index $searchIndex not found. Scheduling a reindex.")
-              scheduleIndexDocuments()
-              throw new IndexNotFoundException(s"Index $searchIndex not found. Scheduling a reindex")
-            case _ =>
-              logger.error(e.getMessage)
-              throw new ElasticsearchException(s"Unable to execute search in $searchIndex", e.getMessage)
-          }
-        case Failure(t: Throwable) => throw t
+        Failure(new ResultWindowTooLargeException())
+      } else {
+        e4sClient.execute{
+          search(searchIndex)
+            .size(numResults)
+            .from(startAt)
+            .query(filteredSearch)
+            .sortBy(getSortDefinition(sort))
+        } match {
+          case Success(response) =>
+            Success(AgreementSearchResult(
+              response.result.totalHits,
+              page,
+              numResults,
+              Language.NoLanguage,
+              getHits(response.result, Language.NoLanguage)
+            ))
+          case Failure(ex) =>
+            errorHandler(ex)
+        }
       }
     }
 
-    private def scheduleIndexDocuments() = {
+    override def scheduleIndexDocuments() = {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val f = Future {
         agreementIndexService.indexDocuments

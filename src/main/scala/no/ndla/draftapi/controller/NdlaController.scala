@@ -85,6 +85,7 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
   protected val deprecatedNodeId = Param("deprecated_node_id", "Id of deprecated NDLA node")
   protected val language = Param("language", "The ISO 639-1 language code describing language.")
   protected val license = Param("license","Return only results with provided license.")
+  protected val fallback = Param("fallback", "Fallback to existing language if language is specified.")
 
   protected def asQueryParam[T: Manifest: NotNothing](param: Param) = queryParam[T](param.paramName).description(param.description)
   protected def asHeaderParam[T: Manifest: NotNothing](param: Param) = headerParam[T](param.paramName).description(param.description)

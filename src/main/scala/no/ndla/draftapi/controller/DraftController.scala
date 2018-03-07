@@ -46,7 +46,6 @@ trait DraftController {
     private val size = Param("size", "Limit the number of results to this many elements")
     private val articleTypes = Param("articleTypes", "Return only articles of specific type(s). To provide multiple types, separate by comma (,).")
     private val articleIds = Param("ids","Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,).")
-    private val fallback = Param("fallback", "Fallback to existing language if language is specified.")
     private val filter = Param("filter", "A filter to include a specific entry")
     private val filterNot = Param("filterNot", "A filter to remove a specific entry")
 
@@ -78,8 +77,16 @@ trait DraftController {
       }
     }
 
-    private def search(query: Option[String], sort: Option[Sort.Value], language: String, license: Option[String], page: Int, pageSize: Int, idList: List[Long], articleTypesFilter: Seq[String]) = {
-      query match {
+    private def search(query: Option[String],
+                       sort: Option[Sort.Value],
+                       language: String,
+                       license: Option[String],
+                       page: Int,
+                       pageSize: Int,
+                       idList: List[Long],
+                       articleTypesFilter: Seq[String],
+                       fallback: Boolean) = {
+      val result = query match {
         case Some(q) =>
           articleSearchService.matchingQuery(
             query = q,
@@ -89,7 +96,8 @@ trait DraftController {
             page = page,
             pageSize = if (idList.isEmpty) pageSize else idList.size,
             sort = sort.getOrElse(Sort.ByRelevanceDesc),
-            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
+            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
+            fallback = fallback
           )
         case None =>
           articleSearchService.all(
@@ -99,8 +107,14 @@ trait DraftController {
             page = page,
             pageSize = if (idList.isEmpty) pageSize else idList.size,
             sort = sort.getOrElse(Sort.ByTitleAsc),
-            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter
+            if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
+            fallback = fallback
           )
+      }
+
+      result match {
+        case Success(searchResult) => searchResult
+        case Failure(ex) => errorHandler(ex)
       }
     }
 
@@ -131,8 +145,9 @@ trait DraftController {
       val page = intOrDefault(this.pageNo.paramName, 1)
       val idList = paramAsListOfLong(this.articleIds.paramName)
       val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      search(query, sort, language, license, page, pageSize, idList, articleTypesFilter)
+      search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
     }
 
     val getAllArticlesPost =
@@ -158,8 +173,9 @@ trait DraftController {
       val page = searchParams.page.getOrElse(1)
       val idList = searchParams.idList
       val articleTypesFilter = searchParams.articleTypes
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      search(query, sort, language, license, page, pageSize, idList, articleTypesFilter)
+      search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
     }
 
     val getArticleById =

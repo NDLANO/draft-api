@@ -24,7 +24,14 @@ import org.scalatra.{Created, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait AgreementController {
-  this: ReadService with WriteService with AgreementSearchService with ConverterService with SearchConverterService with ReindexClient with Role with User =>
+  this: ReadService
+    with WriteService
+    with AgreementSearchService
+    with ConverterService
+    with SearchConverterService
+    with ReindexClient
+    with Role
+    with User =>
   val agreementController: AgreementController
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -45,8 +52,13 @@ trait AgreementController {
     private val agreementIds = Param("ids","Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val agreementId = Param("agreement_id", "Id of the agreement that is to be returned")
 
-    private def search(query: Option[String], sort: Option[Sort.Value], license: Option[String], page: Int, pageSize: Int, idList: List[Long]) = {
-      query match {
+    private def search(query: Option[String],
+                       sort: Option[Sort.Value],
+                       license: Option[String],
+                       page: Int,
+                       pageSize: Int,
+                       idList: List[Long]) = {
+      val result = query match {
         case Some(q) => agreementSearchService.matchingQuery(
           query = q,
           withIdIn = idList,
@@ -62,6 +74,11 @@ trait AgreementController {
           pageSize = if (idList.isEmpty) pageSize else idList.size,
           sort = sort.getOrElse(Sort.ByTitleAsc)
         )
+      }
+
+      result match {
+        case Success(searchResult) => searchResult
+        case Failure(ex) => errorHandler(ex)
       }
     }
 

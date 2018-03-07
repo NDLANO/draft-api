@@ -35,7 +35,7 @@ trait ConverterService {
   class ConverterService extends LazyLogging {
 
     def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String]): Try[domain.Article] = {
-      ArticleApiClient.allocateArticleId(None, Seq.empty) match {
+      articleApiClient.allocateArticleId(None, Seq.empty) match {
         case Failure(ex) =>
           Failure(ex)
         case Success(id) =>
@@ -332,7 +332,7 @@ trait ConverterService {
     }
 
     def toDomainConcept(concept: api.NewConcept): Try[domain.Concept] = {
-      ArticleApiClient.allocateConceptId(None) match {
+      articleApiClient.allocateConceptId(None) match {
         case Failure(ex) => Failure(ex)
         case Success(id) =>
           Success(domain.Concept(

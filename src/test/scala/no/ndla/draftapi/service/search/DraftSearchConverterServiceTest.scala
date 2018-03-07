@@ -67,16 +67,6 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
     verifyTags(searchableArticle)
   }
 
-  test("That asArticleSummary converts all fields with correct language") {
-    val article = TestData.sampleArticleWithByNcSa.copy(title=titles, content=articles, tags=articleTags)
-    val searchableArticle = searchConverterService.asSearchableArticle(article)
-    val articleSummary = searchConverterService.asArticleSummary(searchableArticle)
-
-    articleSummary.id should equal (article.id.get)
-    articleSummary.license should equal (article.copyright.flatMap(_.license))
-    articleSummary.title should equal (article.title)
-  }
-
   private def verifyTitles(searchableArticle: SearchableArticle): Unit = {
     searchableArticle.title.languageValues.size should equal(titles.size)
     languageValueWithLang(searchableArticle.title, "nb") should equal(titleForLang(titles, "nb"))

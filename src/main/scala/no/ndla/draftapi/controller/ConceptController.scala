@@ -38,23 +38,38 @@ trait ConceptController {
     private val conceptIds = Param("ids","Return only concepts that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val conceptId = Param("concept_id", "Id of the concept that is to be returned")
 
-    private def search(query: Option[String], sort: Option[Sort.Value], language: String, page: Int, pageSize: Int, idList: List[Long]) = {
-      query match {
+    private def search(query: Option[String],
+                       sort: Option[Sort.Value],
+                       language: String,
+                       page: Int,
+                       pageSize: Int,
+                       idList: List[Long],
+                       fallback: Boolean) = {
+
+      val result = query match {
         case Some(q) => conceptSearchService.matchingQuery(
           query = q,
           withIdIn = idList,
           searchLanguage = language,
           page = page,
           pageSize = pageSize,
-          sort = sort.getOrElse(Sort.ByRelevanceDesc))
+          sort = sort.getOrElse(Sort.ByRelevanceDesc),
+          fallback = fallback
+        )
 
         case None => conceptSearchService.all(
           withIdIn = idList,
           language = language,
           page = page,
           pageSize = pageSize,
-          sort = sort.getOrElse(Sort.ByTitleAsc)
+          sort = sort.getOrElse(Sort.ByTitleAsc),
+          fallback = fallback
         )
+      }
+
+      result match {
+        case Success(searchResult) => searchResult
+        case Failure(ex) => errorHandler(ex)
       }
 
     }
@@ -71,7 +86,8 @@ trait ConceptController {
           asQueryParam[Option[String]](query),
           asQueryParam[Option[Int]](pageNo),
           asQueryParam[Option[Int]](pageSize),
-          asQueryParam[Option[String]](sort)
+          asQueryParam[Option[String]](sort),
+          asQueryParam[Option[Boolean]](fallback)
         )
         authorizations "oauth2"
         responseMessages(response500))
@@ -83,8 +99,9 @@ trait ConceptController {
       val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
       val page = intOrDefault(this.pageNo.paramName, 1)
       val idList = paramAsListOfLong(this.conceptIds.paramName)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      search(query, sort, language, page, pageSize, idList)
+      search(query, sort, language, page, pageSize, idList, fallback)
     }
 
     val getAllConceptsPost =
@@ -93,7 +110,8 @@ trait ConceptController {
         notes "Shows all concepts. You can search it too."
         parameters(
         asHeaderParam[Option[String]](correlationId),
-        bodyParam[ConceptSearchParams]
+        bodyParam[ConceptSearchParams],
+        asQueryParam[Option[Boolean]](fallback)
       )
         authorizations "oauth2"
         responseMessages(response400, response500))
@@ -107,8 +125,9 @@ trait ConceptController {
       val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
       val page = searchParams.page.getOrElse(1)
       val idList = searchParams.idList
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      search(query, sort, language, page, pageSize, idList)
+      search(query, sort, language, page, pageSize, idList, fallback)
     }
 
     val getConceptById =

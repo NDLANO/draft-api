@@ -138,7 +138,7 @@ trait WriteService {
     def publishArticle(id: Long, isImported: Boolean = false): Try[domain.Article] = {
       draftRepository.withId(id) match {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
-          ArticleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
+          articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
               updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED), isImported = isImported)
             case Failure(ex) => Failure(ex)
@@ -161,15 +161,27 @@ trait WriteService {
       })
     }
 
+    def deleteArticle(id: Long): Try[api.ContentId] = {
+      draftRepository.delete(id)
+        .flatMap(articleIndexService.deleteDocument)
+        .map(api.ContentId)
+    }
+
     def publishConcept(id: Long): Try[domain.Concept] = {
       conceptRepository.withId(id) match {
         case Some(concept) =>
-          ArticleApiClient.updateConcept(id, converterService.toArticleApiConcept(concept)) match {
+          articleApiClient.updateConcept(id, converterService.toArticleApiConcept(concept)) match {
             case Success(_) => Success(concept)
             case Failure(ex) => Failure(ex)
           }
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
       }
+    }
+
+    def deleteConcept(id: Long): Try[api.ContentId] = {
+      conceptRepository.delete(id)
+        .flatMap(conceptIndexService.deleteDocument)
+        .map(api.ContentId)
     }
 
     def newConcept(newConcept: NewConcept, externalId: String): Try[api.Concept] = {
@@ -214,12 +226,12 @@ trait WriteService {
     }
 
     def newEmptyArticle(externalId: String, externalSubjectIds: Seq[String]): Try[Long] = {
-      ArticleApiClient.allocateArticleId(Some(externalId), externalSubjectIds)
+      articleApiClient.allocateArticleId(Some(externalId), externalSubjectIds)
         .flatMap(id => draftRepository.newEmptyArticle(id, externalId, externalSubjectIds))
     }
 
     def newEmptyConcept(externalId: String): Try[Long] = {
-      ArticleApiClient.allocateConceptId(Some(externalId))
+      articleApiClient.allocateConceptId(Some(externalId))
         .flatMap(id => conceptRepository.newEmptyConcept(id, externalId))
     }
 
