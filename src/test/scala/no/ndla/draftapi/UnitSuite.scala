@@ -21,6 +21,7 @@ abstract class UnitSuite extends FunSuite with Matchers with OptionValues with I
   setEnv("SEARCH_REGION", "some-region")
   setEnv("RUN_WITH_SIGNED_SEARCH_REQUESTS", "false")
   setEnv("SEARCH_INDEX_NAME", "draft-integration-test-index")
+  setEnv("CONCEPT_SEARCH_INDEX_NAME", "concept-integration-test-index")
   setEnv("AGREEMENT_SEARCH_INDEX_NAME", "agreement-integration-test-index")
 
   setEnv("AUDIO_API_URL", "localhost:30014")

@@ -8,18 +8,19 @@
 
 package no.ndla.draftapi.controller
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{Executors, TimeUnit}
 
 import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.Language
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
@@ -33,14 +34,16 @@ trait InternController {
     with ArticleIndexService
     with ConceptIndexService
     with AgreementIndexService
+    with ArticleApiClient
     with Role =>
   val internController: InternController
 
-  class InternController extends NdlaController {
-
+  class InternController(implicit val swagger: Swagger) extends NdlaController {
+    protected val applicationDescription = "API for accessing internal functionality in draft API"
     protected implicit override val jsonFormats: Formats = DefaultFormats
 
     post("/index") {
+      implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val indexResults = for {
         articleIndex <- Future { articleIndexService.indexDocuments }
         conceptIndex <- Future { conceptIndexService.indexDocuments }
@@ -82,16 +85,17 @@ trait InternController {
       val pageNo = intOrDefault("page", 1)
       val pageSize = intOrDefault("page-size", 250)
       val lang = paramOrDefault("language", Language.AllLanguages)
+      val fallback = booleanOrDefault("fallback", default = false)
 
-      readService.getArticlesByPage(pageNo, pageSize, lang)
+      readService.getArticlesByPage(pageNo, pageSize, lang, fallback)
     }
 
-    post("/articles/publish/?") {
+    post("/articles/publish/") {
       authRole.assertHasPublishPermission()
       writeService.publishArticles()
     }
 
-    post("/article/:id/publish/?") {
+    post("/article/:id/publish/") {
       authRole.assertHasPublishPermission()
       val importPublish = booleanOrDefault("import_publish", default = false)
 
@@ -101,7 +105,15 @@ trait InternController {
       }
     }
 
-    post("/concept/:id/publish/?") {
+    delete("/article/:id/") {
+      authRole.assertHasWritePermission()
+      articleApiClient.deleteArticle(long("id")).flatMap(id => writeService.deleteArticle(id.id)) match {
+        case Success(a) => a
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    post("/concept/:id/publish/") {
       authRole.assertHasPublishPermission()
       writeService.publishConcept(long("id")) match {
         case Success(s) => s.id.map(ContentId)
@@ -109,7 +121,15 @@ trait InternController {
       }
     }
 
-    post("/empty_article") {
+    delete("/concept/:id/") {
+      authRole.assertHasWritePermission()
+      articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
+        case Success(c) => c
+        case Failure(ex) => errorHandler(ex)
+      }
+    }
+
+    post("/empty_article/") {
       authRole.assertHasWritePermission()
       val externalId = params("externalId")
       val externalSubjectIds = paramAsListOfString("externalSubjectId")
@@ -119,7 +139,7 @@ trait InternController {
       }
     }
 
-    post("/empty_concept") {
+    post("/empty_concept/") {
       authRole.assertHasWritePermission()
       val externalId = params("externalId")
       writeService.newEmptyConcept(externalId) match {

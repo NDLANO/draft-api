@@ -52,6 +52,8 @@ object ComponentRegistry
     with User
     with ArticleApiClient {
 
+  def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
+
   implicit val swagger = new DraftSwagger
 
   lazy val dataSource = new PGPoolingDataSource
@@ -63,7 +65,7 @@ object ComponentRegistry
   dataSource.setInitialConnections(DraftApiProperties.MetaInitialConnections)
   dataSource.setMaxConnections(DraftApiProperties.MetaMaxConnections)
   dataSource.setCurrentSchema(DraftApiProperties.MetaSchema)
-  ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
+  connectToDatabase()
 
   lazy val internController = new InternController
   lazy val draftController = new DraftController
@@ -99,5 +101,5 @@ object ComponentRegistry
   lazy val authRole = new AuthRole
   lazy val authUser = new AuthUser
 
-  lazy val ArticleApiClient = new ArticleApiClient
+  lazy val articleApiClient = new ArticleApiClient
 }

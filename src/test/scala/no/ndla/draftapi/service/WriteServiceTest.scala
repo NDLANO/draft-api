@@ -61,7 +61,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(ArticleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(articleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
     service.newArticle(TestData.newArticle, None, Seq.empty).get.id.toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
@@ -143,7 +143,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, Some("en"), None, Some(newContent), None, None, None, None, None, None, None, None, None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")), updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates only title properly") {
@@ -151,7 +151,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiArticle = api.UpdatedArticle(1, Some("en"), Some(newTitle), None, None, None, None, None, None, None, None, None, None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")), updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates multiple fields properly") {
@@ -182,7 +182,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaImage = Seq(ArticleMetaImage(updatedMetaId, "en")),
       updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty).get should equal(converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("publishArticle should return Failure if article is not ready for publishing") {
@@ -193,7 +193,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     val res = service.publishArticle(1)
     res.isFailure should be (true)
-    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
+    verify(articleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
   test("publishArticle should return Failure if article does not pass validation") {
@@ -204,7 +204,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     val res = service.publishArticle(1)
     res.isFailure should be (true)
-    verify(ArticleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
+    verify(articleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
   private def setupSuccessfulPublishMock(id: Long): Unit = {
@@ -212,14 +212,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val apiArticle = converterService.toArticleApiArticle(article)
     when(draftRepository.withId(id)).thenReturn(Some(article))
     when(draftRepository.update(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(ArticleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
+    when(articleApiClient.updateArticle(id, apiArticle)).thenReturn(Success(apiArticle))
   }
 
   test("publishArticle should return Success if permitted to publish to article-api") {
     setupSuccessfulPublishMock(1)
     val res = service.publishArticle(1)
     res.isSuccess should be (true)
-    verify(ArticleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
+    verify(articleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle])
   }
 
   test("publishArticles should publish all articles marked for publishing") {

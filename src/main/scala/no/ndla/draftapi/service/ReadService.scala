@@ -10,13 +10,14 @@ package no.ndla.draftapi.service
 import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.caching.MemoizeAutoRenew
 import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.ArticleStatus
+import no.ndla.draftapi.model.api.{ArticleStatus, NotFoundException}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
 import no.ndla.validation.{HtmlTagRules, TagAttributes, ValidationException, ValidationMessage}
 import org.jsoup.nodes.Element
+
 import scala.math.max
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -32,10 +33,11 @@ trait ReadService {
     def getInternalConceptIdByExternalId(externalId: Long): Option[api.ContentId] =
       conceptRepository.getIdFromExternalId(externalId.toString).map(api.ContentId)
 
-    def withId(id: Long, language: String): Option[api.Article] = {
-      draftRepository.withId(id)
-        .map(addUrlsOnEmbedResources)
-        .map(article => converterService.toApiArticle(article, language))
+    def withId(id: Long, language: String, fallback: Boolean = false): Try[api.Article] = {
+      draftRepository.withId(id).map(addUrlsOnEmbedResources) match {
+        case None => Failure(NotFoundException(s"The article with id $id was not found"))
+        case Some(article) => converterService.toApiArticle(article, language, fallback)
+      }
     }
 
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
@@ -53,9 +55,10 @@ trait ReadService {
         .map(tags => api.ArticleTag(tags.getNMostFrequent(n), searchLanguage))
     }
 
-    def getArticlesByPage(pageNo: Int, pageSize: Int, lang: String): api.ArticleDump = {
+    def getArticlesByPage(pageNo: Int, pageSize: Int, lang: String, fallback: Boolean = false): api.ArticleDump = {
       val (safePageNo, safePageSize) = (max(pageNo, 1), max(pageSize, 0))
-      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize).map(article => converterService.toApiArticle(article, lang))
+      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize)
+        .flatMap(article => converterService.toApiArticle(article, lang, fallback).toOption)
       api.ArticleDump(draftRepository.articleCount, pageNo, pageSize, lang, results)
     }
 
@@ -83,13 +86,13 @@ trait ReadService {
     }
 
     class MostFrequentOccurencesList(list: Seq[String]) {
-      // Create a map where the key is a list entry, and the value is the number of occurences of this entry in the list
-      private[this] val listToNumOccurencesMap: Map[String, Int] = list.groupBy(identity).mapValues(_.size)
-      // Create an inverse of the map 'listToNumOccurencesMap': the key is number of occurences, and the value is a list of all entries that occured that many times
-      private[this] val numOccurencesToListMap: Map[Int, Set[String]] = listToNumOccurencesMap.groupBy(x => x._2).mapValues(_.keySet)
+      // Create a map where the key is a list entry, and the value is the number of occurrences of this entry in the list
+      private[this] val listToNumOccurrencesMap: Map[String, Int] = list.groupBy(identity).mapValues(_.size)
+      // Create an inverse of the map 'listToNumOccurrencesMap': the key is number of occurrences, and the value is a list of all entries that occurred that many times
+      private[this] val numOccurrencesToListMap: Map[Int, Set[String]] = listToNumOccurrencesMap.groupBy(x => x._2).mapValues(_.keySet)
       // Build a list sorted by the most frequent words to the least frequent words
-      private[this] val mostFrequentOccorencesDec = numOccurencesToListMap.keys.toSeq.sorted
-        .foldRight(Seq[String]())((current, result) => result ++ numOccurencesToListMap(current))
+      private[this] val mostFrequentOccorencesDec = numOccurrencesToListMap.keys.toSeq.sorted
+        .foldRight(Seq[String]())((current, result) => result ++ numOccurrencesToListMap(current))
 
       def getNMostFrequent(n: Int): Seq[String] = mostFrequentOccorencesDec.slice(0, n)
     }

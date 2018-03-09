@@ -11,7 +11,7 @@ package no.ndla.draftapi.repository
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.DataSource
-import no.ndla.draftapi.model.api.OptimisticLockException
+import no.ndla.draftapi.model.api.{NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain._
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods._
@@ -106,6 +106,15 @@ trait DraftRepository {
 
     def exists(id: Long)(implicit session: DBSession = AutoSession): Boolean = {
       sql"select id from ${Article.table} where id=${id}".map(rs => rs.long("id")).single.apply().isDefined
+    }
+
+    def delete(articleId: Long)(implicit session: DBSession = AutoSession): Try[Long] = {
+      val numRows = sql"delete from ${Article.table} where id = $articleId".update().apply
+      if (numRows == 1) {
+        Success(articleId)
+      } else {
+        Failure(NotFoundException(s"Article with id $articleId does not exist"))
+      }
     }
 
     def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {

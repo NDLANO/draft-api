@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.NewAgreement
+import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, LanguageField}
@@ -33,7 +33,7 @@ trait ConverterService {
   class ConverterService extends LazyLogging {
 
     def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String]): Try[domain.Article] = {
-      ArticleApiClient.allocateArticleId(None, Seq.empty) match {
+      articleApiClient.allocateArticleId(None, Seq.empty) match {
         case Failure(ex) =>
           Failure(ex)
         case Success(id) =>
@@ -160,20 +160,22 @@ trait ConverterService {
       HtmlTagRules.jsoupDocumentToString(document)
     }
 
-    def toApiArticle(article: domain.Article, language: String): api.Article = {
+    def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
       val supportedLanguages = getSupportedLanguages(
         Seq(article.title, article.visualElement, article.introduction, article.metaDescription, article.tags, article.content)
       )
+      val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
 
-      val meta = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
-      val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
-      val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
-      val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
-      val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
-      val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
+      if (supportedLanguages.contains(language) || language == AllLanguages || isLanguageNeutral || fallback) {
+        val metaDescription = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
+        val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
+        val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
+        val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
+        val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
+        val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
       val metaImage = findByLanguageOrBestEffort(article.metaImage, language).map(toApiArticleMetaImage)
 
-      api.Article(
+      Success(api.Article(
         article.id.get,
         article.id.flatMap(getLinkToOldNdla),
         article.revision.get,
@@ -185,7 +187,7 @@ trait ConverterService {
         article.requiredLibraries.map(toApiRequiredLibrary),
         visualElement,
         introduction,
-        meta,
+        metaDescription,
         metaImage,
         article.created,
         article.updated,
@@ -193,7 +195,10 @@ trait ConverterService {
         article.articleType.toString,
         supportedLanguages,
         article.notes
-      )
+      ))
+      } else {
+        Failure(NotFoundException(s"The article with id ${article.id.get} and language $language was not found", supportedLanguages))
+      }
     }
 
     def toApiAgreement(agreement: domain.Agreement): api.Agreement = {
@@ -333,7 +338,7 @@ trait ConverterService {
     }
 
     def toDomainConcept(concept: api.NewConcept): Try[domain.Concept] = {
-      ArticleApiClient.allocateConceptId(None) match {
+      articleApiClient.allocateConceptId(None) match {
         case Failure(ex) => Failure(ex)
         case Success(id) =>
           Success(domain.Concept(

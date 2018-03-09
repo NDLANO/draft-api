@@ -11,6 +11,7 @@ package no.ndla.draftapi.controller
 import javax.servlet.http.HttpServletRequest
 
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.ComponentRegistry
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
 import no.ndla.draftapi.model.api.{AccessDeniedException, ArticlePublishException, ArticleStatusException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
 import no.ndla.draftapi.model.domain.emptySomeToNone
@@ -21,12 +22,15 @@ import org.apache.logging.log4j.ThreadContext
 import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
+import org.postgresql.util.PSQLException
 import org.scalatra.json.NativeJsonSupport
 import org.scalatra._
+import org.scalatra.swagger.SwaggerSupport
+import org.scalatra.util.NotNothing
 
 import scala.util.{Failure, Success, Try}
 
-abstract class NdlaController extends ScalatraServlet with NativeJsonSupport with LazyLogging {
+abstract class NdlaController extends ScalatraServlet with NativeJsonSupport with LazyLogging with SwaggerSupport {
   protected implicit override val jsonFormats: Formats = DefaultFormats
 
   before() {
@@ -54,6 +58,9 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case o: OptimisticLockException => Conflict(body=Error(Error.RESOURCE_OUTDATED, o.getMessage))
     case rw: ResultWindowTooLargeException => UnprocessableEntity(body=Error(Error.WINDOW_TOO_LARGE, rw.getMessage))
     case pf: ArticlePublishException => BadRequest(body=Error(Error.PUBLISH, pf.getMessage))
+    case _: PSQLException =>
+      ComponentRegistry.connectToDatabase()
+      InternalServerError(Error(Error.DATABASE_UNAVAILABLE, Error.DATABASE_UNAVAILABLE_DESCRIPTION))
     case h: HttpRequestException =>
       h.httpResponse match {
         case Some(resp) if resp.is4xx => BadRequest(body=resp.body)
@@ -61,11 +68,28 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
           logger.error(s"Problem with remote service: ${h.getMessage}")
           BadGateway(body=Error.GenericError)
       }
-    case t: Throwable => {
+    case t: Throwable =>
       logger.error(Error.GenericError.toString, t)
       InternalServerError(body=Error.GenericError)
-    }
   }
+
+  case class Param(paramName: String, description: String)
+
+  protected val correlationId = Param("X-Correlation-ID","User supplied correlation-id. May be omitted.")
+  protected val pageNo = Param("page","The page number of the search hits to display.")
+  protected val pageSize = Param("page-size","The number of search hits to display for each page.")
+  protected val sort = Param("sort",
+    """The sorting used on results.
+             The following are supported: relevance, -relevance, title, -title, lastUpdated, -lastUpdated, id, -id.
+             Default is by -relevance (desc) when query is set, and title (asc) when query is empty.""".stripMargin)
+  protected val deprecatedNodeId = Param("deprecated_node_id", "Id of deprecated NDLA node")
+  protected val language = Param("language", "The ISO 639-1 language code describing language.")
+  protected val license = Param("license","Return only results with provided license.")
+  protected val fallback = Param("fallback", "Fallback to existing language if language is specified.")
+
+  protected def asQueryParam[T: Manifest: NotNothing](param: Param) = queryParam[T](param.paramName).description(param.description)
+  protected def asHeaderParam[T: Manifest: NotNothing](param: Param) = headerParam[T](param.paramName).description(param.description)
+  protected def asPathParam[T: Manifest: NotNothing](param: Param) = pathParam[T](param.paramName).description(param.description)
 
 
   def long(paramName: String)(implicit request: HttpServletRequest): Long = {
