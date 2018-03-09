@@ -9,15 +9,13 @@
 package no.ndla.draftapi.service
 
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.domain.{ArticleStatus, Language, LanguageField}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, LanguageField}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
@@ -25,8 +23,8 @@ import no.ndla.validation._
 import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
 import scala.util.control.Exception.allCatch
+import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
   this: Clock with DraftRepository with User with ArticleApiClient =>
@@ -59,7 +57,7 @@ trait ConverterService {
             visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
             introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
             metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-            metaImageId = newArticle.metaImageId,
+            metaImage = newArticle.metaImageId.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
             created = clock.now(),
             updated = clock.now(),
             updatedBy = authUser.userOrClientId(),
@@ -109,6 +107,8 @@ trait ConverterService {
     }
 
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
+
+    def toDomainMetaImage(imageId: String, language: String): domain.ArticleMetaImage = domain.ArticleMetaImage(imageId, language)
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
       val parser = ISODateTimeFormat.dateOptionalTimeParser()
@@ -167,33 +167,35 @@ trait ConverterService {
       val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
 
       if (supportedLanguages.contains(language) || language == AllLanguages || isLanguageNeutral || fallback) {
-        val meta = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
+        val metaDescription = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
         val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
         val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
         val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
         val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
         val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
+      val metaImage = findByLanguageOrBestEffort(article.metaImage, language).map(toApiArticleMetaImage)
 
-        Success(api.Article(
-          article.id.get,
-          article.id.flatMap(getLinkToOldNdla),
-          article.revision.get,
-          article.status.map(_.toString),
-          title,
-          articleContent,
-          article.copyright.map(toApiCopyright),
-          tags,
-          article.requiredLibraries.map(toApiRequiredLibrary),
-          visualElement,
-          introduction,
-          meta,
-          article.created,
-          article.updated,
-          article.updatedBy,
-          article.articleType.toString,
-          supportedLanguages,
-          article.notes
-        ))
+      Success(api.Article(
+        article.id.get,
+        article.id.flatMap(getLinkToOldNdla),
+        article.revision.get,
+        article.status.map(_.toString),
+        title,
+        articleContent,
+        article.copyright.map(toApiCopyright),
+        tags,
+        article.requiredLibraries.map(toApiRequiredLibrary),
+        visualElement,
+        introduction,
+        metaDescription,
+        metaImage,
+        article.created,
+        article.updated,
+        article.updatedBy,
+        article.articleType.toString,
+        supportedLanguages,
+        article.notes
+      ))
       } else {
         Failure(NotFoundException(s"The article with id ${article.id.get} and language $language was not found", supportedLanguages))
       }
@@ -229,6 +231,10 @@ trait ConverterService {
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)
 
     def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
+
+    def toApiArticleMetaImage(metaImage: domain.ArticleMetaImage): api.ArticleMetaImage = {
+      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.language)
+    }
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
       api.Copyright(
@@ -313,7 +319,7 @@ trait ConverterService {
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
         introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
         metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
-        metaImageId = article.metaImageId,
+        metaImage = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.language)),
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
@@ -380,7 +386,7 @@ trait ConverterService {
             visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
             introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
             metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-            metaImageId = if (article.metaImageId.isDefined) article.metaImageId else toMergeInto.metaImageId
+            metaImage = mergeLanguageFields(toMergeInto.metaImage, article.metaImageId.map(toDomainMetaImage(_, lang)).toSeq)
           ))
       }
     }
@@ -404,7 +410,7 @@ trait ConverterService {
             visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
             introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
             metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-            metaImageId = article.metaImageId,
+            metaImage = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
             created = clock.now(),
             updated = clock.now(),
             authUser.userOrClientId(),

@@ -10,10 +10,8 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.model.domain.{Agreement, Author, Copyright}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.{DefaultServlet, ServletContextHandler}
-import org.joda.time.DateTime
 import org.scalatra.servlet.ScalatraListener
 
 import scala.io.Source
