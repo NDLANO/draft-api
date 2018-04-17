@@ -61,8 +61,11 @@ lazy val draft_api = (project in file(".")).
       "org.mockito" % "mockito-all" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % "4.0",
       "com.netaporter" %% "scala-uri" % "0.4.16"
-    )
+    ),
   ).enablePlugins(DockerPlugin).enablePlugins(JettyPlugin)
+    .configs(Test)
+
+Test / test := ((Test / test).dependsOn(Compile / scalafmtCheck)).value
 
 assembly / assemblyJarName := "draft-api.jar"
 assembly / mainClass := Some("no.ndla.draftapi.JettyLauncher")
