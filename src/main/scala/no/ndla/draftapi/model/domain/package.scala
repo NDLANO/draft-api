@@ -7,6 +7,7 @@
 package no.ndla.draftapi.model
 
 package object domain {
+
   def emptySomeToNone(lang: Option[String]): Option[String] = {
     lang.filter(_.nonEmpty)
   }

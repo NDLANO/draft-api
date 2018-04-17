@@ -29,10 +29,11 @@ trait AgreementRepository {
       dataObject.setType("jsonb")
       dataObject.setValue(write(agreement))
 
-      val agreementId: Long = sql"insert into ${Agreement.table} (document) values (${dataObject})".updateAndReturnGeneratedKey().apply()
+      val agreementId: Long =
+        sql"insert into ${Agreement.table} (document) values (${dataObject})".updateAndReturnGeneratedKey().apply()
 
       logger.info(s"Inserted new agreement: $agreementId")
-      agreement.copy(id=Some(agreementId))
+      agreement.copy(id = Some(agreementId))
     }
 
     def update(agreement: Agreement)(implicit session: DBSession = AutoSession): Try[Agreement] = {
@@ -46,7 +47,6 @@ trait AgreementRepository {
       Success(agreement)
     }
 
-
     def withId(id: Long): Option[Agreement] =
       agreementWhere(sqls"agr.id=${id.toInt}")
 
@@ -55,23 +55,28 @@ trait AgreementRepository {
     }
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
-      sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Agreement.table}".map(rs => {
-        (rs.long("mi"), rs.long("ma"))
-      }).single().apply() match {
+      sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Agreement.table}"
+        .map(rs => {
+          (rs.long("mi"), rs.long("ma"))
+        })
+        .single()
+        .apply() match {
         case Some(minmax) => minmax
-        case None => (0L, 0L)
+        case None         => (0L, 0L)
       }
     }
 
     override def documentsWithIdBetween(min: Long, max: Long): List[Agreement] =
       agreementsWhere(sqls"agr.id between $min and $max")
 
-    private def agreementWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): Option[Agreement] = {
+    private def agreementWhere(whereClause: SQLSyntax)(
+        implicit session: DBSession = ReadOnlyAutoSession): Option[Agreement] = {
       val agr = Agreement.syntax("agr")
       sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause".map(Agreement(agr)).single.apply()
     }
 
-    private def agreementsWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): List[Agreement] = {
+    private def agreementsWhere(whereClause: SQLSyntax)(
+        implicit session: DBSession = ReadOnlyAutoSession): List[Agreement] = {
       val agr = Agreement.syntax("agr")
       sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause".map(Agreement(agr)).list.apply()
     }

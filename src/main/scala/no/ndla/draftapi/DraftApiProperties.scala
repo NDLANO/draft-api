@@ -55,7 +55,9 @@ object DraftApiProperties extends LazyLogging {
 
   val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
   val NDLABrightcovePlayerId = prop("NDLA_BRIGHTCOVE_PLAYER_ID")
-  val NDLABrightcoveVideoScriptUrl = s"//players.brightcove.net/$NDLABrightcoveAccountId/${NDLABrightcovePlayerId}_default/index.min.js"
+
+  val NDLABrightcoveVideoScriptUrl =
+    s"//players.brightcove.net/$NDLABrightcoveAccountId/${NDLABrightcovePlayerId}_default/index.min.js"
   val H5PResizerScriptUrl = "//ndla.no/sites/all/modules/h5p/library/js/h5p-resizer.js"
   val NRKVideoScriptUrl = Seq("//www.nrk.no/serum/latest/js/video_embed.js", "//nrk.no/serum/latest/js/video_embed.js")
 
@@ -81,9 +83,9 @@ object DraftApiProperties extends LazyLogging {
   lazy val Domain = Domains.get(Environment)
 
   lazy val secrets = readSecrets(SecretsFile) match {
-     case Success(values) => values
-     case Failure(exception) => throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
-   }
+    case Success(values)    => values
+    case Failure(exception) => throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
+  }
 
   def booleanProp(key: String) = prop(key).toBoolean
 
@@ -97,7 +99,7 @@ object DraftApiProperties extends LazyLogging {
       case None =>
         envOrNone(key) match {
           case Some(env) => env
-          case None => default
+          case None      => default
         }
     }
   }

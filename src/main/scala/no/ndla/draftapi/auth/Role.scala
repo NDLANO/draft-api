@@ -24,11 +24,16 @@ trait Role {
     }
 
     def assertHasWritePermission(): Unit = assert(hasRoles(DraftApiProperties.DraftRoleWithWriteAccess))
-    def hasPublishPermission(): Boolean = hasRoles(DraftApiProperties.DraftRoleWithWriteAccess, DraftApiProperties.DraftRoleWithPublishAccess)
+
+    def hasPublishPermission(): Boolean =
+      hasRoles(DraftApiProperties.DraftRoleWithWriteAccess, DraftApiProperties.DraftRoleWithPublishAccess)
     def assertHasPublishPermission(): Unit = assert(hasPublishPermission())
-    def assertHasArticleApiPublishPermission(): Unit = assert(hasRoles(DraftApiProperties.DraftRoleWithWriteAccess, DraftApiProperties.DraftRoleWithPublishAccess, DraftApiProperties.ArticleRoleWithPublishAccess))
+
+    def assertHasArticleApiPublishPermission(): Unit =
+      assert(
+        hasRoles(DraftApiProperties.DraftRoleWithWriteAccess,
+                 DraftApiProperties.DraftRoleWithPublishAccess,
+                 DraftApiProperties.ArticleRoleWithPublishAccess))
   }
 
 }
-
-

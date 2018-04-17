@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.controller
 
 import java.util.concurrent.{Executors, TimeUnit}
@@ -50,11 +49,11 @@ trait InternController {
         agreementIndex <- Future { agreementIndexService.indexDocuments }
       } yield (articleIndex, conceptIndex, agreementIndex)
 
-
       Await.result(indexResults, Duration(1, TimeUnit.MINUTES)) match {
         case (Success(articleResult), Success(conceptResult), Success(agreementIndex)) =>
           val indexTime = math.max(articleResult.millisUsed, conceptResult.millisUsed)
-          val result = s"Completed indexing of ${articleResult.totalIndexed} articles, ${conceptResult.totalIndexed} concepts and ${agreementIndex.totalIndexed} agreements in $indexTime ms."
+          val result =
+            s"Completed indexing of ${articleResult.totalIndexed} articles, ${conceptResult.totalIndexed} concepts and ${agreementIndex.totalIndexed} agreements in $indexTime ms."
           logger.info(result)
           Ok(result)
         case (Failure(articleFail), _, _) =>
@@ -77,7 +76,7 @@ trait InternController {
       val externalId = params("external_id")
       draftRepository.getIdFromExternalId(externalId) match {
         case Some(id) => id
-        case None => NotFound()
+        case None     => NotFound()
       }
     }
 
@@ -100,7 +99,7 @@ trait InternController {
       val importPublish = booleanOrDefault("import_publish", default = false)
 
       writeService.publishArticle(long("id"), importPublish) match {
-        case Success(s) => converterService.toApiStatus(s.status)
+        case Success(s)  => converterService.toApiStatus(s.status)
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -108,7 +107,7 @@ trait InternController {
     delete("/article/:id/") {
       authRole.assertHasWritePermission()
       articleApiClient.deleteArticle(long("id")).flatMap(id => writeService.deleteArticle(id.id)) match {
-        case Success(a) => a
+        case Success(a)  => a
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -116,7 +115,7 @@ trait InternController {
     post("/concept/:id/publish/") {
       authRole.assertHasPublishPermission()
       writeService.publishConcept(long("id")) match {
-        case Success(s) => s.id.map(ContentId)
+        case Success(s)  => s.id.map(ContentId)
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -124,7 +123,7 @@ trait InternController {
     delete("/concept/:id/") {
       authRole.assertHasWritePermission()
       articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
-        case Success(c) => c
+        case Success(c)  => c
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -147,7 +146,6 @@ trait InternController {
         case Failure(ex) => errorHandler(ex)
       }
     }
-
 
   }
 }

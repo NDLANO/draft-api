@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.service
 
 import com.typesafe.scalalogging.LazyLogging
@@ -38,32 +37,38 @@ trait ConverterService {
           Failure(ex)
         case Success(id) =>
           val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
-          val domainContent = newArticle.content.map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language)).toSeq
+          val domainContent = newArticle.content
+            .map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language))
+            .toSeq
 
           val status = externalId match {
             case Some(_) => Set(CREATED, IMPORTED)
-            case None => Set(CREATED)
+            case None    => Set(CREATED)
           }
 
-          Success(domain.Article(
-            id = Some(id),
-            revision = None,
-            status,
-            title = domainTitles,
-            content = domainContent,
-            copyright = newArticle.copyright.map(toDomainCopyright),
-            tags = toDomainTag(newArticle.tags, newArticle.language),
-            requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
-            visualElement = newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-            introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-            metaDescription = newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-            metaImage = newArticle.metaImageId.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
-            created = clock.now(),
-            updated = clock.now(),
-            updatedBy = authUser.userOrClientId(),
-            articleType = ArticleType.valueOfOrError(newArticle.articleType),
-            newArticle.notes
-          ))
+          Success(
+            domain.Article(
+              id = Some(id),
+              revision = None,
+              status,
+              title = domainTitles,
+              content = domainContent,
+              copyright = newArticle.copyright.map(toDomainCopyright),
+              tags = toDomainTag(newArticle.tags, newArticle.language),
+              requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
+              visualElement =
+                newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
+              introduction =
+                newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
+              metaDescription =
+                newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
+              metaImage = newArticle.metaImageId.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
+              created = clock.now(),
+              updated = clock.now(),
+              updatedBy = authUser.userOrClientId(),
+              articleType = ArticleType.valueOfOrError(newArticle.articleType),
+              newArticle.notes
+            ))
       }
     }
 
@@ -79,7 +84,8 @@ trait ConverterService {
       )
     }
 
-    def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle = domain.ArticleTitle(articleTitle.title, articleTitle.language)
+    def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle =
+      domain.ArticleTitle(articleTitle.title, articleTitle.language)
 
     def toDomainContent(articleContent: api.ArticleContent): domain.ArticleContent = {
       domain.ArticleContent(removeUnknownEmbedTagAttributes(articleContent.content), articleContent.language)
@@ -100,15 +106,18 @@ trait ConverterService {
       domain.ArticleIntroduction(intro.introduction, intro.language)
     }
 
-    def toDomainIntroduction(intro: String, language: String): domain.ArticleIntroduction = domain.ArticleIntroduction(intro, language)
+    def toDomainIntroduction(intro: String, language: String): domain.ArticleIntroduction =
+      domain.ArticleIntroduction(intro, language)
 
     def toDomainMetaDescription(meta: api.ArticleMetaDescription): domain.ArticleMetaDescription = {
       domain.ArticleMetaDescription(meta.metaDescription, meta.language)
     }
 
-    def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription = domain.ArticleMetaDescription(meta, language)
+    def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription =
+      domain.ArticleMetaDescription(meta, language)
 
-    def toDomainMetaImage(imageId: String, language: String): domain.ArticleMetaImage = domain.ArticleMetaImage(imageId, language)
+    def toDomainMetaImage(imageId: String, language: String): domain.ArticleMetaImage =
+      domain.ArticleMetaImage(imageId, language)
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
       val parser = ISODateTimeFormat.dateOptionalTimeParser()
@@ -147,57 +156,71 @@ trait ConverterService {
       domain.RequiredLibrary(requiredLibs.mediaType, requiredLibs.name, requiredLibs.url)
     }
 
-    private def getLinkToOldNdla(id: Long): Option[String] = draftRepository.getExternalIdFromId(id).map(createLinkToOldNdla)
+    private def getLinkToOldNdla(id: Long): Option[String] =
+      draftRepository.getExternalIdFromId(id).map(createLinkToOldNdla)
 
     private def removeUnknownEmbedTagAttributes(html: String): String = {
       val document = HtmlTagRules.stringToJsoupDocument(html)
-      document.select("embed").asScala.map(el => {
-        ResourceType.valueOf(el.attr(TagAttributes.DataResource.toString))
-          .map(EmbedTagRules.attributesForResourceType)
-          .map(knownAttributes => HtmlTagRules.removeIllegalAttributes(el, knownAttributes.all.map(_.toString)))
-      })
+      document
+        .select("embed")
+        .asScala
+        .map(el => {
+          ResourceType
+            .valueOf(el.attr(TagAttributes.DataResource.toString))
+            .map(EmbedTagRules.attributesForResourceType)
+            .map(knownAttributes => HtmlTagRules.removeIllegalAttributes(el, knownAttributes.all.map(_.toString)))
+        })
 
       HtmlTagRules.jsoupDocumentToString(document)
     }
 
     def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
       val supportedLanguages = getSupportedLanguages(
-        Seq(article.title, article.visualElement, article.introduction, article.metaDescription, article.tags, article.content)
+        Seq(article.title,
+            article.visualElement,
+            article.introduction,
+            article.metaDescription,
+            article.tags,
+            article.content)
       )
       val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
 
       if (supportedLanguages.contains(language) || language == AllLanguages || isLanguageNeutral || fallback) {
-        val metaDescription = findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
+        val metaDescription =
+          findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
         val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
         val title = findByLanguageOrBestEffort(article.title, language).map(toApiArticleTitle)
         val introduction = findByLanguageOrBestEffort(article.introduction, language).map(toApiArticleIntroduction)
         val visualElement = findByLanguageOrBestEffort(article.visualElement, language).map(toApiVisualElement)
         val articleContent = findByLanguageOrBestEffort(article.content, language).map(toApiArticleContent)
-      val metaImage = findByLanguageOrBestEffort(article.metaImage, language).map(toApiArticleMetaImage)
+        val metaImage = findByLanguageOrBestEffort(article.metaImage, language).map(toApiArticleMetaImage)
 
-      Success(api.Article(
-        article.id.get,
-        article.id.flatMap(getLinkToOldNdla),
-        article.revision.get,
-        article.status.map(_.toString),
-        title,
-        articleContent,
-        article.copyright.map(toApiCopyright),
-        tags,
-        article.requiredLibraries.map(toApiRequiredLibrary),
-        visualElement,
-        introduction,
-        metaDescription,
-        metaImage,
-        article.created,
-        article.updated,
-        article.updatedBy,
-        article.articleType.toString,
-        supportedLanguages,
-        article.notes
-      ))
+        Success(
+          api.Article(
+            article.id.get,
+            article.id.flatMap(getLinkToOldNdla),
+            article.revision.get,
+            article.status.map(_.toString),
+            title,
+            articleContent,
+            article.copyright.map(toApiCopyright),
+            tags,
+            article.requiredLibraries.map(toApiRequiredLibrary),
+            visualElement,
+            introduction,
+            metaDescription,
+            metaImage,
+            article.created,
+            article.updated,
+            article.updatedBy,
+            article.articleType.toString,
+            supportedLanguages,
+            article.notes
+          ))
       } else {
-        Failure(NotFoundException(s"The article with id ${article.id.get} and language $language was not found", supportedLanguages))
+        Failure(
+          NotFoundException(s"The article with id ${article.id.get} and language $language was not found",
+                            supportedLanguages))
       }
     }
 
@@ -218,8 +241,8 @@ trait ConverterService {
       if (invalidStatuses.nonEmpty) {
         val errors = invalidStatuses.flatMap {
           case Failure(ex: ValidationException) => ex.errors
-          case Failure(ex) => Set(ValidationMessage("status", ex.getMessage))
-          case Success(_) => Set()
+          case Failure(ex)                      => Set(ValidationMessage("status", ex.getMessage))
+          case Success(_)                       => Set()
         }
         Failure(new ValidationException(errors = errors.toSeq))
       } else
@@ -230,7 +253,8 @@ trait ConverterService {
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)
 
-    def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent = api.ArticleContent(content.content, content.language)
+    def toApiArticleContent(content: domain.ArticleContent): api.ArticleContent =
+      api.ArticleContent(content.content, content.language)
 
     def toApiArticleMetaImage(metaImage: domain.ArticleMetaImage): api.ArticleMetaImage = {
       api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.language)
@@ -263,7 +287,8 @@ trait ConverterService {
       api.RequiredLibrary(required.mediaType, required.name, required.url)
     }
 
-    def toApiVisualElement(visual: domain.VisualElement): api.VisualElement = api.VisualElement(visual.resource, visual.language)
+    def toApiVisualElement(visual: domain.VisualElement): api.VisualElement =
+      api.VisualElement(visual.resource, visual.language)
 
     def toApiArticleIntroduction(intro: domain.ArticleIntroduction): api.ArticleIntroduction = {
       api.ArticleIntroduction(intro.introduction, intro.language)
@@ -276,8 +301,12 @@ trait ConverterService {
     def createLinkToOldNdla(nodeId: String): String = s"//red.ndla.no/node/$nodeId"
 
     def toApiConcept(concept: domain.Concept, language: String): api.Concept = {
-      val title = findByLanguageOrBestEffort(concept.title, language).map(toApiConceptTitle).getOrElse(api.ConceptTitle("", DefaultLanguage))
-      val content = findByLanguageOrBestEffort(concept.content, language).map(toApiConceptContent).getOrElse(api.ConceptContent("", DefaultLanguage))
+      val title = findByLanguageOrBestEffort(concept.title, language)
+        .map(toApiConceptTitle)
+        .getOrElse(api.ConceptTitle("", DefaultLanguage))
+      val content = findByLanguageOrBestEffort(concept.content, language)
+        .map(toApiConceptContent)
+        .getOrElse(api.ConceptContent("", DefaultLanguage))
 
       api.Concept(
         concept.id.get,
@@ -292,10 +321,12 @@ trait ConverterService {
 
     def toApiConceptTitle(title: domain.ConceptTitle): api.ConceptTitle = api.ConceptTitle(title.title, title.language)
 
-    def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent = api.ConceptContent(title.content, title.language)
+    def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent =
+      api.ConceptContent(title.content, title.language)
 
     def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
-      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor = api.ArticleApiAuthor(author.`type`, author.name)
+      def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor =
+        api.ArticleApiAuthor(author.`type`, author.name)
       api.ArticleApiCopyright(
         copyright.license.getOrElse(""),
         copyright.origin.getOrElse(""),
@@ -315,7 +346,8 @@ trait ConverterService {
         content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
         copyright = article.copyright.map(toArticleApiCopyright),
         tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
-        requiredLibraries = article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
+        requiredLibraries =
+          article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
         introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
         metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
@@ -341,26 +373,37 @@ trait ConverterService {
       articleApiClient.allocateConceptId(None) match {
         case Failure(ex) => Failure(ex)
         case Success(id) =>
-          Success(domain.Concept(
-            Some(id),
-            Seq(domain.ConceptTitle(concept.title, concept.language)),
-            concept.content.map(content => Seq(domain.ConceptContent(content, concept.language))).getOrElse(Seq.empty),
-            concept.copyright.map(toDomainCopyright),
-            clock.now(),
-            clock.now()
-          ))
+          Success(
+            domain.Concept(
+              Some(id),
+              Seq(domain.ConceptTitle(concept.title, concept.language)),
+              concept.content
+                .map(content => Seq(domain.ConceptContent(content, concept.language)))
+                .getOrElse(Seq.empty),
+              concept.copyright.map(toDomainCopyright),
+              clock.now(),
+              clock.now()
+            ))
       }
     }
 
     private def languageFieldIsDefined(article: api.UpdatedArticle): Boolean = {
-      val langFields: Seq[Option[_]] = Seq(article.title, article.content, article.tags, article.introduction,
-        article.metaDescription, article.metaImageId, article.visualElement)
+      val langFields: Seq[Option[_]] = Seq(article.title,
+                                           article.content,
+                                           article.tags,
+                                           article.introduction,
+                                           article.metaDescription,
+                                           article.metaImageId,
+                                           article.visualElement)
 
       langFields.foldRight(false)((curr, res) => res || curr.isDefined)
     }
 
-    def toDomainArticle(toMergeInto: domain.Article, article: api.UpdatedArticle, isImported: Boolean): Try[domain.Article] = {
-      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT else IMPORTED)
+    def toDomainArticle(toMergeInto: domain.Article,
+                        article: api.UpdatedArticle,
+                        isImported: Boolean): Try[domain.Article] = {
+      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT
+                                                                                        else IMPORTED)
 
       val partiallyConverted = toMergeInto.copy(
         status = status,
@@ -379,15 +422,26 @@ trait ConverterService {
           Failure(new ValidationException(errors = Seq(error)))
         case None => Success(partiallyConverted)
         case Some(lang) =>
-          Success(partiallyConverted.copy(
-            title = mergeLanguageFields(toMergeInto.title, article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
-            content = mergeLanguageFields(toMergeInto.content, article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
-            tags = article.tags.map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang))).getOrElse(toMergeInto.tags),
-            visualElement = mergeLanguageFields(toMergeInto.visualElement, article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
-            introduction = mergeLanguageFields(toMergeInto.introduction, article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
-            metaDescription = mergeLanguageFields(toMergeInto.metaDescription, article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-            metaImage = mergeLanguageFields(toMergeInto.metaImage, article.metaImageId.map(toDomainMetaImage(_, lang)).toSeq)
-          ))
+          Success(
+            partiallyConverted.copy(
+              title = mergeLanguageFields(toMergeInto.title,
+                                          article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
+              content = mergeLanguageFields(toMergeInto.content,
+                                            article.content.toSeq.map(c =>
+                                              toDomainContent(api.ArticleContent(c, lang)))),
+              tags = article.tags
+                .map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang)))
+                .getOrElse(toMergeInto.tags),
+              visualElement = mergeLanguageFields(toMergeInto.visualElement,
+                                                  article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
+              introduction = mergeLanguageFields(toMergeInto.introduction,
+                                                 article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
+              metaDescription =
+                mergeLanguageFields(toMergeInto.metaDescription,
+                                    article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
+              metaImage =
+                mergeLanguageFields(toMergeInto.metaImage, article.metaImageId.map(toDomainMetaImage(_, lang)).toSeq)
+            ))
       }
     }
 
@@ -395,28 +449,29 @@ trait ConverterService {
       article.language match {
         case None =>
           val error = ValidationMessage("language", "This field must be specified when updating language fields")
-          Failure(new ValidationException(errors=Seq(error)))
+          Failure(new ValidationException(errors = Seq(error)))
         case Some(lang) =>
           val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
-          Success(domain.Article(
-            id = Some(id),
-            revision = Some(1),
-            status = status,
-            title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
-            content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
-            copyright = article.copyright.map(toDomainCopyright),
-            tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
-            requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
-            visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
-            introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
-            metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-            metaImage = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
-            created = clock.now(),
-            updated = clock.now(),
-            authUser.userOrClientId(),
-            articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
-            article.notes.getOrElse(Seq.empty)
-          ))
+          Success(
+            domain.Article(
+              id = Some(id),
+              revision = Some(1),
+              status = status,
+              title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
+              content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
+              copyright = article.copyright.map(toDomainCopyright),
+              tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
+              requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
+              visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
+              introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
+              metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
+              metaImage = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
+              created = clock.now(),
+              updated = clock.now(),
+              authUser.userOrClientId(),
+              articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
+              article.notes.getOrElse(Seq.empty)
+            ))
       }
     }
 
@@ -425,11 +480,11 @@ trait ConverterService {
       val domainContent = updateConcept.content.map(c => domain.ConceptContent(c, updateConcept.language)).toSeq
 
       toMergeInto.copy(
-        title=mergeLanguageFields(toMergeInto.title, domainTitle),
-        content=mergeLanguageFields(toMergeInto.content, domainContent),
-        copyright=updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
-        created=toMergeInto.created,
-        updated=clock.now()
+        title = mergeLanguageFields(toMergeInto.title, domainTitle),
+        content = mergeLanguageFields(toMergeInto.content, domainContent),
+        copyright = updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+        created = toMergeInto.created,
+        updated = clock.now()
       )
     }
 

@@ -1,11 +1,9 @@
-
 /*
  * Part of NDLA draft_api.
  * Copyright (C) 2017 NDLA
  *
  * See LICENSE
  */
-
 
 package no.ndla.draftapi
 
@@ -16,8 +14,8 @@ import org.scalatra.servlet.ScalatraListener
 
 import scala.io.Source
 
-
 object JettyLauncher extends LazyLogging {
+
   def buildMostUsedTagsCache = {
     ComponentRegistry.readService.getTagUsageMap()
   }

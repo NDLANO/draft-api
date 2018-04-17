@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.service.search
 
 import java.util.concurrent.Executors
@@ -26,7 +25,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 trait AgreementSearchService {
-  this: Elastic4sClient with SearchConverterService with SearchService with AgreementIndexService with ConverterService =>
+  this: Elastic4sClient
+    with SearchConverterService
+    with SearchService
+    with AgreementIndexService
+    with ConverterService =>
   val agreementSearchService: AgreementSearchService
 
   class AgreementSearchService extends LazyLogging with SearchService[api.AgreementSummary] {
@@ -52,12 +55,12 @@ trait AgreementSearchService {
                       sort: Sort.Value): Try[AgreementSearchResult] = {
 
       val fullQuery = boolQuery()
-        .must(boolQuery()
+        .must(
+          boolQuery()
             .should(
               queryStringQuery(query).field("title").boost(2),
               queryStringQuery(query).field("content").boost(1)
-            )
-        )
+            ))
 
       executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
     }
@@ -76,10 +79,11 @@ trait AgreementSearchService {
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
-        logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
+        logger.info(
+          s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
         Failure(new ResultWindowTooLargeException())
       } else {
-        e4sClient.execute{
+        e4sClient.execute {
           search(searchIndex)
             .size(numResults)
             .from(startAt)
@@ -87,13 +91,14 @@ trait AgreementSearchService {
             .sortBy(getSortDefinition(sort))
         } match {
           case Success(response) =>
-            Success(AgreementSearchResult(
-              response.result.totalHits,
-              page,
-              numResults,
-              Language.NoLanguage,
-              getHits(response.result, Language.NoLanguage)
-            ))
+            Success(
+              AgreementSearchResult(
+                response.result.totalHits,
+                page,
+                numResults,
+                Language.NoLanguage,
+                getHits(response.result, Language.NoLanguage)
+              ))
           case Failure(ex) =>
             errorHandler(ex)
         }
@@ -108,7 +113,9 @@ trait AgreementSearchService {
 
       f.failed.foreach(t => logger.warn("Unable to create index: " + t.getMessage, t))
       f.foreach {
-        case Success(reindexResult) => logger.info(s"Completed indexing of ${reindexResult.totalIndexed} agreements in ${reindexResult.millisUsed} ms.")
+        case Success(reindexResult) =>
+          logger.info(
+            s"Completed indexing of ${reindexResult.totalIndexed} agreements in ${reindexResult.millisUsed} ms.")
         case Failure(ex) => logger.warn(ex.getMessage, ex)
       }
     }

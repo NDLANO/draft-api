@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
@@ -48,8 +47,10 @@ trait AgreementController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    private val query = Param("query","Return only agreements with content matching the specified query.")
-    private val agreementIds = Param("ids","Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,).")
+    private val query = Param("query", "Return only agreements with content matching the specified query.")
+    private val agreementIds = Param(
+      "ids",
+      "Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val agreementId = Param("agreement_id", "Id of the agreement that is to be returned")
 
     private def search(query: Option[String],
@@ -59,26 +60,28 @@ trait AgreementController {
                        pageSize: Int,
                        idList: List[Long]) = {
       val result = query match {
-        case Some(q) => agreementSearchService.matchingQuery(
-          query = q,
-          withIdIn = idList,
-          license = license,
-          page = page,
-          pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByTitleAsc)
-        )
-        case None => agreementSearchService.all(
-          withIdIn = idList,
-          license = license,
-          page = page,
-          pageSize = if (idList.isEmpty) pageSize else idList.size,
-          sort = sort.getOrElse(Sort.ByTitleAsc)
-        )
+        case Some(q) =>
+          agreementSearchService.matchingQuery(
+            query = q,
+            withIdIn = idList,
+            license = license,
+            page = page,
+            pageSize = if (idList.isEmpty) pageSize else idList.size,
+            sort = sort.getOrElse(Sort.ByTitleAsc)
+          )
+        case None =>
+          agreementSearchService.all(
+            withIdIn = idList,
+            license = license,
+            page = page,
+            pageSize = if (idList.isEmpty) pageSize else idList.size,
+            sort = sort.getOrElse(Sort.ByTitleAsc)
+          )
       }
 
       result match {
         case Success(searchResult) => searchResult
-        case Failure(ex) => errorHandler(ex)
+        case Failure(ex)           => errorHandler(ex)
       }
     }
 
@@ -86,15 +89,15 @@ trait AgreementController {
       (apiOperation[AgreementSearchResult]("getAllAgreements")
         summary "Show all agreements"
         notes "Shows all agreements. You can search too."
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asQueryParam[Option[String]](query),
-        asQueryParam[Option[String]](agreementIds),
-        asQueryParam[Option[String]](language),
-        asQueryParam[Option[String]](license),
-        asQueryParam[Option[Int]](pageNo),
-        asQueryParam[Option[Int]](pageSize),
-        asQueryParam[Option[String]](sort)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asQueryParam[Option[String]](query),
+          asQueryParam[Option[String]](agreementIds),
+          asQueryParam[Option[String]](language),
+          asQueryParam[Option[String]](license),
+          asQueryParam[Option[Int]](pageNo),
+          asQueryParam[Option[Int]](pageSize),
+          asQueryParam[Option[String]](sort)
       )
         authorizations "oauth2"
         responseMessages response500)
@@ -114,19 +117,19 @@ trait AgreementController {
       (apiOperation[Agreement]("getAgreementById")
         summary "Show agreement with a specified Id"
         notes "Shows the agreement for the specified id."
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
       )
         authorizations "oauth2"
-        responseMessages(response404, response500))
+        responseMessages (response404, response500))
 
     get("/:agreement_id", operation(getAgreementById)) {
       val agreementId = long(this.agreementId.paramName)
 
       readService.agreementWithId(agreementId) match {
         case Some(agreement) => agreement
-        case None => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
+        case None            => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
       }
     }
 
@@ -134,12 +137,12 @@ trait AgreementController {
       (apiOperation[Agreement]("newAgreement")
         summary "Create a new agreement"
         notes "Creates a new agreement"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        bodyParam[NewAgreement]
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          bodyParam[NewAgreement]
       )
         authorizations "oauth2"
-        responseMessages(response400, response403, response500))
+        responseMessages (response400, response403, response500))
 
     post("/", operation(newAgreement)) {
       authUser.assertHasId()
@@ -148,7 +151,7 @@ trait AgreementController {
       writeService.newAgreement(newAgreement) match {
         case Success(agreement) =>
           reindexClient.reindexAll()
-          Created(body=agreement)
+          Created(body = agreement)
         case Failure(exception) => errorHandler(exception)
       }
     }
@@ -157,13 +160,13 @@ trait AgreementController {
       (apiOperation[Agreement]("updateAgreement")
         summary "Update an existing agreement"
         notes "Update an existing agreement"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[Long](agreementId),
-        bodyParam[UpdatedAgreement]
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asPathParam[Long](agreementId),
+          bodyParam[UpdatedAgreement]
       )
         authorizations "oauth2"
-        responseMessages(response400, response403, response404, response500))
+        responseMessages (response400, response403, response404, response500))
 
     patch("/:agreement_id", operation(updateAgreement)) {
       authUser.assertHasId()
@@ -174,7 +177,7 @@ trait AgreementController {
       writeService.updateAgreement(agreementId, updatedAgreement) match {
         case Success(agreement) =>
           reindexClient.reindexAll()
-          Ok(body=agreement)
+          Ok(body = agreement)
         case Failure(exception) => errorHandler(exception)
       }
     }

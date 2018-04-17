@@ -12,4 +12,7 @@ import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 import scala.annotation.meta.field
 
 @ApiModel(description = "The status of an article")
-case class ArticleStatus(@(ApiModelProperty@field)(description = "The status of a single article", allowableValues = "CREATED,IMPORTED,DRAFT,SKETCH,USER_TEST,QUALITY_ASSURED,AWAITING_QUALITY_ASSURANCE") status: Set[String])
+case class ArticleStatus(@(ApiModelProperty @field)(
+  description = "The status of a single article",
+  allowableValues = "CREATED,IMPORTED,DRAFT,SKETCH,USER_TEST,QUALITY_ASSURED,AWAITING_QUALITY_ASSURANCE") status: Set[
+  String])

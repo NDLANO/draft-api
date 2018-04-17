@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.service.search
 
 import java.lang.Math.max
@@ -52,50 +51,50 @@ trait SearchService {
     def getSortDefinition(sort: Sort.Value, language: String): FieldSortDefinition = {
       val sortLanguage = language match {
         case domain.Language.NoLanguage => domain.Language.DefaultLanguage
-        case _ => language
+        case _                          => language
       }
 
       sort match {
         case (Sort.ByTitleAsc) =>
           language match {
             case "*" | Language.AllLanguages => fieldSort("defaultTitle").order(SortOrder.ASC).missing("_last")
-            case _ => fieldSort(s"title.$sortLanguage.raw").order(SortOrder.ASC).missing("_last")
+            case _                           => fieldSort(s"title.$sortLanguage.raw").order(SortOrder.ASC).missing("_last")
           }
         case (Sort.ByTitleDesc) =>
           language match {
             case "*" | Language.AllLanguages => fieldSort("defaultTitle").order(SortOrder.DESC).missing("_last")
-            case _ => fieldSort(s"title.$sortLanguage.raw").order(SortOrder.DESC).missing("_last")
+            case _                           => fieldSort(s"title.$sortLanguage.raw").order(SortOrder.DESC).missing("_last")
           }
-        case (Sort.ByRelevanceAsc) => fieldSort("_score").order(SortOrder.ASC)
-        case (Sort.ByRelevanceDesc) => fieldSort("_score").order(SortOrder.DESC)
-        case (Sort.ByLastUpdatedAsc) => fieldSort("lastUpdated").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByRelevanceAsc)    => fieldSort("_score").order(SortOrder.ASC)
+        case (Sort.ByRelevanceDesc)   => fieldSort("_score").order(SortOrder.DESC)
+        case (Sort.ByLastUpdatedAsc)  => fieldSort("lastUpdated").order(SortOrder.ASC).missing("_last")
         case (Sort.ByLastUpdatedDesc) => fieldSort("lastUpdated").order(SortOrder.DESC).missing("_last")
-        case (Sort.ByIdAsc) => fieldSort("id").order(SortOrder.ASC).missing("_last")
-        case (Sort.ByIdDesc) => fieldSort("id").order(SortOrder.DESC).missing("_last")
+        case (Sort.ByIdAsc)           => fieldSort("id").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByIdDesc)          => fieldSort("id").order(SortOrder.DESC).missing("_last")
       }
     }
 
     def getSortDefinition(sort: Sort.Value): FieldSortDefinition = {
       sort match {
-        case (Sort.ByTitleAsc) => fieldSort("title.raw").order(SortOrder.ASC).missing("_last")
-        case (Sort.ByTitleDesc) => fieldSort("title.raw").order(SortOrder.DESC).missing("_last")
-        case (Sort.ByRelevanceAsc) => fieldSort("_score").order(SortOrder.ASC)
-        case (Sort.ByRelevanceDesc) => fieldSort("_score").order(SortOrder.DESC)
-        case (Sort.ByLastUpdatedAsc) => fieldSort("lastUpdated").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByTitleAsc)        => fieldSort("title.raw").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByTitleDesc)       => fieldSort("title.raw").order(SortOrder.DESC).missing("_last")
+        case (Sort.ByRelevanceAsc)    => fieldSort("_score").order(SortOrder.ASC)
+        case (Sort.ByRelevanceDesc)   => fieldSort("_score").order(SortOrder.DESC)
+        case (Sort.ByLastUpdatedAsc)  => fieldSort("lastUpdated").order(SortOrder.ASC).missing("_last")
         case (Sort.ByLastUpdatedDesc) => fieldSort("lastUpdated").order(SortOrder.DESC).missing("_last")
-        case (Sort.ByIdAsc) => fieldSort("id").order(SortOrder.ASC).missing("_last")
-        case (Sort.ByIdDesc) => fieldSort("id").order(SortOrder.DESC).missing("_last")
+        case (Sort.ByIdAsc)           => fieldSort("id").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByIdDesc)          => fieldSort("id").order(SortOrder.DESC).missing("_last")
       }
     }
 
     def countDocuments: Long = {
-      val response = e4sClient.execute{
+      val response = e4sClient.execute {
         catCount(searchIndex)
       }
 
       response match {
         case Success(resp) => resp.result.count
-        case Failure(_) => 0
+        case Failure(_)    => 0
       }
     }
 
