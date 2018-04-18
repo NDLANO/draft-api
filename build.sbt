@@ -66,7 +66,7 @@ lazy val draft_api = (project in file("."))
   .enablePlugins(DockerPlugin)
   .enablePlugins(JettyPlugin)
 
-val checkfmt = taskKey[Unit]("")
+val checkfmt = taskKey[Unit]("Check for code style errors")
 checkfmt := {
   (Compile / scalafmtCheck).value
   (Test / scalafmtCheck).value
@@ -75,7 +75,7 @@ checkfmt := {
 
 Test / test := ((Test / test).dependsOn(Test / checkfmt)).value
 
-val fmt = taskKey[Unit]("")
+val fmt = taskKey[Unit]("Automattically apply code style fixes")
 fmt := {
   (Compile / scalafmt).value
   (Test / scalafmt).value
