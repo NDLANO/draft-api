@@ -66,8 +66,21 @@ lazy val draft_api = (project in file("."))
   .enablePlugins(DockerPlugin)
   .enablePlugins(JettyPlugin)
 
-Test / test := ((Test / test).dependsOn(Compile / scalafmtCheck)).value
-Test / test := ((Test / test).dependsOn(Compile / scalafmtSbtCheck)).value
+val checkfmt = taskKey[Unit]("")
+checkfmt := {
+  (Compile / scalafmtCheck).value
+  (Test / scalafmtCheck).value
+  (Compile / scalafmtSbtCheck).value
+}
+
+Test / test := ((Test / test).dependsOn(Test / checkfmt)).value
+
+val fmt = taskKey[Unit]("")
+fmt := {
+  (Compile / scalafmt).value
+  (Test / scalafmt).value
+  (Compile / scalafmtSbt).value
+}
 
 assembly / assemblyJarName := "draft-api.jar"
 assembly / mainClass := Some("no.ndla.draftapi.JettyLauncher")
