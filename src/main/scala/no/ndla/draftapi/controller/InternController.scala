@@ -13,10 +13,11 @@ import java.util.concurrent.{Executors, TimeUnit}
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
-import no.ndla.draftapi.model.domain.Language
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
@@ -40,7 +41,10 @@ trait InternController {
 
   class InternController(implicit val swagger: Swagger) extends NdlaController {
     protected val applicationDescription = "API for accessing internal functionality in draft API"
-    protected implicit override val jsonFormats: Formats = DefaultFormats
+    protected implicit override val jsonFormats: Formats =
+      org.json4s.DefaultFormats +
+        new EnumNameSerializer(ArticleStatus) +
+        new EnumNameSerializer(ArticleType)
 
     post("/index") {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
@@ -148,6 +152,13 @@ trait InternController {
       }
     }
 
+    get("/dump/article") {
+      // Dumps Domain articles
+      val pageNo = intOrDefault("page", 1)
+      val pageSize = intOrDefault("page-size", 250)
+
+      readService.getArticleDomainDump(pageNo, pageSize)
+    }
 
   }
 }
