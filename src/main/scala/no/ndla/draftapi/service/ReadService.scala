@@ -66,6 +66,13 @@ trait ReadService {
       api.ArticleDump(draftRepository.articleCount, pageNo, pageSize, lang, results)
     }
 
+    def getArticleDomainDump(pageNo: Int, pageSize: Int): api.ArticleDomainDump = {
+      val (safePageNo, safePageSize) = (max(pageNo, 1), max(pageSize, 0))
+      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize)
+
+      api.ArticleDomainDump(draftRepository.articleCount, pageNo, pageSize, results)
+    }
+
     val getTagUsageMap = MemoizeAutoRenew(() => {
       draftRepository.allTags
         .map(languageTags => languageTags.language -> new MostFrequentOccurencesList(languageTags.tags))
