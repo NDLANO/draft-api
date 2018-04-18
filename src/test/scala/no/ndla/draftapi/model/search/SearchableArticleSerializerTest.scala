@@ -12,9 +12,11 @@ class SearchableArticleSerializerTest extends UnitSuite with TestEnvironment {
     id = 10.toLong,
     title = SearchableLanguageValues(Seq(LanguageValue("nb", "tittel"), LanguageValue("en", "title"))),
     content = SearchableLanguageValues(Seq(LanguageValue("nb", "innhold"), LanguageValue("en", "content"))),
-    visualElement = SearchableLanguageValues(Seq(LanguageValue("nb", "visueltelement"), LanguageValue("en", "visualelement"))),
+    visualElement =
+      SearchableLanguageValues(Seq(LanguageValue("nb", "visueltelement"), LanguageValue("en", "visualelement"))),
     introduction = SearchableLanguageValues(List(LanguageValue("nb", "ingress"), LanguageValue("en", "introduction"))),
-    tags = SearchableLanguageList(List(LanguageValue("nb", List("m", "e", "r", "k")), LanguageValue("en", List("t", "a", "g", "s")))),
+    tags = SearchableLanguageList(
+      List(LanguageValue("nb", List("m", "e", "r", "k")), LanguageValue("en", List("t", "a", "g", "s")))),
     lastUpdated = new DateTime(2018, 2, 22, 13, 0, 51, DateTimeZone.UTC).toDate,
     license = Some("by-sa"),
     authors = Seq("Jonas Natty"),
@@ -74,7 +76,6 @@ class SearchableArticleSerializerTest extends UnitSuite with TestEnvironment {
       |  "content.nb":"innhold",
       |  "content.en":"content"
       |}""".stripMargin
-
 
   test("That serialization of SearchableArticle works correctly") {
     val json = writePretty(searchableArticle1)

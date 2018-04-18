@@ -21,7 +21,6 @@ abstract class IntegrationSuite extends UnitSuite {
   setEnv(PropertyKeys.MetaPortKey, "5432")
   setEnv(PropertyKeys.MetaSchemaKey, "draftapitest")
 
-
   lazy val getDataSource: DataSource = {
     val datasource = new PGPoolingDataSource()
     datasource.setUser(DraftApiProperties.MetaUserName)

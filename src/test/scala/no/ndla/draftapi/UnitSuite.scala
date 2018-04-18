@@ -5,14 +5,20 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi
 
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 
-
-abstract class UnitSuite extends FunSuite with Matchers with OptionValues with Inside with Inspectors with MockitoSugar with BeforeAndAfterEach with BeforeAndAfterAll {
+abstract class UnitSuite
+    extends FunSuite
+    with Matchers
+    with OptionValues
+    with Inside
+    with Inspectors
+    with MockitoSugar
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll {
 
   setEnv("NDLA_ENVIRONMENT", "local")
   setEnv("ENABLE_JOUBEL_H5P_OEMBED", "true")
