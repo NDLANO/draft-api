@@ -77,7 +77,7 @@ checkfmt := {
 
 Test / test := ((Test / test).dependsOn(Test / checkfmt)).value
 
-val fmt = taskKey[Unit]("Automattically apply code style fixes")
+val fmt = taskKey[Unit]("Automatically apply code style fixes")
 fmt := {
   (Compile / scalafmt).value
   (Test / scalafmt).value
