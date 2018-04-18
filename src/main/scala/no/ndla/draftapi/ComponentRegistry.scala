@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
@@ -21,7 +20,7 @@ import org.postgresql.ds.PGPoolingDataSource
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 
 object ComponentRegistry
-  extends DataSource
+    extends DataSource
     with InternController
     with ConverterService
     with ConceptController

@@ -46,12 +46,15 @@ trait WriteService {
           val toUpdate = existing.copy(
             title = updatedAgreement.title.getOrElse(existing.title),
             content = updatedAgreement.content.getOrElse(existing.content),
-            copyright = updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
+            copyright =
+              updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
             updated = clock.now(),
             updatedBy = authUser.userOrClientId()
           )
 
-          val dateErrors = updatedAgreement.copyright.map(updatedCopyright => contentValidator.validateDates(updatedCopyright)).getOrElse(Seq.empty)
+          val dateErrors = updatedAgreement.copyright
+            .map(updatedCopyright => contentValidator.validateDates(updatedCopyright))
+            .getOrElse(Seq.empty)
 
           for {
             _ <- contentValidator.validateAgreement(toUpdate, preExistingErrors = dateErrors)
@@ -74,10 +77,14 @@ trait WriteService {
       }
     }
 
-    def newArticle(newArticle: api.NewArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[api.Article] = {
+    def newArticle(newArticle: api.NewArticle,
+                   externalId: Option[String],
+                   externalSubjectIds: Seq[String]): Try[api.Article] = {
       val insertNewArticleFunction = externalId match {
         case None => draftRepository.insert _
-        case Some(nid) => (a: domain.Article) => draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
+        case Some(nid) =>
+          (a: domain.Article) =>
+            draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
       }
       for {
         domainArticle <- converterService.toDomainArticle(newArticle, externalId)
@@ -88,10 +95,17 @@ trait WriteService {
       } yield apiArticle
     }
 
-    private def updateArticle(toUpdate: domain.Article, externalId: Option[String] = None, externalSubjectIds: Seq[String] = Seq.empty, isImported: Boolean = false): Try[domain.Article] = {
+    private def updateArticle(toUpdate: domain.Article,
+                              externalId: Option[String] = None,
+                              externalSubjectIds: Seq[String] = Seq.empty,
+                              isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalId match {
-        case None => (a: domain.Article) => draftRepository.update(a, isImported = isImported)
-        case Some(nid) => (a: domain.Article) => draftRepository.updateWithExternalIds(a, nid, externalSubjectIds)
+        case None =>
+          (a: domain.Article) =>
+            draftRepository.update(a, isImported = isImported)
+        case Some(nid) =>
+          (a: domain.Article) =>
+            draftRepository.updateWithExternalIds(a, nid, externalSubjectIds)
       }
 
       for {
@@ -101,22 +115,32 @@ trait WriteService {
       } yield domainArticle
     }
 
-    def updateArticle(articleId: Long, updatedApiArticle: api.UpdatedArticle, externalId: Option[String], externalSubjectIds: Seq[String]): Try[api.Article] = {
+    def updateArticle(articleId: Long,
+                      updatedApiArticle: api.UpdatedArticle,
+                      externalId: Option[String],
+                      externalSubjectIds: Seq[String]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
-          Failure(new OperationNotAllowedException("This article is marked for publishing and it cannot be updated until it is published"))
+          Failure(
+            new OperationNotAllowedException(
+              "This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           for {
             domainArticle <- converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
-            updatedArticle <- updateArticle(domainArticle, externalId, externalSubjectIds, isImported = externalId.isDefined)
-            apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle), updatedApiArticle.language.getOrElse(UnknownLanguage))
+            updatedArticle <- updateArticle(domainArticle,
+                                            externalId,
+                                            externalSubjectIds,
+                                            isImported = externalId.isDefined)
+            apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
+                                                        updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
 
         case None if draftRepository.exists(articleId) =>
           for {
             article <- converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
             updatedArticle <- updateArticle(article, externalId, externalSubjectIds)
-            apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle), updatedApiArticle.language.getOrElse(UnknownLanguage))
+            apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
+                                                        updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
@@ -128,7 +152,9 @@ trait WriteService {
           contentValidator.validateArticleApiArticle(id) match {
             case Success(_) =>
               val newStatus = a.status.filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
-              draftRepository.update(a.copy(status = newStatus), isImported = isImported).map(a => converterService.toApiStatus(a.status))
+              draftRepository
+                .update(a.copy(status = newStatus), isImported = isImported)
+                .map(a => converterService.toApiStatus(a.status))
             case Failure(ex) => Failure(ex)
           }
         case None => Failure(NotFoundException(s"The article with id $id does not exist"))
@@ -140,7 +166,8 @@ trait WriteService {
         case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
           articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
-              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED), isImported = isImported)
+              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED),
+                            isImported = isImported)
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>
@@ -155,14 +182,15 @@ trait WriteService {
 
       articlesToPublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
         publishArticle(curr) match {
-          case Success(_) => result.addSuccessful(curr)
+          case Success(_)  => result.addSuccessful(curr)
           case Failure(ex) => result.addFailed(FailedArticlePublish(curr, ex.getMessage))
         }
       })
     }
 
     def deleteArticle(id: Long): Try[api.ContentId] = {
-      draftRepository.delete(id)
+      draftRepository
+        .delete(id)
         .flatMap(articleIndexService.deleteDocument)
         .map(api.ContentId)
     }
@@ -171,7 +199,7 @@ trait WriteService {
       conceptRepository.withId(id) match {
         case Some(concept) =>
           articleApiClient.updateConcept(id, converterService.toArticleApiConcept(concept)) match {
-            case Success(_) => Success(concept)
+            case Success(_)  => Success(concept)
             case Failure(ex) => Failure(ex)
           }
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
@@ -179,7 +207,8 @@ trait WriteService {
     }
 
     def deleteConcept(id: Long): Try[api.ContentId] = {
-      conceptRepository.delete(id)
+      conceptRepository
+        .delete(id)
         .flatMap(conceptIndexService.deleteDocument)
         .map(api.ContentId)
     }
@@ -196,7 +225,9 @@ trait WriteService {
     private def updateConcept(toUpdate: domain.Concept, externalId: Option[String] = None): Try[domain.Concept] = {
       val updateFunc = externalId match {
         case None => conceptRepository.update _
-        case Some(nid) => (a: domain.Concept) => conceptRepository.updateWithExternalId(a, nid)
+        case Some(nid) =>
+          (a: domain.Concept) =>
+            conceptRepository.updateWithExternalId(a, nid)
       }
 
       for {
@@ -226,12 +257,14 @@ trait WriteService {
     }
 
     def newEmptyArticle(externalId: String, externalSubjectIds: Seq[String]): Try[Long] = {
-      articleApiClient.allocateArticleId(Some(externalId), externalSubjectIds)
+      articleApiClient
+        .allocateArticleId(Some(externalId), externalSubjectIds)
         .flatMap(id => draftRepository.newEmptyArticle(id, externalId, externalSubjectIds))
     }
 
     def newEmptyConcept(externalId: String): Try[Long] = {
-      articleApiClient.allocateConceptId(Some(externalId))
+      articleApiClient
+        .allocateConceptId(Some(externalId))
         .flatMap(id => conceptRepository.newEmptyConcept(id, externalId))
     }
 

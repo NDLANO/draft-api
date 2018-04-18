@@ -30,24 +30,25 @@ trait ContentValidator {
   val importValidator: ContentValidator
 
   class ContentValidator(allowEmptyLanguageField: Boolean) {
-    private val NoHtmlValidator = new TextValidator(allowHtml=false)
-    private val HtmlValidator = new TextValidator(allowHtml=true)
+    private val NoHtmlValidator = new TextValidator(allowHtml = false)
+    private val HtmlValidator = new TextValidator(allowHtml = true)
 
     def validate(content: Content, allowUnknownLanguage: Boolean = false): Try[Content] = {
       content match {
-        case concept: Concept => validateConcept(concept, allowUnknownLanguage)
-        case article: Article => validateArticle(article, allowUnknownLanguage)
+        case concept: Concept     => validateConcept(concept, allowUnknownLanguage)
+        case article: Article     => validateArticle(article, allowUnknownLanguage)
         case agreement: Agreement => validateAgreement(agreement)
       }
     }
 
-    def validateAgreement(agreement: Agreement, preExistingErrors: Seq[ValidationMessage] = Seq.empty): Try[Agreement] = {
+    def validateAgreement(agreement: Agreement,
+                          preExistingErrors: Seq[ValidationMessage] = Seq.empty): Try[Agreement] = {
       val validationErrors = NoHtmlValidator.validate("title", agreement.title).toList ++
         NoHtmlValidator.validate("content", agreement.content).toList ++
         preExistingErrors.toList ++
         validateAgreementCopyright(agreement.copyright)
 
-      if (validationErrors.isEmpty){
+      if (validationErrors.isEmpty) {
         Success(agreement)
       } else {
         Failure(new ValidationException(errors = validationErrors))
@@ -56,7 +57,7 @@ trait ContentValidator {
 
     def validateDates(newCopyright: NewAgreementCopyright): Seq[ValidationMessage] = {
       newCopyright.validFrom.map(dateString => validateDate("copyright.validFrom", dateString)).toSeq.flatten ++
-      newCopyright.validTo.map(dateString => validateDate("copyright.validTo", dateString)).toSeq.flatten
+        newCopyright.validTo.map(dateString => validateDate("copyright.validTo", dateString)).toSeq.flatten
     }
 
     def validateDate(fieldName: String, dateString: String): Seq[ValidationMessage] = {
@@ -90,10 +91,11 @@ trait ContentValidator {
     def validateArticleApiArticle(id: Long): Try[Article] = {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
-        case Some(art) => articleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
-          case Failure(ex) => Failure(ex)
-          case Success(_) => Success(art)
-        }
+        case Some(art) =>
+          articleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
+            case Failure(ex) => Failure(ex)
+            case Success(_)  => Success(art)
+          }
       }
     }
 
@@ -108,7 +110,8 @@ trait ContentValidator {
       }
     }
 
-    private def validateArticleContent(content: ArticleContent, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+    private def validateArticleContent(content: ArticleContent,
+                                       allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       HtmlValidator.validate("content", content.content).toList ++
         rootElementContainsOnlySectionBlocks("content.content", content.content) ++
         validateLanguage("content.language", content.language, allowUnknownLanguage)
@@ -122,11 +125,15 @@ trait ContentValidator {
         case true => None
         case false =>
           val illegalTags = topLevelTags.filterNot(_ == legalTopLevelTag).mkString(",")
-          Some(ValidationMessage(field, s"An article must consist of one or more <section> blocks. Illegal tag(s) are $illegalTags "))
+          Some(
+            ValidationMessage(
+              field,
+              s"An article must consist of one or more <section> blocks. Illegal tag(s) are $illegalTags "))
       }
     }
 
-    private def validateConceptContent(content: ConceptContent, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+    private def validateConceptContent(content: ConceptContent,
+                                       allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("content", content.content).toList ++
         validateLanguage("language", content.language, allowUnknownLanguage)
     }
@@ -136,19 +143,24 @@ trait ContentValidator {
         validateLanguage("language", content.language, allowUnknownLanguage)
     }
 
-    private def validateIntroduction(content: ArticleIntroduction, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+    private def validateIntroduction(content: ArticleIntroduction,
+                                     allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("introduction", content.introduction).toList ++
         validateLanguage("language", content.language, allowUnknownLanguage)
     }
 
-    private def validateMetaDescription(content: ArticleMetaDescription, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+    private def validateMetaDescription(content: ArticleMetaDescription,
+                                        allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("metaDescription", content.content).toList ++
         validateLanguage("language", content.language, allowUnknownLanguage)
     }
 
     private def validateTitles(titles: Seq[ArticleTitle], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       if (titles.isEmpty)
-        Seq(ValidationMessage("title", "An article must contain at least one title. Perhaps you tried to delete the only title in the article?"))
+        Seq(
+          ValidationMessage(
+            "title",
+            "An article must contain at least one title. Perhaps you tried to delete the only title in the article?"))
       else
         titles.flatMap(t => validateTitle(t, allowUnknownLanguage))
     }
@@ -159,14 +171,18 @@ trait ContentValidator {
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
-      val agreementMessage = copyright.agreementId.map(_ => ValidationMessage("copyright.agreementId", "Agreement copyrights cant contain agreements")).toSeq
+      val agreementMessage = copyright.agreementId
+        .map(_ => ValidationMessage("copyright.agreementId", "Agreement copyrights cant contain agreements"))
+        .toSeq
       agreementMessage ++ validateCopyright(copyright)
     }
 
     private def validateCopyright(copyright: Copyright): Seq[ValidationMessage] = {
       val licenseMessage = copyright.license.map(validateLicense).toSeq.flatten
-      val contributorsMessages = copyright.creators.flatMap(validateAuthor) ++ copyright.processors.flatMap(validateAuthor) ++ copyright.rightsholders.flatMap(validateAuthor)
-      val originMessage = copyright.origin.map(origin => NoHtmlValidator.validate("copyright.origin", origin)).toSeq.flatten
+      val contributorsMessages = copyright.creators.flatMap(validateAuthor) ++ copyright.processors.flatMap(
+        validateAuthor) ++ copyright.rightsholders.flatMap(validateAuthor)
+      val originMessage =
+        copyright.origin.map(origin => NoHtmlValidator.validate("copyright.origin", origin)).toSeq.flatten
 
       licenseMessage ++ contributorsMessages ++ originMessage
     }
@@ -174,7 +190,7 @@ trait ContentValidator {
     private def validateLicense(license: String): Seq[ValidationMessage] = {
       getLicense(license) match {
         case None => Seq(ValidationMessage("license.license", s"$license is not a valid license"))
-        case _ => Seq()
+        case _    => Seq()
       }
     }
 
@@ -193,7 +209,10 @@ trait ContentValidator {
     private def validateRequiredLibrary(requiredLibrary: RequiredLibrary): Option[ValidationMessage] = {
       val permittedLibraries = Seq(NDLABrightcoveVideoScriptUrl, H5PResizerScriptUrl) ++ NRKVideoScriptUrl
       permittedLibraries.contains(requiredLibrary.url) match {
-        case false => Some(ValidationMessage("requiredLibraries.url", s"${requiredLibrary.url} is not a permitted script. Allowed scripts are: ${permittedLibraries.mkString(",")}"))
+        case false =>
+          Some(ValidationMessage(
+            "requiredLibraries.url",
+            s"${requiredLibrary.url} is not a permitted script. Allowed scripts are: ${permittedLibraries.mkString(",")}"))
         case true => None
       }
     }
@@ -201,20 +220,23 @@ trait ContentValidator {
     private def validateMetaImageId(metaImageId: ArticleMetaImage): Option[ValidationMessage] = {
       def isAllDigits(x: String) = x forall Character.isDigit
       isAllDigits(metaImageId.imageId) match {
-        case true => None
+        case true  => None
         case false => Some(ValidationMessage("metaImageId", "Meta image ID must be a number"))
       }
     }
 
-    private def validateLanguage(fieldPath: String, languageCode: String, allowUnknownLanguage: Boolean): Option[ValidationMessage] = {
+    private def validateLanguage(fieldPath: String,
+                                 languageCode: String,
+                                 allowUnknownLanguage: Boolean): Option[ValidationMessage] = {
       languageCode.nonEmpty && languageCodeSupported6391(languageCode, allowUnknownLanguage) match {
-        case true => None
+        case true  => None
         case false => Some(ValidationMessage(fieldPath, s"Language '$languageCode' is not a supported value."))
       }
     }
 
     private def languageCodeSupported6391(languageCode: String, allowUnknownLanguage: Boolean): Boolean = {
-      val languageCodes = get6391CodeFor6392CodeMappings.values.toSeq ++ (if (allowUnknownLanguage) Seq("unknown") else Seq.empty)
+      val languageCodes = get6391CodeFor6392CodeMappings.values.toSeq ++ (if (allowUnknownLanguage) Seq("unknown")
+                                                                          else Seq.empty)
       languageCodes.contains(languageCode)
     }
 

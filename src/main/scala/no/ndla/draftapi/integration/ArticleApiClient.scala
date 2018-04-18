@@ -33,7 +33,7 @@ trait ArticleApiClient {
       implicit val format = org.json4s.DefaultFormats
       val params = externalId match {
         case Some(nid) => Seq("external-id" -> nid, "external-subject-id" -> externalSubjectIds.mkString(","))
-        case None => Seq.empty
+        case None      => Seq.empty
       }
       post[ContentId](s"$InternalEndpoint/id/article/allocate", params: _*).map(_.id)
     }
@@ -42,7 +42,7 @@ trait ArticleApiClient {
       implicit val format = org.json4s.DefaultFormats
       val params = externalId match {
         case Some(nid) => Seq("external-id" -> nid)
-        case None => Seq.empty
+        case None      => Seq.empty
       }
       post[ContentId](s"$InternalEndpoint/id/concept/allocate", params: _*).map(_.id)
     }
@@ -77,20 +77,25 @@ trait ArticleApiClient {
       postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article) match {
         case Failure(ex: HttpRequestException) =>
           val validationError = ex.httpResponse.map(r => parse(r.body).extract[ArticleApiValidationError])
-          Failure(new ValidationException("Failed to validate article in article-api", validationError.map(_.messages).getOrElse(Seq.empty)))
+          Failure(
+            new ValidationException("Failed to validate article in article-api",
+                                    validationError.map(_.messages).getOrElse(Seq.empty)))
         case x => x
       }
     }
 
-    private def post[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
+    private def post[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A],
+                                                                        format: org.json4s.Formats): Try[A] = {
       ndlaClient.fetchWithForwardedAuth[A](Http(endpointUrl).method("POST").params(params.toMap))
     }
 
-    private def delete[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
+    private def delete[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A],
+                                                                          format: org.json4s.Formats): Try[A] = {
       ndlaClient.fetchWithForwardedAuth[A](Http(endpointUrl).method("DELETE").params(params.toMap))
     }
 
-    private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A], format: org.json4s.Formats): Try[A] = {
+    private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A],
+                                                                           format: org.json4s.Formats): Try[A] = {
       ndlaClient.fetchWithForwardedAuth[A](
         Http(endpointUrl)
           .postData(write(data))

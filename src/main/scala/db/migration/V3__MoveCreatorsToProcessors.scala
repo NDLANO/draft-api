@@ -51,9 +51,12 @@ class V3__MoveCreatorsToProcessors extends JdbcMigration {
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
-    sql"select id, document from articledata where document is not null order by id limit 1000 offset ${offset}".map(rs => {
-      (rs.long("id"), rs.string("document"))
-    }).list.apply()
+    sql"select id, document from articledata where document is not null order by id limit 1000 offset ${offset}"
+      .map(rs => {
+        (rs.long("id"), rs.string("document"))
+      })
+      .list
+      .apply()
   }
 
   private def convertCopyright(copyright: V3_Copyright): JValue = {
@@ -71,7 +74,7 @@ class V3__MoveCreatorsToProcessors extends JdbcMigration {
 
     val newArticle = oldArticle.mapField {
       case ("copyright", copyright: JObject) => "copyright" -> convertCopyright(copyright.extract[V3_Copyright])
-      case x => x
+      case x                                 => x
     }
     compact(render(newArticle))
   }
@@ -86,12 +89,11 @@ class V3__MoveCreatorsToProcessors extends JdbcMigration {
 
   case class V3_Author(`type`: String, name: String)
   case class V3_Copyright(license: Option[String],
-                       origin: Option[String],
-                       creators: Seq[V3_Author],
-                       processors: Seq[V3_Author],
-                       rightsholders: Seq[V3_Author],
-                       agreementId: Option[Long],
-                       validFrom: Option[Date],
-                       validTo: Option[Date])
+                          origin: Option[String],
+                          creators: Seq[V3_Author],
+                          processors: Seq[V3_Author],
+                          rightsholders: Seq[V3_Author],
+                          agreementId: Option[Long],
+                          validFrom: Option[Date],
+                          validTo: Option[Date])
 }
-

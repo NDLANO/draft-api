@@ -26,6 +26,4 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     DBMigrator.migrate(getDataSource)
   }
 
-
-
 }

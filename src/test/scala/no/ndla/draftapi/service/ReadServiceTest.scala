@@ -26,9 +26,14 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
   val imageType = s"${ResourceType.Image}"
   val h5pType = s"${ResourceType.H5P}"
   val urlAttr = s"${TagAttributes.DataUrl}"
-  val content1 = s"""<$resourceHtmlEmbedTag $resourceIdAttr="123" $resourceAttr="$imageType"><$resourceHtmlEmbedTag $resourceIdAttr=1234 $resourceAttr="$imageType">"""
-  val content2 = s"""<$resourceHtmlEmbedTag $resourceIdAttr="321" $resourceAttr="$imageType"><$resourceHtmlEmbedTag $resourceIdAttr=4321 $resourceAttr="$imageType">"""
+
+  val content1 =
+    s"""<$resourceHtmlEmbedTag $resourceIdAttr="123" $resourceAttr="$imageType"><$resourceHtmlEmbedTag $resourceIdAttr=1234 $resourceAttr="$imageType">"""
+
+  val content2 =
+    s"""<$resourceHtmlEmbedTag $resourceIdAttr="321" $resourceAttr="$imageType"><$resourceHtmlEmbedTag $resourceIdAttr=4321 $resourceAttr="$imageType">"""
   val articleContent1 = ArticleContent(content1, "unknown")
+
   val expectedArticleContent1 = articleContent1.copy(content =
     s"""<$resourceHtmlEmbedTag $resourceIdAttr="123" $resourceAttr="$imageType" $urlAttr="$externalImageApiUrl/123"><$resourceHtmlEmbedTag $resourceIdAttr="1234" $resourceAttr="$imageType" $urlAttr="$externalImageApiUrl/1234">""")
 
@@ -42,14 +47,21 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
   override val converterService = new ConverterService
 
   test("withId adds urls and ids on embed resources") {
-    val visualElementBefore = s"""<$resourceHtmlEmbedTag data-align="" data-alt="" data-caption="" data-resource="image" data-resource_id="1" data-size="">"""
-    val visualElementAfter = s"""<$resourceHtmlEmbedTag data-align="" data-alt="" data-caption="" data-resource="image" data-resource_id="1" data-size="" data-url="http://api-gateway.ndla-local/image-api/v2/images/1">"""
-    val article = TestData.sampleArticleWithByNcSa.copy(content = Seq(articleContent1), visualElement = Seq(VisualElement(visualElementBefore, "nb")))
+    val visualElementBefore =
+      s"""<$resourceHtmlEmbedTag data-align="" data-alt="" data-caption="" data-resource="image" data-resource_id="1" data-size="">"""
+    val visualElementAfter =
+      s"""<$resourceHtmlEmbedTag data-align="" data-alt="" data-caption="" data-resource="image" data-resource_id="1" data-size="" data-url="http://api-gateway.ndla-local/image-api/v2/images/1">"""
+    val article = TestData.sampleArticleWithByNcSa.copy(content = Seq(articleContent1),
+                                                        visualElement = Seq(VisualElement(visualElementBefore, "nb")))
 
     when(draftRepository.withId(1)).thenReturn(Option(article))
     when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Some("54321"))
 
-    val expectedResult = converterService.toApiArticle(article.copy(content = Seq(expectedArticleContent1), visualElement = Seq(VisualElement(visualElementAfter, "nb"))), "nb").get
+    val expectedResult = converterService
+      .toApiArticle(article.copy(content = Seq(expectedArticleContent1),
+                                 visualElement = Seq(VisualElement(visualElementAfter, "nb"))),
+                    "nb")
+      .get
     readService.withId(1, "nb") should equal(Success(expectedResult))
   }
 
@@ -58,7 +70,8 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("addIdAndUrlOnResource adds id but not url on embed resources without a data-resource_id attribute") {
-    val articleContent3 = articleContent1.copy(content =s"""<$resourceHtmlEmbedTag $resourceAttr="$h5pType" $urlAttr="http://some.h5p.org">""")
+    val articleContent3 = articleContent1.copy(
+      content = s"""<$resourceHtmlEmbedTag $resourceAttr="$h5pType" $urlAttr="http://some.h5p.org">""")
     readService.addUrlOnResource(articleContent3.content) should equal(articleContent3.content)
   }
 

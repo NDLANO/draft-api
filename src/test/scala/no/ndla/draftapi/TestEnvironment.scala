@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
@@ -20,7 +19,7 @@ import no.ndla.network.NdlaClient
 import org.scalatest.mockito.MockitoSugar
 
 trait TestEnvironment
-  extends Elastic4sClient
+    extends Elastic4sClient
     with ArticleSearchService
     with ArticleIndexService
     with ConceptSearchService
