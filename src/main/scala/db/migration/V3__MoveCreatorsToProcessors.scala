@@ -57,7 +57,7 @@ class V3__MoveCreatorsToProcessors extends JdbcMigration {
   }
 
   private def convertCopyright(copyright: V3_Copyright): JValue = {
-    val editorials = copyright.creators.filter(_.`type` == "editorial")
+    val editorials = copyright.creators.filter(_.`type` == "Editorial")
     val newCreators = copyright.creators.toSet -- editorials.toSet
     val newProcessors = copyright.processors ++ editorials
 
@@ -93,6 +93,5 @@ class V3__MoveCreatorsToProcessors extends JdbcMigration {
                        agreementId: Option[Long],
                        validFrom: Option[Date],
                        validTo: Option[Date])
-
 }
 
