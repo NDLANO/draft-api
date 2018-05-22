@@ -74,7 +74,7 @@ class V4__MoveRelatedContentEmbedsToDivs extends JdbcMigration {
         .prettyPrint(false)
         .indentAmount(0)
 
-      for (embed <- document.select("embed").asScala) {
+      for (embed <- document.select("embed[data-resource='related-content']").asScala) {
         val ids = embed.attr("data-article-ids").split(',').filterNot(_ == "")
 
         // If ids are empty, we assume the embed is already converted
