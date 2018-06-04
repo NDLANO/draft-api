@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
@@ -24,7 +23,13 @@ import org.scalatra.{Created, NoContent, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait DraftController {
-  this: ReadService with WriteService with ArticleSearchService with ConverterService with Role with User with ContentValidator =>
+  this: ReadService
+    with WriteService
+    with ArticleSearchService
+    with ConverterService
+    with Role
+    with User
+    with ContentValidator =>
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController {
@@ -41,24 +46,27 @@ trait DraftController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    private val query = Param("query","Return only articles with content matching the specified query.")
-    private val articleId = Param("article_id","Id of the article that is to be fecthed")
+    private val query = Param("query", "Return only articles with content matching the specified query.")
+    private val articleId = Param("article_id", "Id of the article that is to be fecthed")
     private val size = Param("size", "Limit the number of results to this many elements")
-    private val articleTypes = Param("articleTypes", "Return only articles of specific type(s). To provide multiple types, separate by comma (,).")
-    private val articleIds = Param("ids","Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,).")
+    private val articleTypes = Param(
+      "articleTypes",
+      "Return only articles of specific type(s). To provide multiple types, separate by comma (,).")
+    private val articleIds = Param(
+      "ids",
+      "Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val filter = Param("filter", "A filter to include a specific entry")
     private val filterNot = Param("filterNot", "A filter to remove a specific entry")
-
 
     val getTags =
       (apiOperation[ArticleTag]("getTags")
         summary "Retrieves a list of all previously used tags in articles"
         notes "Retrieves a list of all previously used tags in articles"
-        parameters(
+        parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[Int]](size),
           asQueryParam[Option[String]](language)
-        )
+      )
         responseMessages response500
         authorizations "oauth2")
 
@@ -67,7 +75,7 @@ trait DraftController {
       val language = paramOrDefault("language", Language.AllLanguages)
       val size = intOrDefault("size", defaultSize) match {
         case tooSmall if tooSmall < 1 => defaultSize
-        case x => x
+        case x                        => x
       }
       val tags = readService.getNMostUsedTags(size, language)
       if (tags.isEmpty) {
@@ -114,7 +122,7 @@ trait DraftController {
 
       result match {
         case Success(searchResult) => searchResult
-        case Failure(ex) => errorHandler(ex)
+        case Failure(ex)           => errorHandler(ex)
       }
     }
 
@@ -122,19 +130,19 @@ trait DraftController {
       (apiOperation[List[SearchResult]]("getAllArticles")
         summary "Show all articles"
         notes "Shows all articles. You can search it too."
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asQueryParam[Option[String]](articleTypes),
-        asQueryParam[Option[String]](query),
-        asQueryParam[Option[String]](articleIds),
-        asQueryParam[Option[String]](language),
-        asQueryParam[Option[String]](license),
-        asQueryParam[Option[Int]](pageNo),
-        asQueryParam[Option[Int]](pageSize),
-        asQueryParam[Option[String]](sort)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asQueryParam[Option[String]](articleTypes),
+          asQueryParam[Option[String]](query),
+          asQueryParam[Option[String]](articleIds),
+          asQueryParam[Option[String]](language),
+          asQueryParam[Option[String]](license),
+          asQueryParam[Option[Int]](pageNo),
+          asQueryParam[Option[Int]](pageSize),
+          asQueryParam[Option[String]](sort)
       )
         authorizations "oauth2"
-        responseMessages(response500))
+        responseMessages (response500))
 
     get("/", operation(getAllArticles)) {
       val query = paramOrNone(this.query.paramName)
@@ -154,13 +162,13 @@ trait DraftController {
       (apiOperation[List[SearchResult]]("getAllArticlesPost")
         summary "Show all articles"
         notes "Shows all articles. You can search it too."
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asQueryParam[Option[String]](language),
-        bodyParam[ArticleSearchParams]
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asQueryParam[Option[String]](language),
+          bodyParam[ArticleSearchParams]
       )
         authorizations "oauth2"
-        responseMessages(response400, response500))
+        responseMessages (response400, response500))
 
     post("/search/", operation(getAllArticlesPost)) {
       val searchParams = extract[ArticleSearchParams](request.body)
@@ -182,14 +190,14 @@ trait DraftController {
       (apiOperation[Article]("getArticleById")
         summary "Show article with a specified Id"
         notes "Shows the article for the specified id."
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[Long](articleId),
-        asQueryParam[Option[String]](language),
-        asQueryParam[Option[Boolean]](fallback)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asPathParam[Long](articleId),
+          asQueryParam[Option[String]](language),
+          asQueryParam[Option[Boolean]](fallback)
       )
         authorizations "oauth2"
-        responseMessages(response404, response500))
+        responseMessages (response404, response500))
 
     get("/:article_id", operation(getArticleById)) {
       val articleId = long(this.articleId.paramName)
@@ -198,7 +206,7 @@ trait DraftController {
 
       readService.withId(articleId, language, fallback) match {
         case Success(article) => article
-        case Failure(ex) => errorHandler(ex)
+        case Failure(ex)      => errorHandler(ex)
       }
     }
 
@@ -206,18 +214,18 @@ trait DraftController {
       (apiOperation[ContentId]("getInternalIdByExternalId")
         summary "Get internal id of article for a specified ndla_node_id"
         notes "Get internal id of article for a specified ndla_node_id"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[Long](deprecatedNodeId)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asPathParam[Long](deprecatedNodeId)
       )
         authorizations "oauth2"
-        responseMessages(response404, response500))
+        responseMessages (response404, response500))
 
     get("/external_id/:deprecated_node_id", operation(getInternalIdByExternalId)) {
       val externalId = long(this.deprecatedNodeId.paramName)
       readService.getInternalArticleIdByExternalId(externalId) match {
         case Some(id) => id
-        case None => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
+        case None     => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
       }
     }
 
@@ -225,25 +233,27 @@ trait DraftController {
       (apiOperation[List[License]]("getLicenses")
         summary "Show all valid licenses"
         notes "Shows all valid licenses"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asQueryParam[Option[String]](filter),
-        asQueryParam[Option[String]](filterNot)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asQueryParam[Option[String]](filter),
+          asQueryParam[Option[String]](filterNot)
       )
-        responseMessages(response403, response500)
+        responseMessages (response403, response500)
         authorizations "oauth2")
 
     get("/licenses/", operation(getLicenses)) {
       val filterNot = paramOrNone(this.filterNot.paramName)
       val filter = paramOrNone(this.filter.paramName)
 
-      val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses.filter {
-        case license: LicenseDefinition if filter.isDefined => license.license.contains(filter.get)
-        case _ => true
-      }.filterNot {
-        case license: LicenseDefinition if filterNot.isDefined => license.license.contains(filterNot.get)
-        case _ => false
-      }
+      val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses
+        .filter {
+          case license: LicenseDefinition if filter.isDefined => license.license.contains(filter.get)
+          case _                                              => true
+        }
+        .filterNot {
+          case license: LicenseDefinition if filterNot.isDefined => license.license.contains(filterNot.get)
+          case _                                                 => false
+        }
 
       licenses.map(x => License(x.license, Option(x.description), x.url))
     }
@@ -252,12 +262,12 @@ trait DraftController {
       (apiOperation[Article]("newArticle")
         summary "Create a new article"
         notes "Creates a new article"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        bodyParam[NewArticle]
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          bodyParam[NewArticle]
       )
         authorizations "oauth2"
-        responseMessages(response400, response403, response500))
+        responseMessages (response400, response403, response500))
 
     post("/", operation(newArticle)) {
       authUser.assertHasId()
@@ -265,7 +275,7 @@ trait DraftController {
       val externalId = paramOrNone("externalId")
       val externalSubjectids = paramAsListOfString("externalSubjectIds")
       writeService.newArticle(extract[NewArticle](request.body), externalId, externalSubjectids) match {
-        case Success(article) => Created(body=article)
+        case Success(article)   => Created(body = article)
         case Failure(exception) => errorHandler(exception)
       }
     }
@@ -274,12 +284,12 @@ trait DraftController {
       (apiOperation[ArticleStatus]("queueDraftForPublishing ")
         summary "Queue the article for publishing"
         notes "Queue the article for publishing"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[Long](articleId)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asPathParam[Long](articleId)
       )
         authorizations "oauth2"
-        responseMessages(response400, response403, response404, response500))
+        responseMessages (response400, response403, response404, response500))
 
     put("/:article_id/publish/", operation(queueDraftForPublishing)) {
       authRole.assertHasPublishPermission()
@@ -296,13 +306,13 @@ trait DraftController {
       (apiOperation[Article]("updateArticle")
         summary "Update an existing article"
         notes "Update an existing article"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[Long](articleId),
-        bodyParam[UpdatedArticle]
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asPathParam[Long](articleId),
+          bodyParam[UpdatedArticle]
       )
         authorizations "oauth2"
-        responseMessages(response400, response403, response404, response500))
+        responseMessages (response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
       authUser.assertHasId()
@@ -313,7 +323,7 @@ trait DraftController {
       val updateArticle = extract[UpdatedArticle](request.body)
 
       writeService.updateArticle(id, updateArticle, externalId, externalSubjectIds) match {
-        case Success(article) => Ok(body=article)
+        case Success(article)   => Ok(body = article)
         case Failure(exception) => errorHandler(exception)
       }
     }
@@ -322,16 +332,16 @@ trait DraftController {
       (apiOperation[Unit]("validateArticle")
         summary "Validate an article"
         notes "Validate an article"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[Long](articleId)
+        parameters (
+          asHeaderParam[Option[String]](correlationId),
+          asPathParam[Long](articleId)
       )
         authorizations "oauth2"
-        responseMessages(response400, response403, response404, response500))
+        responseMessages (response400, response403, response404, response500))
 
     put("/:article_id/validate/", operation(validateArticle)) {
       contentValidator.validateArticleApiArticle(long(this.articleId.paramName)) match {
-        case Success(_) => NoContent()
+        case Success(_)  => NoContent()
         case Failure(ex) => errorHandler(ex)
       }
     }

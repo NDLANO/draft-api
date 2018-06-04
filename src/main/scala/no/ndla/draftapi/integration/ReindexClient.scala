@@ -20,7 +20,8 @@ trait ReindexClient {
 
   class ReindexClient extends LazyLogging {
 
-    private def reindexArticles() = Http(s"${DraftApiProperties.internalApiUrls("article-api")}/index").postForm.execute()
+    private def reindexArticles() =
+      Http(s"${DraftApiProperties.internalApiUrls("article-api")}/index").postForm.execute()
 
     private def reindexAudios() = Http(s"${DraftApiProperties.internalApiUrls("audio-api")}/index").postForm.execute()
 
@@ -40,4 +41,3 @@ trait ReindexClient {
   }
 
 }
-

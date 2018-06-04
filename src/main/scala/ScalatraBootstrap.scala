@@ -5,10 +5,16 @@
  * See LICENSE
  */
 
-
 import javax.servlet.ServletContext
 
-import no.ndla.draftapi.ComponentRegistry.{internController, draftController, agreementController, resourcesApp, healthController, conceptController}
+import no.ndla.draftapi.ComponentRegistry.{
+  internController,
+  draftController,
+  agreementController,
+  resourcesApp,
+  healthController,
+  conceptController
+}
 import no.ndla.draftapi.DraftSwagger
 import org.scalatra.LifeCycle
 

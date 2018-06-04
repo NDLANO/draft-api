@@ -18,48 +18,55 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
   val sampleArticle = TestData.sampleArticleWithPublicDomain.copy()
 
   val titles = List(
-    ArticleTitle("Bokmål tittel", "nb"), ArticleTitle("Nynorsk tittel", "nn"),
-    ArticleTitle("English title", "en"), ArticleTitle("Titre francais", "fr"),
-    ArticleTitle("Deutsch titel", "de"), ArticleTitle("Titulo espanol", "es"),
-    ArticleTitle("Nekonata titolo", "unknown"))
+    ArticleTitle("Bokmål tittel", "nb"),
+    ArticleTitle("Nynorsk tittel", "nn"),
+    ArticleTitle("English title", "en"),
+    ArticleTitle("Titre francais", "fr"),
+    ArticleTitle("Deutsch titel", "de"),
+    ArticleTitle("Titulo espanol", "es"),
+    ArticleTitle("Nekonata titolo", "unknown")
+  )
 
   val articles = Seq(
-    ArticleContent("Bokmål artikkel", "nb"), ArticleContent("Nynorsk artikkel", "nn"),
-    ArticleContent("English article", "en"), ArticleContent("Francais article", "fr"),
-    ArticleContent("Deutsch Artikel", "de"), ArticleContent("Articulo espanol", "es"),
+    ArticleContent("Bokmål artikkel", "nb"),
+    ArticleContent("Nynorsk artikkel", "nn"),
+    ArticleContent("English article", "en"),
+    ArticleContent("Francais article", "fr"),
+    ArticleContent("Deutsch Artikel", "de"),
+    ArticleContent("Articulo espanol", "es"),
     ArticleContent("Nekonata artikolo", "unknown")
   )
 
   val articleTags = Seq(
-    ArticleTag(Seq("fugl", "fisk"), "nb"), ArticleTag(Seq("fugl", "fisk"), "nn"),
-    ArticleTag(Seq("bird", "fish"), "en"), ArticleTag(Seq("got", "tired"), "fr"),
-    ArticleTag(Seq("of", "translating"), "de"), ArticleTag(Seq("all", "of"), "es"),
+    ArticleTag(Seq("fugl", "fisk"), "nb"),
+    ArticleTag(Seq("fugl", "fisk"), "nn"),
+    ArticleTag(Seq("bird", "fish"), "en"),
+    ArticleTag(Seq("got", "tired"), "fr"),
+    ArticleTag(Seq("of", "translating"), "de"),
+    ArticleTag(Seq("all", "of"), "es"),
     ArticleTag(Seq("the", "words"), "unknown")
   )
 
   test("That asSearchableArticle converts titles with correct language") {
-    val article = TestData.sampleArticleWithByNcSa.copy(title=titles)
+    val article = TestData.sampleArticleWithByNcSa.copy(title = titles)
     val searchableArticle = searchConverterService.asSearchableArticle(article)
     verifyTitles(searchableArticle)
   }
 
-
   test("That asSearchable converts articles with correct language") {
-    val article = TestData.sampleArticleWithByNcSa.copy(content=articles)
+    val article = TestData.sampleArticleWithByNcSa.copy(content = articles)
     val searchableArticle = searchConverterService.asSearchableArticle(article)
     verifyArticles(searchableArticle)
   }
 
-
   test("That asSearchable converts tags with correct language") {
-    val article = TestData.sampleArticleWithByNcSa.copy(tags=articleTags)
+    val article = TestData.sampleArticleWithByNcSa.copy(tags = articleTags)
     val searchableArticle = searchConverterService.asSearchableArticle(article)
     verifyTags(searchableArticle)
   }
 
-
   test("That asSearchable converts all fields with correct language") {
-    val article = TestData.sampleArticleWithByNcSa.copy(title=titles, content=articles, tags=articleTags)
+    val article = TestData.sampleArticleWithByNcSa.copy(title = titles, content = articles, tags = articleTags)
     val searchableArticle = searchConverterService.asSearchableArticle(article)
 
     verifyTitles(searchableArticle)

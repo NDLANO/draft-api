@@ -10,6 +10,10 @@ Creates, updates and returns an Article draft`. Implements Elasticsearch for sea
 
 **Create Docker Image:** sbt docker
 
+**Check code formatting:** sbt checkfmt
+
+**Automatically format code files:** sbt fmt
+
 ### IntegrationTest Tag and sbt run problems
 Tests that need a running elasticsearch outside of component, e.g. in your local docker are marked with selfdefined java
 annotation test tag  ```IntegrationTag``` in ```/ndla/article-api/src/test/java/no/ndla/tag/IntegrationTest.java```. 

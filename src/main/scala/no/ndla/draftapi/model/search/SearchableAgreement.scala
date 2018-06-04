@@ -8,8 +8,8 @@
 package no.ndla.draftapi.model.search
 
 case class SearchableAgreement(
-  id: Long,
-  title: String,
-  content: String,
-  license: String
+    id: Long,
+    title: String,
+    content: String,
+    license: String
 )

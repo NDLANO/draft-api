@@ -8,14 +8,18 @@
 package db.migration
 
 import java.sql.Connection
+import java.util.Date
 
 import org.flywaydb.core.api.migration.jdbc.JdbcMigration
-import org.json4s.JsonAST.{JArray, JField, JObject, JString}
+import org.json4s.JsonAST.JObject
 import org.json4s.native.JsonMethods.{compact, parse, render}
+import org.json4s.Extraction.decompose
+import org.json4s.JValue
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
+import org.json4s.jackson.Serialization.write
 
-class V2__RenameMetaImageId extends JdbcMigration {
+class V3__MoveCreatorsToProcessors extends JdbcMigration {
 
   implicit val formats = org.json4s.DefaultFormats
 
@@ -55,16 +59,22 @@ class V2__RenameMetaImageId extends JdbcMigration {
       .apply()
   }
 
+  private def convertCopyright(copyright: V3_Copyright): JValue = {
+    val editorials = copyright.creators.filter(_.`type` == "Editorial")
+    val newCreators = copyright.creators.toSet -- editorials.toSet
+    val newProcessors = copyright.processors ++ editorials
+
+    val newCopyright = copyright.copy(creators = newCreators.toSeq, processors = newProcessors)
+
+    decompose(newCopyright)
+  }
+
   def convertArticleUpdate(document: String): String = {
     val oldArticle = parse(document)
 
     val newArticle = oldArticle.mapField {
-      case ("metaImageId", JString(metaImageId)) =>
-        val id = JField("imageId", JString(metaImageId))
-        val lang = JField("language", JString("nb"))
-
-        "metaImage" -> JArray(List(JObject(id, lang)))
-      case x => x
+      case ("copyright", copyright: JObject) => "copyright" -> convertCopyright(copyright.extract[V3_Copyright])
+      case x                                 => x
     }
     compact(render(newArticle))
   }
@@ -77,4 +87,13 @@ class V2__RenameMetaImageId extends JdbcMigration {
     sql"update articledata set document = ${dataObject} where id = ${id}".update().apply
   }
 
+  case class V3_Author(`type`: String, name: String)
+  case class V3_Copyright(license: Option[String],
+                          origin: Option[String],
+                          creators: Seq[V3_Author],
+                          processors: Seq[V3_Author],
+                          rightsholders: Seq[V3_Author],
+                          agreementId: Option[Long],
+                          validFrom: Option[Date],
+                          validTo: Option[Date])
 }

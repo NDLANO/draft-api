@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.controller
 
 import java.util.concurrent.{Executors, TimeUnit}
@@ -13,10 +12,11 @@ import java.util.concurrent.{Executors, TimeUnit}
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
-import no.ndla.draftapi.model.domain.Language
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
@@ -40,7 +40,10 @@ trait InternController {
 
   class InternController(implicit val swagger: Swagger) extends NdlaController {
     protected val applicationDescription = "API for accessing internal functionality in draft API"
-    protected implicit override val jsonFormats: Formats = DefaultFormats
+    protected implicit override val jsonFormats: Formats =
+      org.json4s.DefaultFormats +
+        new EnumNameSerializer(ArticleStatus) +
+        new EnumNameSerializer(ArticleType)
 
     post("/index") {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
@@ -50,11 +53,11 @@ trait InternController {
         agreementIndex <- Future { agreementIndexService.indexDocuments }
       } yield (articleIndex, conceptIndex, agreementIndex)
 
-
       Await.result(indexResults, Duration(1, TimeUnit.MINUTES)) match {
         case (Success(articleResult), Success(conceptResult), Success(agreementIndex)) =>
           val indexTime = math.max(articleResult.millisUsed, conceptResult.millisUsed)
-          val result = s"Completed indexing of ${articleResult.totalIndexed} articles, ${conceptResult.totalIndexed} concepts and ${agreementIndex.totalIndexed} agreements in $indexTime ms."
+          val result =
+            s"Completed indexing of ${articleResult.totalIndexed} articles, ${conceptResult.totalIndexed} concepts and ${agreementIndex.totalIndexed} agreements in $indexTime ms."
           logger.info(result)
           Ok(result)
         case (Failure(articleFail), _, _) =>
@@ -77,7 +80,7 @@ trait InternController {
       val externalId = params("external_id")
       draftRepository.getIdFromExternalId(externalId) match {
         case Some(id) => id
-        case None => NotFound()
+        case None     => NotFound()
       }
     }
 
@@ -100,7 +103,7 @@ trait InternController {
       val importPublish = booleanOrDefault("import_publish", default = false)
 
       writeService.publishArticle(long("id"), importPublish) match {
-        case Success(s) => converterService.toApiStatus(s.status)
+        case Success(s)  => converterService.toApiStatus(s.status)
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -108,7 +111,7 @@ trait InternController {
     delete("/article/:id/") {
       authRole.assertHasWritePermission()
       articleApiClient.deleteArticle(long("id")).flatMap(id => writeService.deleteArticle(id.id)) match {
-        case Success(a) => a
+        case Success(a)  => a
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -116,7 +119,7 @@ trait InternController {
     post("/concept/:id/publish/") {
       authRole.assertHasPublishPermission()
       writeService.publishConcept(long("id")) match {
-        case Success(s) => s.id.map(ContentId)
+        case Success(s)  => s.id.map(ContentId)
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -124,7 +127,7 @@ trait InternController {
     delete("/concept/:id/") {
       authRole.assertHasWritePermission()
       articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
-        case Success(c) => c
+        case Success(c)  => c
         case Failure(ex) => errorHandler(ex)
       }
     }
@@ -148,6 +151,13 @@ trait InternController {
       }
     }
 
+    get("/dump/article") {
+      // Dumps Domain articles
+      val pageNo = intOrDefault("page", 1)
+      val pageSize = intOrDefault("page-size", 250)
+
+      readService.getArticleDomainDump(pageNo, pageSize)
+    }
 
   }
 }

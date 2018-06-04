@@ -26,7 +26,7 @@ case class ArticleApiArticle(revision: Option[Int],
 case class ArticleApiTitle(title: String, language: String)
 case class ArticleApiContent(content: String, language: String)
 case class ArticleApiAuthor(`type`: String, name: String)
-case class ArticleApiTag(tags: Seq[String],  language: String)
+case class ArticleApiTag(tags: Seq[String], language: String)
 case class ArticleApiRequiredLibrary(mediaType: String, name: String, url: String)
 case class ArticleApiVisualElement(resource: String, language: String)
 case class ArticleApiIntroduction(introduction: String, language: String)
@@ -40,4 +40,3 @@ case class ArticleApiCopyright(license: String,
                                agreementId: Option[Long],
                                validFrom: Option[Date],
                                validTo: Option[Date])
-

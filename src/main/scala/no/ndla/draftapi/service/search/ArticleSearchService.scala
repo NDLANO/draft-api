@@ -5,7 +5,6 @@
  * See LICENSE
  */
 
-
 package no.ndla.draftapi.service.search
 
 import java.util.concurrent.Executors
@@ -23,7 +22,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 trait ArticleSearchService {
-  this: Elastic4sClient with SearchConverterService with SearchService with ArticleIndexService with SearchConverterService =>
+  this: Elastic4sClient
+    with SearchConverterService
+    with SearchService
+    with ArticleIndexService
+    with SearchConverterService =>
   val articleSearchService: ArticleSearchService
 
   class ArticleSearchService extends LazyLogging with SearchService[api.ArticleSummary] {
@@ -61,7 +64,6 @@ trait ArticleSearchService {
       val tagSearch = simpleStringQuery(query).field(s"tags.$language", 2)
       val notesSearch = simpleStringQuery(query).field("notes", 1)
 
-
       val fullQuery = boolQuery()
         .must(
           boolQuery()
@@ -91,7 +93,7 @@ trait ArticleSearchService {
         if (articleTypes.nonEmpty) Some(constantScoreQuery(termsQuery("articleType", articleTypes))) else None
 
       val licenseFilter = license match {
-        case None => Some(noCopyright)
+        case None      => Some(noCopyright)
         case Some(lic) => Some(termQuery("license", lic))
       }
 
@@ -102,7 +104,7 @@ trait ArticleSearchService {
           (None, "*")
         case lang =>
           fallback match {
-            case true => (None, "*")
+            case true  => (None, "*")
             case false => (Some(existsQuery(s"title.$lang")), lang)
           }
       }
@@ -113,7 +115,8 @@ trait ArticleSearchService {
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
       val requestedResultWindow = pageSize * page
       if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
-        logger.info(s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
+        logger.info(
+          s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
         Failure(new ResultWindowTooLargeException())
       } else {
         val searchExec = search(searchIndex)
@@ -125,13 +128,14 @@ trait ArticleSearchService {
 
         e4sClient.execute(searchExec) match {
           case Success(response) =>
-            Success(api.SearchResult(
-              response.result.totalHits,
-              page,
-              numResults,
-              if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
-              getHits(response.result, language)
-            ))
+            Success(
+              api.SearchResult(
+                response.result.totalHits,
+                page,
+                numResults,
+                if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
+                getHits(response.result, language)
+              ))
           case Failure(ex) =>
             errorHandler(ex)
         }
@@ -146,7 +150,9 @@ trait ArticleSearchService {
 
       f.failed.foreach(t => logger.warn("Unable to create index: " + t.getMessage, t))
       f.foreach {
-        case Success(reindexResult) => logger.info(s"Completed indexing of ${reindexResult.totalIndexed} articles in ${reindexResult.millisUsed} ms.")
+        case Success(reindexResult) =>
+          logger.info(
+            s"Completed indexing of ${reindexResult.totalIndexed} articles in ${reindexResult.millisUsed} ms.")
         case Failure(ex) => logger.warn(ex.getMessage, ex)
       }
     }

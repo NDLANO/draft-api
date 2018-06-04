@@ -40,15 +40,17 @@ case class Article(id: Option[Long],
                    updated: Date,
                    updatedBy: String,
                    articleType: ArticleType.Value,
-                   notes: Seq[String]) extends Content
-
+                   notes: Seq[String])
+    extends Content
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(ArticleType)
+  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
+    ArticleType)
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
-  def apply(lp: SyntaxProvider[Article])(rs:WrappedResultSet): Article = apply(lp.resultName)(rs)
+  def apply(lp: SyntaxProvider[Article])(rs: WrappedResultSet): Article = apply(lp.resultName)(rs)
+
   def apply(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
     val meta = read[Article](rs.string(lp.c("document")))
     Article(
@@ -74,7 +76,7 @@ object Article extends SQLSyntaxSupport[Article] {
 
   val JSonSerializer = FieldSerializer[Article](
     ignore("id") orElse
-    ignore("revision")
+      ignore("revision")
   )
 }
 
@@ -86,7 +88,10 @@ object ArticleStatus extends Enumeration {
       case Some(st) => Success(st)
       case None =>
         val validStatuses = values.map(_.toString).mkString(", ")
-        Failure(new ValidationException(errors=Seq(ValidationMessage("status", s"'$s' is not a valid article status. Must be one of $validStatuses"))))
+        Failure(
+          new ValidationException(
+            errors =
+              Seq(ValidationMessage("status", s"'$s' is not a valid article status. Must be one of $validStatuses"))))
     }
 
   def valueOf(s: String): Option[ArticleStatus.Value] = values.find(_.toString == s.toUpperCase)
@@ -97,9 +102,11 @@ object ArticleType extends Enumeration {
   val TopicArticle = Value("topic-article")
 
   def all = ArticleType.values.map(_.toString).toSeq
-  def valueOf(s:String): Option[ArticleType.Value] = ArticleType.values.find(_.toString == s)
+  def valueOf(s: String): Option[ArticleType.Value] = ArticleType.values.find(_.toString == s)
+
   def valueOfOrError(s: String): ArticleType.Value =
-    valueOf(s).getOrElse(throw new ValidationException(errors = List(ValidationMessage("articleType", s"'$s' is not a valid article type. Valid options are ${all.mkString(",")}."))))
+    valueOf(s).getOrElse(throw new ValidationException(errors = List(
+      ValidationMessage("articleType", s"'$s' is not a valid article type. Valid options are ${all.mkString(",")}."))))
 }
 
 case class Concept(id: Option[Long],
@@ -107,7 +114,8 @@ case class Concept(id: Option[Long],
                    content: Seq[ConceptContent],
                    copyright: Option[Copyright],
                    created: Date,
-                   updated: Date) extends Content {
+                   updated: Date)
+    extends Content {
   lazy val supportedLanguages: Set[String] = (content union title).map(_.language).toSet
 }
 
@@ -116,7 +124,8 @@ object Concept extends SQLSyntaxSupport[Concept] {
   override val tableName = "conceptdata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
-  def apply(lp: SyntaxProvider[Concept])(rs:WrappedResultSet): Concept = apply(lp.resultName)(rs)
+  def apply(lp: SyntaxProvider[Concept])(rs: WrappedResultSet): Concept = apply(lp.resultName)(rs)
+
   def apply(lp: ResultName[Concept])(rs: WrappedResultSet): Concept = {
     val meta = read[Concept](rs.string(lp.c("document")))
     Concept(
@@ -141,15 +150,16 @@ case class Agreement(id: Option[Long],
                      copyright: Copyright,
                      created: Date,
                      updated: Date,
-                     updatedBy: String) extends Content
-
+                     updatedBy: String)
+    extends Content
 
 object Agreement extends SQLSyntaxSupport[Agreement] {
   implicit val formats = org.json4s.DefaultFormats
   override val tableName = "agreementdata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
-  def apply(lp: SyntaxProvider[Agreement])(rs:WrappedResultSet): Agreement = apply(lp.resultName)(rs)
+  def apply(lp: SyntaxProvider[Agreement])(rs: WrappedResultSet): Agreement = apply(lp.resultName)(rs)
+
   def apply(lp: ResultName[Agreement])(rs: WrappedResultSet): Agreement = {
     val meta = read[Agreement](rs.string(lp.c("document")))
     Agreement(

@@ -27,6 +27,7 @@ trait ReadService {
   val readService: ReadService
 
   class ReadService {
+
     def getInternalArticleIdByExternalId(externalId: Long): Option[api.ContentId] =
       draftRepository.getIdFromExternalId(externalId.toString).map(api.ContentId)
 
@@ -35,14 +36,15 @@ trait ReadService {
 
     def withId(id: Long, language: String, fallback: Boolean = false): Try[api.Article] = {
       draftRepository.withId(id).map(addUrlsOnEmbedResources) match {
-        case None => Failure(NotFoundException(s"The article with id $id was not found"))
+        case None          => Failure(NotFoundException(s"The article with id $id was not found"))
         case Some(article) => converterService.toApiArticle(article, language, fallback)
       }
     }
 
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
       val articleWithUrls = article.content.map(content => content.copy(content = addUrlOnResource(content.content)))
-      val visualElementWithUrls = article.visualElement.map(visual => visual.copy(resource = addUrlOnResource(visual.resource)))
+      val visualElementWithUrls =
+        article.visualElement.map(visual => visual.copy(resource = addUrlOnResource(visual.resource)))
 
       article.copy(content = articleWithUrls, visualElement = visualElementWithUrls)
     }
@@ -51,19 +53,30 @@ trait ReadService {
       val tagUsageMap = getTagUsageMap()
       val searchLanguage = getSearchLanguage(language, supportedLanguages)
 
-      tagUsageMap.get(searchLanguage)
+      tagUsageMap
+        .get(searchLanguage)
         .map(tags => api.ArticleTag(tags.getNMostFrequent(n), searchLanguage))
     }
 
     def getArticlesByPage(pageNo: Int, pageSize: Int, lang: String, fallback: Boolean = false): api.ArticleDump = {
       val (safePageNo, safePageSize) = (max(pageNo, 1), max(pageSize, 0))
-      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize)
+      val results = draftRepository
+        .getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize)
         .flatMap(article => converterService.toApiArticle(article, lang, fallback).toOption)
       api.ArticleDump(draftRepository.articleCount, pageNo, pageSize, lang, results)
     }
 
+    def getArticleDomainDump(pageNo: Int, pageSize: Int): api.ArticleDomainDump = {
+      val (safePageNo, safePageSize) = (max(pageNo, 1), max(pageSize, 0))
+      val results = draftRepository.getArticlesByPage(safePageSize, (safePageNo - 1) * safePageSize)
+
+      api.ArticleDomainDump(draftRepository.articleCount, pageNo, pageSize, results)
+    }
+
     val getTagUsageMap = MemoizeAutoRenew(() => {
-      draftRepository.allTags.map(languageTags => languageTags.language -> new MostFrequentOccurencesList(languageTags.tags)).toMap
+      draftRepository.allTags
+        .map(languageTags => languageTags.language -> new MostFrequentOccurencesList(languageTags.tags))
+        .toMap
     })
 
     private[service] def addUrlOnResource(content: String): String = {
@@ -89,7 +102,8 @@ trait ReadService {
       // Create a map where the key is a list entry, and the value is the number of occurrences of this entry in the list
       private[this] val listToNumOccurrencesMap: Map[String, Int] = list.groupBy(identity).mapValues(_.size)
       // Create an inverse of the map 'listToNumOccurrencesMap': the key is number of occurrences, and the value is a list of all entries that occurred that many times
-      private[this] val numOccurrencesToListMap: Map[Int, Set[String]] = listToNumOccurrencesMap.groupBy(x => x._2).mapValues(_.keySet)
+      private[this] val numOccurrencesToListMap: Map[Int, Set[String]] =
+        listToNumOccurrencesMap.groupBy(x => x._2).mapValues(_.keySet)
       // Build a list sorted by the most frequent words to the least frequent words
       private[this] val mostFrequentOccorencesDec = numOccurrencesToListMap.keys.toSeq.sorted
         .foldRight(Seq[String]())((current, result) => result ++ numOccurrencesToListMap(current))
@@ -103,6 +117,7 @@ trait ReadService {
     def agreementWithId(id: Long): Option[api.Agreement] =
       agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))
 
-    def articlesWithStatus(status: domain.ArticleStatus.Value): Seq[Long] = draftRepository.withStatus(status).map(_.id.get)
+    def articlesWithStatus(status: domain.ArticleStatus.Value): Seq[Long] =
+      draftRepository.withStatus(status).map(_.id.get)
   }
 }
