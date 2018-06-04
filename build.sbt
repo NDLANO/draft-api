@@ -9,7 +9,7 @@ val Jettyversion = "9.2.10.v20150310"
 val AwsSdkversion = "1.11.46"
 val MockitoVersion = "1.10.19"
 val Elastic4sVersion = "6.1.4"
-val JacksonVersion = "2.9.4"
+val JacksonVersion = "2.9.5"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
 
