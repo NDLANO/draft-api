@@ -35,7 +35,10 @@ trait ConverterService {
 
   class ConverterService extends LazyLogging {
 
-    def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String], oldNdlaCreatedDate: Option[Date], oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
+    def toDomainArticle(newArticle: api.NewArticle,
+                        externalId: Option[String],
+                        oldNdlaCreatedDate: Option[Date],
+                        oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       articleApiClient.allocateArticleId(None, Seq.empty) match {
         case Failure(ex) =>
           Failure(ex)
@@ -409,15 +412,18 @@ trait ConverterService {
     def toDomainArticle(toMergeInto: domain.Article,
                         article: api.UpdatedArticle,
                         isImported: Boolean,
+                        oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT
                                                                                         else IMPORTED)
+      val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val partiallyConverted = toMergeInto.copy(
         status = status,
         revision = Option(article.revision),
         copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
         requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
+        created = createdDate,
         updated = updatedDate,
         updatedBy = authUser.userOrClientId(),
         articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
@@ -453,7 +459,11 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean, oldNdlaCreatedDate: Option[Date], oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
+    def toDomainArticle(id: Long,
+                        article: api.UpdatedArticle,
+                        isImported: Boolean,
+                        oldNdlaCreatedDate: Option[Date],
+                        oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       val createdDate = oldNdlaCreatedDate.getOrElse(clock.now())
       val updatedDate = oldNdlaUpdatedDate.getOrElse(clock.now())
 

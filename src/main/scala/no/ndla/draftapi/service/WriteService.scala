@@ -91,7 +91,10 @@ trait WriteService {
             draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
       }
       for {
-        domainArticle <- converterService.toDomainArticle(newArticle, externalId, oldNdlaCreatedDate, oldNdlaUpdatedDate)
+        domainArticle <- converterService.toDomainArticle(newArticle,
+                                                          externalId,
+                                                          oldNdlaCreatedDate,
+                                                          oldNdlaUpdatedDate)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
         insertedArticle <- Try(insertNewArticleFunction(domainArticle))
         _ <- articleIndexService.indexDocument(insertedArticle)
@@ -132,21 +135,29 @@ trait WriteService {
               "This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           for {
-            domainArticle <- converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined, oldNdlaUpdatedDate)
+            domainArticle <- converterService.toDomainArticle(existing,
+                                                              updatedApiArticle,
+                                                              externalId.isDefined,
+                                                              oldNdlaCreatedDate,
+                                                              oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(domainArticle,
                                             externalId,
                                             externalSubjectIds,
                                             isImported = externalId.isDefined)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-              updatedApiArticle.language.getOrElse(UnknownLanguage))
+                                                        updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
 
         case None if draftRepository.exists(articleId) =>
           for {
-            article <- converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined, oldNdlaCreatedDate, oldNdlaUpdatedDate)
+            article <- converterService.toDomainArticle(articleId,
+                                                        updatedApiArticle,
+                                                        externalId.isDefined,
+                                                        oldNdlaCreatedDate,
+                                                        oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(article, externalId, externalSubjectIds)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-              updatedApiArticle.language.getOrElse(UnknownLanguage))
+                                                        updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
@@ -173,7 +184,7 @@ trait WriteService {
           articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
               updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED),
-                isImported = isImported)
+                            isImported = isImported)
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>

@@ -98,32 +98,46 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("toDomainArticle should remove PUBLISHED when merging an UpdatedArticle into an existing") {
     val existing = TestData.sampleArticleWithByNcSa.copy(status = Set(DRAFT, PUBLISHED))
     val Success(res) =
-      service.toDomainArticle(existing, TestData.sampleApiUpdateArticle.copy(language = Some("en")), isImported = false, None)
+      service.toDomainArticle(existing,
+                              TestData.sampleApiUpdateArticle.copy(language = Some("en")),
+                              isImported = false,
+                              None,
+                              None)
     res.status should equal(Set(DRAFT))
 
     val existing2 = TestData.sampleArticleWithByNcSa.copy(status = Set(CREATED, QUEUED_FOR_PUBLISHING))
     val Success(res2) = service.toDomainArticle(existing2,
                                                 TestData.sampleApiUpdateArticle.copy(language = Some("en")),
-                                                isImported = false, None)
+                                                isImported = false,
+                                                None,
+                                                None)
     res2.status should equal(Set(DRAFT, QUEUED_FOR_PUBLISHING))
   }
 
   test("toDomainArticle should set IMPORTED status if being imported") {
     val Success(importRes) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status = Set()),
                                                      TestData.sampleApiUpdateArticle,
-                                                     isImported = true, None)
+                                                     isImported = true,
+                                                     None,
+                                                     None)
     importRes.status should equal(Set(IMPORTED))
 
     val Success(regularUpdate) = service.toDomainArticle(TestData.sampleDomainArticle.copy(status = Set(IMPORTED)),
                                                          TestData.sampleApiUpdateArticle,
-                                                         isImported = false, None)
+                                                         isImported = false,
+                                                         None,
+                                                         None)
     regularUpdate.status should equal(Set(IMPORTED, DRAFT))
   }
 
   test("toDomainArticle should fail if trying to update language fields without language being set") {
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(language = None, title = Some("kakemonster"))
     val res =
-      service.toDomainArticle(TestData.sampleDomainArticle.copy(status = Set()), updatedArticle, isImported = false, None)
+      service.toDomainArticle(TestData.sampleDomainArticle.copy(status = Set()),
+                              updatedArticle,
+                              isImported = false,
+                              None,
+                              None)
     res.isFailure should be(true)
 
     val errors = res.failed.get.asInstanceOf[ValidationException].errors
@@ -134,7 +148,11 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("toDomainArticle should succeed if trying to update language fields with language being set") {
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(language = Some("nb"), title = Some("kakemonster"))
     val Success(res) =
-      service.toDomainArticle(TestData.sampleDomainArticle.copy(status = Set()), updatedArticle, isImported = false, None)
+      service.toDomainArticle(TestData.sampleDomainArticle.copy(status = Set()),
+                              updatedArticle,
+                              isImported = false,
+                              None,
+                              None)
     res.title.find(_.language == "nb").get.title should equal("kakemonster")
   }
 
