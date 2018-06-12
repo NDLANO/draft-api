@@ -7,6 +7,9 @@
 
 package no.ndla.draftapi.service
 
+import java.text.{DateFormat, SimpleDateFormat}
+import java.util.Date
+
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.User
@@ -19,6 +22,7 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
 import no.ndla.validation._
+import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.JavaConverters._
@@ -31,7 +35,7 @@ trait ConverterService {
 
   class ConverterService extends LazyLogging {
 
-    def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String]): Try[domain.Article] = {
+    def toDomainArticle(newArticle: api.NewArticle, externalId: Option[String], oldNdlaCreatedDate: Option[Date], oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       articleApiClient.allocateArticleId(None, Seq.empty) match {
         case Failure(ex) =>
           Failure(ex)
@@ -45,6 +49,9 @@ trait ConverterService {
             case Some(_) => Set(CREATED, IMPORTED)
             case None    => Set(CREATED)
           }
+
+          val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
+          val oldUpdatedDate = oldNdlaUpdatedDate.map(date => new DateTime(date).toDate)
 
           Success(
             domain.Article(
@@ -63,8 +70,8 @@ trait ConverterService {
               metaDescription =
                 newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
               metaImage = newArticle.metaImageId.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
-              created = clock.now(),
-              updated = clock.now(),
+              created = oldCreatedDate.getOrElse(clock.now()),
+              updated = oldUpdatedDate.getOrElse(clock.now()),
               updatedBy = authUser.userOrClientId(),
               articleType = ArticleType.valueOfOrError(newArticle.articleType),
               newArticle.notes
@@ -401,16 +408,17 @@ trait ConverterService {
 
     def toDomainArticle(toMergeInto: domain.Article,
                         article: api.UpdatedArticle,
-                        isImported: Boolean): Try[domain.Article] = {
+                        isImported: Boolean,
+                        oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT
                                                                                         else IMPORTED)
-
+      val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val partiallyConverted = toMergeInto.copy(
         status = status,
         revision = Option(article.revision),
         copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
         requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
-        updated = clock.now(),
+        updated = updatedDate,
         updatedBy = authUser.userOrClientId(),
         articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
         notes = article.notes.getOrElse(toMergeInto.notes)
@@ -445,7 +453,10 @@ trait ConverterService {
       }
     }
 
-    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean): Try[domain.Article] = {
+    def toDomainArticle(id: Long, article: api.UpdatedArticle, isImported: Boolean, oldNdlaCreatedDate: Option[Date], oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
+      val createdDate = oldNdlaCreatedDate.getOrElse(clock.now())
+      val updatedDate = oldNdlaUpdatedDate.getOrElse(clock.now())
+
       article.language match {
         case None =>
           val error = ValidationMessage("language", "This field must be specified when updating language fields")
@@ -466,8 +477,8 @@ trait ConverterService {
               introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
               metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
               metaImage = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
-              created = clock.now(),
-              updated = clock.now(),
+              created = createdDate,
+              updated = updatedDate,
               authUser.userOrClientId(),
               articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
               article.notes.getOrElse(Seq.empty)

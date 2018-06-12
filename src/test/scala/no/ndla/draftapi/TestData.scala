@@ -33,7 +33,7 @@ object TestData {
                                       None,
                                       None,
                                       None)
-  private val today = new DateTime().toDate
+  val today = new DateTime().toDate
 
   private val embedUrl = "http://www.example.org"
 

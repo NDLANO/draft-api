@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.service
 
+import java.util.Date
+
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api._
@@ -79,7 +81,9 @@ trait WriteService {
 
     def newArticle(newArticle: api.NewArticle,
                    externalId: Option[String],
-                   externalSubjectIds: Seq[String]): Try[api.Article] = {
+                   externalSubjectIds: Seq[String],
+                   oldNdlaCreatedDate: Option[Date],
+                   oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       val insertNewArticleFunction = externalId match {
         case None => draftRepository.insert _
         case Some(nid) =>
@@ -87,7 +91,7 @@ trait WriteService {
             draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
       }
       for {
-        domainArticle <- converterService.toDomainArticle(newArticle, externalId)
+        domainArticle <- converterService.toDomainArticle(newArticle, externalId, oldNdlaCreatedDate, oldNdlaUpdatedDate)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
         insertedArticle <- Try(insertNewArticleFunction(domainArticle))
         _ <- articleIndexService.indexDocument(insertedArticle)
@@ -118,7 +122,9 @@ trait WriteService {
     def updateArticle(articleId: Long,
                       updatedApiArticle: api.UpdatedArticle,
                       externalId: Option[String],
-                      externalSubjectIds: Seq[String]): Try[api.Article] = {
+                      externalSubjectIds: Seq[String],
+                      oldNdlaCreatedDate: Option[Date],
+                      oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(
@@ -126,21 +132,21 @@ trait WriteService {
               "This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           for {
-            domainArticle <- converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined)
+            domainArticle <- converterService.toDomainArticle(existing, updatedApiArticle, externalId.isDefined, oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(domainArticle,
                                             externalId,
                                             externalSubjectIds,
                                             isImported = externalId.isDefined)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-                                                        updatedApiArticle.language.getOrElse(UnknownLanguage))
+              updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
 
         case None if draftRepository.exists(articleId) =>
           for {
-            article <- converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined)
+            article <- converterService.toDomainArticle(articleId, updatedApiArticle, externalId.isDefined, oldNdlaCreatedDate, oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(article, externalId, externalSubjectIds)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-                                                        updatedApiArticle.language.getOrElse(UnknownLanguage))
+              updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
@@ -167,7 +173,7 @@ trait WriteService {
           articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
             case Success(_) =>
               updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED),
-                            isImported = isImported)
+                isImported = isImported)
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>
