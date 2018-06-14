@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.controller
 
+import java.util.Date
+
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
@@ -122,7 +124,9 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("POST / should return 201 on created") {
-    when(writeService.newArticle(any[NewArticle], any[Option[String]], any[Seq[String]]))
+    when(
+      writeService
+        .newArticle(any[NewArticle], any[Option[String]], any[Seq[String]], any[Option[Date]], any[Option[Date]]))
       .thenReturn(Success(TestData.sampleArticleV2))
     post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(201)
@@ -160,7 +164,13 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 403 if access denied") {
-    when(writeService.updateArticle(any[Long], any[api.UpdatedArticle], any[Option[String]], any[Seq[String]]))
+    when(
+      writeService.updateArticle(any[Long],
+                                 any[api.UpdatedArticle],
+                                 any[Option[String]],
+                                 any[Seq[String]],
+                                 any[Option[Date]],
+                                 any[Option[Date]]))
       .thenReturn(Failure(new AccessDeniedException("Not today")))
 
     patch("/test/123", body = write(TestData.sampleApiUpdateArticle)) {
@@ -169,7 +179,13 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 200 on success") {
-    when(writeService.updateArticle(any[Long], any[UpdatedArticle], any[Option[String]], any[Seq[String]]))
+    when(
+      writeService.updateArticle(any[Long],
+                                 any[UpdatedArticle],
+                                 any[Option[String]],
+                                 any[Seq[String]],
+                                 any[Option[Date]],
+                                 any[Option[Date]]))
       .thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
     patch("/test/123", updateTitleJson, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(200)
