@@ -5,10 +5,11 @@ val Scalatraversion = "2.5.1"
 val ScalaLoggingVersion = "3.5.0"
 val ScalaTestVersion = "3.0.1"
 val Log4JVersion = "2.9.1"
-val Jettyversion = "9.2.10.v20150310"
+val Jettyversion = "9.4.10.v20180503"
 val AwsSdkversion = "1.11.46"
 val MockitoVersion = "1.10.19"
-val Elastic4sVersion = "6.1.2"
+val Elastic4sVersion = "6.1.4"
+val JacksonVersion = "2.9.5"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
 
@@ -29,9 +30,9 @@ lazy val draft_api = (project in file("."))
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(
-      "ndla" %% "network" % "0.28",
+      "ndla" %% "network" % "0.29",
       "ndla" %% "mapping" % "0.7",
-      "ndla" %% "validation" % "0.17",
+      "ndla" %% "validation" % "0.18",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",
@@ -47,13 +48,13 @@ lazy val draft_api = (project in file("."))
       "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4JVersion,
       "org.scalikejdbc" %% "scalikejdbc" % "2.5.0",
       "org.postgresql" % "postgresql" % "9.4-1201-jdbc4",
-      "mysql" % "mysql-connector-java" % "5.1.36",
       "com.amazonaws" % "aws-java-sdk-s3" % AwsSdkversion,
       "org.scalaj" %% "scalaj-http" % "2.3.0",
       "org.elasticsearch" % "elasticsearch" % ElasticsearchVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-core" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-aws" % Elastic4sVersion,
+      "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion, // Overriding jackson-databind used in elastic4s because of https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-32111
       "org.elasticsearch" % "elasticsearch" % ElasticsearchVersion,
       "org.apache.lucene" % "lucene-test-framework" % "6.4.1" % "test",
       "org.scalatest" %% "scalatest" % ScalaTestVersion % "test",
