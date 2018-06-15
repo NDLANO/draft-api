@@ -16,6 +16,7 @@ import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
+import org.joda.time.DateTime
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 import org.scalatra.{Created, NoContent, NotFound, Ok}
@@ -273,8 +274,14 @@ trait DraftController {
       authUser.assertHasId()
       authRole.assertHasWritePermission()
       val externalId = paramOrNone("externalId")
+      val oldNdlaCreatedDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
+      val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
       val externalSubjectids = paramAsListOfString("externalSubjectIds")
-      writeService.newArticle(extract[NewArticle](request.body), externalId, externalSubjectids) match {
+      writeService.newArticle(extract[NewArticle](request.body),
+                              externalId,
+                              externalSubjectids,
+                              oldNdlaCreatedDate,
+                              oldNdlaUpdatedDate) match {
         case Success(article)   => Created(body = article)
         case Failure(exception) => errorHandler(exception)
       }
@@ -319,10 +326,17 @@ trait DraftController {
       authRole.assertHasWritePermission()
       val externalId = paramOrNone("externalId")
       val externalSubjectIds = paramAsListOfString("externalSubjectIds")
+      val oldNdlaCreateddDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
+      val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
       val id = long(this.articleId.paramName)
       val updateArticle = extract[UpdatedArticle](request.body)
 
-      writeService.updateArticle(id, updateArticle, externalId, externalSubjectIds) match {
+      writeService.updateArticle(id,
+                                 updateArticle,
+                                 externalId,
+                                 externalSubjectIds,
+                                 oldNdlaCreateddDate,
+                                 oldNdlaUpdatedDate) match {
         case Success(article)   => Ok(body = article)
         case Failure(exception) => errorHandler(exception)
       }
