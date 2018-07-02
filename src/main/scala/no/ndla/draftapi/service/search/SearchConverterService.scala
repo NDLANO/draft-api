@@ -22,6 +22,7 @@ import scala.collection.JavaConverters._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.service.ConverterService
 import no.ndla.mapping.ISO639
+import org.joda.time.DateTime
 
 trait SearchConverterService {
   this: ConverterService =>
@@ -49,7 +50,7 @@ trait SearchConverterService {
         content = SearchableLanguageValues(
           ai.content.map(article => LanguageValue(article.language, Jsoup.parseBodyFragment(article.content).text()))),
         tags = SearchableLanguageList(ai.tags.map(tag => LanguageValue(tag.language, tag.tags))),
-        lastUpdated = ai.updated,
+        lastUpdated = new DateTime(ai.updated),
         license = ai.copyright.flatMap(_.license),
         authors = ai.copyright
           .map(copy => copy.creators ++ copy.processors ++ copy.rightsholders)
@@ -83,11 +84,11 @@ trait SearchConverterService {
     def hitAsArticleSummary(hitString: String, language: String): api.ArticleSummary = {
       val searchableArticle = read[SearchableArticle](hitString)
 
-      val titles = searchableArticle.title.languageValues.map(lv => domain.ArticleTitle(lv.value, lv.lang))
+      val titles = searchableArticle.title.languageValues.map(lv => domain.ArticleTitle(lv.value, lv.language))
       val introductions =
-        searchableArticle.introduction.languageValues.map(lv => domain.ArticleIntroduction(lv.value, lv.lang))
+        searchableArticle.introduction.languageValues.map(lv => domain.ArticleIntroduction(lv.value, lv.language))
       val visualElements =
-        searchableArticle.visualElement.languageValues.map(lv => domain.VisualElement(lv.value, lv.lang))
+        searchableArticle.visualElement.languageValues.map(lv => domain.VisualElement(lv.value, lv.language))
       val notes = searchableArticle.notes
 
       val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
@@ -115,8 +116,8 @@ trait SearchConverterService {
     def hitAsConceptSummary(hitString: String, language: String): api.ConceptSummary = {
 
       val searchableConcept = read[SearchableConcept](hitString)
-      val titles = searchableConcept.title.languageValues.map(lv => domain.ConceptTitle(lv.value, lv.lang))
-      val contents = searchableConcept.content.languageValues.map(lv => domain.ConceptContent(lv.value, lv.lang))
+      val titles = searchableConcept.title.languageValues.map(lv => domain.ConceptTitle(lv.value, lv.language))
+      val contents = searchableConcept.content.languageValues.map(lv => domain.ConceptContent(lv.value, lv.language))
 
       val supportedLanguages = getSupportedLanguages(Seq(titles, contents))
 
