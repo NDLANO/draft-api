@@ -36,10 +36,10 @@ trait ConverterService {
   class ConverterService extends LazyLogging {
 
     def toDomainArticle(newArticle: api.NewArticle,
-                        externalId: Option[String],
+                        externalId: List[String],
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      articleApiClient.allocateArticleId(None, Seq.empty) match {
+      articleApiClient.allocateArticleId(List.empty, Seq.empty) match {
         case Failure(ex) =>
           Failure(ex)
         case Success(id) =>
@@ -49,8 +49,8 @@ trait ConverterService {
             .toSeq
 
           val status = externalId match {
-            case Some(_) => Set(CREATED, IMPORTED)
-            case None    => Set(CREATED)
+            case Nil          => Set(CREATED)
+            case nonEmptyList => Set(CREATED, IMPORTED)
           }
 
           val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
@@ -167,7 +167,7 @@ trait ConverterService {
     }
 
     private def getLinkToOldNdla(id: Long): Option[String] =
-      draftRepository.getExternalIdFromId(id).map(createLinkToOldNdla)
+      draftRepository.getExternalIdsFromId(id).map(createLinkToOldNdla).headOption
 
     private def removeUnknownEmbedTagAttributes(html: String): String = {
       val document = HtmlTagRules.stringToJsoupDocument(html)
@@ -380,7 +380,7 @@ trait ConverterService {
     }
 
     def toDomainConcept(concept: api.NewConcept): Try[domain.Concept] = {
-      articleApiClient.allocateConceptId(None) match {
+      articleApiClient.allocateConceptId(List.empty) match {
         case Failure(ex) => Failure(ex)
         case Success(id) =>
           Success(

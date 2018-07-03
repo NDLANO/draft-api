@@ -29,20 +29,22 @@ trait ArticleApiClient {
   class ArticleApiClient {
     private val InternalEndpoint = s"http://$ArticleApiHost/intern"
 
-    def allocateArticleId(externalId: Option[String], externalSubjectIds: Seq[String]): Try[Long] = {
+    def allocateArticleId(externalId: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
+
       val params = externalId match {
-        case Some(nid) => Seq("external-id" -> nid, "external-subject-id" -> externalSubjectIds.mkString(","))
-        case None      => Seq.empty
+        case nids if nids.nonEmpty =>
+          Seq("external-id" -> nids.mkString(","), "external-subject-id" -> externalSubjectIds.mkString(","))
+        case _ => Seq.empty
       }
       post[ContentId](s"$InternalEndpoint/id/article/allocate", params: _*).map(_.id)
     }
 
-    def allocateConceptId(externalId: Option[String]): Try[Long] = {
+    def allocateConceptId(externalId: List[String]): Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
       val params = externalId match {
-        case Some(nid) => Seq("external-id" -> nid)
-        case None      => Seq.empty
+        case nids if nids.nonEmpty => Seq("external-id" -> nids.mkString(","))
+        case _                     => Seq.empty
       }
       post[ContentId](s"$InternalEndpoint/id/concept/allocate", params: _*).map(_.id)
     }

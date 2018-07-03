@@ -126,7 +126,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("POST / should return 201 on created") {
     when(
       writeService
-        .newArticle(any[NewArticle], any[Option[String]], any[Seq[String]], any[Option[Date]], any[Option[Date]]))
+        .newArticle(any[NewArticle], any[List[String]], any[Seq[String]], any[Option[Date]], any[Option[Date]]))
       .thenReturn(Success(TestData.sampleArticleV2))
     post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(201)
@@ -167,7 +167,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     when(
       writeService.updateArticle(any[Long],
                                  any[api.UpdatedArticle],
-                                 any[Option[String]],
+                                 any[List[String]],
                                  any[Seq[String]],
                                  any[Option[Date]],
                                  any[Option[Date]]))
@@ -182,7 +182,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     when(
       writeService.updateArticle(any[Long],
                                  any[UpdatedArticle],
-                                 any[Option[String]],
+                                 any[List[String]],
                                  any[Seq[String]],
                                  any[Option[Date]],
                                  any[Option[Date]]))

@@ -55,7 +55,7 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
                                                         visualElement = Seq(VisualElement(visualElementBefore, "nb")))
 
     when(draftRepository.withId(1)).thenReturn(Option(article))
-    when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Some("54321"))
+    when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("54321"))
 
     val expectedResult = converterService
       .toApiArticle(article.copy(content = Seq(expectedArticleContent1),

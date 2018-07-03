@@ -43,7 +43,7 @@ trait DraftRepository {
       article.copy(revision = Some(startRevision))
     }
 
-    def insertWithExternalId(article: Article, externalId: String, externalSubjectIds: Seq[String])(
+    def insertWithExternalId(article: Article, externalId: List[String], externalSubjectIds: Seq[String])(
         implicit session: DBSession = AutoSession): Article = {
       val startRevision = 1
       val dataObject = new PGobject()
@@ -51,18 +51,21 @@ trait DraftRepository {
       dataObject.setValue(write(article))
 
       val articleId: Long =
-        sql"insert into ${Article.table} (id, external_id, external_subject_id, document, revision) values (${article.id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)"
-          .updateAndReturnGeneratedKey()
-          .apply
+        sql"""
+             insert into ${Article.table} (id, external_id, external_subject_id, document, revision)
+             values (${article.id}, ARRAY[${externalId}]::text[], ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)
+          """.updateAndReturnGeneratedKey().apply
 
       logger.info(s"Inserted new article: $articleId")
       article.copy(revision = Some(startRevision))
     }
 
-    def newEmptyArticle(id: Long, externalId: String, externalSubjectIds: Seq[String])(implicit session: DBSession =
-                                                                                         AutoSession): Try[Long] = {
-      Try(
-        sql"insert into ${Article.table} (id, external_id, external_subject_id) values (${id}, ${externalId}, ARRAY[${externalSubjectIds}]::text[])".update.apply) match {
+    def newEmptyArticle(id: Long, externalId: List[String], externalSubjectIds: Seq[String])(
+        implicit session: DBSession = AutoSession): Try[Long] = {
+      Try(sql"""
+             insert into ${Article.table} (id, external_id, external_subject_id)
+             values (${id}, ARRAY[${externalId}]::text[], ARRAY[${externalSubjectIds}]::text[])
+          """.update.apply) match {
         case Success(_) =>
           logger.info(s"Inserted new empty article: $id")
           Success(id)
@@ -91,7 +94,7 @@ trait DraftRepository {
       }
     }
 
-    def updateWithExternalIds(article: Article, externalId: String, externalSubjectIds: Seq[String])(
+    def updateWithExternalIds(article: Article, externalId: List[String], externalSubjectIds: Seq[String])(
         implicit session: DBSession = AutoSession): Try[Article] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
@@ -99,7 +102,7 @@ trait DraftRepository {
 
       val newRevision = article.revision.getOrElse(0) + 1
       val count =
-        sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=$externalId, external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
+        sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=ARRAY[$externalId]::text[], external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"
@@ -131,22 +134,28 @@ trait DraftRepository {
     }
 
     def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {
-      sql"select id from ${Article.table} where external_id=${externalId}"
+      sql"select id from ${Article.table} where ${externalId} = any (external_id)"
         .map(rs => rs.long("id"))
         .single
         .apply()
     }
 
-    def getExternalIdFromId(id: Long)(implicit session: DBSession = AutoSession): Option[String] = {
+    def getExternalIdsFromId(id: Long)(implicit session: DBSession = AutoSession): List[String] = {
       sql"select external_id from ${Article.table} where id=${id.toInt}"
-        .map(rs => rs.string("external_id"))
+        .map(rs => rs.array("external_id").getArray.asInstanceOf[Array[String]].toList)
         .single
         .apply()
+        .getOrElse(List.empty)
     }
 
     def getAllIds(implicit session: DBSession = AutoSession): Seq[ArticleIds] = {
       sql"select id, external_id from ${Article.table}"
-        .map(rs => ArticleIds(rs.long("id"), rs.stringOpt("external_id")))
+        .map(
+          rs =>
+            ArticleIds(
+              rs.long("id"),
+              rs.array("external_id").getArray.asInstanceOf[Array[String]].toList
+          ))
         .list
         .apply
     }

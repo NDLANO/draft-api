@@ -80,15 +80,15 @@ trait WriteService {
     }
 
     def newArticle(newArticle: api.NewArticle,
-                   externalId: Option[String],
+                   externalId: List[String],
                    externalSubjectIds: Seq[String],
                    oldNdlaCreatedDate: Option[Date],
                    oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       val insertNewArticleFunction = externalId match {
-        case None => draftRepository.insert _
-        case Some(nid) =>
+        case Nil => draftRepository.insert _
+        case nids =>
           (a: domain.Article) =>
-            draftRepository.insertWithExternalId(a, nid, externalSubjectIds)
+            draftRepository.insertWithExternalId(a, nids, externalSubjectIds)
       }
       for {
         domainArticle <- converterService.toDomainArticle(newArticle,
@@ -103,16 +103,16 @@ trait WriteService {
     }
 
     private def updateArticle(toUpdate: domain.Article,
-                              externalId: Option[String] = None,
+                              externalId: List[String] = List.empty,
                               externalSubjectIds: Seq[String] = Seq.empty,
                               isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalId match {
-        case None =>
+        case Nil =>
           (a: domain.Article) =>
             draftRepository.update(a, isImported = isImported)
-        case Some(nid) =>
+        case nids =>
           (a: domain.Article) =>
-            draftRepository.updateWithExternalIds(a, nid, externalSubjectIds)
+            draftRepository.updateWithExternalIds(a, nids, externalSubjectIds)
       }
 
       for {
@@ -124,7 +124,7 @@ trait WriteService {
 
     def updateArticle(articleId: Long,
                       updatedApiArticle: api.UpdatedArticle,
-                      externalId: Option[String],
+                      externalId: List[String],
                       externalSubjectIds: Seq[String],
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
@@ -137,13 +137,13 @@ trait WriteService {
           for {
             domainArticle <- converterService.toDomainArticle(existing,
                                                               updatedApiArticle,
-                                                              externalId.isDefined,
+                                                              externalId.nonEmpty,
                                                               oldNdlaCreatedDate,
                                                               oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(domainArticle,
                                             externalId,
                                             externalSubjectIds,
-                                            isImported = externalId.isDefined)
+                                            isImported = externalId.nonEmpty)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
@@ -152,7 +152,7 @@ trait WriteService {
           for {
             article <- converterService.toDomainArticle(articleId,
                                                         updatedApiArticle,
-                                                        externalId.isDefined,
+                                                        externalId.nonEmpty,
                                                         oldNdlaCreatedDate,
                                                         oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(article, externalId, externalSubjectIds)
@@ -273,15 +273,15 @@ trait WriteService {
       (toKeep ++ updated).filterNot(_.isEmpty)
     }
 
-    def newEmptyArticle(externalId: String, externalSubjectIds: Seq[String]): Try[Long] = {
+    def newEmptyArticle(externalId: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
       articleApiClient
-        .allocateArticleId(Some(externalId), externalSubjectIds)
+        .allocateArticleId(externalId, externalSubjectIds)
         .flatMap(id => draftRepository.newEmptyArticle(id, externalId, externalSubjectIds))
     }
 
-    def newEmptyConcept(externalId: String): Try[Long] = {
+    def newEmptyConcept(externalId: List[String]): Try[Long] = {
       articleApiClient
-        .allocateConceptId(Some(externalId))
+        .allocateConceptId(externalId)
         .flatMap(id => conceptRepository.newEmptyConcept(id, externalId))
     }
 
