@@ -179,9 +179,9 @@ trait WriteService {
     }
 
     def publishArticle(id: Long, isImported: Boolean = false): Try[domain.Article] = {
-      draftRepository.withId(id) match {
-        case Some(article) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
-          articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article)) match {
+      draftRepository.withIdAndExternalIds(id) match {
+        case Some((article, externalIds)) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
+          articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article), externalIds) match {
             case Success(_) =>
               updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED),
                             isImported = isImported)

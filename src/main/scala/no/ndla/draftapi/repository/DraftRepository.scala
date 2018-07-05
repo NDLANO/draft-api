@@ -117,6 +117,15 @@ trait DraftRepository {
     def withId(articleId: Long): Option[Article] =
       articleWhere(sqls"ar.id=${articleId.toInt}")
 
+    def withIdAndExternalIds(articleId: Long)(
+        implicit session: DBSession = AutoSession): Option[(Article, List[String])] = {
+      val ar = Article.syntax("ar")
+      sql"select external_id, ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and ar.id=${articleId.toInt}"
+        .map(rs => (Article(ar)(rs), rs.array("external_id").getArray.asInstanceOf[Array[String]].toList))
+        .single
+        .apply()
+    }
+
     def withStatus(status: ArticleStatus.Value): Seq[Article] =
       articlesWhere(sqls"(ar.document->>'status')::jsonb ?? ${status.toString}")
 
