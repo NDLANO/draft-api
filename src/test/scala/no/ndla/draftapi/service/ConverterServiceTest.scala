@@ -36,12 +36,12 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("toApiArticle converts a domain.Article to an api.ArticleV2") {
-    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    when(draftRepository.getExternalIdsFromId(TestData.articleId)).thenReturn(List(TestData.externalId))
     service.toApiArticle(TestData.sampleDomainArticle, "nb") should equal(Success(TestData.apiArticleV2))
   }
 
   test("that toApiArticle returns sorted supportedLanguages") {
-    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    when(draftRepository.getExternalIdsFromId(TestData.articleId)).thenReturn(List(TestData.externalId))
     val result = service.toApiArticle(
       TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title :+ ArticleTitle("hehe", "unknown")),
       "nb")
@@ -49,14 +49,14 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("that toApiArticleV2 returns none if article does not exist on language, and fallback is not specified") {
-    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    when(draftRepository.getExternalIdsFromId(TestData.articleId)).thenReturn(List(TestData.externalId))
     val result = service.toApiArticle(TestData.sampleDomainArticle, "en")
     result.isFailure should be(true)
   }
 
   test(
     "That toApiArticleV2 returns article on existing language if fallback is specified even if selected language does not exist") {
-    when(draftRepository.getExternalIdFromId(TestData.articleId)).thenReturn(Some(TestData.externalId))
+    when(draftRepository.getExternalIdsFromId(TestData.articleId)).thenReturn(List(TestData.externalId))
     val result = service.toApiArticle(TestData.sampleDomainArticle, "en", fallback = true)
     result.get.title.get.language should be("nb")
     result.get.title.get.title should be(TestData.sampleDomainArticle.title.head.title)
@@ -73,10 +73,10 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val apiArticle = TestData.newArticle.copy(content = Some(content), visualElement = Some(visualElement))
     val expectedTime = TestData.today
 
-    when(articleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
     when(clock.now()).thenReturn(expectedTime)
 
-    val Success(result) = service.toDomainArticle(apiArticle, None, None, None)
+    val Success(result) = service.toDomainArticle(apiArticle, List.empty, None, None)
     result.content.head.content should equal(expectedContent)
     result.visualElement.head.resource should equal(expectedVisualElement)
     result.created should equal(expectedTime)
@@ -88,9 +88,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val created = new DateTime("2016-12-06T16:20:05Z").toDate
     val updated = new DateTime("2017-03-07T21:18:19Z").toDate
 
-    when(articleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    val Success(result) = service.toDomainArticle(apiArticle, None, Some(created), Some(updated))
+    val Success(result) = service.toDomainArticle(apiArticle, List.empty, Some(created), Some(updated))
     result.created should equal(created)
     result.updated should equal(updated)
   }

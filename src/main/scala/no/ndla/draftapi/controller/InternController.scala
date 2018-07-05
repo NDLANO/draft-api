@@ -134,7 +134,7 @@ trait InternController {
 
     post("/empty_article/") {
       authRole.assertHasWritePermission()
-      val externalId = params("externalId")
+      val externalId = paramAsListOfString("externalId")
       val externalSubjectIds = paramAsListOfString("externalSubjectId")
       writeService.newEmptyArticle(externalId, externalSubjectIds) match {
         case Success(id) => ContentId(id)
@@ -144,7 +144,7 @@ trait InternController {
 
     post("/empty_concept/") {
       authRole.assertHasWritePermission()
-      val externalId = params("externalId")
+      val externalId = paramAsListOfString("externalId")
       writeService.newEmptyConcept(externalId) match {
         case Success(id) => id
         case Failure(ex) => errorHandler(ex)

@@ -49,7 +49,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       invocation.getArgumentAt(0, article.getClass))
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
-    when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(Option("1234"))
+    when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
     when(authUser.userOrClientId()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession]))
@@ -65,11 +65,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("newArticle should insert a given article") {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
-    when(draftRepository.getExternalIdFromId(any[Long])(any[DBSession])).thenReturn(None)
+    when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List.empty)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(articleApiClient.allocateArticleId(any[Option[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    service.newArticle(TestData.newArticle, None, Seq.empty, None, None).get.id.toString should equal(
+    service.newArticle(TestData.newArticle, List.empty, Seq.empty, None, None).get.id.toString should equal(
       article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
@@ -155,7 +155,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        content = Seq(ArticleContent(newContent, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -167,7 +167,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        title = Seq(ArticleTitle(newTitle, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -220,7 +220,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today
     )
 
-    service.updateArticle(articleId, updatedApiArticle, None, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 

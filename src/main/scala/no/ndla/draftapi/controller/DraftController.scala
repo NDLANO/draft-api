@@ -273,7 +273,7 @@ trait DraftController {
     post("/", operation(newArticle)) {
       authUser.assertHasId()
       authRole.assertHasWritePermission()
-      val externalId = paramOrNone("externalId")
+      val externalId = paramAsListOfString("externalId")
       val oldNdlaCreatedDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
       val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
       val externalSubjectids = paramAsListOfString("externalSubjectIds")
@@ -324,7 +324,7 @@ trait DraftController {
     patch("/:article_id", operation(updateArticle)) {
       authUser.assertHasId()
       authRole.assertHasWritePermission()
-      val externalId = paramOrNone("externalId")
+      val externalId = paramAsListOfString("externalId")
       val externalSubjectIds = paramAsListOfString("externalSubjectIds")
       val oldNdlaCreateddDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
       val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
