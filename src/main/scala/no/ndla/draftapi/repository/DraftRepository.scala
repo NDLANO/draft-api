@@ -43,7 +43,7 @@ trait DraftRepository {
       article.copy(revision = Some(startRevision))
     }
 
-    def insertWithExternalId(article: Article, externalId: List[String], externalSubjectIds: Seq[String])(
+    def insertWithExternalIds(article: Article, externalIds: List[String], externalSubjectIds: Seq[String])(
         implicit session: DBSession = AutoSession): Article = {
       val startRevision = 1
       val dataObject = new PGobject()
@@ -53,18 +53,18 @@ trait DraftRepository {
       val articleId: Long =
         sql"""
              insert into ${Article.table} (id, external_id, external_subject_id, document, revision)
-             values (${article.id}, ARRAY[${externalId}]::text[], ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)
+             values (${article.id}, ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)
           """.updateAndReturnGeneratedKey().apply
 
       logger.info(s"Inserted new article: $articleId")
       article.copy(revision = Some(startRevision))
     }
 
-    def newEmptyArticle(id: Long, externalId: List[String], externalSubjectIds: Seq[String])(
+    def newEmptyArticle(id: Long, externalIds: List[String], externalSubjectIds: Seq[String])(
         implicit session: DBSession = AutoSession): Try[Long] = {
       Try(sql"""
              insert into ${Article.table} (id, external_id, external_subject_id)
-             values (${id}, ARRAY[${externalId}]::text[], ARRAY[${externalSubjectIds}]::text[])
+             values (${id}, ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[])
           """.update.apply) match {
         case Success(_) =>
           logger.info(s"Inserted new empty article: $id")
@@ -94,7 +94,7 @@ trait DraftRepository {
       }
     }
 
-    def updateWithExternalIds(article: Article, externalId: List[String], externalSubjectIds: Seq[String])(
+    def updateWithExternalIds(article: Article, externalIds: List[String], externalSubjectIds: Seq[String])(
         implicit session: DBSession = AutoSession): Try[Article] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
@@ -102,7 +102,7 @@ trait DraftRepository {
 
       val newRevision = article.revision.getOrElse(0) + 1
       val count =
-        sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=ARRAY[$externalId]::text[], external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
+        sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=ARRAY[$externalIds]::text[], external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"

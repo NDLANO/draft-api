@@ -58,8 +58,8 @@ trait ConceptRepository {
       }
     }
 
-    def newEmptyConcept(id: Long, externalId: List[String])(implicit session: DBSession = AutoSession): Try[Long] = {
-      Try(sql"insert into ${Concept.table} (id, external_id) values ($id, ARRAY[$externalId]::text[])".update.apply) match {
+    def newEmptyConcept(id: Long, externalIds: List[String])(implicit session: DBSession = AutoSession): Try[Long] = {
+      Try(sql"insert into ${Concept.table} (id, external_id) values ($id, ARRAY[$externalIds]::text[])".update.apply) match {
         case Success(_) =>
           logger.info(s"Inserted new empty article: $id")
           Success(id)

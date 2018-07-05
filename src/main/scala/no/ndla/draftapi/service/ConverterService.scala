@@ -36,7 +36,7 @@ trait ConverterService {
   class ConverterService extends LazyLogging {
 
     def toDomainArticle(newArticle: api.NewArticle,
-                        externalId: List[String],
+                        externalIds: List[String],
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       articleApiClient.allocateArticleId(List.empty, Seq.empty) match {
@@ -48,7 +48,7 @@ trait ConverterService {
             .map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language))
             .toSeq
 
-          val status = externalId match {
+          val status = externalIds match {
             case Nil          => Set(CREATED)
             case nonEmptyList => Set(CREATED, IMPORTED)
           }
