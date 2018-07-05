@@ -17,48 +17,13 @@ class SearchableArticleSerializerTest extends UnitSuite with TestEnvironment {
     introduction = SearchableLanguageValues(List(LanguageValue("nb", "ingress"), LanguageValue("en", "introduction"))),
     tags = SearchableLanguageList(
       List(LanguageValue("nb", List("m", "e", "r", "k")), LanguageValue("en", List("t", "a", "g", "s")))),
-    lastUpdated = new DateTime(2018, 2, 22, 13, 0, 51, DateTimeZone.UTC).toDate,
+    lastUpdated = new DateTime(2018, 2, 22, 13, 0, 51, DateTimeZone.UTC).withMillisOfSecond(0),
     license = Some("by-sa"),
     authors = Seq("Jonas Natty"),
     notes = Seq("jak"),
     articleType = "standard",
     defaultTitle = Some("tjuppidu")
   )
-
-  val searchableArticle1AsJson =
-    """{
-      |  "id":10,
-      |  "lastUpdated":"2018-02-22T13:00:51Z",
-      |  "license":"by-sa",
-      |  "authors":[
-      |    "Jonas Natty"
-      |  ],
-      |  "articleType":"standard",
-      |  "notes":[
-      |    "jak"
-      |  ],
-      |  "defaultTitle":"tjuppidu",
-      |  "title.nb":"tittel",
-      |  "title.en":"title",
-      |  "content.nb":"innhold",
-      |  "content.en":"content",
-      |  "visualElement.nb":"visueltelement",
-      |  "visualElement.en":"visualelement",
-      |  "introduction.nb":"ingress",
-      |  "introduction.en":"introduction",
-      |  "tags.nb":[
-      |    "m",
-      |    "e",
-      |    "r",
-      |    "k"
-      |  ],
-      |  "tags.en":[
-      |    "t",
-      |    "a",
-      |    "g",
-      |    "s"
-      |  ]
-      |}""".stripMargin
 
   val searchableConcept1 = SearchableConcept(
     id = 5.toLong,
@@ -67,34 +32,18 @@ class SearchableArticleSerializerTest extends UnitSuite with TestEnvironment {
     defaultTitle = Some("tjappsipappsi")
   )
 
-  val searchableConcept1AsJson =
-    """{
-      |  "id":5,
-      |  "defaultTitle":"tjappsipappsi",
-      |  "title.nb":"tittel",
-      |  "title.en":"title",
-      |  "content.nb":"innhold",
-      |  "content.en":"content"
-      |}""".stripMargin
-
-  test("That serialization of SearchableArticle works correctly") {
+  test("That deserialization and serialization of SearchableArticle works as expected") {
     val json = writePretty(searchableArticle1)
-    json.replace("\n", "") should be(searchableArticle1AsJson.replace("\n", ""))
+    val deserialized = read[SearchableArticle](json)
+
+    deserialized should be(searchableArticle1)
   }
 
-  test("That deserialization of SearchableArticle works correctly") {
-    val parsedSearchableArticle = read[SearchableArticle](searchableArticle1AsJson)
-    parsedSearchableArticle should be(searchableArticle1)
-  }
-
-  test("That serialization of SearchableConcept works correctly") {
+  test("That deserialization and serialization of SearchableConcept works correctly") {
     val json = writePretty(searchableConcept1)
-    json.replace("\n", "") should be(searchableConcept1AsJson.replace("\n", ""))
-  }
+    val deserialized = read[SearchableConcept](json)
 
-  test("That deserialization of SearchableConcept works correctly") {
-    val parsedSearchableArticle = read[SearchableConcept](searchableConcept1AsJson)
-    parsedSearchableArticle should be(searchableConcept1)
+    deserialized should be(searchableConcept1)
   }
 
 }

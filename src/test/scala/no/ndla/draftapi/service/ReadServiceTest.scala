@@ -102,4 +102,27 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
     occList.getNMostFrequent(3) should equal(Seq("tag", "is", "17. Mai"))
     occList.getNMostFrequent(4) should equal(Seq("tag", "is", "17. Mai", "lol"))
   }
+
+  test("addUrlOnResource adds url attribute on file embeds") {
+    val filePath = "files/lel/fileste.pdf"
+    val content =
+      s"""<div data-type="file"><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.File}" ${TagAttributes.DataPath}="$filePath" ${TagAttributes.Title}="This fancy pdf"><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.File}" ${TagAttributes.DataPath}="$filePath" ${TagAttributes.Title}="This fancy pdf"></div>"""
+    val expectedResult =
+      s"""<div data-type="file"><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.File}" ${TagAttributes.DataPath}="$filePath" ${TagAttributes.Title}="This fancy pdf" $urlAttr="http://api-gateway.ndla-local/$filePath"><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.File}" ${TagAttributes.DataPath}="$filePath" ${TagAttributes.Title}="This fancy pdf" $urlAttr="http://api-gateway.ndla-local/$filePath"></div>"""
+    val result = readService.addUrlOnResource(content)
+    result should equal(expectedResult)
+  }
+
+  test("addUrlOnEmbedTag converts single file embeds to anchor tags") {
+    val filePath = "files/lel/fileste.pdf"
+    val url = s"http://api-gateway.ndla-local/$filePath"
+    val title = "This fancy pdf"
+    val urlText = "Is this real url text?"
+    val content =
+      s"""<$resourceHtmlEmbedTag ${TagAttributes.DataAlt}="$urlText" $resourceAttr="${ResourceType.File}" ${TagAttributes.DataPath}="$filePath" ${TagAttributes.DataTitle}="$title">"""
+    val expectedResult =
+      s"""<a href="$url" title="$title">$urlText</a>"""
+    val result = readService.addUrlOnResource(content)
+    result should equal(expectedResult)
+  }
 }
