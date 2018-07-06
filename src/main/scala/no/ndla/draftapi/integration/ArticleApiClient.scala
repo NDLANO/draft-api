@@ -64,9 +64,14 @@ trait ArticleApiClient {
       delete[ContentId](s"$InternalEndpoint/concept/$id/")
     }
 
-    def updateArticle(id: Long, article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
+    def updateArticle(id: Long,
+                      article: api.ArticleApiArticle,
+                      externalIds: List[String]): Try[api.ArticleApiArticle] = {
       implicit val format = org.json4s.DefaultFormats
-      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id", article)
+
+      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id",
+                                                                 article,
+                                                                 "external-id" -> externalIds.mkString(","))
     }
 
     def deleteArticle(id: Long): Try[ContentId] = {
@@ -96,12 +101,14 @@ trait ArticleApiClient {
       ndlaClient.fetchWithForwardedAuth[A](Http(endpointUrl).method("DELETE").params(params.toMap))
     }
 
-    private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B)(implicit mf: Manifest[A],
-                                                                           format: org.json4s.Formats): Try[A] = {
+    private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B, params: (String, String)*)(
+        implicit mf: Manifest[A],
+        format: org.json4s.Formats): Try[A] = {
       ndlaClient.fetchWithForwardedAuth[A](
         Http(endpointUrl)
           .postData(write(data))
           .method("POST")
+          .params(params.toMap)
           .header("content-type", "application/json")
       )
     }
