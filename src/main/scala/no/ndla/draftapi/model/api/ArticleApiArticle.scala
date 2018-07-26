@@ -31,7 +31,7 @@ case class ArticleApiRequiredLibrary(mediaType: String, name: String, url: Strin
 case class ArticleApiVisualElement(resource: String, language: String)
 case class ArticleApiIntroduction(introduction: String, language: String)
 case class ArticleApiMetaDescription(content: String, language: String)
-case class ArticleApiMetaImage(imageId: String, language: String)
+case class ArticleApiMetaImage(imageId: String, altText: String, language: String)
 case class ArticleApiCopyright(license: String,
                                origin: String,
                                creators: Seq[ArticleApiAuthor],

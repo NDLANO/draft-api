@@ -101,7 +101,7 @@ trait ContentValidator {
 
     private def validateConcept(concept: Concept, allowUnknownLanguage: Boolean): Try[Concept] = {
       val validationErrors = concept.content.flatMap(c => validateConceptContent(c, allowUnknownLanguage)) ++
-        concept.title.flatMap(t => validateTitle(t, allowUnknownLanguage))
+        concept.title.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {
         Success(concept)
@@ -162,12 +162,12 @@ trait ContentValidator {
             "title",
             "An article must contain at least one title. Perhaps you tried to delete the only title in the article?"))
       else
-        titles.flatMap(t => validateTitle(t, allowUnknownLanguage))
+        titles.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
     }
 
-    private def validateTitle(content: LanguageField[String], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
-      NoHtmlValidator.validate("title", content.value).toList ++
-        validateLanguage("language", content.language, allowUnknownLanguage)
+    private def validateTitle(title: String, language: String, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+      NoHtmlValidator.validate("title", title).toList ++
+        validateLanguage("language", language, allowUnknownLanguage)
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {

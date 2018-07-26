@@ -72,7 +72,7 @@ trait ConverterService {
                 newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
               metaDescription =
                 newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-              metaImage = newArticle.metaImageId.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
+              metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
               created = oldCreatedDate.getOrElse(clock.now()),
               updated = oldUpdatedDate.getOrElse(clock.now()),
               updatedBy = authUser.userOrClientId(),
@@ -126,8 +126,8 @@ trait ConverterService {
     def toDomainMetaDescription(meta: String, language: String): domain.ArticleMetaDescription =
       domain.ArticleMetaDescription(meta, language)
 
-    def toDomainMetaImage(imageId: String, language: String): domain.ArticleMetaImage =
-      domain.ArticleMetaImage(imageId, language)
+    def toDomainMetaImage(metaImage: api.NewArticleMetaImage, language: String): domain.ArticleMetaImage =
+      domain.ArticleMetaImage(metaImage.id, metaImage.alt, language)
 
     def toDomainCopyright(newCopyright: api.NewAgreementCopyright): domain.Copyright = {
       val parser = ISODateTimeFormat.dateOptionalTimeParser()
@@ -267,7 +267,7 @@ trait ConverterService {
       api.ArticleContent(content.content, content.language)
 
     def toApiArticleMetaImage(metaImage: domain.ArticleMetaImage): api.ArticleMetaImage = {
-      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.language)
+      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.alt, metaImage.language)
     }
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
@@ -361,7 +361,7 @@ trait ConverterService {
         visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
         introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
         metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
-        metaImage = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.language)),
+        metaImage = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.altText, m.language)),
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
@@ -403,7 +403,7 @@ trait ConverterService {
                                            article.tags,
                                            article.introduction,
                                            article.metaDescription,
-                                           article.metaImageId,
+                                           article.metaImage,
                                            article.visualElement)
 
       langFields.foldRight(false)((curr, res) => res || curr.isDefined)
@@ -454,7 +454,7 @@ trait ConverterService {
                 mergeLanguageFields(toMergeInto.metaDescription,
                                     article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
               metaImage =
-                mergeLanguageFields(toMergeInto.metaImage, article.metaImageId.map(toDomainMetaImage(_, lang)).toSeq)
+                mergeLanguageFields(toMergeInto.metaImage, article.metaImage.map(toDomainMetaImage(_, lang)).toSeq) // TODO: funker denne merging'a når vi har alt-tekst (3 felter)?
             ))
       }
     }
@@ -486,7 +486,7 @@ trait ConverterService {
               visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
               introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
               metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-              metaImage = article.metaImageId.map(m => toDomainMetaImage(m, lang)).toSeq,
+              metaImage = article.metaImage.map(m => toDomainMetaImage(m, lang)).toSeq,
               created = createdDate,
               updated = updatedDate,
               authUser.userOrClientId(),
