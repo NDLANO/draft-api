@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi.repository
 
+import no.ndla.draftapi.model.domain.Article
 import no.ndla.draftapi.{DBMigrator, IntegrationSuite, TestData, TestEnvironment}
 import no.ndla.tag.IntegrationTest
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
@@ -15,15 +16,31 @@ import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   var repository: ArticleRepository = _
 
-  val sampleArticle = TestData.sampleArticleWithByNcSa
+  val sampleArticle: Article = TestData.sampleArticleWithByNcSa
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     repository = new ArticleRepository()
   }
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     ConnectionPool.singleton(new DataSourceConnectionPool(getDataSource))
     DBMigrator.migrate(getDataSource)
+  }
+
+  test("Fetching external ids works as expected") {
+    val externalIds = List("1", "2", "3")
+    val idWithExternals = 1
+    val idWithoutExternals = 2
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithExternals)), externalIds, List.empty)
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithoutExternals)), List.empty, List.empty)
+
+    val result1 = repository.getExternalIdsFromId(idWithExternals)
+    result1 should be(externalIds)
+    val result2 = repository.getExternalIdsFromId(idWithoutExternals)
+    result2 should be(List.empty)
+
+    repository.delete(idWithExternals)
+    repository.delete(idWithoutExternals)
   }
 
 }

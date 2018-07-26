@@ -149,9 +149,16 @@ trait DraftRepository {
         .apply()
     }
 
+    private def externalIdsFromResultSet(wrappedResultSet: WrappedResultSet): List[String] = {
+      Option(wrappedResultSet.array("external_id"))
+        .map(_.getArray.asInstanceOf[Array[String]])
+        .getOrElse(Array.empty)
+        .toList
+    }
+
     def getExternalIdsFromId(id: Long)(implicit session: DBSession = AutoSession): List[String] = {
       sql"select external_id from ${Article.table} where id=${id.toInt}"
-        .map(rs => rs.array("external_id").getArray.asInstanceOf[Array[String]].toList)
+        .map(externalIdsFromResultSet)
         .single
         .apply()
         .getOrElse(List.empty)
@@ -163,7 +170,7 @@ trait DraftRepository {
           rs =>
             ArticleIds(
               rs.long("id"),
-              rs.array("external_id").getArray.asInstanceOf[Array[String]].toList
+              externalIdsFromResultSet(rs)
           ))
         .list
         .apply
