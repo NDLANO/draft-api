@@ -267,7 +267,7 @@ trait ConverterService {
       api.ArticleContent(content.content, content.language)
 
     def toApiArticleMetaImage(metaImage: domain.ArticleMetaImage): api.ArticleMetaImage = {
-      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.alt, metaImage.language)
+      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.altText, metaImage.language)
     }
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
@@ -522,7 +522,7 @@ trait ConverterService {
       )
     }
 
-    private[service] def mergeLanguageFields[A <: LanguageField[_]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
+    private[service] def mergeLanguageFields[A <: LanguageField](existing: Seq[A], updated: Seq[A]): Seq[A] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.isEmpty)
     }

@@ -7,6 +7,6 @@
 
 package no.ndla.draftapi.model.domain
 
-case class ArticleMetaImage(imageId: String, alt: String, language: String) extends LanguageField {
-  override def isEmpty: Boolean = imageId.isEmpty && alt.isEmpty
+case class ArticleMetaImage(imageId: String, altText: String, language: String) extends LanguageField {
+  override def isEmpty: Boolean = imageId.isEmpty && altText.isEmpty
 }
