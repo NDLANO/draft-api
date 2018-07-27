@@ -63,9 +63,7 @@ class V7__AddImageMetaAltText extends JdbcMigration {
   }
 
   def convertMetaImage(images: List[V6_MetaImage]): JValue = {
-    val newMetaImages = images.map(image =>
-      V7_MetaImage(image.imageId, image.altText.getOrElse(""), image.language)
-    )
+    val newMetaImages = images.map(image => V7_MetaImage(image.imageId, image.altText.getOrElse(""), image.language))
     decompose(newMetaImages)
   }
 

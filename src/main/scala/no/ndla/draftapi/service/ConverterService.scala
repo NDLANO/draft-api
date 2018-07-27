@@ -267,7 +267,9 @@ trait ConverterService {
       api.ArticleContent(content.content, content.language)
 
     def toApiArticleMetaImage(metaImage: domain.ArticleMetaImage): api.ArticleMetaImage = {
-      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}", metaImage.altText, metaImage.language)
+      api.ArticleMetaImage(s"${externalApiUrls("raw-image")}/${metaImage.imageId}",
+                           metaImage.altText,
+                           metaImage.language)
     }
 
     def toApiCopyright(copyright: domain.Copyright): api.Copyright = {
@@ -453,8 +455,10 @@ trait ConverterService {
               metaDescription =
                 mergeLanguageFields(toMergeInto.metaDescription,
                                     article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-              metaImage =
-                mergeLanguageFields(toMergeInto.metaImage, article.metaImage.map(toDomainMetaImage(_, lang)).toSeq) // TODO: funker denne merging'a når vi har alt-tekst (3 felter)?
+              metaImage = mergeLanguageFields(toMergeInto.metaImage,
+                                              article.metaImage
+                                                .map(toDomainMetaImage(_, lang))
+                                                .toSeq)
             ))
       }
     }

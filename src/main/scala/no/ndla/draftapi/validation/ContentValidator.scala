@@ -165,7 +165,9 @@ trait ContentValidator {
         titles.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
     }
 
-    private def validateTitle(title: String, language: String, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+    private def validateTitle(title: String,
+                              language: String,
+                              allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("title", title).toList ++
         validateLanguage("language", language, allowUnknownLanguage)
     }
