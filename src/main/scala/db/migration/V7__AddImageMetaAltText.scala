@@ -64,7 +64,7 @@ class V7__AddImageMetaAltText extends JdbcMigration {
 
   def convertMetaImage(images: List[V6_MetaImage]): JValue = {
     val newMetaImages = images.map(image =>
-      V7_MetaImage(image.imageId, "", image.language)
+      V7_MetaImage(image.imageId, image.altText.getOrElse(""), image.language)
     )
     decompose(newMetaImages)
   }
@@ -90,7 +90,7 @@ class V7__AddImageMetaAltText extends JdbcMigration {
       .apply
   }
 
-  case class V6_MetaImage(imageId: String, language: String)
+  case class V6_MetaImage(imageId: String, altText: Option[String], language: String)
   case class V7_MetaImage(imageId: String, altText: String, language: String)
 
 }
