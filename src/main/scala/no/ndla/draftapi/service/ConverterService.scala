@@ -191,7 +191,8 @@ trait ConverterService {
             article.introduction,
             article.metaDescription,
             article.tags,
-            article.content)
+            article.content,
+            article.metaImage)
       )
       val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
 
