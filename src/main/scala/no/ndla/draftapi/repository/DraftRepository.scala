@@ -120,8 +120,10 @@ trait DraftRepository {
     def withIdAndExternalIds(articleId: Long)(
         implicit session: DBSession = AutoSession): Option[(Article, List[String])] = {
       val ar = Article.syntax("ar")
-      sql"select external_id, ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and ar.id=${articleId.toInt}"
-        .map(rs => (Article(ar)(rs), rs.array("external_id").getArray.asInstanceOf[Array[String]].toList))
+      sql"""select external_id, ${ar.result.*}
+            from ${Article.as(ar)}
+            where ar.document is not NULL and ar.id=${articleId.toInt}"""
+        .map(rs => (Article(ar)(rs), externalIdsFromResultSet(rs)))
         .single
         .apply()
     }
