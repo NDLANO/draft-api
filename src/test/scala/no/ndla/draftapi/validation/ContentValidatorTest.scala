@@ -224,9 +224,11 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
   }
 
   test("validation should fail if metaImage altText contains html") {
-    val article = TestData.sampleArticleWithByNcSa.copy(metaImage = Seq(ArticleMetaImage("1234", "<b>Ikke krutte god<b>", "nb")))
+    val article =
+      TestData.sampleArticleWithByNcSa.copy(metaImage = Seq(ArticleMetaImage("1234", "<b>Ikke krutte god<b>", "nb")))
     val Failure(res1: ValidationException) = contentValidator.validateArticle(article, true)
-    res1.errors should be(Seq(ValidationMessage("metaImage.alt", "The content contains illegal html-characters. No HTML is allowed")))
+    res1.errors should be(
+      Seq(ValidationMessage("metaImage.alt", "The content contains illegal html-characters. No HTML is allowed")))
 
     val article2 = TestData.sampleArticleWithByNcSa.copy(metaImage = Seq(ArticleMetaImage("1234", "Krutte god", "nb")))
     contentValidator.validateArticle(article2, true).isSuccess should be(true)
