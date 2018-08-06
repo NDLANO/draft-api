@@ -77,7 +77,7 @@ trait ContentValidator {
         article.copyright.map(x => validateCopyright(x)).toSeq.flatten ++
         validateTags(article.tags, allowUnknownLanguage) ++
         article.requiredLibraries.flatMap(validateRequiredLibrary) ++
-        article.metaImage.flatMap(validateMetaImageId) ++
+        article.metaImage.flatMap(validateMetaImage) ++
         article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {
@@ -219,9 +219,15 @@ trait ContentValidator {
       }
     }
 
-    private def validateMetaImageId(metaImageId: ArticleMetaImage): Option[ValidationMessage] = {
+    private def validateMetaImage(metaImage: ArticleMetaImage): Seq[ValidationMessage] =
+      (validateMetaImageId(metaImage.imageId) ++ validateMetaImageAltText(metaImage.altText)).toSeq
+
+    private def validateMetaImageAltText(altText: String): Seq[ValidationMessage] =
+      NoHtmlValidator.validate("metaImage.alt", altText)
+
+    private def validateMetaImageId(id: String) = {
       def isAllDigits(x: String) = x forall Character.isDigit
-      isAllDigits(metaImageId.imageId) match {
+      isAllDigits(id) match {
         case true  => None
         case false => Some(ValidationMessage("metaImageId", "Meta image ID must be a number"))
       }

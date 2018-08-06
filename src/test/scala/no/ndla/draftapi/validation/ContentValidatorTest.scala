@@ -11,7 +11,9 @@ import no.ndla.draftapi.DraftApiProperties.H5PResizerScriptUrl
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{DraftApiProperties, TestData, TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
-import no.ndla.validation.ValidationException
+import no.ndla.validation.{ValidationException, ValidationMessage}
+
+import scala.util.Failure
 
 class ContentValidatorTest extends UnitSuite with TestEnvironment {
   override val contentValidator = new ContentValidator(allowEmptyLanguageField = false)
@@ -219,6 +221,15 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     val errors = contentValidator.validateDates(agreementCopyright)
 
     errors.size should be(2)
+  }
+
+  test("validation should fail if metaImage altText contains html") {
+    val article = TestData.sampleArticleWithByNcSa.copy(metaImage = Seq(ArticleMetaImage("1234", "<b>Ikke krutte god<b>", "nb")))
+    val Failure(res1: ValidationException) = contentValidator.validateArticle(article, true)
+    res1.errors should be(Seq(ValidationMessage("metaImage.alt", "The content contains illegal html-characters. No HTML is allowed")))
+
+    val article2 = TestData.sampleArticleWithByNcSa.copy(metaImage = Seq(ArticleMetaImage("1234", "Krutte god", "nb")))
+    contentValidator.validateArticle(article2, true).isSuccess should be(true)
   }
 
 }
