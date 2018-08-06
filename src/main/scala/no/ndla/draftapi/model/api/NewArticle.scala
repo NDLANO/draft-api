@@ -19,7 +19,7 @@ case class NewArticle(
     @(ApiModelProperty @field)(description = "Searchable tags") tags: Seq[String],
     @(ApiModelProperty @field)(description = "An introduction") introduction: Option[String],
     @(ApiModelProperty @field)(description = "A meta description") metaDescription: Option[String],
-    @(ApiModelProperty @field)(description = "An image-api ID for the article meta image") metaImageId: Option[String],
+    @(ApiModelProperty @field)(description = "Meta image for the article") metaImage: Option[NewArticleMetaImage],
     @(ApiModelProperty @field)(description =
       "A visual element for the article. May be anything from an image to a video or H5P") visualElement: Option[
       String],

@@ -77,7 +77,7 @@ trait ContentValidator {
         article.copyright.map(x => validateCopyright(x)).toSeq.flatten ++
         validateTags(article.tags, allowUnknownLanguage) ++
         article.requiredLibraries.flatMap(validateRequiredLibrary) ++
-        article.metaImage.flatMap(validateMetaImageId) ++
+        article.metaImage.flatMap(validateMetaImage) ++
         article.visualElement.flatMap(v => validateVisualElement(v, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {
@@ -101,7 +101,7 @@ trait ContentValidator {
 
     private def validateConcept(concept: Concept, allowUnknownLanguage: Boolean): Try[Concept] = {
       val validationErrors = concept.content.flatMap(c => validateConceptContent(c, allowUnknownLanguage)) ++
-        concept.title.flatMap(t => validateTitle(t, allowUnknownLanguage))
+        concept.title.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
 
       if (validationErrors.isEmpty) {
         Success(concept)
@@ -162,12 +162,14 @@ trait ContentValidator {
             "title",
             "An article must contain at least one title. Perhaps you tried to delete the only title in the article?"))
       else
-        titles.flatMap(t => validateTitle(t, allowUnknownLanguage))
+        titles.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
     }
 
-    private def validateTitle(content: LanguageField[String], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
-      NoHtmlValidator.validate("title", content.value).toList ++
-        validateLanguage("language", content.language, allowUnknownLanguage)
+    private def validateTitle(title: String,
+                              language: String,
+                              allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+      NoHtmlValidator.validate("title", title).toList ++
+        validateLanguage("language", language, allowUnknownLanguage)
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
@@ -217,9 +219,15 @@ trait ContentValidator {
       }
     }
 
-    private def validateMetaImageId(metaImageId: ArticleMetaImage): Option[ValidationMessage] = {
+    private def validateMetaImage(metaImage: ArticleMetaImage): Seq[ValidationMessage] =
+      (validateMetaImageId(metaImage.imageId) ++ validateMetaImageAltText(metaImage.altText)).toSeq
+
+    private def validateMetaImageAltText(altText: String): Seq[ValidationMessage] =
+      NoHtmlValidator.validate("metaImage.alt", altText)
+
+    private def validateMetaImageId(id: String) = {
       def isAllDigits(x: String) = x forall Character.isDigit
-      isAllDigits(metaImageId.imageId) match {
+      isAllDigits(id) match {
         case true  => None
         case false => Some(ValidationMessage("metaImageId", "Meta image ID must be a number"))
       }

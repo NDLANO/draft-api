@@ -178,6 +178,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedMetaDescription = "updatedMetaHere"
     val updatedIntro = "introintro"
     val updatedMetaId = "1234"
+    val updatedMetaAlt = "HeheAlt"
+    val newImageMeta = api.NewArticleMetaImage(updatedMetaId, updatedMetaAlt)
     val updatedVisualElement = "<embed something>"
     val updatedCopyright = api.Copyright(Some(api.License("a", Some("b"), None)),
                                          Some("c"),
@@ -197,7 +199,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some(updatedTags),
       Some(updatedIntro),
       Some(updatedMetaDescription),
-      Some(updatedMetaId),
+      Some(newImageMeta),
       Some(updatedVisualElement),
       Some(updatedCopyright),
       Some(Seq(updatedRequiredLib)),
@@ -216,7 +218,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       visualElement = Seq(VisualElement(updatedVisualElement, "en")),
       introduction = Seq(ArticleIntroduction(updatedIntro, "en")),
       metaDescription = Seq(ArticleMetaDescription(updatedMetaDescription, "en")),
-      metaImage = Seq(ArticleMetaImage(updatedMetaId, "en")),
+      metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
       updated = today
     )
 

@@ -7,12 +7,7 @@
 
 package no.ndla.draftapi.model.domain
 
-trait WithLanguage {
-  def language: String
-}
-
-trait LanguageField[T] extends WithLanguage {
-  def value: T
+trait LanguageField {
   def isEmpty: Boolean
   def language: String
 }

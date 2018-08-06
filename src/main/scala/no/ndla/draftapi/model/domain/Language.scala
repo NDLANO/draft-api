@@ -9,6 +9,7 @@ package no.ndla.draftapi.model.domain
 
 import com.sksamuel.elastic4s.analyzers._
 import no.ndla.mapping.ISO639
+import scala.language.reflectiveCalls
 
 object Language {
   val DefaultLanguage = "nb"
@@ -30,13 +31,13 @@ object Language {
 
   val supportedLanguages = languageAnalyzers.map(_.lang)
 
-  def findByLanguageOrBestEffort[P <: LanguageField[_]](sequence: Seq[P], language: String): Option[P] = {
+  def findByLanguageOrBestEffort[P <: LanguageField](sequence: Seq[P], language: String): Option[P] = {
     sequence
       .find(_.language == language)
       .orElse(sequence.sortBy(lf => ISO639.languagePriority.reverse.indexOf(lf.language)).lastOption)
   }
 
-  def getSupportedLanguages(sequences: Seq[Seq[WithLanguage]]): Seq[String] = {
+  def getSupportedLanguages(sequences: Seq[Seq[LanguageField]]): Seq[String] = {
     sequences.flatMap(_.map(_.language)).distinct.sortBy { lang =>
       ISO639.languagePriority.indexOf(lang)
     }
@@ -48,14 +49,6 @@ object Language {
       l
     else
       supportedLanguages.head
-  }
-
-  def findByLanguage[T](sequence: Seq[LanguageField[T]], lang: String): Option[LanguageField[T]] = {
-    sequence.find(_.language == lang)
-  }
-
-  def findValueByLanguage[T](sequence: Seq[LanguageField[T]], lang: String): Option[T] = {
-    findByLanguage(sequence, lang).map(_.value)
   }
 }
 
