@@ -21,9 +21,10 @@ import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
+import scala.annotation.tailrec
 import scala.concurrent._
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait InternController {
   this: ReadService
@@ -108,9 +109,20 @@ trait InternController {
       }
     }
 
+    @tailrec
+    private def deleteArticleWithRetries(id: Long, maxRetries: Int = 10, retries: Int = 0): Try[ContentId] = {
+      articleApiClient.deleteArticle(id) match {
+        case Failure(_) if retries <= maxRetries => deleteArticleWithRetries(id, maxRetries, retries + 1)
+        case Failure(ex)                         => Failure(ex)
+        case Success(x)                          => Success(x)
+      }
+    }
+
     delete("/article/:id/") {
       authRole.assertHasWritePermission()
-      articleApiClient.deleteArticle(long("id")).flatMap(id => writeService.deleteArticle(id.id)) match {
+
+      val id = long("id")
+      deleteArticleWithRetries(id).flatMap(id => writeService.deleteArticle(id.id)) match {
         case Success(a)  => a
         case Failure(ex) => errorHandler(ex)
       }
