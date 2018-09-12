@@ -28,6 +28,7 @@ trait ArticleApiClient {
 
   class ArticleApiClient {
     private val InternalEndpoint = s"http://$ArticleApiHost/intern"
+    private val deleteTimeout = 1000 * 10 // 10 seconds
 
     def allocateArticleId(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
@@ -98,7 +99,8 @@ trait ArticleApiClient {
 
     private def delete[A](endpointUrl: String, params: (String, String)*)(implicit mf: Manifest[A],
                                                                           format: org.json4s.Formats): Try[A] = {
-      ndlaClient.fetchWithForwardedAuth[A](Http(endpointUrl).method("DELETE").params(params.toMap))
+      ndlaClient.fetchWithForwardedAuth[A](
+        Http(endpointUrl).method("DELETE").params(params.toMap).timeout(deleteTimeout, deleteTimeout))
     }
 
     private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B, params: (String, String)*)(
