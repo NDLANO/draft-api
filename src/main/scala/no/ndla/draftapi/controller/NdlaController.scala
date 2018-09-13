@@ -7,21 +7,13 @@
 
 package no.ndla.draftapi.controller
 
+import com.netaporter.uri.parsing.UriParser.UserInfo
 import javax.servlet.http.HttpServletRequest
-
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.ComponentRegistry
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
-import no.ndla.draftapi.model.api.{
-  AccessDeniedException,
-  ArticlePublishException,
-  ArticleStatusException,
-  Error,
-  NotFoundException,
-  OptimisticLockException,
-  ResultWindowTooLargeException,
-  ValidationError
-}
+import no.ndla.draftapi.auth.UserInfo
+import no.ndla.draftapi.model.api.{AccessDeniedException, ArticlePublishException, ArticleStatusException, Error, NotFoundException, OptimisticLockException, ResultWindowTooLargeException, ValidationError}
 import no.ndla.draftapi.model.domain.emptySomeToNone
 import no.ndla.network.model.HttpRequestException
 import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
@@ -166,6 +158,16 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
         throw new ValidationException(errors = Seq(ValidationMessage("body", e.getMessage)))
       }
       case Success(data) => data
+    }
+  }
+
+  def getUser: UserInfo = UserInfo.get
+
+  def doOrAccessDenied(hasAccess: Boolean)(w: => Any): Any = {
+    if (hasAccess) {
+      w()
+    } else {
+      errorHandler(new AccessDeniedException("User id or Client id required to perform this operation"))
     }
   }
 

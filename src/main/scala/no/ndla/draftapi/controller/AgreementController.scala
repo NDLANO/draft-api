@@ -8,14 +8,11 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.{Language, Sort}
+import no.ndla.draftapi.model.domain.Sort
 import no.ndla.draftapi.service.search.{AgreementSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
-import no.ndla.mapping
-import no.ndla.mapping.LicenseDefinition
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
 import org.scalatra.{Created, NotFound, Ok}
@@ -28,9 +25,7 @@ trait AgreementController {
     with AgreementSearchService
     with ConverterService
     with SearchConverterService
-    with ReindexClient
-    with Role
-    with User =>
+    with ReindexClient =>
   val agreementController: AgreementController
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -145,14 +140,15 @@ trait AgreementController {
         responseMessages (response400, response403, response500))
 
     post("/", operation(newAgreement)) {
-      authUser.assertHasId()
-      authRole.assertHasWritePermission()
-      val newAgreement = extract[NewAgreement](request.body)
-      writeService.newAgreement(newAgreement) match {
-        case Success(agreement) =>
-          reindexClient.reindexAll()
-          Created(body = agreement)
-        case Failure(exception) => errorHandler(exception)
+      val user = getUser
+      doOrAccessDenied(user.canWrite) {
+        val newAgreement = extract[NewAgreement](request.body)
+        writeService.newAgreement(newAgreement, user) match {
+          case Success(agreement) =>
+            reindexClient.reindexAll()
+            Created(body = agreement)
+          case Failure(exception) => errorHandler(exception)
+        }
       }
     }
 
@@ -169,16 +165,17 @@ trait AgreementController {
         responseMessages (response400, response403, response404, response500))
 
     patch("/:agreement_id", operation(updateAgreement)) {
-      authUser.assertHasId()
-      authRole.assertHasWritePermission()
+      val user = getUser
 
-      val agreementId = long(this.agreementId.paramName)
-      val updatedAgreement = extract[UpdatedAgreement](request.body)
-      writeService.updateAgreement(agreementId, updatedAgreement) match {
-        case Success(agreement) =>
-          reindexClient.reindexAll()
-          Ok(body = agreement)
-        case Failure(exception) => errorHandler(exception)
+      doOrAccessDenied(user.canWrite) {
+        val agreementId = long(this.agreementId.paramName)
+        val updatedAgreement = extract[UpdatedAgreement](request.body)
+        writeService.updateAgreement(agreementId, updatedAgreement, user) match {
+          case Success(agreement) =>
+            reindexClient.reindexAll()
+            Ok(body = agreement)
+          case Failure(exception) => errorHandler(exception)
+        }
       }
     }
 

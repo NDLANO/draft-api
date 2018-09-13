@@ -8,7 +8,6 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
@@ -47,8 +46,6 @@ trait TestEnvironment
     with WriteService
     with ContentValidator
     with Clock
-    with User
-    with Role
     with ArticleApiClient {
   val articleSearchService = mock[ArticleSearchService]
   val articleIndexService = mock[ArticleIndexService]
@@ -82,8 +79,6 @@ trait TestEnvironment
   val e4sClient = mock[NdlaE4sClient]
 
   val clock = mock[SystemClock]
-  val authUser = mock[AuthUser]
-  val authRole = new AuthRole
 
   val articleApiClient = mock[ArticleApiClient]
 }

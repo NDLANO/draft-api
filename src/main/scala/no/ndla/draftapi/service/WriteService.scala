@@ -9,16 +9,16 @@ package no.ndla.draftapi.service
 
 import java.util.Date
 
-import no.ndla.draftapi.auth.{Role, User}
+import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
+import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
-import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
-import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 
 import scala.util.{Failure, Success, Try}
 
@@ -32,16 +32,16 @@ trait WriteService {
     with AgreementIndexService
     with ConceptIndexService
     with Clock
-    with User
     with ReadService
     with ArticleApiClient
-    with Role
     with ArticleApiClient =>
   val writeService: WriteService
 
   class WriteService {
 
-    def updateAgreement(agreementId: Long, updatedAgreement: api.UpdatedAgreement): Try[api.Agreement] = {
+    def updateAgreement(agreementId: Long,
+                        updatedAgreement: api.UpdatedAgreement,
+                        user: UserInfo): Try[api.Agreement] = {
       agreementRepository.withId(agreementId) match {
         case None => Failure(NotFoundException(s"Agreement with id $agreementId does not exist"))
         case Some(existing) =>
@@ -51,7 +51,7 @@ trait WriteService {
             copyright =
               updatedAgreement.copyright.map(c => converterService.toDomainCopyright(c)).getOrElse(existing.copyright),
             updated = clock.now(),
-            updatedBy = authUser.userOrClientId()
+            updatedBy = user.id
           )
 
           val dateErrors = updatedAgreement.copyright
@@ -66,10 +66,10 @@ trait WriteService {
       }
     }
 
-    def newAgreement(newAgreement: api.NewAgreement): Try[api.Agreement] = {
+    def newAgreement(newAgreement: api.NewAgreement, user: UserInfo): Try[api.Agreement] = {
       val apiErrors = contentValidator.validateDates(newAgreement.copyright)
 
-      val domainAgreement = converterService.toDomainAgreement(newAgreement)
+      val domainAgreement = converterService.toDomainAgreement(newAgreement, user)
       contentValidator.validateAgreement(domainAgreement, preExistingErrors = apiErrors) match {
         case Success(_) =>
           val agreement = agreementRepository.insert(domainAgreement)
@@ -82,6 +82,7 @@ trait WriteService {
     def newArticle(newArticle: api.NewArticle,
                    externalIds: List[String],
                    externalSubjectIds: Seq[String],
+                   user: UserInfo,
                    oldNdlaCreatedDate: Option[Date],
                    oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       val insertNewArticleFunction = externalIds match {
@@ -93,6 +94,7 @@ trait WriteService {
       for {
         domainArticle <- converterService.toDomainArticle(newArticle,
                                                           externalIds,
+                                                          user,
                                                           oldNdlaCreatedDate,
                                                           oldNdlaUpdatedDate)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
@@ -100,6 +102,20 @@ trait WriteService {
         _ <- articleIndexService.indexDocument(insertedArticle)
         apiArticle <- converterService.toApiArticle(insertedArticle, newArticle.language)
       } yield apiArticle
+    }
+
+    def updateArticleStatus(status: domain.ArticleStatus.Value, id: Long, user: UserInfo): Try[api.Article] = {
+      draftRepository.withId(id) match {
+        case None => Failure(NotFoundException(s"No article with id $id was found"))
+        case Some(draft) =>
+          if (StateTransitionRules.transitionIsLegal(draft.status.current, status, user)) {
+            val newOther = StateTransitionRules.addStateToOther(draft.status.other, draft.status.current, status)
+            val newStatus = draft.status.copy(current = status, other = newOther)
+
+            converterService.toApiArticle(draft.copy(status = newStatus), Language.AllLanguages, fallback = true)
+          } else
+            Failure(IllegalStatusStateTransition(s"Cannot go to $status when article is ${draft.status.current}"))
+      }
     }
 
     private def updateArticle(toUpdate: domain.Article,
@@ -126,10 +142,11 @@ trait WriteService {
                       updatedApiArticle: api.UpdatedArticle,
                       externalIds: List[String],
                       externalSubjectIds: Seq[String],
+                      user: UserInfo,
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
-        case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
+        case Some(existing) if existing.status.current == QUEUED_FOR_PUBLISHING && !user.canPublish => // TODO
           Failure(
             new OperationNotAllowedException(
               "This article is marked for publishing and it cannot be updated until it is published"))
@@ -138,6 +155,7 @@ trait WriteService {
             domainArticle <- converterService.toDomainArticle(existing,
                                                               updatedApiArticle,
                                                               externalIds.nonEmpty,
+                                                              user,
                                                               oldNdlaCreatedDate,
                                                               oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(domainArticle,
@@ -153,6 +171,7 @@ trait WriteService {
             article <- converterService.toDomainArticle(articleId,
                                                         updatedApiArticle,
                                                         externalIds.nonEmpty,
+                                                        user,
                                                         oldNdlaCreatedDate,
                                                         oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(article, externalIds, externalSubjectIds)
@@ -286,5 +305,4 @@ trait WriteService {
     }
 
   }
-
 }

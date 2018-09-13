@@ -35,8 +35,7 @@ trait InternController {
     with ArticleIndexService
     with ConceptIndexService
     with AgreementIndexService
-    with ArticleApiClient
-    with Role =>
+    with ArticleApiClient =>
   val internController: InternController
 
   class InternController(implicit val swagger: Swagger) extends NdlaController {
@@ -95,17 +94,19 @@ trait InternController {
     }
 
     post("/articles/publish/") {
-      authRole.assertHasPublishPermission()
-      writeService.publishArticles()
+      doOrAccessDenied(getUser.canPublish) {
+        writeService.publishArticles()
+      }
     }
 
     post("/article/:id/publish/") {
-      authRole.assertHasPublishPermission()
-      val importPublish = booleanOrDefault("import_publish", default = false)
+      doOrAccessDenied(getUser.canPublish) {
+        val importPublish = booleanOrDefault("import_publish", default = false)
 
-      writeService.publishArticle(long("id"), importPublish) match {
-        case Success(s)  => converterService.toApiStatus(s.status)
-        case Failure(ex) => errorHandler(ex)
+        writeService.publishArticle(long("id"), importPublish) match {
+          case Success(s)  => converterService.toApiStatus(s.status)
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
@@ -119,47 +120,51 @@ trait InternController {
     }
 
     delete("/article/:id/") {
-      authRole.assertHasWritePermission()
-
-      val id = long("id")
-      deleteArticleWithRetries(id).flatMap(id => writeService.deleteArticle(id.id)) match {
-        case Success(a)  => a
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(getUser.canWrite) {
+        val id = long("id")
+        deleteArticleWithRetries(id).flatMap(id => writeService.deleteArticle(id.id)) match {
+          case Success(a)  => a
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     post("/concept/:id/publish/") {
-      authRole.assertHasPublishPermission()
-      writeService.publishConcept(long("id")) match {
-        case Success(s)  => s.id.map(ContentId)
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(getUser.canWrite) {
+        writeService.publishConcept(long("id")) match {
+          case Success(s)  => s.id.map(ContentId)
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     delete("/concept/:id/") {
-      authRole.assertHasWritePermission()
-      articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
-        case Success(c)  => c
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(getUser.canWrite) {
+        articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
+          case Success(c)  => c
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     post("/empty_article/") {
-      authRole.assertHasWritePermission()
-      val externalId = paramAsListOfString("externalId")
-      val externalSubjectIds = paramAsListOfString("externalSubjectId")
-      writeService.newEmptyArticle(externalId, externalSubjectIds) match {
-        case Success(id) => ContentId(id)
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(getUser.canWrite) {
+        val externalId = paramAsListOfString("externalId")
+        val externalSubjectIds = paramAsListOfString("externalSubjectId")
+        writeService.newEmptyArticle(externalId, externalSubjectIds) match {
+          case Success(id) => ContentId(id)
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     post("/empty_concept/") {
-      authRole.assertHasWritePermission()
-      val externalId = paramAsListOfString("externalId")
-      writeService.newEmptyConcept(externalId) match {
-        case Success(id) => id
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(getUser.canWrite) {
+        val externalId = paramAsListOfString("externalId")
+        writeService.newEmptyConcept(externalId) match {
+          case Success(id) => id
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 

@@ -176,11 +176,12 @@ trait ConceptController {
         responseMessages (response404, response500))
 
     post("/", operation(newConcept)) {
-      authRole.assertHasWritePermission()
-      val nid = params("externalId")
-      writeService.newConcept(extract[NewConcept](request.body), nid) match {
-        case Success(c)  => c
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(getUser.canWrite) {
+        val nid = params("externalId")
+        writeService.newConcept(extract[NewConcept](request.body), nid) match {
+          case Success(c)  => c
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
@@ -196,12 +197,13 @@ trait ConceptController {
         responseMessages (response404, response500))
 
     patch("/:concept_id", operation(updateConcept)) {
-      authRole.assertHasWritePermission()
-      val externalId = paramOrNone("externalId")
+      doOrAccessDenied(getUser.canWrite) {
+        val externalId = paramOrNone("externalId")
 
-      writeService.updateConcept(long(this.conceptId.paramName), extract[UpdatedConcept](request.body), externalId) match {
-        case Success(c)  => c
-        case Failure(ex) => errorHandler(ex)
+        writeService.updateConcept(long(this.conceptId.paramName), extract[UpdatedConcept](request.body), externalId) match {
+          case Success(c)  => c
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
