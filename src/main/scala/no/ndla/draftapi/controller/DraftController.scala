@@ -285,10 +285,10 @@ trait DraftController {
       }
     }
 
-    val queueDraftForPublishing =
-      (apiOperation[api.Status]("queueDraftForPublishing ")
-        summary "Queue the article for publishing"
-        notes "Queue the article for publishing"
+    val publishDraft =
+      (apiOperation[api.Status]("publishDraft")
+        summary "Publish the article. Only available for admins"
+        notes "Publish the article. Only available for admins"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asPathParam[Long](articleId)
@@ -296,13 +296,13 @@ trait DraftController {
         authorizations "oauth2"
         responseMessages (response400, response403, response404, response500))
 
-    put("/:article_id/publish/", operation(queueDraftForPublishing)) {
+    put("/:article_id/publish/", operation(publishDraft)) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canPublish) {
         val id = long(this.articleId.paramName)
         val isImported = booleanOrDefault("import_publish", false)
 
-        writeService.queueArticleForPublish(id, isImported) match {
+        writeService.publishArticle(id, userInfo, isImported) match {
           case Success(s) => s
           case Failure(e) => errorHandler(e)
         }
@@ -384,6 +384,10 @@ trait DraftController {
         case Success(_)  => NoContent()
         case Failure(ex) => errorHandler(ex)
       }
+    }
+
+    get("/status-state-machine/") {
+      converterService.stateTransitionsToApi(user.getUser)
     }
 
   }

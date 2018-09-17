@@ -9,5 +9,6 @@ package no.ndla.draftapi.model.domain
 
 case class StateTransition(from: ArticleStatus.Value,
                            to: ArticleStatus.Value,
-                           addToOthers: Boolean = true,
+                           otherStatesToKeepOnTransition: Set[ArticleStatus.Value] = Set(ArticleStatus.IMPORTED),
+                           addCurrentStateToOthersOnTransition: Boolean = true,
                            adminRequired: Boolean = false)

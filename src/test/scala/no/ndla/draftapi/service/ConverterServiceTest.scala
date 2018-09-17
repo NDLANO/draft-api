@@ -107,37 +107,6 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
                               None,
                               None)
     res.status should equal(domain.Status(DRAFT, Set.empty))
-
-    val existing2 = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(DRAFT, Set(QUEUED_FOR_PUBLISHING)))
-    val Success(res2) = service.toDomainArticle(existing2,
-                                                TestData.sampleApiUpdateArticle.copy(language = Some("en")),
-                                                isImported = false,
-                                                TestData.userWithWriteAccess,
-                                                None,
-                                                None)
-    res2.status should equal(domain.Status(DRAFT, Set(QUEUED_FOR_PUBLISHING)))
-  }
-
-  test("toDomainArticle should set IMPORTED status if being imported") {
-    val Success(importRes) = service.toDomainArticle(
-      TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set())),
-      TestData.sampleApiUpdateArticle,
-      isImported = true,
-      TestData.userWithWriteAccess,
-      None,
-      None
-    )
-    importRes.status should equal(domain.Status(DRAFT, Set(IMPORTED)))
-
-    val Success(regularUpdate) = service.toDomainArticle(
-      TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set(IMPORTED))),
-      TestData.sampleApiUpdateArticle,
-      isImported = false,
-      TestData.userWithWriteAccess,
-      None,
-      None
-    )
-    regularUpdate.status should equal(domain.Status(DRAFT, Set(IMPORTED)))
   }
 
   test("toDomainArticle should fail if trying to update language fields without language being set") {

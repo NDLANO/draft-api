@@ -49,8 +49,8 @@ trait ConverterService {
             .toSeq
 
           val status = externalIds match {
-            case Nil          => domain.Status(DRAFT, Set.empty)
-            case nonEmptyList => domain.Status(DRAFT, Set(IMPORTED))
+            case Nil => domain.Status(DRAFT, Set.empty)
+            case _   => domain.Status(DRAFT, Set(IMPORTED))
           }
 
           val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
@@ -78,7 +78,7 @@ trait ConverterService {
               updatedBy = user.id,
               articleType = ArticleType.valueOfOrError(newArticle.articleType),
               newArticle.notes
-            ))
+            )).flatMap(updateStatus(DRAFT, _, user))
       }
     }
 
@@ -182,6 +182,10 @@ trait ConverterService {
         })
 
       HtmlTagRules.jsoupDocumentToString(document)
+    }
+
+    def updateStatus(status: ArticleStatus.Value, article: domain.Article, user: UserInfo): Try[domain.Article] = {
+      StateTransitionRules.doTransition(article.status, status, user).map(newStatus => article.copy(status = newStatus))
     }
 
     def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
@@ -422,14 +426,10 @@ trait ConverterService {
                         user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      val newOtherStatuses = toMergeInto.status.other.filterNot(_ == PUBLISHED) ++ (if (isImported) Set(IMPORTED)
-                                                                                    else Set.empty)
-      val status = domain.Status(DRAFT, newOtherStatuses)
 
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val partiallyConverted = toMergeInto.copy(
-        status = status,
         revision = Option(article.revision),
         copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
         requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
@@ -450,9 +450,9 @@ trait ConverterService {
             partiallyConverted.copy(
               title = mergeLanguageFields(toMergeInto.title,
                                           article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
-              content = mergeLanguageFields(toMergeInto.content,
-                                            article.content.toSeq.map(c =>
-                                              toDomainContent(api.ArticleContent(c, lang)))),
+              content =
+                mergeLanguageFields(toMergeInto.content,
+                                    article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
               tags = article.tags
                 .map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang)))
                 .getOrElse(toMergeInto.tags),
@@ -467,7 +467,7 @@ trait ConverterService {
                                               article.metaImage
                                                 .map(toDomainMetaImage(_, lang))
                                                 .toSeq)
-            ))
+            )).flatMap(updateStatus(DRAFT, _, user))
       }
     }
 
@@ -487,7 +487,7 @@ trait ConverterService {
         case Some(lang) =>
           val status =
             if (isImported) domain.Status(DRAFT, Set(ArticleStatus.IMPORTED))
-            else domain.Status(DRAFT, Set.empty) // TODO
+            else domain.Status(DRAFT, Set.empty)
           Success(
             domain.Article(
               id = Some(id),
@@ -507,7 +507,7 @@ trait ConverterService {
               user.id,
               articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
               article.notes.getOrElse(Seq.empty)
-            ))
+            )).flatMap(updateStatus(DRAFT, _, user))
       }
     }
 
@@ -540,6 +540,16 @@ trait ConverterService {
     private[service] def mergeLanguageFields[A <: LanguageField](existing: Seq[A], updated: Seq[A]): Seq[A] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.isEmpty)
+    }
+
+    def stateTransitionsToApi(user: UserInfo): Map[String, Seq[String]] = {
+      StateTransitionRules.StateTransitions.groupBy(_.from).map {
+        case (from, to) =>
+          from.toString -> to
+            .filter(t => (t.adminRequired && user.isAdmin) || !t.adminRequired) // filter out transitions which require admin if user is not admin
+            .map(_.to.toString)
+            .toSeq
+      }
     }
 
   }

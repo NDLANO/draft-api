@@ -108,13 +108,9 @@ trait WriteService {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"No article with id $id was found"))
         case Some(draft) =>
-          if (StateTransitionRules.transitionIsLegal(draft.status.current, status, user)) {
-            val newOther = StateTransitionRules.addStateToOther(draft.status.other, draft.status.current, status)
-            val newStatus = draft.status.copy(current = status, other = newOther)
-
-            converterService.toApiArticle(draft.copy(status = newStatus), Language.AllLanguages, fallback = true)
-          } else
-            Failure(IllegalStatusStateTransition(s"Cannot go to $status when article is ${draft.status.current}"))
+          converterService
+            .updateStatus(status, draft, user)
+            .flatMap(converterService.toApiArticle(_, Language.AllLanguages, fallback = true))
       }
     }
 
@@ -146,10 +142,6 @@ trait WriteService {
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
-        case Some(existing) if existing.status.current == QUEUED_FOR_PUBLISHING && !user.canPublish =>
-          Failure(
-            new OperationNotAllowedException(
-              "This article is marked for publishing and it cannot be updated until it is published"))
         case Some(existing) =>
           for {
             domainArticle <- converterService.toDomainArticle(existing,
@@ -182,42 +174,24 @@ trait WriteService {
       }
     }
 
-    def queueArticleForPublish(id: Long, isImported: Boolean = false): Try[api.Status] = {
-      draftRepository.withId(id) match {
-        case Some(a) =>
-          contentValidator.validateArticleApiArticle(id) match {
-            case Success(_) =>
-              val newStatus = a.status.copy(other = Set(QUEUED_FOR_PUBLISHING)) // TODO - should be handled by new status system: old was .filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
-              draftRepository
-                .update(a.copy(status = newStatus), isImported = isImported)
-                .map(a => converterService.toApiStatus(a.status))
-            case Failure(ex) => Failure(ex)
-          }
-        case None => Failure(NotFoundException(s"The article with id $id does not exist"))
-      }
-    }
-
-    def publishArticle(id: Long, isImported: Boolean = false): Try[domain.Article] = {
+    def publishArticle(id: Long, user: UserInfo, isImported: Boolean = false): Try[api.Status] = {
       draftRepository.withIdAndExternalIds(id) match {
-        case Some((article, externalIds)) if article.status.current == QUEUED_FOR_PUBLISHING =>
-          articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article), externalIds) match {
-            case Success(_) =>
-              val newStatus = article.status.copy(current = PUBLISHED) // TODO: should be handled by new status sytem
-              updateArticle(article.copy(status = newStatus), isImported = isImported)
-            case Failure(ex) => Failure(ex)
-          }
-        case Some(_) =>
-          Failure(new ArticleStatusException(s"Article with id $id is not marked for publishing"))
+        case Some((oldArticle, externalIds)) =>
+          converterService
+            .updateStatus(PUBLISHED, oldArticle, user)
+            .flatMap(articleApiClient.updateArticle(id, _, externalIds))
+            .flatMap(updateArticle(_, isImported = isImported))
+            .map(a => converterService.toApiStatus(a.status))
         case None =>
           Failure(NotFoundException(s"Article with id $id does not exist"))
       }
     }
 
-    def publishArticles(): ArticlePublishReport = {
+    def publishArticles(user: UserInfo): ArticlePublishReport = {
       val articlesToPublish = readService.articlesWithStatus(QUEUED_FOR_PUBLISHING)
 
       articlesToPublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
-        publishArticle(curr) match {
+        publishArticle(curr, user) match {
           case Success(_)  => result.addSuccessful(curr)
           case Failure(ex) => result.addFailed(FailedArticlePublish(curr, ex.getMessage))
         }

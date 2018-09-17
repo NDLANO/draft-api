@@ -195,8 +195,6 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("PUT /:id/publish/ should return 403 if user does not have the required role") {
-    when(writeService.queueArticleForPublish(any[Long], any[Boolean]))
-      .thenReturn(Failure(new AccessDeniedException("Not today")))
     put("/test/1/publish/") {
       status should equal(403)
     }
@@ -204,7 +202,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   test("PUT /:id/publish/ should return 204 if user has required permissions") {
     when(user.getUser).thenReturn(TestData.userWithPublishAccess)
-    when(writeService.queueArticleForPublish(any[Long], any[Boolean]))
+    when(writeService.publishArticle(any[Long], any[UserInfo], any[Boolean]))
       .thenReturn(Success(api.Status(domain.ArticleStatus.PUBLISHED.toString, Seq.empty)))
 
     put("/test/1/publish/") {

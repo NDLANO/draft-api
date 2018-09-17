@@ -235,9 +235,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(article))
 
-    val res = service.publishArticle(1)
+    val res = service.publishArticle(1, TestData.userWithWriteAccess)
     res.isFailure should be(true)
-    verify(articleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle], any[List[String]])
+    verify(articleApiClient, times(0)).updateArticle(any[Long], any[domain.Article], any[List[String]])
   }
 
   test("publishArticle should return Failure if article does not pass validation") {
@@ -247,9 +247,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticleApiArticle(any[Long]))
       .thenReturn(Failure(new RuntimeException("Validation error")))
 
-    val res = service.publishArticle(1)
+    val res = service.publishArticle(1, TestData.userWithPublishAccess)
     res.isFailure should be(true)
-    verify(articleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle], any[List[String]])
+    verify(articleApiClient, times(0)).updateArticle(any[Long], any[domain.Article], any[List[String]])
   }
 
   private def setupSuccessfulPublishMock(id: Long): Unit = {
@@ -259,15 +259,17 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val apiArticle = converterService.toArticleApiArticle(article)
     when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenReturn(Success(article))
-    when(articleApiClient.updateArticle(any[Long], any[ArticleApiArticle], any[List[String]]))
-      .thenReturn(Success(apiArticle))
+    when(articleApiClient.updateArticle(any[Long], any[domain.Article], any[List[String]]))
+      .thenAnswer(a => {
+        Success(a.getArgumentAt(1, domain.Article.getClass))
+      })
   }
 
   test("publishArticle should return Success if permitted to publish to article-api") {
     setupSuccessfulPublishMock(1)
-    val res = service.publishArticle(1)
+    val res = service.publishArticle(1, TestData.userWIthAdminAccess)
     res.isSuccess should be(true)
-    verify(articleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle], any[List[String]])
+    verify(articleApiClient, times(1)).updateArticle(any[Long], any[domain.Article], any[List[String]])
   }
 
   test("publishArticles should publish all articles marked for publishing") {
@@ -276,19 +278,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     setupSuccessfulPublishMock(2)
     when(draftRepository.withIdAndExternalIds(3)).thenReturn(None)
 
-    val res = service.publishArticles()
+    val res = service.publishArticles(TestData.userWIthAdminAccess)
     res.succeeded should be(Seq(1, 2))
     res.failed.map(_.id) should be(Seq(3))
-  }
-
-  test("queueArticleForPublishing should return updated article status") {
-    val article =
-      TestData.sampleArticleWithByNcSa.copy(status = domain.Status(ArticleStatus.DRAFT, Set(ArticleStatus.PUBLISHED)))
-    when(draftRepository.withId(1)).thenReturn(Some(article))
-    when(contentValidator.validateArticleApiArticle(1)).thenReturn(Success(article))
-
-    val Success(res) = service.queueArticleForPublish(1)
-    res should equal(api.Status("DRAFT", Seq("QUEUED_FOR_PUBLISHING")))
   }
 
 }
