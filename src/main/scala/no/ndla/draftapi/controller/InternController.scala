@@ -101,6 +101,13 @@ trait InternController {
       }
     }
 
+    post("/articles/unpublish/") {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.isAdmin) {
+        writeService.unpublishArticles(userInfo)
+      }
+    }
+
     @tailrec
     private def deleteArticleWithRetries(id: Long, maxRetries: Int = 10, retries: Int = 0): Try[ContentId] = {
       articleApiClient.deleteArticle(id) match {

@@ -76,6 +76,12 @@ trait ArticleApiClient {
         .map(_ => article)
     }
 
+    def unpublishArticle(article: domain.Article): Try[domain.Article] = {
+      implicit val format = org.json4s.DefaultFormats
+      val id = article.id.get
+      post[ContentId](s"$InternalEndpoint/article/$id/unpublish").map(_ => article)
+    }
+
     def deleteArticle(id: Long): Try[ContentId] = {
       implicit val format = org.json4s.DefaultFormats
       delete[ContentId](s"$InternalEndpoint/article/$id/")

@@ -201,7 +201,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("PUT /:id/publish/ should return 204 if user has required permissions") {
-    when(user.getUser).thenReturn(TestData.userWithPublishAccess)
+    when(user.getUser).thenReturn(TestData.userWIthAdminAccess)
     when(writeService.publishArticle(any[Long], any[UserInfo], any[Boolean]))
       .thenReturn(Success(api.Status(domain.ArticleStatus.PUBLISHED.toString, Seq.empty)))
 

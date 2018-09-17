@@ -309,6 +309,17 @@ trait DraftController {
       }
     }
 
+    put("/:article_id/archieve/") {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.isAdmin) {
+        val id = long(this.articleId.paramName)
+        writeService.archieveArticle(id, userInfo) match {
+          case Success(a) => a
+          case Failure(e) => errorHandler(e)
+        }
+      }
+    }
+
     val updateArticle =
       (apiOperation[Article]("updateArticle")
         summary "Update an existing article"
@@ -344,6 +355,15 @@ trait DraftController {
       }
     }
 
+    /*
+        TODO:
+          - update article import. Removed /intern/article/:id/publish. Use public publish endpoint insted. Should also add manual call to validation endpoint
+          - add auth roles for admin (drafts:admin)
+          - remove draft role queue_for_publish
+          - write aws lambda job for unpublishing
+          - write tests
+     */
+
     put(
       "/:article_id/status/:STATUS",
       operation(
@@ -360,9 +380,10 @@ trait DraftController {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val id = long(this.articleId.paramName)
-        val status = domain.ArticleStatus.valueOfOrError(params(this.statuss.paramName))
-        status match {
-          case Success(s)  => writeService.updateArticleStatus(s, id, userInfo)
+        domain.ArticleStatus
+          .valueOfOrError(params(this.statuss.paramName))
+          .flatMap(writeService.updateArticleStatus(_, id, userInfo)) match {
+          case Success(s)  => s
           case Failure(ex) => errorHandler(ex)
         }
       }
@@ -386,7 +407,16 @@ trait DraftController {
       }
     }
 
-    get("/status-state-machine/") {
+    get(
+      "/status-state-machine/",
+      operation(
+        apiOperation[Map[String, List[String]]]("getStatusStateMachine")
+          summary "Get status state machine"
+          notes "Get status state machine"
+          authorizations "oauth2"
+          responseMessages response500
+      )
+    ) {
       converterService.stateTransitionsToApi(user.getUser)
     }
 

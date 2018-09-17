@@ -69,7 +69,7 @@ object StateTransitionRules {
                     ARCHIEVED,
                     Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
                     addCurrentStateToOthersOnTransition = false,
-                    adminRequired = true),
+                    adminRequired = true)
   )
 
   private def getTransition(from: ArticleStatus.Value,

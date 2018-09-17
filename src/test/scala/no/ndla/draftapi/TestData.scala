@@ -31,8 +31,7 @@ object TestData {
 
   val userWithoutRoles = UserInfo("unit test", Set.empty)
   val userWithWriteAccess = UserInfo("unit test", Set(Role.WRITE))
-  val userWithPublishAccess = UserInfo("unit test", Set(Role.WRITE, Role.SET_TO_PUBLISH))
-  val userWIthAdminAccess = UserInfo("unit test", Set(Role.WRITE, Role.SET_TO_PUBLISH, Role.ADMIN))
+  val userWIthAdminAccess = UserInfo("unit test", Set(Role.WRITE, Role.ADMIN))
 
   private val publicDomainCopyright =
     Copyright(Some("publicdomain"), Some(""), List.empty, List(), List(), None, None, None)

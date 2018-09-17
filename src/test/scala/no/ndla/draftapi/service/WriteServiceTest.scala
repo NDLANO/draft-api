@@ -240,18 +240,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     verify(articleApiClient, times(0)).updateArticle(any[Long], any[domain.Article], any[List[String]])
   }
 
-  test("publishArticle should return Failure if article does not pass validation") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
-
-    when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
-    when(contentValidator.validateArticleApiArticle(any[Long]))
-      .thenReturn(Failure(new RuntimeException("Validation error")))
-
-    val res = service.publishArticle(1, TestData.userWithPublishAccess)
-    res.isFailure should be(true)
-    verify(articleApiClient, times(0)).updateArticle(any[Long], any[domain.Article], any[List[String]])
-  }
-
   private def setupSuccessfulPublishMock(id: Long): Unit = {
     val article =
       TestData.sampleArticleWithByNcSa

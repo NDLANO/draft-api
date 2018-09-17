@@ -11,8 +11,14 @@ import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.ArticleStatus.{PUBLISHED, QUEUED_FOR_PUBLISHING}
+import no.ndla.draftapi.model.api.{Status, _}
+import no.ndla.draftapi.model.domain.ArticleStatus.{
+  PUBLISHED,
+  QUEUED_FOR_PUBLISHING,
+  ARCHIEVED,
+  UNPUBLISHED,
+  AWAITING_UNPUBLISHING
+}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
@@ -172,6 +178,47 @@ trait WriteService {
           } yield apiArticle
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
+    }
+
+    def archieveArticle(id: Long, user: UserInfo): Try[api.Status] = {
+      draftRepository.withId(id) match {
+        case Some(oldArticle) =>
+          converterService
+            .updateStatus(ARCHIEVED, oldArticle, user)
+            .flatMap(draftRepository.update(_, false))
+            .flatMap(article => articleIndexService.deleteDocument(id).map(_ => article))
+            .map(a => converterService.toApiStatus(a.status))
+        case None =>
+          Failure(NotFoundException(s"Article with id $id does not exist"))
+      }
+
+      Failure(new RuntimeException("lol"))
+    }
+
+    def unpublishArticle(id: Long, user: UserInfo): Try[api.Status] = {
+      draftRepository.withId(id) match {
+        case Some(oldArticle) =>
+          converterService
+            .updateStatus(UNPUBLISHED, oldArticle, user)
+            .flatMap(articleApiClient.unpublishArticle)
+            .flatMap(draftRepository.update(_, false))
+            .flatMap(article => articleIndexService.deleteDocument(id).map(_ => article))
+            .map(a => converterService.toApiStatus(a.status))
+        case None =>
+          Failure(NotFoundException(s"Article with id $id does not exist"))
+      }
+
+      Failure(new RuntimeException("lol"))
+    }
+
+    def unpublishArticles(user: UserInfo): ArticlePublishReport = {
+      val articlesToDepublish = readService.articlesWithStatus(AWAITING_UNPUBLISHING)
+      articlesToDepublish.foldLeft(ArticlePublishReport(Seq.empty, Seq.empty))((result, curr) => {
+        unpublishArticle(curr, user) match {
+          case Success(_)  => result.addSuccessful(curr)
+          case Failure(ex) => result.addFailed(FailedArticlePublish(curr, ex.getMessage))
+        }
+      })
     }
 
     def publishArticle(id: Long, user: UserInfo, isImported: Boolean = false): Try[api.Status] = {
