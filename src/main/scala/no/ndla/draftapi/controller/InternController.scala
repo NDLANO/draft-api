@@ -96,20 +96,8 @@ trait InternController {
 
     post("/articles/publish/") {
       val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canPublish) {
+      doOrAccessDenied(userInfo.isAdmin) {
         writeService.publishArticles(userInfo)
-      }
-    }
-
-    post("/article/:id/publish/") {
-      val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canPublish) {
-        val importPublish = booleanOrDefault("import_publish", default = false)
-
-        writeService.publishArticle(long("id"), userInfo, importPublish) match {
-          case Success(s)  => s
-          case Failure(ex) => errorHandler(ex)
-        }
       }
     }
 

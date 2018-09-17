@@ -11,7 +11,6 @@ import no.ndla.network.AuthUser
 
 case class UserInfo(id: String, roles: Set[Role.Value]) {
   def isAdmin: Boolean = roles.contains(Role.ADMIN)
-  def canPublish: Boolean = Set(Role.WRITE, Role.SET_TO_PUBLISH).subsetOf(roles)
   def canWrite: Boolean = roles.contains(Role.WRITE)
   def canRead: Boolean = canWrite
 }
@@ -21,7 +20,7 @@ object UserInfo {
 
   def apply(name: String): UserInfo = UserInfo(name, AuthUser.getRoles.flatMap(Role.valueOf).toSet)
 
-  def get: Option[UserInfo] = AuthUser.get.map(UserInfo.apply)
+  def get: Option[UserInfo] = (AuthUser.get orElse AuthUser.getClientId).map(UserInfo.apply)
 }
 
 trait User {

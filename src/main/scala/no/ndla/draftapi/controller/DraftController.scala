@@ -298,7 +298,7 @@ trait DraftController {
 
     put("/:article_id/publish/", operation(publishDraft)) {
       val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canPublish) {
+      doOrAccessDenied(userInfo.isAdmin) {
         val id = long(this.articleId.paramName)
         val isImported = booleanOrDefault("import_publish", false)
 
