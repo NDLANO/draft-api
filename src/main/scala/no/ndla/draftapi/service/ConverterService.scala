@@ -235,8 +235,6 @@ trait ConverterService {
       }
     }
 
-    def toApiStatus(status: domain.Status): api.Status = api.Status(status.current.toString, status.other.map(_.toString).toSeq)
-
     def toApiAgreement(agreement: domain.Agreement): api.Agreement = {
       api.Agreement(
         id = agreement.id.get,
@@ -249,20 +247,24 @@ trait ConverterService {
       )
     }
 
-    def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
-      val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
-      if (invalidStatuses.nonEmpty) {
-        val errors = invalidStatuses.flatMap {
-          case Failure(ex: ValidationException) => ex.errors
-          case Failure(ex)                      => Set(ValidationMessage("status", ex.getMessage))
-          case Success(_)                       => Set()
-        }
-        Failure(new ValidationException(errors = errors.toSeq))
-      } else
-        Success(validStatuses.map(_.get))
+    def toDomainStatus(status: api.Status): Try[domain.Status] = {
+      val newCurrent = ArticleStatus.valueOfOrError(status.current)
+      val newOther = status.other.map(ArticleStatus.valueOfOrError)
+      val (newOtherValids, newOtherInvalids) = newOther.partition(_.isSuccess)
+
+      (newCurrent, newOtherInvalids, newOtherValids) match {
+        case (Failure(ex), _, _) => Failure(new ValidationException(s"Status ${status.current} is invalid", Seq()))
+        case (_, invalidOthers, _) if invalidOthers.nonEmpty =>
+          val messages = invalidOthers.map(_.failed.get).map(x => ValidationMessage("status.other", x.getMessage))
+          Failure(new ValidationException(s"One or more status(es) are invalid", messages))
+        case (Success(current), _, others) if others.forall(_.isSuccess) =>
+          Success(domain.Status(current, others.map(_.get).toSet))
+      }
+
     }
 
-    def toApiStatus(status: Set[ArticleStatus.Value]): api.ArticleStatus = api.ArticleStatus(status.map(_.toString))
+    def toApiStatus(status: domain.Status): api.Status =
+      api.Status(status.current.toString, status.other.map(_.toString).toSeq)
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)
 
@@ -420,7 +422,9 @@ trait ConverterService {
                         user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      val status = toMergeInto.status // TODO
+      val newOtherStatuses = toMergeInto.status.other.filterNot(_ == PUBLISHED) ++ (if (isImported) Set(IMPORTED)
+                                                                                    else Set.empty)
+      val status = domain.Status(DRAFT, newOtherStatuses)
 
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
@@ -481,7 +485,9 @@ trait ConverterService {
           val error = ValidationMessage("language", "This field must be specified when updating language fields")
           Failure(new ValidationException(errors = Seq(error)))
         case Some(lang) =>
-          val status = if (isImported) domain.Status(DRAFT, Set(ArticleStatus.IMPORTED)) else domain.Status(DRAFT, Set.empty) // TODO
+          val status =
+            if (isImported) domain.Status(DRAFT, Set(ArticleStatus.IMPORTED))
+            else domain.Status(DRAFT, Set.empty) // TODO
           Success(
             domain.Article(
               id = Some(id),

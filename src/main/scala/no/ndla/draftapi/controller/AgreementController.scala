@@ -8,6 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.Sort
@@ -25,6 +26,7 @@ trait AgreementController {
     with AgreementSearchService
     with ConverterService
     with SearchConverterService
+    with User
     with ReindexClient =>
   val agreementController: AgreementController
 
@@ -140,10 +142,10 @@ trait AgreementController {
         responseMessages (response400, response403, response500))
 
     post("/", operation(newAgreement)) {
-      val user = getUser
-      doOrAccessDenied(user.canWrite) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
         val newAgreement = extract[NewAgreement](request.body)
-        writeService.newAgreement(newAgreement, user) match {
+        writeService.newAgreement(newAgreement, userInfo) match {
           case Success(agreement) =>
             reindexClient.reindexAll()
             Created(body = agreement)
@@ -165,12 +167,12 @@ trait AgreementController {
         responseMessages (response400, response403, response404, response500))
 
     patch("/:agreement_id", operation(updateAgreement)) {
-      val user = getUser
+      val userInfo = user.getUser
 
-      doOrAccessDenied(user.canWrite) {
+      doOrAccessDenied(userInfo.canWrite) {
         val agreementId = long(this.agreementId.paramName)
         val updatedAgreement = extract[UpdatedAgreement](request.body)
-        writeService.updateAgreement(agreementId, updatedAgreement, user) match {
+        writeService.updateAgreement(agreementId, updatedAgreement, userInfo) match {
           case Success(agreement) =>
             reindexClient.reindexAll()
             Ok(body = agreement)

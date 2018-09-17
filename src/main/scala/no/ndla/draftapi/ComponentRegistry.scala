@@ -8,6 +8,7 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
@@ -46,6 +47,7 @@ object ComponentRegistry
     with WriteService
     with ContentValidator
     with Clock
+    with User
     with ArticleApiClient {
 
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
@@ -96,4 +98,5 @@ object ComponentRegistry
   lazy val clock = new SystemClock
 
   lazy val articleApiClient = new ArticleApiClient
+  lazy val user = new User
 }

@@ -9,7 +9,7 @@ package no.ndla.draftapi.controller
 
 import java.util.concurrent.{Executors, TimeUnit}
 
-import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
@@ -35,6 +35,7 @@ trait InternController {
     with ArticleIndexService
     with ConceptIndexService
     with AgreementIndexService
+    with User
     with ArticleApiClient =>
   val internController: InternController
 
@@ -94,13 +95,13 @@ trait InternController {
     }
 
     post("/articles/publish/") {
-      doOrAccessDenied(getUser.canPublish) {
+      doOrAccessDenied(user.getUser.canPublish) {
         writeService.publishArticles()
       }
     }
 
     post("/article/:id/publish/") {
-      doOrAccessDenied(getUser.canPublish) {
+      doOrAccessDenied(user.getUser.canPublish) {
         val importPublish = booleanOrDefault("import_publish", default = false)
 
         writeService.publishArticle(long("id"), importPublish) match {
@@ -120,7 +121,7 @@ trait InternController {
     }
 
     delete("/article/:id/") {
-      doOrAccessDenied(getUser.canWrite) {
+      doOrAccessDenied(user.getUser.canWrite) {
         val id = long("id")
         deleteArticleWithRetries(id).flatMap(id => writeService.deleteArticle(id.id)) match {
           case Success(a)  => a
@@ -130,7 +131,7 @@ trait InternController {
     }
 
     post("/concept/:id/publish/") {
-      doOrAccessDenied(getUser.canWrite) {
+      doOrAccessDenied(user.getUser.canWrite) {
         writeService.publishConcept(long("id")) match {
           case Success(s)  => s.id.map(ContentId)
           case Failure(ex) => errorHandler(ex)
@@ -139,7 +140,7 @@ trait InternController {
     }
 
     delete("/concept/:id/") {
-      doOrAccessDenied(getUser.canWrite) {
+      doOrAccessDenied(user.getUser.canWrite) {
         articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
           case Success(c)  => c
           case Failure(ex) => errorHandler(ex)
@@ -148,7 +149,7 @@ trait InternController {
     }
 
     post("/empty_article/") {
-      doOrAccessDenied(getUser.canWrite) {
+      doOrAccessDenied(user.getUser.canWrite) {
         val externalId = paramAsListOfString("externalId")
         val externalSubjectIds = paramAsListOfString("externalSubjectId")
         writeService.newEmptyArticle(externalId, externalSubjectIds) match {
@@ -159,7 +160,7 @@ trait InternController {
     }
 
     post("/empty_concept/") {
-      doOrAccessDenied(getUser.canWrite) {
+      doOrAccessDenied(user.getUser.canWrite) {
         val externalId = paramAsListOfString("externalId")
         writeService.newEmptyConcept(externalId) match {
           case Success(id) => id

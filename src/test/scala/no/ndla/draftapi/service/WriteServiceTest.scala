@@ -68,8 +68,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    service.newArticle(TestData.newArticle, List.empty, Seq.empty, None, None).get.id.toString should equal(
-      article.id.get.toString)
+    service
+      .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None)
+      .get
+      .id
+      .toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
   }
@@ -78,7 +81,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(agreementRepository.insert(any[Agreement])(any[DBSession])).thenReturn(agreement)
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
 
-    service.newAgreement(TestData.newAgreement).get.id.toString should equal(agreement.id.get.toString)
+    service.newAgreement(TestData.newAgreement, TestData.userWithWriteAccess).get.id.toString should equal(
+      agreement.id.get.toString)
     verify(agreementRepository, times(1)).insert(any[Agreement])
     verify(agreementIndexService, times(1)).indexDocument(any[Agreement])
   }
@@ -142,7 +146,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiAgreement = api.UpdatedAgreement(None, Some(newContent), None)
     val expectedAgreement = agreement.copy(content = newContent, updated = today)
 
-    service.updateAgreement(agreementId, updatedApiAgreement).get should equal(
+    service.updateAgreement(agreementId, updatedApiAgreement, TestData.userWithWriteAccess).get should equal(
       converterService.toApiAgreement(expectedAgreement))
   }
 
@@ -154,7 +158,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        content = Seq(ArticleContent(newContent, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -166,7 +170,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        title = Seq(ArticleTitle(newTitle, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -221,12 +225,12 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today
     )
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("publishArticle should return Failure if article is not ready for publishing") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = Set(domain.ArticleStatus.DRAFT))
+    val article = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
 
     when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(article))
@@ -237,7 +241,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("publishArticle should return Failure if article does not pass validation") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = Set(domain.ArticleStatus.DRAFT))
+    val article = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
 
     when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(contentValidator.validateArticleApiArticle(any[Long]))
@@ -250,7 +254,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   private def setupSuccessfulPublishMock(id: Long): Unit = {
     val article =
-      TestData.sampleArticleWithByNcSa.copy(id = Some(id), status = Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
+      TestData.sampleArticleWithByNcSa
+        .copy(id = Some(id), status = domain.Status(domain.ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty))
     val apiArticle = converterService.toArticleApiArticle(article)
     when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenReturn(Success(article))
@@ -277,12 +282,13 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("queueArticleForPublishing should return updated article status") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = Set(ArticleStatus.DRAFT, ArticleStatus.PUBLISHED))
+    val article =
+      TestData.sampleArticleWithByNcSa.copy(status = domain.Status(ArticleStatus.DRAFT, Set(ArticleStatus.PUBLISHED)))
     when(draftRepository.withId(1)).thenReturn(Some(article))
     when(contentValidator.validateArticleApiArticle(1)).thenReturn(Success(article))
 
     val Success(res) = service.queueArticleForPublish(1)
-    res.status should equal(Set("DRAFT", "QUEUED_FOR_PUBLISHING"))
+    res should equal(api.Status("DRAFT", Seq("QUEUED_FOR_PUBLISHING")))
   }
 
 }

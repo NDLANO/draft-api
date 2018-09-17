@@ -33,8 +33,8 @@ object StateTransitionRules {
                       from: ArticleStatus.Value,
                       to: ArticleStatus.Value): Set[ArticleStatus.Value] = {
     getTransition(from, to) match {
-      case StateTransition(_, _, true) => other ++ Set(from)
-      case _                           => other
+      case Some(transition: StateTransition) if transition.addToOthers => other ++ Set(from)
+      case _                                                           => other
     }
   }
 }

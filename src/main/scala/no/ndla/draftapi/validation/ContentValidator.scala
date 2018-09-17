@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ContentValidator {
-  this: Role with DraftRepository with ConverterService with ArticleApiClient =>
+  this: DraftRepository with ConverterService with ArticleApiClient =>
   val contentValidator: ContentValidator
   val importValidator: ContentValidator
 

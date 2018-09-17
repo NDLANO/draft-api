@@ -20,7 +20,6 @@ import scalikejdbc._
 
 import scala.util.{Failure, Success, Try}
 
-
 sealed trait Content {
   def id: Option[Long]
 }
@@ -86,7 +85,9 @@ object ArticleStatusAction extends Enumeration {
 }
 
 object ArticleStatus extends Enumeration {
- val IMPORTED, DRAFT, PUBLISHED, PROPOSAL, QUEUED_FOR_PUBLISHING, USER_TEST, AWAITING_QUALITY_ASSURANCE, QUALITY_ASSURED, AWAITING_UNPUBLISHING, ARCHIEVED = Value
+
+  val IMPORTED, DRAFT, PUBLISHED, PROPOSAL, QUEUED_FOR_PUBLISHING, USER_TEST, AWAITING_QUALITY_ASSURANCE,
+  QUALITY_ASSURED, AWAITING_UNPUBLISHING, ARCHIEVED = Value
 
   def valueOfOrError(s: String): Try[ArticleStatus.Value] =
     valueOf(s) match {

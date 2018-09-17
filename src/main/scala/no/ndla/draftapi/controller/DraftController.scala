@@ -8,8 +8,9 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
@@ -24,7 +25,7 @@ import org.scalatra.{Created, NoContent, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait DraftController {
-  this: ReadService with WriteService with ArticleSearchService with ConverterService with ContentValidator =>
+  this: ReadService with WriteService with ArticleSearchService with ConverterService with ContentValidator with User =>
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController {
@@ -52,7 +53,7 @@ trait DraftController {
       "Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val filter = Param("filter", "A filter to include a specific entry")
     private val filterNot = Param("filterNot", "A filter to remove a specific entry")
-    private val status = Param("STATUS", "An article status")
+    private val statuss = Param("STATUS", "An article status")
 
     val getTags =
       (apiOperation[ArticleTag]("getTags")
@@ -266,9 +267,8 @@ trait DraftController {
         responseMessages (response400, response403, response500))
 
     post("/", operation(newArticle)) {
-      val user = getUser
-
-      doOrAccessDenied(user.canWrite) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
         val externalId = paramAsListOfString("externalId")
         val oldNdlaCreatedDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
         val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
@@ -276,7 +276,7 @@ trait DraftController {
         writeService.newArticle(extract[NewArticle](request.body),
                                 externalId,
                                 externalSubjectids,
-                                user,
+                                userInfo,
                                 oldNdlaCreatedDate,
                                 oldNdlaUpdatedDate) match {
           case Success(article)   => Created(body = article)
@@ -286,7 +286,7 @@ trait DraftController {
     }
 
     val queueDraftForPublishing =
-      (apiOperation[ArticleStatus]("queueDraftForPublishing ")
+      (apiOperation[api.Status]("queueDraftForPublishing ")
         summary "Queue the article for publishing"
         notes "Queue the article for publishing"
         parameters (
@@ -297,8 +297,8 @@ trait DraftController {
         responseMessages (response400, response403, response404, response500))
 
     put("/:article_id/publish/", operation(queueDraftForPublishing)) {
-      val user = getUser
-      doOrAccessDenied(user.canPublish) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canPublish) {
         val id = long(this.articleId.paramName)
         val isImported = booleanOrDefault("import_publish", false)
 
@@ -322,9 +322,8 @@ trait DraftController {
         responseMessages (response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
-      val user = getUser
-
-      doOrAccessDenied(user.canWrite) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
         val externalId = paramAsListOfString("externalId")
         val externalSubjectIds = paramAsListOfString("externalSubjectIds")
         val oldNdlaCreateddDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
@@ -336,7 +335,7 @@ trait DraftController {
                                    updateArticle,
                                    externalId,
                                    externalSubjectIds,
-                                   user,
+                                   userInfo,
                                    oldNdlaCreateddDate,
                                    oldNdlaUpdatedDate) match {
           case Success(article)   => Ok(body = article)
@@ -345,24 +344,26 @@ trait DraftController {
       }
     }
 
-    put("/:article_id/status/:STATUS", operation(
-      apiOperation[Article]("updateArticleStatus")
-        summary "Update status of an article"
-        notes "Update status of an article"
-        parameters(
-          asPathParam[Long](articleId),
-          asPathParam[domain.ArticleStatus.Value](status)
+    put(
+      "/:article_id/status/:STATUS",
+      operation(
+        apiOperation[Article]("updateArticleStatus")
+          summary "Update status of an article"
+          notes "Update status of an article"
+          parameters (
+            asPathParam[Long](articleId),
+            asPathParam[String](statuss)
         )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
+          authorizations "oauth2"
+          responseMessages (response400, response403, response404, response500))
     ) {
-      val user = getUser
-
-      doOrAccessDenied(user.canWrite) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
         val id = long(this.articleId.paramName)
-        val status = domain.ArticleStatus.valueOfOrError(params(this.status.paramName))
+        val status = domain.ArticleStatus.valueOfOrError(params(this.statuss.paramName))
         status match {
-          case Success(s) => writeService.updateArticleStatus(s, id, user)
+          case Success(s)  => writeService.updateArticleStatus(s, id, userInfo)
+          case Failure(ex) => errorHandler(ex)
         }
       }
     }

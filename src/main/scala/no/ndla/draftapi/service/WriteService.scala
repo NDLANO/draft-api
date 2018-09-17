@@ -146,7 +146,7 @@ trait WriteService {
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
-        case Some(existing) if existing.status.current == QUEUED_FOR_PUBLISHING && !user.canPublish => // TODO
+        case Some(existing) if existing.status.current == QUEUED_FOR_PUBLISHING && !user.canPublish =>
           Failure(
             new OperationNotAllowedException(
               "This article is marked for publishing and it cannot be updated until it is published"))
@@ -182,12 +182,12 @@ trait WriteService {
       }
     }
 
-    def queueArticleForPublish(id: Long, isImported: Boolean = false): Try[ArticleStatus] = {
+    def queueArticleForPublish(id: Long, isImported: Boolean = false): Try[api.Status] = {
       draftRepository.withId(id) match {
         case Some(a) =>
           contentValidator.validateArticleApiArticle(id) match {
             case Success(_) =>
-              val newStatus = a.status.filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
+              val newStatus = a.status.copy(other = Set(QUEUED_FOR_PUBLISHING)) // TODO - should be handled by new status system: old was .filterNot(_ == PUBLISHED) + QUEUED_FOR_PUBLISHING
               draftRepository
                 .update(a.copy(status = newStatus), isImported = isImported)
                 .map(a => converterService.toApiStatus(a.status))
@@ -199,11 +199,11 @@ trait WriteService {
 
     def publishArticle(id: Long, isImported: Boolean = false): Try[domain.Article] = {
       draftRepository.withIdAndExternalIds(id) match {
-        case Some((article, externalIds)) if article.status.contains(QUEUED_FOR_PUBLISHING) =>
+        case Some((article, externalIds)) if article.status.current == QUEUED_FOR_PUBLISHING =>
           articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article), externalIds) match {
             case Success(_) =>
-              updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED),
-                            isImported = isImported)
+              val newStatus = article.status.copy(current = PUBLISHED) // TODO: should be handled by new status sytem
+              updateArticle(article.copy(status = newStatus), isImported = isImported)
             case Failure(ex) => Failure(ex)
           }
         case Some(_) =>

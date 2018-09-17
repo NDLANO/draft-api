@@ -1,4 +1,7 @@
-import no.ndla.draftapi.model.domain._
+val l = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
 
-val a = Map[(ArticleStatus.Value, ArticleStatus.Value), ArticleStatus.Value]()
-a
+
+
+l.takeWhile(_ < 4)
+l.lift(-1)
+l.takeRight(l.length - l.indexOf(4) - 1)

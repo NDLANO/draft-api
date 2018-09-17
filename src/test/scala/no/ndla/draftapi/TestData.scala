@@ -7,10 +7,11 @@
 
 package no.ndla.draftapi
 
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
 import ArticleStatus._
+import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.api.NewAgreement
 import org.joda.time.{DateTime, DateTimeZone}
 
@@ -27,6 +28,10 @@ object TestData {
 
   val authHeaderWithAllRoles =
     "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9FSTFNVVU0T0RrNU56TTVNekkyTXpaRE9EazFOMFl3UXpkRE1EUXlPRFZDUXpRM1FUSTBNQSJ9.eyJodHRwczovL25kbGEubm8vY2xpZW50X2lkIjoieHh4eXl5IiwiaXNzIjoiaHR0cHM6Ly9uZGxhLmV1LmF1dGgwLmNvbS8iLCJzdWIiOiJ4eHh5eXlAY2xpZW50cyIsImF1ZCI6Im5kbGFfc3lzdGVtIiwiaWF0IjoxNTEwMzA1NzczLCJleHAiOjE1MTAzOTIxNzMsInNjb3BlIjoiYXJ0aWNsZXMtdGVzdDpwdWJsaXNoIGRyYWZ0cy10ZXN0OndyaXRlIGRyYWZ0cy10ZXN0OnNldF90b19wdWJsaXNoIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.gsM-U84ykgaxMSbL55w6UYIIQUouPIB6YOmJuj1KhLFnrYctu5vwYBo80zyr1je9kO_6L-rI7SUnrHVao9DFBZJmfFfeojTxIT3CE58hoCdxZQZdPUGePjQzROWRWeDfG96iqhRcepjbVF9pMhKp6FNqEVOxkX00RZg9vFT8iMM"
+
+  val userWithoutRoles = UserInfo("unit test", Set.empty)
+  val userWithWriteAccess = UserInfo("unit test", Set(Role.WRITE))
+  val userWithPublishAccess = UserInfo("unit test", Set(Role.WRITE, Role.SET_TO_PUBLISH))
 
   private val publicDomainCopyright =
     Copyright(Some("publicdomain"), Some(""), List.empty, List(), List(), None, None, None)
@@ -56,7 +61,7 @@ object TestData {
     id = 1,
     oldNdlaUrl = None,
     revision = 1,
-    status = Set(DRAFT.toString),
+    status = api.Status(DRAFT.toString, Seq.empty),
     title = Some(api.ArticleTitle("title", "nb")),
     content = Some(api.ArticleContent("this is content", "nb")),
     copyright = Some(
@@ -131,7 +136,7 @@ object TestData {
     articleId,
     Some(s"//red.ndla.no/node/$externalId"),
     2,
-    Set(DRAFT.toString),
+    api.Status(DRAFT.toString, Seq.empty),
     Some(api.ArticleTitle("title", "nb")),
     Some(api.ArticleContent("content", "nb")),
     Some(
@@ -165,7 +170,7 @@ object TestData {
   val sampleArticleWithPublicDomain = Article(
     Option(1),
     Option(1),
-    ArticleStatus.ValueSet(DRAFT),
+    domain.Status(DRAFT, Set.empty),
     Seq(ArticleTitle("test", "en")),
     Seq(ArticleContent("<section><div>test</div></section>", "en")),
     Some(publicDomainCopyright),
@@ -177,7 +182,7 @@ object TestData {
     Seq.empty,
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
-    "ndalId54321",
+    userWithWriteAccess.id,
     ArticleType.Standard,
     Seq.empty
   )
@@ -185,7 +190,7 @@ object TestData {
   val sampleDomainArticle = Article(
     Option(articleId),
     Option(2),
-    ArticleStatus.ValueSet(DRAFT),
+    domain.Status(DRAFT, Set.empty),
     Seq(ArticleTitle("title", "nb")),
     Seq(ArticleContent("content", "nb")),
     Some(Copyright(Some("by"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
@@ -205,7 +210,7 @@ object TestData {
   val sampleDomainArticle2 = Article(
     None,
     None,
-    ArticleStatus.ValueSet(DRAFT),
+    domain.Status(DRAFT, Set.empty),
     Seq(ArticleTitle("test", "en")),
     Seq(ArticleContent("<article><div>test</div></article>", "en")),
     Some(Copyright(Some("publicdomain"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
@@ -251,7 +256,7 @@ object TestData {
   val sampleDomainArticleWithHtmlFault = Article(
     Option(articleId),
     Option(2),
-    ArticleStatus.ValueSet(DRAFT),
+    domain.Status(DRAFT, Set.empty),
     Seq(ArticleTitle("test", "en")),
     Seq(
       ArticleContent(
@@ -280,7 +285,7 @@ object TestData {
     1,
     None,
     1,
-    Set(CREATED.toString),
+    api.Status(DRAFT.toString, Seq.empty),
     Some(api.ArticleTitle("test", "en")),
     Some(
       api.ArticleContent(
@@ -365,7 +370,7 @@ object TestData {
     copyright = byNcSaCopyright,
     created = DateTime.now().minusDays(4).toDate,
     updated = DateTime.now().minusDays(2).toDate,
-    updatedBy = "ndalId54321"
+    updatedBy = userWithWriteAccess.id
   )
 
   val newAgreement = NewAgreement("newTitle",

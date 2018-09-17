@@ -21,5 +21,13 @@ object UserInfo {
 
   def apply(name: String): UserInfo = UserInfo(name, AuthUser.getRoles.flatMap(Role.valueOf).toSet)
 
-  def get: UserInfo = AuthUser.get.map(UserInfo.apply).getOrElse(UnauthorizedUser)
+  def get: Option[UserInfo] = AuthUser.get.map(UserInfo.apply)
+}
+
+trait User {
+  val user: User
+
+  class User {
+    def getUser: UserInfo = UserInfo.get.getOrElse(UserInfo.UnauthorizedUser)
+  }
 }
