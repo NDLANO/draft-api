@@ -12,7 +12,7 @@ import java.util.Date
 import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain._
+import no.ndla.draftapi.model.domain.{Article, _}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
@@ -83,12 +83,13 @@ trait WriteService {
                    externalIds: List[String],
                    externalSubjectIds: Seq[String],
                    oldNdlaCreatedDate: Option[Date],
-                   oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
+                   oldNdlaUpdatedDate: Option[Date],
+                   importId: Option[String]): Try[api.Article] = {
       val insertNewArticleFunction = externalIds match {
         case Nil => draftRepository.insert _
         case nids =>
           (a: domain.Article) =>
-            draftRepository.insertWithExternalIds(a, nids, externalSubjectIds)
+            draftRepository.insertWithExternalIds(a, nids, externalSubjectIds, importId)
       }
       for {
         domainArticle <- converterService.toDomainArticle(newArticle,
@@ -102,17 +103,18 @@ trait WriteService {
       } yield apiArticle
     }
 
-    private def updateArticle(toUpdate: domain.Article,
+    private def updateArticle(toUpdate: Article,
+                              importId: Option[String], // TODO: Probably add a None default value here
                               externalIds: List[String] = List.empty,
                               externalSubjectIds: Seq[String] = Seq.empty,
                               isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalIds match {
         case Nil =>
           (a: domain.Article) =>
-            draftRepository.update(a, isImported = isImported)
+            draftRepository.update(a, isImported = isImported) // TODO:
         case nids =>
           (a: domain.Article) =>
-            draftRepository.updateWithExternalIds(a, nids, externalSubjectIds)
+            draftRepository.updateWithExternalIds(a, nids, externalSubjectIds, importId)
       }
 
       for {
@@ -127,7 +129,8 @@ trait WriteService {
                       externalIds: List[String],
                       externalSubjectIds: Seq[String],
                       oldNdlaCreatedDate: Option[Date],
-                      oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
+                      oldNdlaUpdatedDate: Option[Date],
+                      importId: Option[String]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) if existing.status.contains(QUEUED_FOR_PUBLISHING) && !authRole.hasPublishPermission() =>
           Failure(
@@ -141,6 +144,7 @@ trait WriteService {
                                                               oldNdlaCreatedDate,
                                                               oldNdlaUpdatedDate)
             updatedArticle <- updateArticle(domainArticle,
+                                            importId = importId,
                                             externalIds,
                                             externalSubjectIds,
                                             isImported = externalIds.nonEmpty)
@@ -155,7 +159,7 @@ trait WriteService {
                                                         externalIds.nonEmpty,
                                                         oldNdlaCreatedDate,
                                                         oldNdlaUpdatedDate)
-            updatedArticle <- updateArticle(article, externalIds, externalSubjectIds)
+            updatedArticle <- updateArticle(article, importId, externalIds, externalSubjectIds)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
@@ -184,6 +188,7 @@ trait WriteService {
           articleApiClient.updateArticle(id, converterService.toArticleApiArticle(article), externalIds) match {
             case Success(_) =>
               updateArticle(article.copy(status = article.status.filter(_ != QUEUED_FOR_PUBLISHING) + PUBLISHED),
+                            importId = None,
                             isImported = isImported)
             case Failure(ex) => Failure(ex)
           }

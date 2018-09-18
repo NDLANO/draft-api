@@ -31,8 +31,8 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     val externalIds = List("1", "2", "3")
     val idWithExternals = 1
     val idWithoutExternals = 2
-    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithExternals)), externalIds, List.empty)
-    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithoutExternals)), List.empty, List.empty)
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithExternals)), externalIds, List.empty, None)
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithoutExternals)), List.empty, List.empty, None)
 
     val result1 = repository.getExternalIdsFromId(idWithExternals)
     result1 should be(externalIds)

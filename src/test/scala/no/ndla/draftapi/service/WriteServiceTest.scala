@@ -69,7 +69,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    service.newArticle(TestData.newArticle, List.empty, Seq.empty, None, None).get.id.toString should equal(
+    service.newArticle(TestData.newArticle, List.empty, Seq.empty, None, None, None).get.id.toString should equal(
       article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
@@ -155,7 +155,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        content = Seq(ArticleContent(newContent, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -167,7 +167,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        title = Seq(ArticleTitle(newTitle, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -222,7 +222,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today
     )
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 

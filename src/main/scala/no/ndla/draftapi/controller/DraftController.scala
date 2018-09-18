@@ -277,11 +277,13 @@ trait DraftController {
       val oldNdlaCreatedDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
       val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
       val externalSubjectids = paramAsListOfString("externalSubjectIds")
+      val importId = paramOrNone("importId")
       writeService.newArticle(extract[NewArticle](request.body),
                               externalId,
                               externalSubjectids,
                               oldNdlaCreatedDate,
-                              oldNdlaUpdatedDate) match {
+                              oldNdlaUpdatedDate,
+                              importId) match {
         case Success(article)   => Created(body = article)
         case Failure(exception) => errorHandler(exception)
       }
@@ -328,6 +330,7 @@ trait DraftController {
       val externalSubjectIds = paramAsListOfString("externalSubjectIds")
       val oldNdlaCreateddDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
       val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
+      val importId = paramOrNone("importId")
       val id = long(this.articleId.paramName)
       val updateArticle = extract[UpdatedArticle](request.body)
 
@@ -336,7 +339,8 @@ trait DraftController {
                                  externalId,
                                  externalSubjectIds,
                                  oldNdlaCreateddDate,
-                                 oldNdlaUpdatedDate) match {
+                                 oldNdlaUpdatedDate,
+                                 importId) match {
         case Success(article)   => Ok(body = article)
         case Failure(exception) => errorHandler(exception)
       }

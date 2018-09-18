@@ -177,7 +177,7 @@ trait ConceptController {
 
     post("/", operation(newConcept)) {
       authRole.assertHasWritePermission()
-      val nid = params("externalId")
+      val nid = params("externalId") // TODO: importId for concepts?
       writeService.newConcept(extract[NewConcept](request.body), nid) match {
         case Success(c)  => c
         case Failure(ex) => errorHandler(ex)

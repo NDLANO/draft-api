@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.repository
 
+import java.util.UUID
+
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.DataSource
@@ -43,17 +45,26 @@ trait DraftRepository {
       article.copy(revision = Some(startRevision))
     }
 
-    def insertWithExternalIds(article: Article, externalIds: List[String], externalSubjectIds: Seq[String])(
-        implicit session: DBSession = AutoSession): Article = {
+    def insertWithExternalIds(article: Article,
+                              externalIds: List[String],
+                              externalSubjectIds: Seq[String],
+                              importId: Option[String])(implicit session: DBSession = AutoSession): Article = {
       val startRevision = 1
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
 
+      val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
+
       val articleId: Long =
         sql"""
-             insert into ${Article.table} (id, external_id, external_subject_id, document, revision)
-             values (${article.id}, ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], ${dataObject}, $startRevision)
+             insert into ${Article.table} (id, external_id, external_subject_id, document, revision, import_id)
+             values (${article.id},
+                     ARRAY[${externalIds}]::text[],
+                     ARRAY[${externalSubjectIds}]::text[],
+                     ${dataObject},
+                     $startRevision,
+                     $uuid)
           """.updateAndReturnGeneratedKey().apply
 
       logger.info(s"Inserted new article: $articleId")
@@ -82,7 +93,12 @@ trait DraftRepository {
       val newRevision = if (isImported) 1 else article.revision.getOrElse(0) + 1
       val oldRevision = if (isImported) 1 else article.revision
       val count =
-        sql"update ${Article.table} set document=${dataObject}, revision=$newRevision where id=${article.id} and revision=${oldRevision}".update.apply
+        sql"""
+              update ${Article.table}
+              set document=${dataObject}, revision=$newRevision
+              where id=${article.id}
+              and revision=${oldRevision}
+           """.update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"
@@ -94,15 +110,26 @@ trait DraftRepository {
       }
     }
 
-    def updateWithExternalIds(article: Article, externalIds: List[String], externalSubjectIds: Seq[String])(
-        implicit session: DBSession = AutoSession): Try[Article] = {
+    def updateWithExternalIds(article: Article,
+                              externalIds: List[String],
+                              externalSubjectIds: Seq[String],
+                              importId: Option[String])(implicit session: DBSession = AutoSession): Try[Article] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
 
+      val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
       val newRevision = article.revision.getOrElse(0) + 1
       val count =
-        sql"update ${Article.table} set document=${dataObject}, revision=1, external_id=ARRAY[$externalIds]::text[], external_subject_id=ARRAY[${externalSubjectIds}]::text[] where id=${article.id}".update.apply
+        sql"""
+             update ${Article.table}
+             set document=${dataObject},
+                 revision=1,
+                 external_id=ARRAY[$externalIds]::text[],
+                 external_subject_id=ARRAY[${externalSubjectIds}]::text[],
+                 import_id=$uuid
+             where id=${article.id}
+          """.update.apply
 
       if (count != 1) {
         val message = s"Found revision mismatch when attempting to update article ${article.id}"
