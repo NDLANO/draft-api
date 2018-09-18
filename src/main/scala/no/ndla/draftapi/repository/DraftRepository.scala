@@ -270,5 +270,20 @@ trait DraftRepository {
         .apply()
     }
 
+    def importIdOfArticle(id: Long)(implicit session: DBSession = ReadOnlyAutoSession): Option[ArticleIds] = {
+      val ar = Article.syntax("ar")
+      sql"select ${ar.result.*}, import_id, external_id from ${Article.as(ar)} where ar.document is not NULL and ar.id=$id"
+        .map(rs => {
+          val art = Article(ar)(rs)
+          ArticleIds(
+            art.id.get,
+            externalIdsFromResultSet(rs),
+            rs.stringOpt("import_id")
+          )
+        })
+        .single
+        .apply()
+    }
+
   }
 }
