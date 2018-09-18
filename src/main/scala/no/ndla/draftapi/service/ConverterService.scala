@@ -546,7 +546,7 @@ trait ConverterService {
       StateTransitionRules.StateTransitions.groupBy(_.from).map {
         case (from, to) =>
           from.toString -> to
-            .filter(t => (t.adminRequired && user.isAdmin) || !t.adminRequired) // filter out transitions which require admin if user is not admin
+            .filter(t => user.hasRoles(t.requiredRoles) || user.isAdmin) // filter out transitions which require admin if user is not admin
             .map(_.to.toString)
             .toSeq
       }

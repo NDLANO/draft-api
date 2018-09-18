@@ -116,6 +116,7 @@ trait WriteService {
         case Some(draft) =>
           converterService
             .updateStatus(status, draft, user)
+            .flatMap(article => draftRepository.update(article))
             .flatMap(converterService.toApiArticle(_, Language.AllLanguages, fallback = true))
       }
     }
