@@ -233,7 +233,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val article = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
 
     when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
-    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(article))
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(ContentId(1)))
 
     val res = service.publishArticle(1, TestData.userWithWriteAccess)
     res.isFailure should be(true)

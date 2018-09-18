@@ -10,11 +10,16 @@ package no.ndla.draftapi.validation
 import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl}
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.NotFoundException
+import no.ndla.draftapi.model.api.{
+  AccessDeniedException,
+  ContentId,
+  NewAgreement,
+  NewAgreementCopyright,
+  NotFoundException
+}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.ConverterService
-import no.ndla.draftapi.model.api.{AccessDeniedException, NewAgreement, NewAgreementCopyright}
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.AuthUser
@@ -88,13 +93,13 @@ trait ContentValidator {
 
     }
 
-    def validateArticleApiArticle(id: Long): Try[Article] = {
+    def validateArticleApiArticle(id: Long): Try[ContentId] = {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
         case Some(art) =>
           articleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
             case Failure(ex) => Failure(ex)
-            case Success(_)  => Success(art)
+            case Success(_)  => Success(ContentId(id))
           }
       }
     }

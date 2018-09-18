@@ -357,11 +357,8 @@ trait DraftController {
 
     /*
         TODO:
-          - update article import. Removed /intern/article/:id/publish. Use public publish endpoint insted. Should also add manual call to validation endpoint
-          - add auth roles for admin (drafts:admin)
-          - remove draft role queue_for_publish
+          - rewrite transition rules from, adminRequired, to set of roles required
           - write aws lambda job for unpublishing
-          - write tests
      */
 
     put(
@@ -402,7 +399,7 @@ trait DraftController {
 
     put("/:article_id/validate/", operation(validateArticle)) {
       contentValidator.validateArticleApiArticle(long(this.articleId.paramName)) match {
-        case Success(_)  => NoContent()
+        case Success(id) => id
         case Failure(ex) => errorHandler(ex)
       }
     }
