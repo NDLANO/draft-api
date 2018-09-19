@@ -285,41 +285,6 @@ trait DraftController {
       }
     }
 
-    val publishDraft =
-      (apiOperation[api.Status]("publishDraft")
-        summary "Publish the article. Only available for admins"
-        notes "Publish the article. Only available for admins"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](articleId)
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
-
-    put("/:article_id/publish/", operation(publishDraft)) {
-      val userInfo = user.getUser
-      doOrAccessDenied(userInfo.isAdmin) {
-        val id = long(this.articleId.paramName)
-        val isImported = booleanOrDefault("import_publish", false)
-
-        writeService.publishArticle(id, userInfo, isImported) match {
-          case Success(s) => s
-          case Failure(e) => errorHandler(e)
-        }
-      }
-    }
-
-    put("/:article_id/archieve/") {
-      val userInfo = user.getUser
-      doOrAccessDenied(userInfo.isAdmin) {
-        val id = long(this.articleId.paramName)
-        writeService.archieveArticle(id, userInfo) match {
-          case Success(a) => a
-          case Failure(e) => errorHandler(e)
-        }
-      }
-    }
-
     val updateArticle =
       (apiOperation[Article]("updateArticle")
         summary "Update an existing article"
@@ -357,8 +322,8 @@ trait DraftController {
 
     /*
         TODO:
-          - rewrite transition rules from, adminRequired, to set of roles required
           - write aws lambda job for unpublishing
+          - write tests
      */
 
     put(
@@ -380,9 +345,10 @@ trait DraftController {
         domain.ArticleStatus
           .valueOfOrError(params(this.statuss.paramName))
           .flatMap(writeService.updateArticleStatus(_, id, userInfo)) match {
-          case Success(s)  => s
+          case Success(a)  => a
           case Failure(ex) => errorHandler(ex)
         }
+
       }
     }
 

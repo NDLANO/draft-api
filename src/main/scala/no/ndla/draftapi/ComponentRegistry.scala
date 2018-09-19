@@ -23,6 +23,7 @@ object ComponentRegistry
     extends DataSource
     with InternController
     with ConverterService
+    with StateTransitionRules
     with ConceptController
     with ConceptSearchService
     with ConceptIndexService

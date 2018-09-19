@@ -10,6 +10,7 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
+import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.ArticleTitle
@@ -19,7 +20,7 @@ import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
@@ -97,18 +98,6 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     result.updated should equal(updated)
   }
 
-  test("toDomainArticle should remove PUBLISHED when merging an UpdatedArticle into an existing") {
-    val existing = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(DRAFT, Set(PUBLISHED)))
-    val Success(res) =
-      service.toDomainArticle(existing,
-                              TestData.sampleApiUpdateArticle.copy(language = Some("en")),
-                              isImported = false,
-                              TestData.userWithWriteAccess,
-                              None,
-                              None)
-    res.status should equal(domain.Status(DRAFT, Set.empty))
-  }
-
   test("toDomainArticle should fail if trying to update language fields without language being set") {
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(language = None, title = Some("kakemonster"))
     val res =
@@ -135,6 +124,13 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
                               None,
                               None)
     res.title.find(_.language == "nb").get.title should equal("kakemonster")
+  }
+
+  test("updateStatus should return an IO[Failure] if the statuc change is illegal") {
+    val Failure(res: IllegalStatusStateTransition) =
+      service.updateStatus(PUBLISHED, TestData.sampleArticleWithByNcSa, TestData.userWithWriteAccess).unsafeRunSync()
+    res.getMessage should equal(
+      s"Cannot go to PUBLISHED when article is ${TestData.sampleArticleWithByNcSa.status.current}")
   }
 
 }

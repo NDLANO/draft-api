@@ -9,6 +9,7 @@ package no.ndla.draftapi.service
 
 import java.util.Date
 
+import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.UserInfo
@@ -29,7 +30,7 @@ import scala.util.control.Exception.allCatch
 import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
-  this: Clock with DraftRepository with ArticleApiClient =>
+  this: Clock with DraftRepository with ArticleApiClient with StateTransitionRules =>
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
@@ -78,7 +79,7 @@ trait ConverterService {
               updatedBy = user.id,
               articleType = ArticleType.valueOfOrError(newArticle.articleType),
               newArticle.notes
-            )).flatMap(updateStatus(DRAFT, _, user))
+            ))
       }
     }
 
@@ -184,9 +185,8 @@ trait ConverterService {
       HtmlTagRules.jsoupDocumentToString(document)
     }
 
-    def updateStatus(status: ArticleStatus.Value, article: domain.Article, user: UserInfo): Try[domain.Article] = {
-      StateTransitionRules.doTransition(article.status, status, user).map(newStatus => article.copy(status = newStatus))
-    }
+    def updateStatus(status: ArticleStatus.Value, article: domain.Article, user: UserInfo): IO[Try[domain.Article]] =
+      StateTransitionRules.doTransition(article, status, user)
 
     def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
       val supportedLanguages = getSupportedLanguages(
@@ -450,9 +450,9 @@ trait ConverterService {
             partiallyConverted.copy(
               title = mergeLanguageFields(toMergeInto.title,
                                           article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
-              content =
-                mergeLanguageFields(toMergeInto.content,
-                                    article.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))),
+              content = mergeLanguageFields(toMergeInto.content,
+                                            article.content.toSeq.map(c =>
+                                              toDomainContent(api.ArticleContent(c, lang)))),
               tags = article.tags
                 .map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang)))
                 .getOrElse(toMergeInto.tags),
@@ -467,7 +467,7 @@ trait ConverterService {
                                               article.metaImage
                                                 .map(toDomainMetaImage(_, lang))
                                                 .toSeq)
-            )).flatMap(updateStatus(DRAFT, _, user))
+            ))
       }
     }
 
@@ -507,7 +507,7 @@ trait ConverterService {
               user.id,
               articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
               article.notes.getOrElse(Seq.empty)
-            )).flatMap(updateStatus(DRAFT, _, user))
+            ))
       }
     }
 

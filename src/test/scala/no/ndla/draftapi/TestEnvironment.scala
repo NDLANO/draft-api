@@ -41,6 +41,7 @@ trait TestEnvironment
     with ConceptRepository
     with MockitoSugar
     with ConverterService
+    with StateTransitionRules
     with NdlaClient
     with SearchConverterService
     with ReadService

@@ -229,17 +229,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("publishArticle should return Failure if article is not ready for publishing") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
-
-    when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
-    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(ContentId(1)))
-
-    val res = service.publishArticle(1, TestData.userWithWriteAccess)
-    res.isFailure should be(true)
-    verify(articleApiClient, times(0)).updateArticle(any[Long], any[domain.Article], any[List[String]])
-  }
-
   private def setupSuccessfulPublishMock(id: Long): Unit = {
     val article =
       TestData.sampleArticleWithByNcSa
@@ -251,24 +240,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       .thenAnswer(a => {
         Success(a.getArgumentAt(1, domain.Article.getClass))
       })
-  }
-
-  test("publishArticle should return Success if permitted to publish to article-api") {
-    setupSuccessfulPublishMock(1)
-    val res = service.publishArticle(1, TestData.userWIthAdminAccess)
-    res.isSuccess should be(true)
-    verify(articleApiClient, times(1)).updateArticle(any[Long], any[domain.Article], any[List[String]])
-  }
-
-  test("publishArticles should publish all articles marked for publishing") {
-    when(readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING)).thenReturn(Seq[Long](1, 2, 3))
-    setupSuccessfulPublishMock(1)
-    setupSuccessfulPublishMock(2)
-    when(draftRepository.withIdAndExternalIds(3)).thenReturn(None)
-
-    val res = service.publishArticles(TestData.userWIthAdminAccess)
-    res.succeeded should be(Seq(1, 2))
-    res.failed.map(_.id) should be(Seq(3))
   }
 
 }

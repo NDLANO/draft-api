@@ -384,6 +384,5 @@ object TestData {
                                                             None,
                                                             None))
   val statusWithAwaitingPublishing = Set(ArticleStatus.DRAFT, ArticleStatus.QUEUED_FOR_PUBLISHING)
-  val statusWithDraft = Set(ArticleStatus.DRAFT)
-
+  val statusWithDraft = domain.Status(ArticleStatus.DRAFT, Set.empty)
 }
