@@ -143,7 +143,5 @@ trait ReadService {
     def agreementWithId(id: Long): Option[api.Agreement] =
       agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))
 
-    def articlesWithStatus(status: domain.ArticleStatus.Value): Seq[Long] =
-      draftRepository.withStatus(status).map(_.id.get)
   }
 }

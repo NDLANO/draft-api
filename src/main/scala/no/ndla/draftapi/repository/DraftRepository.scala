@@ -115,21 +115,8 @@ trait DraftRepository {
     }
 
     def withId(articleId: Long): Option[Article] =
-      articleWhere(sqls"ar.id=${articleId.toInt}")
-
-    def withIdAndExternalIds(articleId: Long)(
-        implicit session: DBSession = AutoSession): Option[(Article, List[String])] = {
-      val ar = Article.syntax("ar")
-      sql"""select external_id, ${ar.result.*}
-            from ${Article.as(ar)}
-            where ar.document is not NULL and ar.id=${articleId.toInt}"""
-        .map(rs => (Article(ar)(rs), externalIdsFromResultSet(rs)))
-        .single
-        .apply()
-    }
-
-    def withStatus(status: ArticleStatus.Value): Seq[Article] =
-      articlesWhere(sqls"(ar.document->>'status')::jsonb ?? ${status.toString}")
+      articleWhere(
+        sqls"ar.id=${articleId.toInt} AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIEVED.toString}")
 
     def exists(id: Long)(implicit session: DBSession = AutoSession): Boolean = {
       sql"select id from ${Article.table} where id=${id}".map(rs => rs.long("id")).single.apply().isDefined
@@ -223,7 +210,8 @@ trait DraftRepository {
     }
 
     override def documentsWithIdBetween(min: Long, max: Long): List[Article] =
-      articlesWhere(sqls"ar.id between $min and $max").toList
+      articlesWhere(
+        sqls"ar.id between $min and $max and ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIEVED.toString}").toList
 
     private def articleWhere(whereClause: SQLSyntax)(
         implicit session: DBSession = ReadOnlyAutoSession): Option[Article] = {

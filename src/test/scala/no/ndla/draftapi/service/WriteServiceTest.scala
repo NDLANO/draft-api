@@ -234,7 +234,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       TestData.sampleArticleWithByNcSa
         .copy(id = Some(id), status = domain.Status(domain.ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty))
     val apiArticle = converterService.toArticleApiArticle(article)
-    when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenReturn(Success(article))
     when(articleApiClient.updateArticle(any[Long], any[domain.Article], any[List[String]]))
       .thenAnswer(a => {

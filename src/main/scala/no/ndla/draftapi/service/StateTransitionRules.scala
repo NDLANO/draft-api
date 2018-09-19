@@ -113,7 +113,7 @@ trait StateTransitionRules {
       StateTransition(UNPUBLISHED, DRAFT, addCurrentStateToOthersOnTransition = false),
       StateTransition(
         UNPUBLISHED,
-        ARCHIEVED, // TODO: filter out archieved when fetching from db
+        ARCHIEVED,
         Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
         addCurrentStateToOthersOnTransition = false,
         requiredRoles = AdminRoles
