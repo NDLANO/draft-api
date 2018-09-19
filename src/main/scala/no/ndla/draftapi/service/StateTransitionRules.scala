@@ -16,11 +16,12 @@ import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
+import no.ndla.draftapi.service.search.ArticleIndexService
 
 import scala.util.{Failure, Success, Try}
 
 trait StateTransitionRules {
-  this: WriteService with DraftRepository with ArticleApiClient =>
+  this: WriteService with DraftRepository with ArticleApiClient with ArticleIndexService =>
 
   object StateTransitionRules {
     private def publishArticle(article: domain.Article): Try[Article] = {
@@ -30,6 +31,9 @@ trait StateTransitionRules {
 
     private def unpublishArticle(article: domain.Article): Try[domain.Article] =
       articleApiClient.unpublishArticle(article)
+
+    private def removeFromSearch(article: domain.Article): Try[domain.Article] =
+      articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
     val StateTransitions = Set(
       StateTransition(IMPORTED, DRAFT),
@@ -116,6 +120,7 @@ trait StateTransitionRules {
         ARCHIEVED,
         Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
         addCurrentStateToOthersOnTransition = false,
+        sideEffect = removeFromSearch,
         requiredRoles = AdminRoles
       )
     )

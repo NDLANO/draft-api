@@ -15,6 +15,6 @@ import scala.util.{Success, Try}
 case class StateTransition(from: ArticleStatus.Value,
                            to: ArticleStatus.Value,
                            otherStatesToKeepOnTransition: Set[ArticleStatus.Value] = Set(ArticleStatus.IMPORTED),
-                           sideEffect: domain.Article => Try[domain.Article] = a => Success(a),
+                           sideEffect: domain.Article => Try[domain.Article] = Success.apply,
                            addCurrentStateToOthersOnTransition: Boolean = true,
                            requiredRoles: Set[Role.Value] = UserInfo.WriteRoles)
