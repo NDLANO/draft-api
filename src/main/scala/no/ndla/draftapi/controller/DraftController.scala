@@ -320,12 +320,6 @@ trait DraftController {
       }
     }
 
-    /*
-        TODO:
-          - write aws lambda job for unpublishing
-          - write tests
-     */
-
     put(
       "/:article_id/status/:STATUS",
       operation(
@@ -353,7 +347,7 @@ trait DraftController {
     }
 
     val validateArticle =
-      (apiOperation[Unit]("validateArticle")
+      (apiOperation[ContentId]("validateArticle")
         summary "Validate an article"
         notes "Validate an article"
         parameters (

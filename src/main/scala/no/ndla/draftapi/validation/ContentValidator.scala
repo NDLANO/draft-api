@@ -174,7 +174,8 @@ trait ContentValidator {
                               language: String,
                               allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("title", title).toList ++
-        validateLanguage("language", language, allowUnknownLanguage)
+        validateLanguage("language", language, allowUnknownLanguage) ++
+        validateLength("title", title, 256)
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
@@ -245,6 +246,13 @@ trait ContentValidator {
         case true  => None
         case false => Some(ValidationMessage(fieldPath, s"Language '$languageCode' is not a supported value."))
       }
+    }
+
+    private def validateLength(fieldPath: String, content: String, maxLength: Int): Option[ValidationMessage] = {
+      if (content.length > maxLength)
+        Some(ValidationMessage(fieldPath, s"This field exceeds the maximum permitted length of $maxLength characters"))
+      else
+        None
     }
 
     private def languageCodeSupported6391(languageCode: String, allowUnknownLanguage: Boolean): Boolean = {
