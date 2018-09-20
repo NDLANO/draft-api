@@ -46,8 +46,6 @@ object JettyLauncher extends LazyLogging {
     context.addServlet(classOf[ReportServlet], "/monitoring")
     context.addEventListener(new SessionListener)
     val monitoringFilter = new FilterHolder(new MonitoringFilter())
-    monitoringFilter.setInitParameter(Parameter.ALLOWED_ADDR_PATTERN.getCode,
-                                      "0:0:0:0:0:0:0:1|127\\.0\\.0\\.1|172\\.*\\.*\\.*")
     monitoringFilter.setInitParameter(Parameter.APPLICATION_NAME.getCode, DraftApiProperties.ApplicationName)
     DraftApiProperties.Environment match {
       case "local" => None
