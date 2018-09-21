@@ -18,6 +18,7 @@ import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.search.ArticleIndexService
 
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 trait StateTransitionRules {
@@ -35,108 +36,36 @@ trait StateTransitionRules {
     private def removeFromSearch(article: domain.Article): Try[domain.Article] =
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
-    val StateTransitions = Set(
-      StateTransition(IMPORTED, DRAFT),
-      StateTransition(DRAFT, DRAFT, addCurrentStateToOthersOnTransition = false),
-      StateTransition(DRAFT, PROPOSAL, addCurrentStateToOthersOnTransition = false),
-      StateTransition(DRAFT,
-                      PUBLISHED,
-                      addCurrentStateToOthersOnTransition = false,
-                      sideEffect = publishArticle,
-                      requiredRoles = AdminRoles),
-      StateTransition(PROPOSAL, USER_TEST),
-      StateTransition(PROPOSAL,
-                      QUEUED_FOR_PUBLISHING,
-                      Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-                      addCurrentStateToOthersOnTransition = false,
-                      requiredRoles = SetPublishRoles),
-      StateTransition(PROPOSAL,
-                      PUBLISHED,
-                      addCurrentStateToOthersOnTransition = false,
-                      sideEffect = publishArticle,
-                      requiredRoles = AdminRoles),
-      StateTransition(PROPOSAL, AWAITING_QUALITY_ASSURANCE),
-      StateTransition(USER_TEST, PROPOSAL, addCurrentStateToOthersOnTransition = false),
-      StateTransition(USER_TEST, AWAITING_QUALITY_ASSURANCE, Set(IMPORTED, PROPOSAL)),
-      StateTransition(USER_TEST, PUBLISHED, sideEffect = publishArticle, requiredRoles = AdminRoles),
-      StateTransition(AWAITING_QUALITY_ASSURANCE,
-                      USER_TEST,
-                      Set(IMPORTED, PROPOSAL),
-                      addCurrentStateToOthersOnTransition = false),
-      StateTransition(AWAITING_QUALITY_ASSURANCE,
-                      QUALITY_ASSURED,
-                      Set(IMPORTED, USER_TEST),
-                      addCurrentStateToOthersOnTransition = false),
-      StateTransition(
-        AWAITING_QUALITY_ASSURANCE,
-        PUBLISHED,
-        Set(IMPORTED, USER_TEST),
-        addCurrentStateToOthersOnTransition = false,
-        sideEffect = publishArticle,
-        requiredRoles = AdminRoles
-      ),
-      StateTransition(QUALITY_ASSURED,
-                      QUEUED_FOR_PUBLISHING,
-                      Set(IMPORTED, USER_TEST),
-                      requiredRoles = SetPublishRoles),
-      StateTransition(QUALITY_ASSURED,
-                      PUBLISHED,
-                      Set(IMPORTED, USER_TEST),
-                      sideEffect = publishArticle,
-                      requiredRoles = AdminRoles),
-      StateTransition(
-        QUEUED_FOR_PUBLISHING,
-        PUBLISHED,
-        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-        sideEffect = publishArticle,
-        addCurrentStateToOthersOnTransition = false,
-        requiredRoles = AdminRoles
-      ),
-      StateTransition(QUEUED_FOR_PUBLISHING, DRAFT, addCurrentStateToOthersOnTransition = false),
-      StateTransition(PUBLISHED, DRAFT, addCurrentStateToOthersOnTransition = false),
-      StateTransition(PUBLISHED, AWAITING_UNPUBLISHING, Set(IMPORTED, USER_TEST, QUALITY_ASSURED)),
-      StateTransition(
-        PUBLISHED,
-        UNPUBLISHED,
-        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-        addCurrentStateToOthersOnTransition = false,
-        sideEffect = unpublishArticle,
-        requiredRoles = AdminRoles
-      ),
-      StateTransition(AWAITING_UNPUBLISHING, DRAFT, addCurrentStateToOthersOnTransition = false),
-      StateTransition(
-        AWAITING_UNPUBLISHING,
-        PUBLISHED,
-        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-        addCurrentStateToOthersOnTransition = false,
-        sideEffect = publishArticle,
-        requiredRoles = AdminRoles
-      ),
-      StateTransition(
-        AWAITING_UNPUBLISHING,
-        UNPUBLISHED,
-        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-        addCurrentStateToOthersOnTransition = false,
-        sideEffect = unpublishArticle,
-        requiredRoles = AdminRoles
-      ),
-      StateTransition(
-        UNPUBLISHED,
-        PUBLISHED,
-        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-        addCurrentStateToOthersOnTransition = false,
-        sideEffect = publishArticle,
-        requiredRoles = AdminRoles
-      ),
-      StateTransition(UNPUBLISHED, DRAFT, addCurrentStateToOthersOnTransition = false),
-      StateTransition(
-        UNPUBLISHED,
-        ARCHIEVED,
-        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-        addCurrentStateToOthersOnTransition = false,
-        sideEffect = removeFromSearch,
-        requiredRoles = AdminRoles
-      )
+    import StateTransition._
+
+    val StateTransitions: Set[StateTransition] = Set(
+      IMPORTED -> DRAFT,
+      (DRAFT -> DRAFT) discardCurrentOnTransition,
+      (DRAFT -> PROPOSAL) discardCurrentOnTransition,
+      (DRAFT -> PUBLISHED) require AdminRoles withSideEffect publishArticle discardCurrentOnTransition,
+      PROPOSAL -> USER_TEST,
+      (PROPOSAL -> QUEUED_FOR_PUBLISHING) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require SetPublishRoles discardCurrentOnTransition,
+      (PROPOSAL -> PUBLISHED) require AdminRoles withSideEffect publishArticle discardCurrentOnTransition,
+      PROPOSAL -> AWAITING_QUALITY_ASSURANCE,
+      (USER_TEST -> PROPOSAL) discardCurrentOnTransition,
+      (USER_TEST -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL),
+      (USER_TEST -> PUBLISHED) require AdminRoles withSideEffect publishArticle,
+      (AWAITING_QUALITY_ASSURANCE -> USER_TEST) keepStates Set(IMPORTED, PROPOSAL) discardCurrentOnTransition,
+      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED) keepStates Set(IMPORTED, USER_TEST) discardCurrentOnTransition,
+      (AWAITING_QUALITY_ASSURANCE -> PUBLISHED) require AdminRoles keepStates Set(IMPORTED, USER_TEST) withSideEffect publishArticle discardCurrentOnTransition,
+      (QUALITY_ASSURED -> QUEUED_FOR_PUBLISHING) keepStates Set(IMPORTED, USER_TEST) require SetPublishRoles,
+      (QUALITY_ASSURED -> PUBLISHED) require AdminRoles keepStates Set(IMPORTED, USER_TEST) withSideEffect publishArticle,
+      (QUEUED_FOR_PUBLISHING -> PUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle discardCurrentOnTransition,
+      (QUEUED_FOR_PUBLISHING -> DRAFT) discardCurrentOnTransition,
+      (PUBLISHED -> DRAFT) discardCurrentOnTransition,
+      (PUBLISHED -> AWAITING_UNPUBLISHING) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
+      (PUBLISHED -> UNPUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle discardCurrentOnTransition,
+      (AWAITING_UNPUBLISHING -> DRAFT) discardCurrentOnTransition,
+      (AWAITING_UNPUBLISHING -> PUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle discardCurrentOnTransition,
+      (AWAITING_UNPUBLISHING -> UNPUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle discardCurrentOnTransition,
+      (UNPUBLISHED -> PUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle discardCurrentOnTransition,
+      (UNPUBLISHED -> DRAFT) discardCurrentOnTransition,
+      (UNPUBLISHED -> ARCHIEVED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect removeFromSearch discardCurrentOnTransition
     )
 
     private def getTransition(from: ArticleStatus.Value,

@@ -14,7 +14,25 @@ import scala.util.{Success, Try}
 
 case class StateTransition(from: ArticleStatus.Value,
                            to: ArticleStatus.Value,
-                           otherStatesToKeepOnTransition: Set[ArticleStatus.Value] = Set(ArticleStatus.IMPORTED),
-                           sideEffect: domain.Article => Try[domain.Article] = Success.apply,
-                           addCurrentStateToOthersOnTransition: Boolean = true,
-                           requiredRoles: Set[Role.Value] = UserInfo.WriteRoles)
+                           otherStatesToKeepOnTransition: Set[ArticleStatus.Value],
+                           sideEffect: domain.Article => Try[domain.Article],
+                           addCurrentStateToOthersOnTransition: Boolean,
+                           requiredRoles: Set[Role.Value]) {
+
+  def discardCurrentOnTransition: StateTransition = copy(addCurrentStateToOthersOnTransition = false)
+  def keepStates(toKeep: Set[ArticleStatus.Value]): StateTransition = copy(otherStatesToKeepOnTransition = toKeep)
+  def withSideEffect(sideEffect: domain.Article => Try[domain.Article]): StateTransition = copy(sideEffect = sideEffect)
+  def require(roles: Set[Role.Value]): StateTransition = copy(requiredRoles = roles)
+}
+
+object StateTransition {
+  implicit def tupleToStateTransition(fromTo: (ArticleStatus.Value, ArticleStatus.Value)): StateTransition = {
+    val (from, to) = fromTo
+    StateTransition(from,
+                    to,
+                    Set(ArticleStatus.IMPORTED),
+                    Success.apply,
+                    addCurrentStateToOthersOnTransition = true,
+                    UserInfo.WriteRoles)
+  }
+}
