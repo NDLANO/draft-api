@@ -118,11 +118,12 @@ trait DraftRepository {
       articleWhere(
         sqls"ar.id=${articleId.toInt} AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIEVED.toString}")
 
-    def idsWithStatus(status: ArticleStatus.Value)(implicit session: DBSession = AutoSession): Try[List[Long]] = {
+    def idsWithStatus(status: ArticleStatus.Value)(implicit session: DBSession = AutoSession): Try[List[ArticleIds]] = {
       val ar = Article.syntax("ar")
       Try(
-        sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and ar.document#>>'{status,current}' = $status"
-          .map(rs => rs.long("id"))
+        sql"select id, external_id from ${Article
+          .as(ar)} where ar.document is not NULL and ar.document#>>'{status,current}' = ${status.toString}"
+          .map(rs => ArticleIds(rs.long("id"), externalIdsFromResultSet(rs)))
           .list
           .apply)
     }

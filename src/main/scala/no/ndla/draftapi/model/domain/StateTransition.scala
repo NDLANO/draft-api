@@ -11,6 +11,7 @@ import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.domain
 
 import scala.util.{Success, Try}
+import scala.language.implicitConversions
 
 case class StateTransition(from: ArticleStatus.Value,
                            to: ArticleStatus.Value,
