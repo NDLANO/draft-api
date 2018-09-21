@@ -82,13 +82,17 @@ trait StateTransitionRules {
         addCurrentStateToOthersOnTransition = false,
         requiredRoles = AdminRoles
       ),
+      StateTransition(QUEUED_FOR_PUBLISHING, DRAFT, addCurrentStateToOthersOnTransition = false),
       StateTransition(PUBLISHED, DRAFT, addCurrentStateToOthersOnTransition = false),
       StateTransition(PUBLISHED, AWAITING_UNPUBLISHING, Set(IMPORTED, USER_TEST, QUALITY_ASSURED)),
-      StateTransition(PUBLISHED,
-                      UNPUBLISHED,
-                      Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
-                      sideEffect = unpublishArticle,
-                      requiredRoles = AdminRoles),
+      StateTransition(
+        PUBLISHED,
+        UNPUBLISHED,
+        Set(IMPORTED, USER_TEST, QUALITY_ASSURED),
+        addCurrentStateToOthersOnTransition = false,
+        sideEffect = unpublishArticle,
+        requiredRoles = AdminRoles
+      ),
       StateTransition(AWAITING_UNPUBLISHING, DRAFT, addCurrentStateToOthersOnTransition = false),
       StateTransition(
         AWAITING_UNPUBLISHING,

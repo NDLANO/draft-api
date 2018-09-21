@@ -27,7 +27,6 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   val DraftArticle = TestData.sampleArticleWithByNcSa.copy(status = DraftStatus)
   val AwaitingUnpublishArticle = TestData.sampleArticleWithByNcSa.copy(status = AwaitingUnpublishStatus)
   val UnpublishedArticle = TestData.sampleArticleWithByNcSa.copy(status = UnpublishedStatus)
-  val ProposalArticle = TestData.sampleArticleWithByNcSa.copy(status = ProposalStatus)
 
   test("doTransition should succeed when performing a legal transition") {
     val expected = domain.Status(PUBLISHED, Set.empty)
@@ -84,13 +83,22 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   }
 
   test("user without required roles should not be permitted to perform the status transition") {
+    val proposalArticle = TestData.sampleArticleWithByNcSa.copy(status = ProposalStatus)
     val (Failure(ex: IllegalStatusStateTransition), _) =
       doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWithWriteAccess)
     ex.getMessage should equal("Cannot go to PUBLISHED when article is DRAFT")
 
     val (Failure(ex2: IllegalStatusStateTransition), _) =
-      doTransitionWithoutSideEffect(ProposalArticle, QUEUED_FOR_PUBLISHING, TestData.userWithWriteAccess)
+      doTransitionWithoutSideEffect(proposalArticle, QUEUED_FOR_PUBLISHING, TestData.userWithWriteAccess)
     ex2.getMessage should equal("Cannot go to QUEUED_FOR_PUBLISHING when article is PROPOSAL")
+  }
+
+  test("PUBLISHED should be removed when transitioning to UNPUBLISHED") {
+    val expected = domain.Status(UNPUBLISHED, Set())
+    val publishedArticle = DraftArticle.copy(status = domain.Status(current = PUBLISHED, other = Set()))
+    val (Success(res), _) = doTransitionWithoutSideEffect(publishedArticle, UNPUBLISHED, TestData.userWIthAdminAccess)
+
+    res.status should equal(expected)
   }
 
 }

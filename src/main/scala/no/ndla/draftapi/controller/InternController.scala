@@ -74,7 +74,11 @@ trait InternController {
     }
 
     get("/ids") {
-      draftRepository.getAllIds
+      paramOrNone("status").map(ArticleStatus.valueOfOrError) match {
+        case Some(Success(status)) =>
+        case Some(Failure(ex))     => errorHandler(ex)
+        case None                  => draftRepository.getAllIds
+      }
     }
 
     get("/id/:external_id") {
