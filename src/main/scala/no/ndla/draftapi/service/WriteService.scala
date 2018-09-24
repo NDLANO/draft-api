@@ -14,7 +14,7 @@ import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{Status, _}
 import no.ndla.draftapi.model.domain.ArticleStatus.{
-  ARCHIEVED,
+  ARCHIVED,
   AWAITING_UNPUBLISHING,
   PUBLISHED,
   QUEUED_FOR_PUBLISHING,

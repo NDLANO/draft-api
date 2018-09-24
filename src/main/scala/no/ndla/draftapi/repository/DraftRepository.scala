@@ -116,7 +116,7 @@ trait DraftRepository {
 
     def withId(articleId: Long): Option[Article] =
       articleWhere(
-        sqls"ar.id=${articleId.toInt} AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIEVED.toString}")
+        sqls"ar.id=${articleId.toInt} AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIVED.toString}")
 
     def idsWithStatus(status: ArticleStatus.Value)(implicit session: DBSession = AutoSession): Try[List[ArticleIds]] = {
       val ar = Article.syntax("ar")
@@ -221,7 +221,7 @@ trait DraftRepository {
 
     override def documentsWithIdBetween(min: Long, max: Long): List[Article] =
       articlesWhere(
-        sqls"ar.id between $min and $max and ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIEVED.toString}").toList
+        sqls"ar.id between $min and $max and ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIVED.toString}").toList
 
     private def articleWhere(whereClause: SQLSyntax)(
         implicit session: DBSession = ReadOnlyAutoSession): Option[Article] = {

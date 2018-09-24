@@ -65,7 +65,7 @@ trait StateTransitionRules {
       (AWAITING_UNPUBLISHING -> UNPUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle discardCurrentOnTransition,
       (UNPUBLISHED -> PUBLISHED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle discardCurrentOnTransition,
       (UNPUBLISHED -> DRAFT) discardCurrentOnTransition,
-      (UNPUBLISHED -> ARCHIEVED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect removeFromSearch discardCurrentOnTransition
+      (UNPUBLISHED -> ARCHIVED) keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect removeFromSearch discardCurrentOnTransition
     )
 
     private def getTransition(from: ArticleStatus.Value,
