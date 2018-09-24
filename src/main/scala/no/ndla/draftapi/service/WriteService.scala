@@ -13,13 +13,7 @@ import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{Status, _}
-import no.ndla.draftapi.model.domain.ArticleStatus.{
-  ARCHIVED,
-  AWAITING_UNPUBLISHING,
-  PUBLISHED,
-  QUEUED_FOR_PUBLISHING,
-  UNPUBLISHED
-}
+import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, USER_TEST, AWAITING_QUALITY_ASSURANCE}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
@@ -151,8 +145,15 @@ trait WriteService {
                       user: UserInfo,
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
+
       draftRepository.withId(articleId) match {
         case Some(existing) =>
+          val oldStatus = existing.status.current
+          val newStatusIfUndefined =
+            if (Set(PROPOSAL, USER_TEST, AWAITING_QUALITY_ASSURANCE).contains(oldStatus)) oldStatus else DRAFT
+          val newStatusT =
+            updatedApiArticle.status.map(ArticleStatus.valueOfOrError).getOrElse(Success(newStatusIfUndefined))
+
           for {
             convertedArticle <- converterService.toDomainArticle(existing,
                                                                  updatedApiArticle,
@@ -160,8 +161,9 @@ trait WriteService {
                                                                  user,
                                                                  oldNdlaCreatedDate,
                                                                  oldNdlaUpdatedDate)
+            newStatus <- newStatusT
             withStatusT <- converterService
-              .updateStatus(ArticleStatus.DRAFT, convertedArticle, user)
+              .updateStatus(newStatus, convertedArticle, user)
               .attempt
               .unsafeRunSync()
               .toTry
@@ -183,7 +185,7 @@ trait WriteService {
                                                                  oldNdlaCreatedDate,
                                                                  oldNdlaUpdatedDate)
             withStatusT <- converterService
-              .updateStatus(ArticleStatus.DRAFT, convertedArticle, user)
+              .updateStatus(DRAFT, convertedArticle, user)
               .attempt
               .unsafeRunSync()
               .toTry

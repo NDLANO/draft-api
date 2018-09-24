@@ -153,7 +153,20 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
     val updatedApiArticle =
-      api.UpdatedArticle(1, Some("en"), None, Some(newContent), None, None, None, None, None, None, None, None, None)
+      api.UpdatedArticle(1,
+                         Some("en"),
+                         None,
+                         None,
+                         Some(newContent),
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1),
                                        content = Seq(ArticleContent(newContent, "en")),
                                        updated = today)
@@ -165,7 +178,20 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("That updateArticle updates only title properly") {
     val newTitle = "NyTittelTest"
     val updatedApiArticle =
-      api.UpdatedArticle(1, Some("en"), Some(newTitle), None, None, None, None, None, None, None, None, None, None)
+      api.UpdatedArticle(1,
+                         Some("en"),
+                         Some(newTitle),
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1),
                                        title = Seq(ArticleTitle(newTitle, "en")),
                                        updated = today)
@@ -198,6 +224,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       1,
       Some("en"),
       Some(updatedTitle),
+      Some("DRAFT"),
       Some(updatedContent),
       Some(updatedTags),
       Some(updatedIntro),
@@ -227,6 +254,76 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
+  }
+
+  test("updateArticle should use user-defined status if defined") {
+    val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithDraft)
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = Some("PROPOSAL"))
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    val Success(result) = service.updateArticle(existing.id.get,
+                                                updatedArticle,
+                                                List.empty,
+                                                Seq.empty,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+    result.status should equal(api.Status("PROPOSAL", Seq.empty))
+  }
+
+  test("updateArticle should use current stauts or DRAFT if user-defined status is not set") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
+
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithProposal)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("PROPOSAL", Seq.empty))
+    }
+
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithUserTest)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("USER_TEST", Seq.empty))
+    }
+
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithAwaitingQA)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("AWAITING_QUALITY_ASSURANCE", Seq.empty))
+    }
+
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithQueuedForPublishing)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("DRAFT", Seq.empty))
+    }
   }
 
   private def setupSuccessfulPublishMock(id: Long): Unit = {

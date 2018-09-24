@@ -7,4 +7,10 @@
 
 package no.ndla.draftapi.model.api
 
-case class Status(current: String, other: Seq[String])
+import org.scalatra.swagger.annotations.ApiModelProperty
+
+import scala.annotation.meta.field
+
+case class Status(
+    @(ApiModelProperty @field)(description = "The current status of the article") current: String,
+    @(ApiModelProperty @field)(description = "Previous statuses this article has been in") other: Seq[String])
