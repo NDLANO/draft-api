@@ -142,14 +142,14 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That POST / returns 403 if no auth-header") {
-    when(user.getUser).thenReturn(TestData.userWithoutRoles)
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
     post("/test") {
       status should equal(403)
     }
   }
 
   test("That POST / returns 403 if auth header does not have any roles") {
-    when(user.getUser).thenReturn(TestData.userWithoutRoles)
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
 
     post("/test") {
       status should equal(403)
@@ -163,7 +163,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 403 if access denied") {
-    when(user.getUser).thenReturn(TestData.userWithoutRoles)
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
     when(
       writeService.updateArticle(any[Long],
                                  any[api.UpdatedArticle],

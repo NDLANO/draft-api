@@ -133,4 +133,51 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       s"Cannot go to PUBLISHED when article is ${TestData.sampleArticleWithByNcSa.status.current}")
   }
 
+  test("stateTransitionsToApi should return no entries if user has no roles") {
+    val res = service.stateTransitionsToApi(TestData.userWithNoRoles)
+    res.forall { case (from, to) => to.isEmpty } should be(true)
+  }
+
+  test("stateTransitionsToApi should return only certain entries if user only has write roles") {
+    val res = service.stateTransitionsToApi(TestData.userWithWriteAccess)
+    res(IMPORTED.toString).length should be(1)
+    res(DRAFT.toString).length should be(2)
+    res(PROPOSAL.toString).length should be(2)
+    res(USER_TEST.toString).length should be(2)
+    res(AWAITING_QUALITY_ASSURANCE.toString).length should be(2)
+    res(QUALITY_ASSURED.toString).length should be(0)
+    res(QUEUED_FOR_PUBLISHING.toString).length should be(1)
+    res(PUBLISHED.toString).length should be(2)
+    res(AWAITING_UNPUBLISHING.toString).length should be(1)
+    res(UNPUBLISHED.toString).length should be(1)
+  }
+
+  test("stateTransitionsToApi should return only certain entries if user only has set_to_publish") {
+    val res = service.stateTransitionsToApi(TestData.userWithPublishAccess)
+    res(IMPORTED.toString).length should be(1)
+    res(DRAFT.toString).length should be(2)
+    res(PROPOSAL.toString).length should be(3)
+    res(USER_TEST.toString).length should be(2)
+    res(AWAITING_QUALITY_ASSURANCE.toString).length should be(2)
+    res(QUALITY_ASSURED.toString).length should be(1)
+    res(QUEUED_FOR_PUBLISHING.toString).length should be(1)
+    res(PUBLISHED.toString).length should be(2)
+    res(AWAITING_UNPUBLISHING.toString).length should be(1)
+    res(UNPUBLISHED.toString).length should be(1)
+  }
+
+  test("stateTransitionsToApi should return all entries if user is admin") {
+    val res = service.stateTransitionsToApi(TestData.userWIthAdminAccess)
+    res(IMPORTED.toString).length should be(1)
+    res(DRAFT.toString).length should be(3)
+    res(PROPOSAL.toString).length should be(4)
+    res(USER_TEST.toString).length should be(3)
+    res(AWAITING_QUALITY_ASSURANCE.toString).length should be(3)
+    res(QUALITY_ASSURED.toString).length should be(2)
+    res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
+    res(PUBLISHED.toString).length should be(3)
+    res(AWAITING_UNPUBLISHING.toString).length should be(3)
+    res(UNPUBLISHED.toString).length should be(3)
+  }
+
 }
