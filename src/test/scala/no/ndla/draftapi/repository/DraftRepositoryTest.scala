@@ -27,7 +27,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     })
   }
 
-  def serverIsListenning: Boolean = {
+  def serverIsListening: Boolean = {
     Try(new Socket(DraftApiProperties.MetaServer, DraftApiProperties.MetaPort)) match {
       case Success(c) =>
         c.close()
@@ -46,7 +46,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
   override def beforeAll(): Unit = {
     val datasource = getDataSource
-    if (serverIsListenning) {
+    if (serverIsListening) {
       DBMigrator.migrate(datasource)
       ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
     }

@@ -126,7 +126,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res.title.find(_.language == "nb").get.title should equal("kakemonster")
   }
 
-  test("updateStatus should return an IO[Failure] if the statuc change is illegal") {
+  test("updateStatus should return an IO[Failure] if the status change is illegal") {
     val Failure(res: IllegalStatusStateTransition) =
       service.updateStatus(PUBLISHED, TestData.sampleArticleWithByNcSa, TestData.userWithWriteAccess).unsafeRunSync()
     res.getMessage should equal(
