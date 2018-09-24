@@ -75,7 +75,7 @@ trait InternController {
 
     get("/ids") {
       paramOrNone("status").map(ArticleStatus.valueOfOrError) match {
-        case Some(Success(status)) => draftRepository.idsWithStatus(status)
+        case Some(Success(status)) => draftRepository.idsWithStatus(status).getOrElse(List.empty)
         case Some(Failure(ex))     => errorHandler(ex)
         case None                  => draftRepository.getAllIds
       }
