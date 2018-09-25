@@ -50,7 +50,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
-    when(authUser.userOrClientId()).thenReturn("ndalId54321")
     when(clock.now()).thenReturn(today)
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession]))
       .thenAnswer((invocation: InvocationOnMock) => {
@@ -69,8 +68,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
-    service.newArticle(TestData.newArticle, List.empty, Seq.empty, None, None).get.id.toString should equal(
-      article.id.get.toString)
+    service
+      .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None)
+      .get
+      .id
+      .toString should equal(article.id.get.toString)
     verify(draftRepository, times(1)).insert(any[Article])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
   }
@@ -79,7 +81,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(agreementRepository.insert(any[Agreement])(any[DBSession])).thenReturn(agreement)
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
 
-    service.newAgreement(TestData.newAgreement).get.id.toString should equal(agreement.id.get.toString)
+    service.newAgreement(TestData.newAgreement, TestData.userWithWriteAccess).get.id.toString should equal(
+      agreement.id.get.toString)
     verify(agreementRepository, times(1)).insert(any[Agreement])
     verify(agreementIndexService, times(1)).indexDocument(any[Agreement])
   }
@@ -143,31 +146,57 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedApiAgreement = api.UpdatedAgreement(None, Some(newContent), None)
     val expectedAgreement = agreement.copy(content = newContent, updated = today)
 
-    service.updateAgreement(agreementId, updatedApiAgreement).get should equal(
+    service.updateAgreement(agreementId, updatedApiAgreement, TestData.userWithWriteAccess).get should equal(
       converterService.toApiAgreement(expectedAgreement))
   }
 
   test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
     val updatedApiArticle =
-      api.UpdatedArticle(1, Some("en"), None, Some(newContent), None, None, None, None, None, None, None, None, None)
+      api.UpdatedArticle(1,
+                         Some("en"),
+                         None,
+                         None,
+                         Some(newContent),
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1),
                                        content = Seq(ArticleContent(newContent, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates only title properly") {
     val newTitle = "NyTittelTest"
     val updatedApiArticle =
-      api.UpdatedArticle(1, Some("en"), Some(newTitle), None, None, None, None, None, None, None, None, None, None)
+      api.UpdatedArticle(1,
+                         Some("en"),
+                         Some(newTitle),
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None)
     val expectedArticle = article.copy(revision = Some(article.revision.get + 1),
                                        title = Seq(ArticleTitle(newTitle, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
@@ -195,6 +224,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       1,
       Some("en"),
       Some(updatedTitle),
+      Some("DRAFT"),
       Some(updatedContent),
       Some(updatedTags),
       Some(updatedIntro),
@@ -222,68 +252,90 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today
     )
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, None, None) should equal(
+    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
       converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("publishArticle should return Failure if article is not ready for publishing") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = Set(domain.ArticleStatus.DRAFT))
-
-    when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
-    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(article))
-
-    val res = service.publishArticle(1)
-    res.isFailure should be(true)
-    verify(articleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle], any[List[String]])
+  test("updateArticle should use user-defined status if defined") {
+    val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithDraft)
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = Some("PROPOSAL"))
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    val Success(result) = service.updateArticle(existing.id.get,
+                                                updatedArticle,
+                                                List.empty,
+                                                Seq.empty,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+    result.status should equal(api.Status("PROPOSAL", Seq.empty))
   }
 
-  test("publishArticle should return Failure if article does not pass validation") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = Set(domain.ArticleStatus.DRAFT))
+  test("updateArticle should use current stauts or DRAFT if user-defined status is not set") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
 
-    when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
-    when(contentValidator.validateArticleApiArticle(any[Long]))
-      .thenReturn(Failure(new RuntimeException("Validation error")))
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithProposal)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("PROPOSAL", Seq.empty))
+    }
 
-    val res = service.publishArticle(1)
-    res.isFailure should be(true)
-    verify(articleApiClient, times(0)).updateArticle(any[Long], any[api.ArticleApiArticle], any[List[String]])
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithUserTest)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("USER_TEST", Seq.empty))
+    }
+
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithAwaitingQA)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("AWAITING_QUALITY_ASSURANCE", Seq.empty))
+    }
+
+    {
+      val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithQueuedForPublishing)
+      when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      val Success(result) = service.updateArticle(existing.id.get,
+                                                  updatedArticle,
+                                                  List.empty,
+                                                  Seq.empty,
+                                                  TestData.userWithWriteAccess,
+                                                  None,
+                                                  None)
+      result.status should equal(api.Status("DRAFT", Seq.empty))
+    }
   }
 
   private def setupSuccessfulPublishMock(id: Long): Unit = {
     val article =
-      TestData.sampleArticleWithByNcSa.copy(id = Some(id), status = Set(domain.ArticleStatus.QUEUED_FOR_PUBLISHING))
+      TestData.sampleArticleWithByNcSa
+        .copy(id = Some(id), status = domain.Status(domain.ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty))
     val apiArticle = converterService.toArticleApiArticle(article)
-    when(draftRepository.withIdAndExternalIds(any[Long])(any[DBSession])).thenReturn(Some(article, List.empty))
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenReturn(Success(article))
-    when(articleApiClient.updateArticle(any[Long], any[ArticleApiArticle], any[List[String]]))
-      .thenReturn(Success(apiArticle))
-  }
-
-  test("publishArticle should return Success if permitted to publish to article-api") {
-    setupSuccessfulPublishMock(1)
-    val res = service.publishArticle(1)
-    res.isSuccess should be(true)
-    verify(articleApiClient, times(1)).updateArticle(any[Long], any[api.ArticleApiArticle], any[List[String]])
-  }
-
-  test("publishArticles should publish all articles marked for publishing") {
-    when(readService.articlesWithStatus(ArticleStatus.QUEUED_FOR_PUBLISHING)).thenReturn(Seq[Long](1, 2, 3))
-    setupSuccessfulPublishMock(1)
-    setupSuccessfulPublishMock(2)
-    when(draftRepository.withIdAndExternalIds(3)).thenReturn(None)
-
-    val res = service.publishArticles()
-    res.succeeded should be(Seq(1, 2))
-    res.failed.map(_.id) should be(Seq(3))
-  }
-
-  test("queueArticleForPublishing should return updated article status") {
-    val article = TestData.sampleArticleWithByNcSa.copy(status = Set(ArticleStatus.DRAFT, ArticleStatus.PUBLISHED))
-    when(draftRepository.withId(1)).thenReturn(Some(article))
-    when(contentValidator.validateArticleApiArticle(1)).thenReturn(Success(article))
-
-    val Success(res) = service.queueArticleForPublish(1)
-    res.status should equal(Set("DRAFT", "QUEUED_FOR_PUBLISHING"))
+    when(articleApiClient.updateArticle(any[Long], any[domain.Article], any[List[String]]))
+      .thenAnswer(a => {
+        Success(a.getArgumentAt(1, domain.Article.getClass))
+      })
   }
 
 }

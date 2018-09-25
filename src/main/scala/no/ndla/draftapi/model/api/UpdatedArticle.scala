@@ -16,6 +16,7 @@ case class UpdatedArticle(
     @(ApiModelProperty @field)(description = "The revision number for the article") revision: Int,
     @(ApiModelProperty @field)(description = "The chosen language") language: Option[String],
     @(ApiModelProperty @field)(description = "The title of the article") title: Option[String],
+    @(ApiModelProperty @field)(description = "The status of the article") status: Option[String],
     @(ApiModelProperty @field)(description = "The content of the article") content: Option[String],
     @(ApiModelProperty @field)(description = "Searchable tags") tags: Option[Seq[String]],
     @(ApiModelProperty @field)(description = "An introduction") introduction: Option[String],

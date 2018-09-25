@@ -8,8 +8,9 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.auth.{Role, User}
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
@@ -24,13 +25,7 @@ import org.scalatra.{Created, NoContent, NotFound, Ok}
 import scala.util.{Failure, Success}
 
 trait DraftController {
-  this: ReadService
-    with WriteService
-    with ArticleSearchService
-    with ConverterService
-    with Role
-    with User
-    with ContentValidator =>
+  this: ReadService with WriteService with ArticleSearchService with ConverterService with ContentValidator with User =>
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController {
@@ -58,6 +53,7 @@ trait DraftController {
       "Return only articles that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val filter = Param("filter", "A filter to include a specific entry")
     private val filterNot = Param("filterNot", "A filter to remove a specific entry")
+    private val statuss = Param("STATUS", "An article status")
 
     val getTags =
       (apiOperation[ArticleTag]("getTags")
@@ -271,41 +267,21 @@ trait DraftController {
         responseMessages (response400, response403, response500))
 
     post("/", operation(newArticle)) {
-      authUser.assertHasId()
-      authRole.assertHasWritePermission()
-      val externalId = paramAsListOfString("externalId")
-      val oldNdlaCreatedDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
-      val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
-      val externalSubjectids = paramAsListOfString("externalSubjectIds")
-      writeService.newArticle(extract[NewArticle](request.body),
-                              externalId,
-                              externalSubjectids,
-                              oldNdlaCreatedDate,
-                              oldNdlaUpdatedDate) match {
-        case Success(article)   => Created(body = article)
-        case Failure(exception) => errorHandler(exception)
-      }
-    }
-
-    val queueDraftForPublishing =
-      (apiOperation[ArticleStatus]("queueDraftForPublishing ")
-        summary "Queue the article for publishing"
-        notes "Queue the article for publishing"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](articleId)
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
-
-    put("/:article_id/publish/", operation(queueDraftForPublishing)) {
-      authRole.assertHasPublishPermission()
-      val id = long(this.articleId.paramName)
-      val isImported = booleanOrDefault("import_publish", false)
-
-      writeService.queueArticleForPublish(id, isImported) match {
-        case Success(s) => s
-        case Failure(e) => errorHandler(e)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val externalId = paramAsListOfString("externalId")
+        val oldNdlaCreatedDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
+        val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
+        val externalSubjectids = paramAsListOfString("externalSubjectIds")
+        writeService.newArticle(extract[NewArticle](request.body),
+                                externalId,
+                                externalSubjectids,
+                                userInfo,
+                                oldNdlaCreatedDate,
+                                oldNdlaUpdatedDate) match {
+          case Success(article)   => Created(body = article)
+          case Failure(exception) => errorHandler(exception)
+        }
       }
     }
 
@@ -322,28 +298,56 @@ trait DraftController {
         responseMessages (response400, response403, response404, response500))
 
     patch("/:article_id", operation(updateArticle)) {
-      authUser.assertHasId()
-      authRole.assertHasWritePermission()
-      val externalId = paramAsListOfString("externalId")
-      val externalSubjectIds = paramAsListOfString("externalSubjectIds")
-      val oldNdlaCreateddDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
-      val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
-      val id = long(this.articleId.paramName)
-      val updateArticle = extract[UpdatedArticle](request.body)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val externalId = paramAsListOfString("externalId")
+        val externalSubjectIds = paramAsListOfString("externalSubjectIds")
+        val oldNdlaCreateddDate = paramOrNone("oldNdlaCreatedDate").map(new DateTime(_).toDate)
+        val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
+        val id = long(this.articleId.paramName)
+        val updateArticle = extract[UpdatedArticle](request.body)
 
-      writeService.updateArticle(id,
-                                 updateArticle,
-                                 externalId,
-                                 externalSubjectIds,
-                                 oldNdlaCreateddDate,
-                                 oldNdlaUpdatedDate) match {
-        case Success(article)   => Ok(body = article)
-        case Failure(exception) => errorHandler(exception)
+        writeService.updateArticle(id,
+                                   updateArticle,
+                                   externalId,
+                                   externalSubjectIds,
+                                   userInfo,
+                                   oldNdlaCreateddDate,
+                                   oldNdlaUpdatedDate) match {
+          case Success(article)   => Ok(body = article)
+          case Failure(exception) => errorHandler(exception)
+        }
+      }
+    }
+
+    put(
+      "/:article_id/status/:STATUS",
+      operation(
+        apiOperation[Article]("updateArticleStatus")
+          summary "Update status of an article"
+          notes "Update status of an article"
+          parameters (
+            asPathParam[Long](articleId),
+            asPathParam[String](statuss)
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response403, response404, response500))
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val id = long(this.articleId.paramName)
+        domain.ArticleStatus
+          .valueOfOrError(params(this.statuss.paramName))
+          .flatMap(writeService.updateArticleStatus(_, id, userInfo)) match {
+          case Success(a)  => a
+          case Failure(ex) => errorHandler(ex)
+        }
+
       }
     }
 
     val validateArticle =
-      (apiOperation[Unit]("validateArticle")
+      (apiOperation[ContentId]("validateArticle")
         summary "Validate an article"
         notes "Validate an article"
         parameters (
@@ -355,9 +359,22 @@ trait DraftController {
 
     put("/:article_id/validate/", operation(validateArticle)) {
       contentValidator.validateArticleApiArticle(long(this.articleId.paramName)) match {
-        case Success(_)  => NoContent()
+        case Success(id) => id
         case Failure(ex) => errorHandler(ex)
       }
+    }
+
+    get(
+      "/status-state-machine/",
+      operation(
+        apiOperation[Map[String, List[String]]]("getStatusStateMachine")
+          summary "Get status state machine"
+          notes "Get status state machine"
+          authorizations "oauth2"
+          responseMessages response500
+      )
+    ) {
+      converterService.stateTransitionsToApi(user.getUser)
     }
 
   }

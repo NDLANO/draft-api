@@ -42,6 +42,7 @@ object Error {
   val WINDOW_TOO_LARGE_DESCRIPTION =
     s"The result window is too large. Fetching pages above ${DraftApiProperties.ElasticSearchIndexMaxResultWindow} results are unsupported."
   val DATABASE_UNAVAILABLE_DESCRIPTION = s"Database seems to be unavailable, retrying connection."
+  val ILLEGAL_STATUS_TRANSITION: String = "Illegal status transition"
 
   val GenericError = Error(GENERIC, GENERIC_DESCRIPTION)
   val IndexMissingError = Error(INDEX_MISSING, INDEX_MISSING_DESCRIPTION)
@@ -55,6 +56,8 @@ class ArticleStatusException(message: String) extends RuntimeException(message)
 class AccessDeniedException(message: String) extends RuntimeException(message)
 class OperationNotAllowedException(message: String) extends RuntimeException(message)
 class OptimisticLockException(message: String = Error.RESOURCE_OUTDATED_DESCRIPTION) extends RuntimeException(message)
+case class IllegalStatusStateTransition(message: String = Error.ILLEGAL_STATUS_TRANSITION)
+    extends RuntimeException(message)
 
 class ResultWindowTooLargeException(message: String = Error.WINDOW_TOO_LARGE_DESCRIPTION)
     extends RuntimeException(message)

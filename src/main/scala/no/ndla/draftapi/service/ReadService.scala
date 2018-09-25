@@ -7,20 +7,18 @@
 
 package no.ndla.draftapi.service
 
-import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTag, Domain}
+import no.ndla.draftapi.DraftApiProperties.{Domain, externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.caching.MemoizeAutoRenew
-import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.{ArticleStatus, NotFoundException}
-import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.api.NotFoundException
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
-import no.ndla.draftapi.repository.{ConceptRepository, DraftRepository}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
 
-import scala.math.max
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.math.max
+import scala.util.{Failure, Try}
 
 trait ReadService {
   this: DraftRepository with ConceptRepository with AgreementRepository with ConverterService =>
@@ -145,7 +143,5 @@ trait ReadService {
     def agreementWithId(id: Long): Option[api.Agreement] =
       agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))
 
-    def articlesWithStatus(status: domain.ArticleStatus.Value): Seq[Long] =
-      draftRepository.withStatus(status).map(_.id.get)
   }
 }

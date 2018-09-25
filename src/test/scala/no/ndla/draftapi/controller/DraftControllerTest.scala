@@ -15,7 +15,8 @@ import no.ndla.draftapi.TestData.{
   authHeaderWithWrongRole,
   authHeaderWithoutAnyRoles
 }
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.auth.UserInfo
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
@@ -39,6 +40,10 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   val invalidNewArticle = """{ "language": "nb", "content": "<section><h2>Hi</h2></section>" }""" // missing title
   val lang = "nb"
   val articleId = 1
+
+  override def beforeEach = {
+    when(user.getUser).thenReturn(TestData.userWithWriteAccess)
+  }
 
   test("/<article_id> should return 200 if the cover was found withId") {
     when(readService.withId(articleId, lang)).thenReturn(Success(TestData.sampleArticleV2))
@@ -110,7 +115,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("POST / should return 400 if body does not contain all required fields") {
-    post("/test/", invalidArticle, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+    post("/test/", invalidArticle) {
       status should equal(400)
     }
   }
@@ -118,7 +123,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("POST / should return 201 on created") {
     when(
       writeService
-        .newArticle(any[NewArticle], any[List[String]], any[Seq[String]], any[Option[Date]], any[Option[Date]]))
+        .newArticle(any[NewArticle],
+                    any[List[String]],
+                    any[Seq[String]],
+                    any[UserInfo],
+                    any[Option[Date]],
+                    any[Option[Date]]))
       .thenReturn(Success(TestData.sampleArticleV2))
     post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(201)
@@ -126,25 +136,22 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That / returns a validation message if article is invalid") {
-    post("/test", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+    post("/test") {
       status should equal(400)
     }
   }
 
   test("That POST / returns 403 if no auth-header") {
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
     post("/test") {
       status should equal(403)
     }
   }
 
-  test("That POST / returns 403 if auth header does not have expected role") {
-    post("/test", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
-      status should equal(403)
-    }
-  }
-
   test("That POST / returns 403 if auth header does not have any roles") {
-    post("/test", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
+
+    post("/test") {
       status should equal(403)
     }
   }
@@ -156,11 +163,13 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That PATCH /:id returns 403 if access denied") {
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
     when(
       writeService.updateArticle(any[Long],
                                  any[api.UpdatedArticle],
                                  any[List[String]],
                                  any[Seq[String]],
+                                 any[UserInfo],
                                  any[Option[Date]],
                                  any[Option[Date]]))
       .thenReturn(Failure(new AccessDeniedException("Not today")))
@@ -176,33 +185,19 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                  any[UpdatedArticle],
                                  any[List[String]],
                                  any[Seq[String]],
+                                 any[UserInfo],
                                  any[Option[Date]],
                                  any[Option[Date]]))
       .thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
-    patch("/test/123", updateTitleJson, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal(200)
-    }
-  }
-
-  test("PUT /:id/publish/ should return 403 if user does not have the required role") {
-    when(writeService.queueArticleForPublish(any[Long], any[Boolean]))
-      .thenReturn(Failure(new AccessDeniedException("Not today")))
-    put("/test/1/publish/") {
-      status should equal(403)
-    }
-  }
-
-  test("PUT /:id/publish/ should return 204 if user has required permissions") {
-    when(writeService.queueArticleForPublish(any[Long], any[Boolean])).thenReturn(Success(api.ArticleStatus(Set.empty)))
-    put("/test/1/publish/", headers = Map("Authorization" -> authHeaderWithAllRoles)) {
+    patch("/test/123", updateTitleJson) {
       status should equal(200)
     }
   }
 
   test("PUT /:id/validate/ should return 204 if user has required permissions") {
-    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(TestData.sampleDomainArticle))
-    put("/test/1/validate/", headers = Map("Authorization" -> authHeaderWithAllRoles)) {
-      status should equal(204)
+    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(ContentId(1)))
+    put("/test/1/validate/") {
+      status should equal(200)
     }
   }
 }

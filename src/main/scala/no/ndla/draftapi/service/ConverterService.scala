@@ -7,12 +7,12 @@
 
 package no.ndla.draftapi.service
 
-import java.text.{DateFormat, SimpleDateFormat}
 import java.util.Date
 
+import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.externalApiUrls
-import no.ndla.draftapi.auth.User
+import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -30,13 +30,14 @@ import scala.util.control.Exception.allCatch
 import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
-  this: Clock with DraftRepository with User with ArticleApiClient =>
+  this: Clock with DraftRepository with ArticleApiClient with StateTransitionRules =>
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
 
     def toDomainArticle(newArticle: api.NewArticle,
                         externalIds: List[String],
+                        user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       articleApiClient.allocateArticleId(List.empty, Seq.empty) match {
@@ -49,8 +50,8 @@ trait ConverterService {
             .toSeq
 
           val status = externalIds match {
-            case Nil          => Set(CREATED)
-            case nonEmptyList => Set(CREATED, IMPORTED)
+            case Nil => domain.Status(DRAFT, Set.empty)
+            case _   => domain.Status(DRAFT, Set(IMPORTED))
           }
 
           val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
@@ -75,14 +76,14 @@ trait ConverterService {
               metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
               created = oldCreatedDate.getOrElse(clock.now()),
               updated = oldUpdatedDate.getOrElse(clock.now()),
-              updatedBy = authUser.userOrClientId(),
+              updatedBy = user.id,
               articleType = ArticleType.valueOfOrError(newArticle.articleType),
               newArticle.notes
             ))
       }
     }
 
-    def toDomainAgreement(newAgreement: NewAgreement): domain.Agreement = {
+    def toDomainAgreement(newAgreement: NewAgreement, user: UserInfo): domain.Agreement = {
       domain.Agreement(
         id = None,
         title = newAgreement.title,
@@ -90,7 +91,7 @@ trait ConverterService {
         copyright = toDomainCopyright(newAgreement.copyright),
         created = clock.now(),
         updated = clock.now(),
-        updatedBy = authUser.userOrClientId()
+        updatedBy = user.id
       )
     }
 
@@ -184,6 +185,9 @@ trait ConverterService {
       HtmlTagRules.jsoupDocumentToString(document)
     }
 
+    def updateStatus(status: ArticleStatus.Value, article: domain.Article, user: UserInfo): IO[Try[domain.Article]] =
+      StateTransitionRules.doTransition(article, status, user)
+
     def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
       val supportedLanguages = getSupportedLanguages(
         Seq(article.title,
@@ -211,7 +215,7 @@ trait ConverterService {
             article.id.get,
             article.id.flatMap(getLinkToOldNdla),
             article.revision.get,
-            article.status.map(_.toString),
+            toApiStatus(article.status),
             title,
             articleContent,
             article.copyright.map(toApiCopyright),
@@ -247,20 +251,24 @@ trait ConverterService {
       )
     }
 
-    def toDomainStatus(status: api.ArticleStatus): Try[Set[ArticleStatus.Value]] = {
-      val (validStatuses, invalidStatuses) = status.status.map(ArticleStatus.valueOfOrError).partition(_.isSuccess)
-      if (invalidStatuses.nonEmpty) {
-        val errors = invalidStatuses.flatMap {
-          case Failure(ex: ValidationException) => ex.errors
-          case Failure(ex)                      => Set(ValidationMessage("status", ex.getMessage))
-          case Success(_)                       => Set()
-        }
-        Failure(new ValidationException(errors = errors.toSeq))
-      } else
-        Success(validStatuses.map(_.get))
+    def toDomainStatus(status: api.Status): Try[domain.Status] = {
+      val newCurrent = ArticleStatus.valueOfOrError(status.current)
+      val newOther = status.other.map(ArticleStatus.valueOfOrError)
+      val (newOtherValids, newOtherInvalids) = newOther.partition(_.isSuccess)
+
+      (newCurrent, newOtherInvalids, newOtherValids) match {
+        case (Failure(ex), _, _) => Failure(new ValidationException(s"Status ${status.current} is invalid", Seq()))
+        case (_, invalidOthers, _) if invalidOthers.nonEmpty =>
+          val messages = invalidOthers.map(_.failed.get).map(x => ValidationMessage("status.other", x.getMessage))
+          Failure(new ValidationException(s"One or more status(es) are invalid", messages))
+        case (Success(current), _, others) if others.forall(_.isSuccess) =>
+          Success(domain.Status(current, others.map(_.get).toSet))
+      }
+
     }
 
-    def toApiStatus(status: Set[ArticleStatus.Value]): api.ArticleStatus = api.ArticleStatus(status.map(_.toString))
+    def toApiStatus(status: domain.Status): api.Status =
+      api.Status(status.current.toString, status.other.map(_.toString).toSeq)
 
     def toApiArticleTitle(title: domain.ArticleTitle): api.ArticleTitle = api.ArticleTitle(title.title, title.language)
 
@@ -415,20 +423,19 @@ trait ConverterService {
     def toDomainArticle(toMergeInto: domain.Article,
                         article: api.UpdatedArticle,
                         isImported: Boolean,
+                        user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      val status = toMergeInto.status.filterNot(s => s == CREATED || s == PUBLISHED) + (if (!isImported) DRAFT
-                                                                                        else IMPORTED)
+
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val partiallyConverted = toMergeInto.copy(
-        status = status,
         revision = Option(article.revision),
         copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
         requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
         created = createdDate,
         updated = updatedDate,
-        updatedBy = authUser.userOrClientId(),
+        updatedBy = user.id,
         articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
         notes = article.notes.getOrElse(toMergeInto.notes)
       )
@@ -467,6 +474,7 @@ trait ConverterService {
     def toDomainArticle(id: Long,
                         article: api.UpdatedArticle,
                         isImported: Boolean,
+                        user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
       val createdDate = oldNdlaCreatedDate.getOrElse(clock.now())
@@ -477,7 +485,9 @@ trait ConverterService {
           val error = ValidationMessage("language", "This field must be specified when updating language fields")
           Failure(new ValidationException(errors = Seq(error)))
         case Some(lang) =>
-          val status = if (isImported) Set(ArticleStatus.IMPORTED) else Set(ArticleStatus.CREATED)
+          val status =
+            if (isImported) domain.Status(DRAFT, Set(ArticleStatus.IMPORTED))
+            else domain.Status(DRAFT, Set.empty)
           Success(
             domain.Article(
               id = Some(id),
@@ -494,7 +504,7 @@ trait ConverterService {
               metaImage = article.metaImage.map(m => toDomainMetaImage(m, lang)).toSeq,
               created = createdDate,
               updated = updatedDate,
-              authUser.userOrClientId(),
+              user.id,
               articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
               article.notes.getOrElse(Seq.empty)
             ))
@@ -532,6 +542,15 @@ trait ConverterService {
       (toKeep ++ updated).filterNot(_.isEmpty)
     }
 
-  }
+    def stateTransitionsToApi(user: UserInfo): Map[String, Seq[String]] = {
+      StateTransitionRules.StateTransitions.groupBy(_.from).map {
+        case (from, to) =>
+          from.toString -> to
+            .filter(t => user.hasRoles(t.requiredRoles) || user.isAdmin) // filter out transitions which require admin if user is not admin
+            .map(_.to.toString)
+            .toSeq
+      }
+    }
 
+  }
 }

@@ -8,9 +8,10 @@
 package no.ndla.draftapi.integration
 
 import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api.{ArticleApiValidationError, ContentId}
 import no.ndla.draftapi.model.domain.Article
+import no.ndla.draftapi.service.ConverterService
 import no.ndla.network.NdlaClient
 import no.ndla.network.model.HttpRequestException
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -23,7 +24,7 @@ import scalaj.http.Http
 case class ArticleApiId(id: Long)
 
 trait ArticleApiClient {
-  this: NdlaClient =>
+  this: NdlaClient with ConverterService =>
   val articleApiClient: ArticleApiClient
 
   class ArticleApiClient {
@@ -65,14 +66,20 @@ trait ArticleApiClient {
       delete[ContentId](s"$InternalEndpoint/concept/$id/")
     }
 
-    def updateArticle(id: Long,
-                      article: api.ArticleApiArticle,
-                      externalIds: List[String]): Try[api.ArticleApiArticle] = {
+    def updateArticle(id: Long, article: domain.Article, externalIds: List[String]): Try[domain.Article] = {
       implicit val format = org.json4s.DefaultFormats
 
+      val articleApiArticle = converterService.toArticleApiArticle(article)
       postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id",
-                                                                 article,
+                                                                 articleApiArticle,
                                                                  "external-id" -> externalIds.mkString(","))
+        .map(_ => article)
+    }
+
+    def unpublishArticle(article: domain.Article): Try[domain.Article] = {
+      implicit val format = org.json4s.DefaultFormats
+      val id = article.id.get
+      post[ContentId](s"$InternalEndpoint/article/$id/unpublish/").map(_ => article)
     }
 
     def deleteArticle(id: Long): Try[ContentId] = {

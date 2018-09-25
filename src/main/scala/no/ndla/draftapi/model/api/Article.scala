@@ -20,8 +20,7 @@ case class Article(
     @(ApiModelProperty @field)(description = "The revision number for the article") revision: Int,
     @(ApiModelProperty @field)(
       description = "The status of this article",
-      allowableValues = "CREATED,IMPORTED,DRAFT,SKETCH,USER_TEST,QUALITY_ASSURED,AWAITING_QUALITY_ASSURANCE") status: Set[
-      String],
+      allowableValues = "CREATED,IMPORTED,DRAFT,SKETCH,USER_TEST,QUALITY_ASSURED,AWAITING_QUALITY_ASSURANCE") status: Status,
     @(ApiModelProperty @field)(description = "Available titles for the article") title: Option[ArticleTitle],
     @(ApiModelProperty @field)(description = "The content of the article in available languages") content: Option[
       ArticleContent],

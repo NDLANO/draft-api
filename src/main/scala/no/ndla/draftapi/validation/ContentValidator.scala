@@ -10,11 +10,16 @@ package no.ndla.draftapi.validation
 import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl}
 import no.ndla.draftapi.auth.Role
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.NotFoundException
+import no.ndla.draftapi.model.api.{
+  AccessDeniedException,
+  ContentId,
+  NewAgreement,
+  NewAgreementCopyright,
+  NotFoundException
+}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.ConverterService
-import no.ndla.draftapi.model.api.{AccessDeniedException, NewAgreement, NewAgreementCopyright}
 import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import no.ndla.network.AuthUser
@@ -25,7 +30,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ContentValidator {
-  this: Role with DraftRepository with ConverterService with ArticleApiClient =>
+  this: DraftRepository with ConverterService with ArticleApiClient =>
   val contentValidator: ContentValidator
   val importValidator: ContentValidator
 
@@ -88,13 +93,13 @@ trait ContentValidator {
 
     }
 
-    def validateArticleApiArticle(id: Long): Try[Article] = {
+    def validateArticleApiArticle(id: Long): Try[ContentId] = {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
         case Some(art) =>
           articleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
             case Failure(ex) => Failure(ex)
-            case Success(_)  => Success(art)
+            case Success(_)  => Success(ContentId(id))
           }
       }
     }
@@ -169,7 +174,8 @@ trait ContentValidator {
                               language: String,
                               allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       NoHtmlValidator.validate("title", title).toList ++
-        validateLanguage("language", language, allowUnknownLanguage)
+        validateLanguage("language", language, allowUnknownLanguage) ++
+        validateLength("title", title, 256)
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
@@ -240,6 +246,13 @@ trait ContentValidator {
         case true  => None
         case false => Some(ValidationMessage(fieldPath, s"Language '$languageCode' is not a supported value."))
       }
+    }
+
+    private def validateLength(fieldPath: String, content: String, maxLength: Int): Option[ValidationMessage] = {
+      if (content.length > maxLength)
+        Some(ValidationMessage(fieldPath, s"This field exceeds the maximum permitted length of $maxLength characters"))
+      else
+        None
     }
 
     private def languageCodeSupported6391(languageCode: String, allowUnknownLanguage: Boolean): Boolean = {
