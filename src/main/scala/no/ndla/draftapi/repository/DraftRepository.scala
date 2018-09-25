@@ -270,9 +270,11 @@ trait DraftRepository {
         .apply()
     }
 
-    def importIdOfArticle(id: Long)(implicit session: DBSession = ReadOnlyAutoSession): Option[ArticleIds] = {
+    def importIdOfArticle(externalId: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[ArticleIds] = {
       val ar = Article.syntax("ar")
-      sql"select ${ar.result.*}, import_id, external_id from ${Article.as(ar)} where ar.document is not NULL and ar.id=$id"
+      sql"""select ${ar.result.*}, import_id, external_id
+            from ${Article.as(ar)}
+            where ar.document is not NULL and $externalId = any (ar.external_id)"""
         .map(rs => {
           val art = Article(ar)(rs)
           ArticleIds(

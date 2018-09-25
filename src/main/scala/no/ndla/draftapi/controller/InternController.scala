@@ -77,9 +77,12 @@ trait InternController {
       draftRepository.getAllIds
     }
 
-    get("/ids/:article_id") {
-      val articleId = long("article_id")
-      readService.importIdOfArticle(articleId)
+    get("/ids/:external_id") {
+      val articleId = params("external_id")
+      readService.importIdOfArticle(articleId) match {
+        case Some(ids) => Ok(ids)
+        case _         => NotFound()
+      }
     }
 
     get("/id/:external_id") {

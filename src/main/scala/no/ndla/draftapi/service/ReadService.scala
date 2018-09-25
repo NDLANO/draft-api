@@ -149,8 +149,8 @@ trait ReadService {
     def articlesWithStatus(status: domain.ArticleStatus.Value): Seq[Long] =
       draftRepository.withStatus(status).map(_.id.get)
 
-    def importIdOfArticle(id: Long): Option[ArticleIds] = {
-      draftRepository.importIdOfArticle(id)
+    def importIdOfArticle(externalId: String): Option[ArticleIds] = {
+      draftRepository.importIdOfArticle(externalId)
     }
   }
 }
