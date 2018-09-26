@@ -12,7 +12,7 @@ import no.ndla.draftapi.caching.MemoizeAutoRenew
 import no.ndla.draftapi.model.api.NotFoundException
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api.NotFoundException
-import no.ndla.draftapi.model.domain.ArticleIds
+import no.ndla.draftapi.model.domain.{ArticleIds, ImportId}
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.validation._
@@ -145,7 +145,7 @@ trait ReadService {
     def agreementWithId(id: Long): Option[api.Agreement] =
       agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))
 
-    def importIdOfArticle(externalId: String): Option[ArticleIds] = {
+    def importIdOfArticle(externalId: String): Option[ImportId] = {
       draftRepository.importIdOfArticle(externalId)
     }
   }

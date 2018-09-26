@@ -10,7 +10,7 @@ package no.ndla.draftapi.controller
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.{DraftSwagger, TestEnvironment, UnitSuite}
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
-import no.ndla.draftapi.model.domain.ArticleIds
+import no.ndla.draftapi.model.domain.{ArticleIds, ImportId}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -45,12 +45,12 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
     val uuid = "16d4668f-0917-488b-9b4a-8f7be33bb72a"
 
     when(readService.importIdOfArticle("1234")).thenReturn(None)
-    get(s"/test/ids/1234") { status should be(404) }
+    get(s"/test/import-id/1234") { status should be(404) }
 
-    when(readService.importIdOfArticle("1234")).thenReturn(Some(ArticleIds(123, List("1234", "5678"), Some(uuid))))
-    get("/test/ids/1234") {
+    when(readService.importIdOfArticle("1234")).thenReturn(Some(ImportId(Some(uuid))))
+    get("/test/import-id/1234") {
       status should be(200)
-      body should be(s"""{"articleId":123,"externalId":["1234","5678"],"importId":"$uuid"}""".stripMargin)
+      body should be(s"""{"importId":"$uuid"}""".stripMargin)
     }
   }
 }

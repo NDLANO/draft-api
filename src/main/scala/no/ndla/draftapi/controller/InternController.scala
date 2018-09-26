@@ -81,7 +81,7 @@ trait InternController {
       }
     }
 
-    get("/ids/:external_id") {
+    get("/import-id/:external_id") {
       val articleId = params("external_id")
       readService.importIdOfArticle(articleId) match {
         case Some(ids) => Ok(ids)

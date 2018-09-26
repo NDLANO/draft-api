@@ -9,7 +9,7 @@ package no.ndla.draftapi.repository
 
 import java.net.Socket
 
-import no.ndla.draftapi.model.domain.{Article, ArticleIds}
+import no.ndla.draftapi.model.domain.{Article, ArticleIds, ImportId}
 import no.ndla.draftapi._
 import no.ndla.draftapi.model.domain
 import scalikejdbc._
@@ -85,9 +85,9 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.insertWithExternalIds(sampleArticle.copy(id = Some(id2)), List.empty, List.empty, Some(uuid))
 
     val result1 = repository.importIdOfArticle("1")
-    result1.get should be(ArticleIds(id1, externalIds, Some(uuid)))
+    result1.get should be(ImportId(Some(uuid)))
     val result2 = repository.importIdOfArticle("2")
-    result2.get should be(ArticleIds(id1, externalIds, Some(uuid)))
+    result2.get should be(ImportId(Some(uuid)))
 
     repository.delete(id1)
     repository.delete(id2)
