@@ -9,7 +9,7 @@ package no.ndla.draftapi.controller
 
 import java.util.concurrent.{Executors, TimeUnit}
 
-import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
@@ -35,8 +35,8 @@ trait InternController {
     with ArticleIndexService
     with ConceptIndexService
     with AgreementIndexService
-    with ArticleApiClient
-    with Role =>
+    with User
+    with ArticleApiClient =>
   val internController: InternController
 
   class InternController(implicit val swagger: Swagger) extends NdlaController {
@@ -74,7 +74,11 @@ trait InternController {
     }
 
     get("/ids") {
-      draftRepository.getAllIds
+      paramOrNone("status").map(ArticleStatus.valueOfOrError) match {
+        case Some(Success(status)) => draftRepository.idsWithStatus(status).getOrElse(List.empty)
+        case Some(Failure(ex))     => errorHandler(ex)
+        case None                  => draftRepository.getAllIds
+      }
     }
 
     get("/ids/:external_id") {
@@ -102,21 +106,6 @@ trait InternController {
       readService.getArticlesByPage(pageNo, pageSize, lang, fallback)
     }
 
-    post("/articles/publish/") {
-      authRole.assertHasPublishPermission()
-      writeService.publishArticles()
-    }
-
-    post("/article/:id/publish/") {
-      authRole.assertHasPublishPermission()
-      val importPublish = booleanOrDefault("import_publish", default = false)
-
-      writeService.publishArticle(long("id"), importPublish) match {
-        case Success(s)  => converterService.toApiStatus(s.status)
-        case Failure(ex) => errorHandler(ex)
-      }
-    }
-
     @tailrec
     private def deleteArticleWithRetries(id: Long, maxRetries: Int = 10, retries: Int = 0): Try[ContentId] = {
       articleApiClient.deleteArticle(id) match {
@@ -127,47 +116,51 @@ trait InternController {
     }
 
     delete("/article/:id/") {
-      authRole.assertHasWritePermission()
-
-      val id = long("id")
-      deleteArticleWithRetries(id).flatMap(id => writeService.deleteArticle(id.id)) match {
-        case Success(a)  => a
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(user.getUser.canWrite) {
+        val id = long("id")
+        deleteArticleWithRetries(id).flatMap(id => writeService.deleteArticle(id.id)) match {
+          case Success(a)  => a
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     post("/concept/:id/publish/") {
-      authRole.assertHasPublishPermission()
-      writeService.publishConcept(long("id")) match {
-        case Success(s)  => s.id.map(ContentId)
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(user.getUser.canWrite) {
+        writeService.publishConcept(long("id")) match {
+          case Success(s)  => s.id.map(ContentId)
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     delete("/concept/:id/") {
-      authRole.assertHasWritePermission()
-      articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
-        case Success(c)  => c
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(user.getUser.canWrite) {
+        articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
+          case Success(c)  => c
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     post("/empty_article/") {
-      authRole.assertHasWritePermission()
-      val externalId = paramAsListOfString("externalId")
-      val externalSubjectIds = paramAsListOfString("externalSubjectId")
-      writeService.newEmptyArticle(externalId, externalSubjectIds) match {
-        case Success(id) => ContentId(id)
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(user.getUser.canWrite) {
+        val externalId = paramAsListOfString("externalId")
+        val externalSubjectIds = paramAsListOfString("externalSubjectId")
+        writeService.newEmptyArticle(externalId, externalSubjectIds) match {
+          case Success(id) => ContentId(id)
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
     post("/empty_concept/") {
-      authRole.assertHasWritePermission()
-      val externalId = paramAsListOfString("externalId")
-      writeService.newEmptyConcept(externalId) match {
-        case Success(id) => id
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(user.getUser.canWrite) {
+        val externalId = paramAsListOfString("externalId")
+        writeService.newEmptyConcept(externalId) match {
+          case Success(id) => id
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 

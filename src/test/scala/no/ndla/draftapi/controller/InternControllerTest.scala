@@ -11,6 +11,7 @@ import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.{DraftSwagger, TestEnvironment, UnitSuite}
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.model.domain.ArticleIds
+import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatra.test.scalatest.ScalatraFunSuite
@@ -34,7 +35,8 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
       Success(ContentId(10))
     )
 
-    delete(s"/test/article/10/", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+    when(user.getUser).thenReturn(TestData.userWithWriteAccess)
+    delete(s"/test/article/10/") {
       verify(articleApiClient, times(4)).deleteArticle(10)
     }
   }

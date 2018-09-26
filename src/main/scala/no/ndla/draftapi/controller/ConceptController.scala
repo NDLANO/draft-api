@@ -8,12 +8,12 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.auth.Role
+import no.ndla.draftapi.auth.{Role, User}
 import no.ndla.draftapi.model.api.{
-  ContentId,
   Concept,
   ConceptSearchParams,
   ConceptSearchResult,
+  ContentId,
   Error,
   NewConcept,
   UpdatedConcept
@@ -28,7 +28,7 @@ import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
 import scala.util.{Failure, Success}
 
 trait ConceptController {
-  this: ReadService with WriteService with ConceptSearchService with Role =>
+  this: ReadService with WriteService with ConceptSearchService with User =>
   val conceptController: ConceptController
 
   class ConceptController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -176,11 +176,12 @@ trait ConceptController {
         responseMessages (response404, response500))
 
     post("/", operation(newConcept)) {
-      authRole.assertHasWritePermission()
-      val nid = params("externalId") // TODO: importId for concepts?
-      writeService.newConcept(extract[NewConcept](request.body), nid) match {
-        case Success(c)  => c
-        case Failure(ex) => errorHandler(ex)
+      doOrAccessDenied(user.getUser.canWrite) {
+        val nid = params("externalId")
+        writeService.newConcept(extract[NewConcept](request.body), nid) match {
+          case Success(c)  => c
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
@@ -196,12 +197,13 @@ trait ConceptController {
         responseMessages (response404, response500))
 
     patch("/:concept_id", operation(updateConcept)) {
-      authRole.assertHasWritePermission()
-      val externalId = paramOrNone("externalId")
+      doOrAccessDenied(user.getUser.canWrite) {
+        val externalId = paramOrNone("externalId")
 
-      writeService.updateConcept(long(this.conceptId.paramName), extract[UpdatedConcept](request.body), externalId) match {
-        case Success(c)  => c
-        case Failure(ex) => errorHandler(ex)
+        writeService.updateConcept(long(this.conceptId.paramName), extract[UpdatedConcept](request.body), externalId) match {
+          case Success(c)  => c
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 

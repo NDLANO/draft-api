@@ -8,7 +8,7 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.auth.{Role, User}
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
@@ -23,6 +23,7 @@ object ComponentRegistry
     extends DataSource
     with InternController
     with ConverterService
+    with StateTransitionRules
     with ConceptController
     with ConceptSearchService
     with ConceptIndexService
@@ -47,7 +48,6 @@ object ComponentRegistry
     with WriteService
     with ContentValidator
     with Clock
-    with Role
     with User
     with ArticleApiClient {
 
@@ -97,8 +97,7 @@ object ComponentRegistry
   lazy val e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()
 
   lazy val clock = new SystemClock
-  lazy val authRole = new AuthRole
-  lazy val authUser = new AuthUser
 
   lazy val articleApiClient = new ArticleApiClient
+  lazy val user = new User
 }

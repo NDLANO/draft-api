@@ -26,7 +26,7 @@ sealed trait Content {
 
 case class Article(id: Option[Long],
                    revision: Option[Int],
-                   status: Set[ArticleStatus.Value],
+                   status: Status,
                    title: Seq[ArticleTitle],
                    content: Seq[ArticleContent],
                    copyright: Option[Copyright],
@@ -80,8 +80,14 @@ object Article extends SQLSyntaxSupport[Article] {
   )
 }
 
+object ArticleStatusAction extends Enumeration {
+  val UPDATE = Value
+}
+
 object ArticleStatus extends Enumeration {
-  val CREATED, IMPORTED, USER_TEST, QUEUED_FOR_PUBLISHING, QUALITY_ASSURED, DRAFT, SKETCH, PUBLISHED = Value
+
+  val IMPORTED, DRAFT, PUBLISHED, PROPOSAL, QUEUED_FOR_PUBLISHING, USER_TEST, AWAITING_QUALITY_ASSURANCE,
+  QUALITY_ASSURED, AWAITING_UNPUBLISHING, UNPUBLISHED, ARCHIVED = Value
 
   def valueOfOrError(s: String): Try[ArticleStatus.Value] =
     valueOf(s) match {

@@ -8,15 +8,16 @@
 package no.ndla.draftapi.controller
 
 import javax.servlet.http.HttpServletRequest
-
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.ComponentRegistry
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
+import no.ndla.draftapi.auth.{User, UserInfo}
 import no.ndla.draftapi.model.api.{
   AccessDeniedException,
   ArticlePublishException,
   ArticleStatusException,
   Error,
+  IllegalStatusStateTransition,
   NotFoundException,
   OptimisticLockException,
   ResultWindowTooLargeException,
@@ -69,6 +70,7 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case o: OptimisticLockException        => Conflict(body = Error(Error.RESOURCE_OUTDATED, o.getMessage))
     case rw: ResultWindowTooLargeException => UnprocessableEntity(body = Error(Error.WINDOW_TOO_LARGE, rw.getMessage))
     case pf: ArticlePublishException       => BadRequest(body = Error(Error.PUBLISH, pf.getMessage))
+    case st: IllegalStatusStateTransition  => BadRequest(body = Error(Error.VALIDATION, st.getMessage))
     case _: PSQLException =>
       ComponentRegistry.connectToDatabase()
       InternalServerError(Error(Error.DATABASE_UNAVAILABLE, Error.DATABASE_UNAVAILABLE_DESCRIPTION))
@@ -166,6 +168,14 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
         throw new ValidationException(errors = Seq(ValidationMessage("body", e.getMessage)))
       }
       case Success(data) => data
+    }
+  }
+
+  def doOrAccessDenied(hasAccess: Boolean)(w: => Any): Any = {
+    if (hasAccess) {
+      w
+    } else {
+      errorHandler(new AccessDeniedException("Missing user/client-id or role"))
     }
   }
 

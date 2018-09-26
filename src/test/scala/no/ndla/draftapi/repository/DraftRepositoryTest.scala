@@ -7,27 +7,53 @@
 
 package no.ndla.draftapi.repository
 
-import no.ndla.draftapi.model.domain.{Article, ArticleIds}
-import no.ndla.draftapi.{DBMigrator, IntegrationSuite, TestData, TestEnvironment}
-import no.ndla.tag.IntegrationTest
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
+import java.net.Socket
 
-@IntegrationTest
+import no.ndla.draftapi.model.domain.{Article, ArticleIds}
+import no.ndla.draftapi._
+import no.ndla.draftapi.model.domain
+import scalikejdbc._
+
+import scala.util.{Success, Try}
+
 class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   var repository: ArticleRepository = _
 
   val sampleArticle: Article = TestData.sampleArticleWithByNcSa
 
+  def emptyTestDatabase = {
+    DB autoCommit (implicit session => {
+      sql"delete from draftapitest.articledata;".execute.apply()(session)
+    })
+  }
+
+  def serverIsListening: Boolean = {
+    Try(new Socket(DraftApiProperties.MetaServer, DraftApiProperties.MetaPort)) match {
+      case Success(c) =>
+        c.close()
+        true
+      case _ => false
+    }
+  }
+  def databaseIsAvailable: Boolean = Try(repository.articleCount).isSuccess
+
   override def beforeEach(): Unit = {
     repository = new ArticleRepository()
+    if (databaseIsAvailable) {
+      emptyTestDatabase
+    }
   }
 
   override def beforeAll(): Unit = {
-    ConnectionPool.singleton(new DataSourceConnectionPool(getDataSource))
-    DBMigrator.migrate(getDataSource)
+    val datasource = getDataSource
+    if (serverIsListening) {
+      DBMigrator.migrate(datasource)
+      ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
+    }
   }
 
   test("Fetching external ids works as expected") {
+    assume(databaseIsAvailable, "Database is unavailable")
     val externalIds = List("1", "2", "3")
     val idWithExternals = 1
     val idWithoutExternals = 2
@@ -38,9 +64,16 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     result1 should be(externalIds)
     val result2 = repository.getExternalIdsFromId(idWithoutExternals)
     result2 should be(List.empty)
+  }
 
-    repository.delete(idWithExternals)
-    repository.delete(idWithoutExternals)
+  test("withId only returns non-archieved articles") {
+    assume(databaseIsAvailable, "Database is unavailable")
+    repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+    repository.insert(
+      sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.ARCHIVED, Set.empty)))
+
+    repository.withId(1).isDefined should be(true)
+    repository.withId(2).isDefined should be(false)
   }
 
   test("that importIdOfArticle works correctly") {

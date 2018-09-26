@@ -6,12 +6,13 @@ val ScalaLoggingVersion = "3.5.0"
 val ScalaTestVersion = "3.0.1"
 val Log4JVersion = "2.9.1"
 val Jettyversion = "9.4.11.v20180605"
-val AwsSdkversion = "1.11.46"
+val AwsSdkversion = "1.11.297"
 val MockitoVersion = "1.10.19"
 val Elastic4sVersion = "6.1.4"
 val JacksonVersion = "2.9.5"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
+val CatsEffectVersion = "1.0.0"
 
 val appProperties = settingKey[Properties]("The application properties")
 
@@ -59,9 +60,14 @@ lazy val draft_api = (project in file("."))
       "org.apache.lucene" % "lucene-test-framework" % "6.4.1" % "test",
       "org.scalatest" %% "scalatest" % ScalaTestVersion % "test",
       "org.jsoup" % "jsoup" % "1.10.3",
+      "log4j" % "log4j" % "1.2.16",
+      "net.bull.javamelody" % "javamelody-core" % "1.73.1",
+      "org.jrobin" % "jrobin" % "1.5.9",
+      "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-all" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % "4.0",
-      "com.netaporter" %% "scala-uri" % "0.4.16"
+      "com.netaporter" %% "scala-uri" % "0.4.16",
+      "org.typelevel" %% "cats-effect" % CatsEffectVersion
     ),
   )
   .enablePlugins(DockerPlugin)
@@ -112,7 +118,7 @@ docker / dockerfile := {
   val artifactTargetPath = s"/app/${artifact.name}"
   new Dockerfile {
     from("openjdk:8-jre-alpine")
-
+    run("apk", "--no-cache", "add", "ttf-dejavu")
     add(artifact, artifactTargetPath)
     entryPoint("java", "-Dorg.scalatra.environment=production", "-jar", artifactTargetPath)
   }
