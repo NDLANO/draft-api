@@ -340,9 +340,10 @@ trait DraftController {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val id = long(this.articleId.paramName)
+        val isImported = booleanOrDefault("import_publish", default = false)
         domain.ArticleStatus
           .valueOfOrError(params(this.statuss.paramName))
-          .flatMap(writeService.updateArticleStatus(_, id, userInfo)) match {
+          .flatMap(writeService.updateArticleStatus(_, id, userInfo, isImported)) match {
           case Success(a)  => a
           case Failure(ex) => errorHandler(ex)
         }

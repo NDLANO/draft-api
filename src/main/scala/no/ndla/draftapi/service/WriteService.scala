@@ -107,14 +107,17 @@ trait WriteService {
       } yield apiArticle
     }
 
-    def updateArticleStatus(status: domain.ArticleStatus.Value, id: Long, user: UserInfo): Try[api.Article] = {
+    def updateArticleStatus(status: domain.ArticleStatus.Value,
+                            id: Long,
+                            user: UserInfo,
+                            isImported: Boolean): Try[api.Article] = {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"No article with id $id was found"))
         case Some(draft) =>
           for {
             convertedArticleT <- converterService.updateStatus(status, draft, user).attempt.unsafeRunSync().toTry
             convertedArticle <- convertedArticleT
-            updatedArticle <- draftRepository.update(convertedArticle)
+            updatedArticle <- draftRepository.update(convertedArticle, isImported)
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
       }
