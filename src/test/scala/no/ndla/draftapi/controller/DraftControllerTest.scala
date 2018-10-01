@@ -198,7 +198,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("PUT /:id/validate/ should return 204 if user has required permissions") {
-    when(contentValidator.validateArticleApiArticle(any[Long])).thenReturn(Success(ContentId(1)))
+    when(contentValidator.validateArticleApiArticle(any[Long], any[Boolean])).thenReturn(Success(ContentId(1)))
     put("/test/1/validate/") {
       status should equal(200)
     }
