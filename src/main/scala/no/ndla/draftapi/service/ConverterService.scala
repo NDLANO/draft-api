@@ -296,7 +296,7 @@ trait ConverterService {
 
     def toApiLicense(shortLicense: String): api.License = {
       getLicense(shortLicense)
-        .map(l => api.License(l.license, Option(l.description), l.url))
+        .map(l => api.License(l.license.toString, Option(l.description), l.url))
         .getOrElse(api.License("unknown", None, None))
     }
 

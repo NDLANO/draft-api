@@ -244,15 +244,15 @@ trait DraftController {
 
       val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses
         .filter {
-          case license: LicenseDefinition if filter.isDefined => license.license.contains(filter.get)
+          case license: LicenseDefinition if filter.isDefined => license.license.toString.contains(filter.get)
           case _                                              => true
         }
         .filterNot {
-          case license: LicenseDefinition if filterNot.isDefined => license.license.contains(filterNot.get)
+          case license: LicenseDefinition if filterNot.isDefined => license.license.toString.contains(filterNot.get)
           case _                                                 => false
         }
 
-      licenses.map(x => License(x.license, Option(x.description), x.url))
+      licenses.map(x => License(x.license.toString, Option(x.description), x.url))
     }
 
     val newArticle =

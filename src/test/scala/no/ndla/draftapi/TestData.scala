@@ -10,10 +10,12 @@ package no.ndla.draftapi
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
+import no.ndla.mapping.License.CC_BY
 import ArticleStatus._
 import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.api.NewAgreement
 import org.joda.time.{DateTime, DateTimeZone}
+import no.ndla.mapping.License.{CC_BY_NC_SA}
 
 object TestData {
 
@@ -36,7 +38,7 @@ object TestData {
 
   private val publicDomainCopyright =
     Copyright(Some("publicdomain"), Some(""), List.empty, List(), List(), None, None, None)
-  private val byNcSaCopyright = Copyright(Some("by-nc-sa"),
+  private val byNcSaCopyright = Copyright(Some(CC_BY_NC_SA.toString),
                                           Some("Gotham City"),
                                           List(Author("Forfatter", "DC Comics")),
                                           List(),
@@ -144,9 +146,9 @@ object TestData {
     Some(
       api.Copyright(
         Some(
-          api.License("by",
-                      Some("Creative Commons Attribution 2.0 Generic"),
-                      Some("https://creativecommons.org/licenses/by/2.0/"))),
+          api.License(CC_BY.toString,
+                      Some("Creative Commons Attribution 4.0 International"),
+                      Some("https://creativecommons.org/licenses/by/4.0/"))),
         Some(""),
         Seq.empty,
         List(),
@@ -195,7 +197,7 @@ object TestData {
     domain.Status(DRAFT, Set.empty),
     Seq(ArticleTitle("title", "nb")),
     Seq(ArticleContent("content", "nb")),
-    Some(Copyright(Some("by"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
+    Some(Copyright(Some(CC_BY.toString), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
     Seq.empty,
     Seq.empty,
     Seq.empty,

@@ -69,7 +69,10 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   test("That GET /licenses/ with filter sat to by only returns creative common licenses") {
     val creativeCommonlicenses =
-      getLicenses.filter(_.license.startsWith("by")).map(l => License(l.license, Option(l.description), l.url)).toSet
+      getLicenses
+        .filter(_.license.toString.startsWith("by"))
+        .map(l => License(l.license.toString, Option(l.description), l.url))
+        .toSet
 
     get("/test/licenses/", "filter" -> "by") {
       status should equal(200)
@@ -79,7 +82,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("That GET /licenses/ with filter not specified returns all licenses") {
-    val allLicenses = getLicenses.map(l => License(l.license, Option(l.description), l.url)).toSet
+    val allLicenses = getLicenses.map(l => License(l.license.toString, Option(l.description), l.url)).toSet
 
     get("/test/licenses/") {
       status should equal(200)
