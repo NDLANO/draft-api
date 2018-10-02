@@ -12,5 +12,6 @@ package object domain {
     lang.filter(_.nonEmpty)
   }
 
-  case class ArticleIds(articleId: Long, externalId: List[String])
+  case class ArticleIds(articleId: Long, externalId: List[String], importId: Option[String] = None)
+  case class ImportId(importId: Option[String])
 }

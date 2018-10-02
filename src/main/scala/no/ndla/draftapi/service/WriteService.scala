@@ -12,6 +12,7 @@ import java.util.Date
 import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.model.domain.{Article, _}
 import no.ndla.draftapi.model.api.{Status, _}
 import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, USER_TEST, AWAITING_QUALITY_ASSURANCE}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
@@ -85,12 +86,13 @@ trait WriteService {
                    externalSubjectIds: Seq[String],
                    user: UserInfo,
                    oldNdlaCreatedDate: Option[Date],
-                   oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
+                   oldNdlaUpdatedDate: Option[Date],
+                   importId: Option[String]): Try[api.Article] = {
       val insertNewArticleFunction = externalIds match {
         case Nil => draftRepository.insert _
         case nids =>
           (a: domain.Article) =>
-            draftRepository.insertWithExternalIds(a, nids, externalSubjectIds)
+            draftRepository.insertWithExternalIds(a, nids, externalSubjectIds, importId)
       }
       for {
         domainArticle <- converterService.toDomainArticle(newArticle,
@@ -105,20 +107,24 @@ trait WriteService {
       } yield apiArticle
     }
 
-    def updateArticleStatus(status: domain.ArticleStatus.Value, id: Long, user: UserInfo): Try[api.Article] = {
+    def updateArticleStatus(status: domain.ArticleStatus.Value,
+                            id: Long,
+                            user: UserInfo,
+                            isImported: Boolean): Try[api.Article] = {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"No article with id $id was found"))
         case Some(draft) =>
           for {
             convertedArticleT <- converterService.updateStatus(status, draft, user).attempt.unsafeRunSync().toTry
             convertedArticle <- convertedArticleT
-            updatedArticle <- draftRepository.update(convertedArticle)
+            updatedArticle <- draftRepository.update(convertedArticle, isImported)
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
       }
     }
 
     private def updateArticle(toUpdate: domain.Article,
+                              importId: Option[String],
                               externalIds: List[String] = List.empty,
                               externalSubjectIds: Seq[String] = Seq.empty,
                               isImported: Boolean = false): Try[domain.Article] = {
@@ -128,7 +134,7 @@ trait WriteService {
             draftRepository.update(a, isImported = isImported)
         case nids =>
           (a: domain.Article) =>
-            draftRepository.updateWithExternalIds(a, nids, externalSubjectIds)
+            draftRepository.updateWithExternalIds(a, nids, externalSubjectIds, importId)
       }
 
       for {
@@ -144,8 +150,8 @@ trait WriteService {
                       externalSubjectIds: Seq[String],
                       user: UserInfo,
                       oldNdlaCreatedDate: Option[Date],
-                      oldNdlaUpdatedDate: Option[Date]): Try[api.Article] = {
-
+                      oldNdlaUpdatedDate: Option[Date],
+                      importId: Option[String]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) =>
           val oldStatus = existing.status.current
@@ -169,6 +175,7 @@ trait WriteService {
               .toTry
             withStatus <- withStatusT
             updatedArticle <- updateArticle(withStatus,
+                                            importId = importId,
                                             externalIds,
                                             externalSubjectIds,
                                             isImported = externalIds.nonEmpty)
@@ -190,7 +197,7 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             withStatus <- withStatusT
-            updatedArticle <- updateArticle(withStatus, externalIds, externalSubjectIds)
+            updatedArticle <- updateArticle(withStatus, importId, externalIds, externalSubjectIds)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle

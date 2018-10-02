@@ -69,7 +69,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
 
     service
-      .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None)
+      .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None, None)
       .get
       .id
       .toString should equal(article.id.get.toString)
@@ -171,8 +171,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        content = Seq(ArticleContent(newContent, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
-      converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId,
+                          updatedApiArticle,
+                          List.empty,
+                          Seq.empty,
+                          TestData.userWithWriteAccess,
+                          None,
+                          None,
+                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates only title properly") {
@@ -196,8 +202,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                        title = Seq(ArticleTitle(newTitle, "en")),
                                        updated = today)
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
-      converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId,
+                          updatedApiArticle,
+                          List.empty,
+                          Seq.empty,
+                          TestData.userWithWriteAccess,
+                          None,
+                          None,
+                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates multiple fields properly") {
@@ -252,8 +264,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today
     )
 
-    service.updateArticle(articleId, updatedApiArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None) should equal(
-      converterService.toApiArticle(expectedArticle, "en"))
+    service.updateArticle(articleId,
+                          updatedApiArticle,
+                          List.empty,
+                          Seq.empty,
+                          TestData.userWithWriteAccess,
+                          None,
+                          None,
+                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("updateArticle should use user-defined status if defined") {
@@ -265,6 +283,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                 List.empty,
                                                 Seq.empty,
                                                 TestData.userWithWriteAccess,
+                                                None,
                                                 None,
                                                 None)
     result.status should equal(api.Status("PROPOSAL", Seq.empty))
@@ -282,6 +301,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   Seq.empty,
                                                   TestData.userWithWriteAccess,
                                                   None,
+                                                  None,
                                                   None)
       result.status should equal(api.Status("PROPOSAL", Seq.empty))
     }
@@ -294,6 +314,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   List.empty,
                                                   Seq.empty,
                                                   TestData.userWithWriteAccess,
+                                                  None,
                                                   None,
                                                   None)
       result.status should equal(api.Status("USER_TEST", Seq.empty))
@@ -308,6 +329,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   Seq.empty,
                                                   TestData.userWithWriteAccess,
                                                   None,
+                                                  None,
                                                   None)
       result.status should equal(api.Status("AWAITING_QUALITY_ASSURANCE", Seq.empty))
     }
@@ -320,6 +342,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   List.empty,
                                                   Seq.empty,
                                                   TestData.userWithWriteAccess,
+                                                  None,
                                                   None,
                                                   None)
       result.status should equal(api.Status("DRAFT", Seq.empty))

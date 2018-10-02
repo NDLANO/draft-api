@@ -81,6 +81,14 @@ trait InternController {
       }
     }
 
+    get("/import-id/:external_id") {
+      val articleId = params("external_id")
+      readService.importIdOfArticle(articleId) match {
+        case Some(ids) => Ok(ids)
+        case _         => NotFound()
+      }
+    }
+
     get("/id/:external_id") {
       val externalId = params("external_id")
       draftRepository.getIdFromExternalId(externalId) match {

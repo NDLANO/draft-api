@@ -9,7 +9,7 @@ package no.ndla.draftapi.repository
 
 import java.net.Socket
 
-import no.ndla.draftapi.model.domain.Article
+import no.ndla.draftapi.model.domain.{Article, ArticleIds, ImportId}
 import no.ndla.draftapi._
 import no.ndla.draftapi.model.domain
 import scalikejdbc._
@@ -57,8 +57,8 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     val externalIds = List("1", "2", "3")
     val idWithExternals = 1
     val idWithoutExternals = 2
-    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithExternals)), externalIds, List.empty)
-    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithoutExternals)), List.empty, List.empty)
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithExternals)), externalIds, List.empty, None)
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(idWithoutExternals)), List.empty, List.empty, None)
 
     val result1 = repository.getExternalIdsFromId(idWithExternals)
     result1 should be(externalIds)
@@ -74,6 +74,23 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
     repository.withId(1).isDefined should be(true)
     repository.withId(2).isDefined should be(false)
+  }
+
+  test("that importIdOfArticle works correctly") {
+    val externalIds = List("1", "2", "3")
+    val uuid = "d4e84cd3-ab94-46d5-9839-47ec682d27c2"
+    val id1 = 1
+    val id2 = 2
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(id1)), externalIds, List.empty, Some(uuid))
+    repository.insertWithExternalIds(sampleArticle.copy(id = Some(id2)), List.empty, List.empty, Some(uuid))
+
+    val result1 = repository.importIdOfArticle("1")
+    result1.get should be(ImportId(Some(uuid)))
+    val result2 = repository.importIdOfArticle("2")
+    result2.get should be(ImportId(Some(uuid)))
+
+    repository.delete(id1)
+    repository.delete(id2)
   }
 
 }

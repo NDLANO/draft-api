@@ -131,7 +131,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                     any[Seq[String]],
                     any[UserInfo],
                     any[Option[Date]],
-                    any[Option[Date]]))
+                    any[Option[Date]],
+                    any[Option[String]]))
       .thenReturn(Success(TestData.sampleArticleV2))
     post("/test/", write(TestData.newArticle), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(201)
@@ -174,7 +175,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                  any[Seq[String]],
                                  any[UserInfo],
                                  any[Option[Date]],
-                                 any[Option[Date]]))
+                                 any[Option[Date]],
+                                 any[Option[String]]))
       .thenReturn(Failure(new AccessDeniedException("Not today")))
 
     patch("/test/123", body = write(TestData.sampleApiUpdateArticle)) {
@@ -190,7 +192,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                  any[Seq[String]],
                                  any[UserInfo],
                                  any[Option[Date]],
-                                 any[Option[Date]]))
+                                 any[Option[Date]],
+                                 any[Option[String]]))
       .thenReturn(Success(TestData.apiArticleWithHtmlFaultV2))
     patch("/test/123", updateTitleJson) {
       status should equal(200)
