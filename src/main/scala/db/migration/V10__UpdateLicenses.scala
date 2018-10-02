@@ -17,7 +17,7 @@ import org.json4s.{DefaultFormats, JObject, JValue}
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
-class V9__UpdateLicenses extends JdbcMigration {
+class V10__UpdateLicenses extends JdbcMigration {
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
 
   override def migrate(connection: Connection): Unit = {

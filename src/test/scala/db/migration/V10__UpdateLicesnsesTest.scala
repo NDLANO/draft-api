@@ -9,8 +9,8 @@ package db.migration
 
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 
-class V9__UpdateLicesnsesTest extends UnitSuite with TestEnvironment {
-  val migration = new V9__UpdateLicenses
+class V10__UpdateLicesnsesTest extends UnitSuite with TestEnvironment {
+  val migration = new V10__UpdateLicenses
 
   test("migration should update to new status format") {
     {
