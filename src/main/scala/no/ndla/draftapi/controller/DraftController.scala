@@ -363,7 +363,8 @@ trait DraftController {
         responseMessages (response400, response403, response404, response500))
 
     put("/:article_id/validate/", operation(validateArticle)) {
-      contentValidator.validateArticleApiArticle(long(this.articleId.paramName)) match {
+      val importValidate = booleanOrDefault("import_validate", default = false)
+      contentValidator.validateArticleApiArticle(long(this.articleId.paramName), importValidate) match {
         case Success(id) => id
         case Failure(ex) => errorHandler(ex)
       }

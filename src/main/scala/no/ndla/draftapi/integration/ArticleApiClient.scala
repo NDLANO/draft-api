@@ -87,9 +87,11 @@ trait ArticleApiClient {
       delete[ContentId](s"$InternalEndpoint/article/$id/")
     }
 
-    def validateArticle(article: api.ArticleApiArticle): Try[api.ArticleApiArticle] = {
+    def validateArticle(article: api.ArticleApiArticle, importValidate: Boolean): Try[api.ArticleApiArticle] = {
       implicit val format = org.json4s.DefaultFormats
-      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article", article) match {
+      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article",
+                                                                 article,
+                                                                 ("import_validate", importValidate.toString)) match {
         case Failure(ex: HttpRequestException) =>
           val validationError = ex.httpResponse.map(r => parse(r.body).extract[ArticleApiValidationError])
           Failure(
