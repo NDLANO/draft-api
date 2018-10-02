@@ -13,6 +13,7 @@ val JacksonVersion = "2.9.5"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
 val CatsEffectVersion = "1.0.0"
+val FlywayVersion = "5.1.4"
 
 val appProperties = settingKey[Properties]("The application properties")
 
@@ -65,7 +66,7 @@ lazy val draft_api = (project in file("."))
       "org.jrobin" % "jrobin" % "1.5.9",
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-all" % MockitoVersion % "test",
-      "org.flywaydb" % "flyway-core" % "4.0",
+      "org.flywaydb" % "flyway-core" % FlywayVersion,
       "com.netaporter" %% "scala-uri" % "0.4.16",
       "org.typelevel" %% "cats-effect" % CatsEffectVersion
     ),
