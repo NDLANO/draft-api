@@ -13,7 +13,7 @@ val JacksonVersion = "2.9.5"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
 val CatsEffectVersion = "1.0.0"
-val FlywayVersion = "5.1.4"
+val FlywayVersion = "4.0"
 
 val appProperties = settingKey[Properties]("The application properties")
 
