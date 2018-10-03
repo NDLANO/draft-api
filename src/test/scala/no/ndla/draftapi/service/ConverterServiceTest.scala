@@ -16,6 +16,7 @@ import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.ArticleTitle
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
+import no.ndla.mapping.License.{CC_BY}
 import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -31,10 +32,10 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("toApiLicense converts a short license string to a license object with description and url") {
-    service.toApiLicense("by") should equal(
-      api.License("by",
-                  Some("Creative Commons Attribution 2.0 Generic"),
-                  Some("https://creativecommons.org/licenses/by/2.0/")))
+    service.toApiLicense(CC_BY.toString) should equal(
+      api.License(CC_BY.toString,
+                  Some("Creative Commons Attribution 4.0 International"),
+                  Some("https://creativecommons.org/licenses/by/4.0/")))
   }
 
   test("toApiArticle converts a domain.Article to an api.ArticleV2") {

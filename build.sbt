@@ -13,6 +13,7 @@ val JacksonVersion = "2.9.5"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
 val CatsEffectVersion = "1.0.0"
+val FlywayVersion = "4.0"
 
 val appProperties = settingKey[Properties]("The application properties")
 
@@ -32,7 +33,7 @@ lazy val draft_api = (project in file("."))
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(
       "ndla" %% "network" % "0.29",
-      "ndla" %% "mapping" % "0.7",
+      "ndla" %% "mapping" % "0.10",
       "ndla" %% "validation" % "0.24",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
@@ -65,7 +66,7 @@ lazy val draft_api = (project in file("."))
       "org.jrobin" % "jrobin" % "1.5.9",
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-all" % MockitoVersion % "test",
-      "org.flywaydb" % "flyway-core" % "4.0",
+      "org.flywaydb" % "flyway-core" % FlywayVersion,
       "com.netaporter" %% "scala-uri" % "0.4.16",
       "org.typelevel" %% "cats-effect" % CatsEffectVersion
     ),

@@ -12,6 +12,7 @@ import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{DraftApiProperties, TestData, TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
+import no.ndla.mapping.License.{CC_BY_SA}
 
 import scala.util.Failure
 
@@ -145,7 +146,7 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
 
   test("validateArticle does not throw an exception on an article with a valid license") {
     val article = TestData.sampleArticleWithByNcSa.copy(
-      copyright = Some(Copyright(Some("by-sa"), None, Seq(), List(), List(), None, None, None)))
+      copyright = Some(Copyright(Some(CC_BY_SA.toString), None, Seq(), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
@@ -157,14 +158,14 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
 
   test("validateArticle does not throw an exception on an article with plain text in copyright origin") {
     val article = TestData.sampleArticleWithByNcSa.copy(
-      copyright = Some(Copyright(Some("by-sa"), None, Seq(), List(), List(), None, None, None)))
+      copyright = Some(Copyright(Some(CC_BY_SA.toString), None, Seq(), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
   test("validateArticle does not throw an exception on an article with plain text in authors field") {
     val article = TestData.sampleArticleWithByNcSa.copy(
-      copyright =
-        Some(Copyright(Some("by-sa"), None, Seq(Author("author", "John Doe")), List(), List(), None, None, None)))
+      copyright = Some(
+        Copyright(Some(CC_BY_SA.toString), None, Seq(Author("author", "John Doe")), List(), List(), None, None, None)))
     contentValidator.validateArticle(article, false).isSuccess should be(true)
   }
 
