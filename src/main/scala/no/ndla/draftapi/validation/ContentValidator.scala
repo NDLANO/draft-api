@@ -93,11 +93,11 @@ trait ContentValidator {
 
     }
 
-    def validateArticleApiArticle(id: Long): Try[ContentId] = {
+    def validateArticleApiArticle(id: Long, importValidate: Boolean): Try[ContentId] = {
       draftRepository.withId(id) match {
         case None => Failure(NotFoundException(s"Article with id $id does not exist"))
         case Some(art) =>
-          articleApiClient.validateArticle(converterService.toArticleApiArticle(art)) match {
+          articleApiClient.validateArticle(converterService.toArticleApiArticle(art), importValidate) match {
             case Failure(ex) => Failure(ex)
             case Success(_)  => Success(ContentId(id))
           }
