@@ -7,21 +7,22 @@
 
 package no.ndla.draftapi.service.search
 
+import java.nio.file.{Files, Path}
+
+import com.sksamuel.elastic4s.embedded.{InternalLocalNode, LocalNode}
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi._
-import no.ndla.draftapi.integration.Elastic4sClientFactory
+import no.ndla.draftapi.integration.NdlaE4sClient
 import no.ndla.draftapi.model.domain._
-import no.ndla.tag.IntegrationTest
 import org.joda.time.DateTime
 
 import scala.util.Success
 
-@IntegrationTest
 class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
-
-  val esPort = 9200
-
-  override val e4sClient = Elastic4sClientFactory.getClient(searchServer = s"http://localhost:$esPort")
+  val tmpDir: Path = Files.createTempDirectory(this.getClass.getName)
+  val localNodeSettings: Map[String, String] = LocalNode.requiredSettings(this.getClass.getName, tmpDir.toString)
+  val localNode: InternalLocalNode = LocalNode(localNodeSettings)
+  override val e4sClient: NdlaE4sClient = NdlaE4sClient(localNode.http(true))
 
   override val agreementSearchService = new AgreementSearchService
   override val agreementIndexService = new AgreementIndexService
