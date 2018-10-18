@@ -9,7 +9,7 @@ val Jettyversion = "9.4.11.v20180605"
 val AwsSdkversion = "1.11.297"
 val MockitoVersion = "1.10.19"
 val Elastic4sVersion = "6.1.4"
-val JacksonVersion = "2.9.5"
+val JacksonVersion = "2.9.7"
 val ElasticsearchVersion = "6.0.1"
 val Json4SVersion = "3.5.3"
 val CatsEffectVersion = "1.0.0"
@@ -56,13 +56,13 @@ lazy val draft_api = (project in file("."))
       "com.sksamuel.elastic4s" %% "elastic4s-core" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-aws" % Elastic4sVersion,
-      "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion, // Overriding jackson-databind used in elastic4s because of https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-32111
-      "org.elasticsearch" % "elasticsearch" % ElasticsearchVersion,
-      "org.apache.lucene" % "lucene-test-framework" % "6.4.1" % "test",
+      "com.sksamuel.elastic4s" %% "elastic4s-embedded" % Elastic4sVersion % "test",
+      "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion, // Overriding jackson-databind used in elastic4s because of https://app.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-72451 (and more)
+      "org.apache.lucene" % "lucene-queryparser" % "7.1.0", // Overriding lucene-queryparser used in elasticsearch because of https://snyk.io/vuln/SNYK-JAVA-ORGAPACHELUCENE-31569
       "org.scalatest" %% "scalatest" % ScalaTestVersion % "test",
       "org.jsoup" % "jsoup" % "1.10.3",
       "log4j" % "log4j" % "1.2.16",
-      "net.bull.javamelody" % "javamelody-core" % "1.73.1",
+      "net.bull.javamelody" % "javamelody-core" % "1.74.0",
       "org.jrobin" % "jrobin" % "1.5.9",
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-all" % MockitoVersion % "test",
