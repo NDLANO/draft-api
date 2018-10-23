@@ -120,11 +120,10 @@ trait StateTransitionRules {
 
     private[this] def learningPathsUsingArticle(articleId: Long): Seq[LearningPath] = {
       learningpathApiClient.getLearningpaths() match {
-        case Success(learningpaths) =>
+        case Some(Success(learningpaths)) =>
           learningpaths.filter(learningpath =>
             learningpath.learningsteps.exists(learningstepContainsArticleEmbed(articleId, _)))
-        case Failure(_) =>
-          Seq.empty
+        case _ => Seq.empty
       }
     }
 

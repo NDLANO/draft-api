@@ -54,7 +54,7 @@ trait ReadService {
       val searchLanguage = getSearchLanguage(language, supportedLanguages)
 
       tagUsageMap
-        .get(searchLanguage)
+        .flatMap(_.get(searchLanguage))
         .map(tags => api.ArticleTag(tags.getNMostFrequent(n), searchLanguage))
     }
 
