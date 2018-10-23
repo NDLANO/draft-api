@@ -8,6 +8,7 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
+import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
@@ -64,7 +65,7 @@ trait TestEnvironment
 
   val healthController = mock[HealthController]
 
-  val dataSource = mock[javax.sql.DataSource]
+  val dataSource = mock[HikariDataSource]
   val draftRepository = mock[ArticleRepository]
   val conceptRepository = mock[ConceptRepository]
   val agreementRepository = mock[AgreementRepository]
