@@ -7,7 +7,7 @@
 
 package db.migration
 
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s.Extraction.decompose
 import org.json4s.JsonAST.JArray
@@ -78,7 +78,7 @@ class V6__MoveToNewFileEmbedFormat extends BaseJavaMigration {
         embedUrl match {
           case Some(url) =>
             // If data-url exists we remove it and add path
-            embed.attr("data-path", url.path)
+            embed.attr("data-path", url.path.toString)
             embed.removeAttr("data-url")
           case None =>
           // If data-url does not exists we assume we are on the new format and do nothing
