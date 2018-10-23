@@ -22,7 +22,7 @@ import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import no.ndla.mapping.License.getLicenses
 import org.json4s.native.Serialization.{read, write}
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatra.test.scalatest.ScalatraFunSuite
 

@@ -12,7 +12,7 @@ import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success}

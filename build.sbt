@@ -1,19 +1,19 @@
 import java.util.Properties
 
-val Scalaversion = "2.12.6"
-val Scalatraversion = "2.5.1"
-val ScalaLoggingVersion = "3.5.0"
-val ScalaTestVersion = "3.0.1"
-val Log4JVersion = "2.9.1"
-val Jettyversion = "9.4.11.v20180605"
-val AwsSdkversion = "1.11.297"
-val MockitoVersion = "1.10.19"
+val Scalaversion = "2.12.7"
+val Scalatraversion = "2.6.3"
+val ScalaLoggingVersion = "3.9.0"
+val ScalaTestVersion = "3.0.5"
+val Log4JVersion = "2.11.1"
+val Jettyversion = "9.4.12.v20180830"
+val AwsSdkversion = "1.11.434"
+val MockitoVersion = "2.23.0"
 val Elastic4sVersion = "6.1.4"
 val JacksonVersion = "2.9.7"
 val ElasticsearchVersion = "6.0.1"
-val Json4SVersion = "3.5.3"
+val Json4SVersion = "3.6.1"
 val CatsEffectVersion = "1.0.0"
-val FlywayVersion = "4.0"
+val FlywayVersion = "5.2.0"
 
 val appProperties = settingKey[Properties]("The application properties")
 
@@ -65,7 +65,7 @@ lazy val draft_api = (project in file("."))
       "net.bull.javamelody" % "javamelody-core" % "1.74.0",
       "org.jrobin" % "jrobin" % "1.5.9",
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
-      "org.mockito" % "mockito-all" % MockitoVersion % "test",
+      "org.mockito" % "mockito-core" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % FlywayVersion,
       "com.netaporter" %% "scala-uri" % "0.4.16",
       "org.typelevel" %% "cats-effect" % CatsEffectVersion
