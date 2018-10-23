@@ -180,6 +180,7 @@ trait DraftRepository {
         .map(_.getArray.asInstanceOf[Array[String]])
         .getOrElse(Array.empty)
         .toList
+        .flatMap(Option(_))
     }
 
     def getExternalIdsFromId(id: Long)(implicit session: DBSession = AutoSession): List[String] = {

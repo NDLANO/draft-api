@@ -16,6 +16,7 @@ trait DataSource {
 }
 
 object DataSource {
+
   def getHikariDataSource: HikariDataSource = {
     val dataSourceConfig = new HikariConfig()
     dataSourceConfig.setUsername(MetaUserName)

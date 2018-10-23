@@ -11,6 +11,7 @@ import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 
 object DBMigrator {
+
   def migrate(datasource: HikariDataSource): Int = {
     val flyway = Flyway
       .configure()
