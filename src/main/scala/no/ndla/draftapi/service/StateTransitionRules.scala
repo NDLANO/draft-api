@@ -106,7 +106,16 @@ trait StateTransitionRules {
 
     private[this] def learningstepContainsArticleEmbed(articleId: Long, steps: LearningStep): Boolean = {
       val urls = steps.embedUrl.map(embed => Uri.parse(embed.url))
-      urls.exists(url => url.pathRaw.endsWith(s"/article/$articleId"))
+      val DirectArticleUrl = raw"""^.*/article/([0-9]+)$$""".r
+      val TaxonomyUrl = raw"""^.+/(?:resource|topic):[0-9]:([0-9]+)$$""".r
+
+      urls.exists(url => {
+        url.pathRaw match {
+          case DirectArticleUrl(f)     => f == s"$articleId"
+          case TaxonomyUrl(externalId) => draftRepository.getIdFromExternalId(externalId).contains(articleId)
+          case _                       => false
+        }
+      })
     }
 
     private[this] def learningPathsUsingArticle(articleId: Long): Seq[LearningPath] = {
