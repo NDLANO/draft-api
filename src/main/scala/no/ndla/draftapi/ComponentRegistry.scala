@@ -24,6 +24,7 @@ object ComponentRegistry
     with InternController
     with ConverterService
     with StateTransitionRules
+    with LearningpathApiClient
     with ConceptController
     with ConceptSearchService
     with ConceptIndexService
@@ -99,5 +100,6 @@ object ComponentRegistry
   lazy val clock = new SystemClock
 
   lazy val articleApiClient = new ArticleApiClient
+  override lazy val learningpathApiClient: ComponentRegistry.LearningpathApiClient = new LearningpathApiClient
   lazy val user = new User
 }

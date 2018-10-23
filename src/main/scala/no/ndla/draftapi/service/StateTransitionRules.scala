@@ -8,11 +8,12 @@
 package no.ndla.draftapi.service
 
 import cats.effect.IO
+import com.netaporter.uri.Uri
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.model.api.IllegalStatusStateTransition
+import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, ValidationException}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.auth.UserInfo.{AdminRoles, SetPublishRoles}
-import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningStep, LearningpathApiClient}
 import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
@@ -22,20 +23,9 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 trait StateTransitionRules {
-  this: WriteService with DraftRepository with ArticleApiClient with ArticleIndexService =>
+  this: WriteService with DraftRepository with ArticleApiClient with LearningpathApiClient with ArticleIndexService =>
 
   object StateTransitionRules {
-    private def publishArticle(article: domain.Article): Try[Article] = {
-      val externalIds = draftRepository.getExternalIdsFromId(article.id.get)
-      articleApiClient.updateArticle(article.id.get, article, externalIds)
-    }
-
-    private def unpublishArticle(article: domain.Article): Try[domain.Article] =
-      articleApiClient.unpublishArticle(article)
-
-    private def removeFromSearch(article: domain.Article): Try[domain.Article] =
-      articleIndexService.deleteDocument(article.id.get).map(_ => article)
-
     import StateTransition._
 
     // format: off
@@ -108,6 +98,38 @@ trait StateTransitionRules {
       val (convertedArticle, sideEffect) = doTransitionWithoutSideEffect(current, to, user)
       IO { convertedArticle.flatMap(sideEffect) }
     }
+
+    private def publishArticle(article: domain.Article): Try[Article] = {
+      val externalIds = draftRepository.getExternalIdsFromId(article.id.get)
+      articleApiClient.updateArticle(article.id.get, article, externalIds)
+    }
+
+    private[this] def learningstepContainsArticleEmbed(articleId: Long, steps: LearningStep): Boolean = {
+      val urls = steps.embedUrl.map(embed => Uri.parse(embed.url))
+      urls.exists(url => url.pathRaw.endsWith(s"/article/$articleId"))
+    }
+
+    private[this] def learningPathsUsingArticle(articleId: Long): Seq[LearningPath] = {
+      learningpathApiClient.getLearningpaths() match {
+        case Success(learningpaths) =>
+          learningpaths.filter(learningpath =>
+            learningpath.learningsteps.exists(learningstepContainsArticleEmbed(articleId, _)))
+        case Failure(_) =>
+          Seq.empty
+      }
+    }
+
+    private[service] def unpublishArticle(article: domain.Article): Try[domain.Article] = {
+      val pathsUsingArticle = learningPathsUsingArticle(article.id.getOrElse(1)).map(_.id.getOrElse(-1))
+      if (pathsUsingArticle.isEmpty)
+        articleApiClient.unpublishArticle(article)
+      else
+        Failure(ValidationException(
+          s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article"))
+    }
+
+    private def removeFromSearch(article: domain.Article): Try[domain.Article] =
+      articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
   }
 
