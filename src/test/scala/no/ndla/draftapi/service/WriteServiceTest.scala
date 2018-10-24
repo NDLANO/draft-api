@@ -289,7 +289,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result.status should equal(api.Status("PROPOSAL", Seq.empty))
   }
 
-  test("updateArticle should use current stauts or DRAFT if user-defined status is not set") {
+  test(
+    "updateArticle should set status to PROPOSAL if user-defined status is undefined and current status is PUBLISHEd") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
+
+    val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithPublished)
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    val Success(result) = service.updateArticle(existing.id.get,
+                                                updatedArticle,
+                                                List.empty,
+                                                Seq.empty,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None,
+                                                None)
+    result.status should equal(api.Status("PROPOSAL", Seq.empty))
+  }
+
+  test("updateArticle should use current status if user-defined status is not set") {
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
 
     {
@@ -345,7 +362,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   None,
                                                   None,
                                                   None)
-      result.status should equal(api.Status("DRAFT", Seq.empty))
+      result.status should equal(api.Status("QUEUED_FOR_PUBLISHING", Seq.empty))
     }
   }
 

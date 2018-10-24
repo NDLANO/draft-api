@@ -77,6 +77,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   test("that importIdOfArticle works correctly") {
+    assume(databaseIsAvailable, "Database is unavailable")
     val externalIds = List("1", "2", "3")
     val uuid = "d4e84cd3-ab94-46d5-9839-47ec682d27c2"
     val id1 = 1
