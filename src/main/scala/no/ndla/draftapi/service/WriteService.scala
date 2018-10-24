@@ -14,7 +14,7 @@ import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.domain.{Article, _}
 import no.ndla.draftapi.model.api.{Status, _}
-import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, USER_TEST, AWAITING_QUALITY_ASSURANCE}
+import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PUBLISHED, PROPOSAL}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
@@ -155,8 +155,7 @@ trait WriteService {
       draftRepository.withId(articleId) match {
         case Some(existing) =>
           val oldStatus = existing.status.current
-          val newStatusIfUndefined =
-            if (Set(PROPOSAL, USER_TEST, AWAITING_QUALITY_ASSURANCE).contains(oldStatus)) oldStatus else DRAFT
+          val newStatusIfUndefined = if (oldStatus == PUBLISHED) PROPOSAL else oldStatus
           val newStatusT =
             updatedApiArticle.status.map(ArticleStatus.valueOfOrError).getOrElse(Success(newStatusIfUndefined))
 

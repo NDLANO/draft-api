@@ -287,19 +287,20 @@ trait DraftController {
       }
     }
 
-    val updateArticle =
-      (apiOperation[Article]("updateArticle")
-        summary "Update an existing article"
-        notes "Update an existing article"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](articleId),
-          bodyParam[UpdatedArticle]
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
-
-    patch("/:article_id", operation(updateArticle)) {
+    patch(
+      "/:article_id",
+      operation(
+        apiOperation[Article]("updateArticle")
+          summary "Update an existing article"
+          notes "Update an existing article"
+          parameters (
+            asHeaderParam[Option[String]](correlationId),
+            asPathParam[Long](articleId),
+            bodyParam[UpdatedArticle]
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response403, response404, response500))
+    ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val externalId = paramAsListOfString("externalId")
