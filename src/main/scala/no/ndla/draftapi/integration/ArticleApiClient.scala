@@ -15,6 +15,7 @@ import no.ndla.draftapi.service.ConverterService
 import no.ndla.network.NdlaClient
 import no.ndla.network.model.HttpRequestException
 import no.ndla.validation.{ValidationException, ValidationMessage}
+import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.write
 import org.json4s.jackson.JsonMethods.parse
 
@@ -67,7 +68,7 @@ trait ArticleApiClient {
     }
 
     def updateArticle(id: Long, article: domain.Article, externalIds: List[String]): Try[domain.Article] = {
-      implicit val format = org.json4s.DefaultFormats
+      implicit val format: DefaultFormats.type = org.json4s.DefaultFormats
 
       val articleApiArticle = converterService.toArticleApiArticle(article)
       postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id",

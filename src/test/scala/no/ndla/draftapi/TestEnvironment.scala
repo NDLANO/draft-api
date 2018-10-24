@@ -37,6 +37,7 @@ trait TestEnvironment
     with AgreementController
     with ReindexClient
     with DataSource
+    with TaxonomyApiClient
     with DraftRepository
     with AgreementRepository
     with ConceptRepository
@@ -85,5 +86,6 @@ trait TestEnvironment
   val clock = mock[SystemClock]
 
   val articleApiClient = mock[ArticleApiClient]
+  val taxonomyApiClient = mock[TaxonomyApiClient]
   val user = mock[User]
 }

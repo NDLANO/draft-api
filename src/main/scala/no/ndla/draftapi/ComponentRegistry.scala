@@ -24,6 +24,7 @@ object ComponentRegistry
     with InternController
     with ConverterService
     with StateTransitionRules
+    with TaxonomyApiClient
     with ConceptController
     with ConceptSearchService
     with ConceptIndexService
@@ -91,5 +92,6 @@ object ComponentRegistry
   lazy val clock = new SystemClock
 
   lazy val articleApiClient = new ArticleApiClient
+  lazy val taxonomyApiClient = new TaxonomyApiClient
   lazy val user = new User
 }

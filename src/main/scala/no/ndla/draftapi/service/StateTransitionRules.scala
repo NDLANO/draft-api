@@ -9,10 +9,10 @@ package no.ndla.draftapi.service
 
 import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.model.api.IllegalStatusStateTransition
+import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.auth.UserInfo.{AdminRoles, SetPublishRoles}
-import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.integration.{ArticleApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
@@ -22,18 +22,25 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 trait StateTransitionRules {
-  this: WriteService with DraftRepository with ArticleApiClient with ArticleIndexService =>
+  this: WriteService with DraftRepository with ArticleApiClient with TaxonomyApiClient with ArticleIndexService =>
 
   object StateTransitionRules {
     private def publishArticle(article: domain.Article): Try[Article] = {
-      val externalIds = draftRepository.getExternalIdsFromId(article.id.get)
-      articleApiClient.updateArticle(article.id.get, article, externalIds)
+      article.id match {
+        case Some(id) =>
+          val externalIds = draftRepository.getExternalIdsFromId(id)
+          taxonomyApiClient.updateTaxonomyIfExists(id, article)
+          articleApiClient.updateArticle(id, article, externalIds)
+        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
+      }
     }
 
     private def unpublishArticle(article: domain.Article): Try[domain.Article] =
+      // TODO: Maybe remove taxonomy?
       articleApiClient.unpublishArticle(article)
 
     private def removeFromSearch(article: domain.Article): Try[domain.Article] =
+      // TODO: Maybe remove taxonomy?
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
     import StateTransition._
