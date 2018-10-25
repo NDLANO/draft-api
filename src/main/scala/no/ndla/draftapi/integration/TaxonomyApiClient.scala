@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 
 import cats.Traverse
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.network.NdlaClient
+import no.ndla.network.{AuthUser, NdlaClient}
 import no.ndla.network.model.HttpRequestException
 import no.ndla.draftapi.DraftApiProperties.Domain
 import no.ndla.draftapi.model.domain.{Article, ArticleTitle, Language}
@@ -18,8 +18,6 @@ import org.json4s.{DefaultFormats, Formats}
 import scalaj.http.Http
 import org.json4s.jackson.Serialization.write
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 import cats.implicits._
 
@@ -30,7 +28,6 @@ trait TaxonomyApiClient {
   class TaxonomyApiClient extends LazyLogging {
     private val TaxonomyApiEndpoint = s"$Domain/taxonomy/v1"
     private val taxonomyTimeout = 20 * 1000 // 20 Seconds
-    private val timeoutDur = Duration(taxonomyTimeout, "seconds")
     implicit val formats: DefaultFormats.type = DefaultFormats
 
     def queryResource(articleId: Long): Try[List[Resource]] = {
@@ -52,16 +49,19 @@ trait TaxonomyApiClient {
         case Success((res, top)) =>
           Language.findByLanguageOrBestEffort(article.title, Language.DefaultLanguage) match {
             case Some(defaultTitle) =>
-              // Threadpool with size according to number of topics and resources
-              val threadPoolSize = math.max(3, res.size * 2 + top.size * 2)
-              implicit val ec: ExecutionContextExecutor =
-                ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
-
-              // Do the actual updates
+              // Do the updates
               val resources = res.map(r => updateResourceTitleAndTranslations(r, defaultTitle, article))
               val topics = top.map(t => updateTopicTitleAndTranslations(t, defaultTitle, article))
 
-              // Find whether there was an error or not
+              // Log errors
+              resources
+                .collect { case Failure(ex) => ex }
+                .foreach(ex => logger.warn(s"Taxonomy update failed with: ${ex.getMessage}"))
+              topics
+                .collect { case Failure(ex) => ex }
+                .foreach(ex => logger.warn(s"Taxonomy update failed with: ${ex.getMessage}"))
+
+              // Return an error if there was one
               val resourceResult = resources.collectFirst { case Failure(ex) => ex } match {
                 case Some(ex) => Failure(ex)
                 case None     => Success(articleId)
@@ -72,7 +72,6 @@ trait TaxonomyApiClient {
                 case None     => Success(articleId)
               }
 
-              // Return either error
               (resourceResult, topicResult) match {
                 case (Success(r), Success(t)) => Success(r)
                 case (Failure(ex), _)         => Failure(ex)
@@ -84,9 +83,8 @@ trait TaxonomyApiClient {
       }
     }
 
-    private def updateResourceTitleAndTranslations(res: Resource, defaultTitle: ArticleTitle, article: Article)(
-        implicit ec: ExecutionContext) = {
-      val resourceResult = Try(Await.result(updateResource(res.copy(name = defaultTitle.title)), timeoutDur)).flatten
+    private def updateResourceTitleAndTranslations(res: Resource, defaultTitle: ArticleTitle, article: Article) = {
+      val resourceResult = updateResource(res.copy(name = defaultTitle.title))
       val translationResult = updateResourceTranslations(res.id, article.title)
 
       (resourceResult, translationResult) match {
@@ -96,9 +94,8 @@ trait TaxonomyApiClient {
       }
     }
 
-    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, article: Article)(
-        implicit ec: ExecutionContext) = {
-      val topicResult = Try(Await.result(updateTopic(top.copy(name = defaultTitle.title)), timeoutDur)).flatten
+    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, article: Article) = {
+      val topicResult = updateTopic(top.copy(name = defaultTitle.title))
       val translationResult = updateTopicTranslations(top.id, article.title)
 
       (topicResult, translationResult) match {
@@ -108,29 +105,27 @@ trait TaxonomyApiClient {
       }
     }
 
-    private def updateResourceTranslations(resId: String, titles: Seq[ArticleTitle])(implicit ec: ExecutionContext) = {
-      val fut = Future.sequence(titles.map(t => updateResourceTranslation(resId, t.language, t.title)))
-      Try(Await.result(fut, timeoutDur)).flatMap(translations => Traverse[List].sequence(translations.toList))
+    private def updateResourceTranslations(resId: String, titles: Seq[ArticleTitle]) = {
+      val tries = titles.map(t => updateResourceTranslation(resId, t.language, t.title))
+      Traverse[List].sequence(tries.toList)
     }
 
-    private def updateTopicTranslations(topicId: String, titles: Seq[ArticleTitle])(implicit ec: ExecutionContext) = {
-      val fut = Future.sequence(titles.map(t => updateTopicTranslation(topicId, t.language, t.title)))
-      Try(Await.result(fut, timeoutDur)).flatMap(translations => Traverse[List].sequence(translations.toList))
+    private def updateTopicTranslations(topicId: String, titles: Seq[ArticleTitle]) = {
+      val tries = titles.map(t => updateTopicTranslation(topicId, t.language, t.title))
+      Traverse[List].sequence(tries.toList)
     }
 
-    private[integration] def updateResourceTranslation(resourceId: String, lang: String, name: String)(
-        implicit ec: ExecutionContext) =
+    private[integration] def updateResourceTranslation(resourceId: String, lang: String, name: String) =
       putRaw(s"$TaxonomyApiEndpoint/resources/$resourceId/translations/$lang", Translation(name))
 
-    private[integration] def updateTopicTranslation(topicId: String, lang: String, name: String)(
-        implicit ec: ExecutionContext) =
+    private[integration] def updateTopicTranslation(topicId: String, lang: String, name: String) =
       putRaw(s"$TaxonomyApiEndpoint/topics/$topicId/translations/$lang", Translation(name))
 
-    private[integration] def updateResource(resource: Resource)(implicit formats: Formats, ec: ExecutionContext) = {
+    private[integration] def updateResource(resource: Resource)(implicit formats: Formats) = {
       putRaw[Resource](s"$TaxonomyApiEndpoint/resources/${resource.id}", resource)
     }
 
-    private[integration] def updateTopic(topic: Topic)(implicit formats: Formats, ec: ExecutionContext) = {
+    private[integration] def updateTopic(topic: Topic)(implicit formats: Formats) = {
       putRaw[Topic](s"$TaxonomyApiEndpoint/topics/${topic.id}", topic)
     }
 
@@ -139,19 +134,17 @@ trait TaxonomyApiClient {
     }
 
     private[integration] def putRaw[B <: AnyRef](url: String, data: B, params: (String, String)*)(
-        implicit formats: org.json4s.Formats,
-        ec: ExecutionContext): Future[Try[B]] = {
-      Future {
-        logger.info(s"Doing call to $url")
-        ndlaClient.fetchRawWithForwardedAuth(
-          Http(url)
-            .put(write(data))
-            .header("content-type", "application/json")
-            .params(params)
-        ) match {
-          case Success(_)  => Success(data)
-          case Failure(ex) => Failure(ex)
-        }
+        implicit formats: org.json4s.Formats): Try[B] = {
+      logger.info(s"Doing call to $url")
+      ndlaClient.fetchRawWithForwardedAuth(
+        Http(url)
+          .put(write(data))
+          .timeout(taxonomyTimeout, taxonomyTimeout)
+          .header("content-type", "application/json")
+          .params(params)
+      ) match {
+        case Success(_)  => Success(data)
+        case Failure(ex) => Failure(ex)
       }
     }
   }
