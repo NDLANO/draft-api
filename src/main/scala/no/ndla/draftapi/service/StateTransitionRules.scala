@@ -36,11 +36,9 @@ trait StateTransitionRules {
     }
 
     private def unpublishArticle(article: domain.Article): Try[domain.Article] =
-      // TODO: Maybe remove taxonomy?
       articleApiClient.unpublishArticle(article)
 
     private def removeFromSearch(article: domain.Article): Try[domain.Article] =
-      // TODO: Maybe remove taxonomy?
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
     import StateTransition._

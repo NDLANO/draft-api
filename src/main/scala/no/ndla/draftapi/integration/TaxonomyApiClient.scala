@@ -30,6 +30,7 @@ trait TaxonomyApiClient {
   class TaxonomyApiClient extends LazyLogging {
     private val TaxonomyApiEndpoint = s"$Domain/taxonomy/v1"
     private val taxonomyTimeout = 20 * 1000 // 20 Seconds
+    private val timeoutDur = Duration(taxonomyTimeout, "seconds")
     implicit val formats: DefaultFormats.type = DefaultFormats
 
     def queryResource(articleId: Long): Try[List[Resource]] = {
@@ -51,7 +52,7 @@ trait TaxonomyApiClient {
         case Success((res, top)) =>
           Language.findByLanguageOrBestEffort(article.title, Language.DefaultLanguage) match {
             case Some(defaultTitle) =>
-              // Threadpool with size according to topics and resources
+              // Threadpool with size according to number of topics and resources
               val threadPoolSize = math.max(3, res.size * 2 + top.size * 2)
               implicit val ec: ExecutionContextExecutor =
                 ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
@@ -77,66 +78,59 @@ trait TaxonomyApiClient {
                 case (Failure(ex), _)         => Failure(ex)
                 case (_, Failure(ex))         => Failure(ex)
               }
-            case None => Failure(???) // TODO: No title? It should not have passed validation
+            case None => Failure(new RuntimeException("This is a bug, no name was found for published article."))
           }
         case Failure(ex) => Failure(ex)
       }
     }
 
-    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, article: Article)(
+    private def updateResourceTitleAndTranslations(res: Resource, defaultTitle: ArticleTitle, article: Article)(
         implicit ec: ExecutionContext) = {
-      val topicUpdateResult = Try(
-        Await.result(updateTopic(top.copy(name = defaultTitle.title)), Duration(10, "seconds"))).flatten
-      val translationUpdateResult = updateTopicTranslations(top.id, article.title)
+      val resourceResult = Try(Await.result(updateResource(res.copy(name = defaultTitle.title)), timeoutDur)).flatten
+      val translationResult = updateResourceTranslations(res.id, article.title)
 
-      (topicUpdateResult, translationUpdateResult) match {
+      (resourceResult, translationResult) match {
         case (Success(s1), Success(_)) => Success(s1)
         case (Failure(ex), _)          => Failure(ex)
         case (_, Failure(ex))          => Failure(ex)
       }
+    }
+
+    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, article: Article)(
+        implicit ec: ExecutionContext) = {
+      val topicResult = Try(Await.result(updateTopic(top.copy(name = defaultTitle.title)), timeoutDur)).flatten
+      val translationResult = updateTopicTranslations(top.id, article.title)
+
+      (topicResult, translationResult) match {
+        case (Success(s1), Success(_)) => Success(s1)
+        case (Failure(ex), _)          => Failure(ex)
+        case (_, Failure(ex))          => Failure(ex)
+      }
+    }
+
+    private def updateResourceTranslations(resId: String, titles: Seq[ArticleTitle])(implicit ec: ExecutionContext) = {
+      val fut = Future.sequence(titles.map(t => updateResourceTranslation(resId, t.language, t.title)))
+      Try(Await.result(fut, timeoutDur)).flatMap(translations => Traverse[List].sequence(translations.toList))
     }
 
     private def updateTopicTranslations(topicId: String, titles: Seq[ArticleTitle])(implicit ec: ExecutionContext) = {
       val fut = Future.sequence(titles.map(t => updateTopicTranslation(topicId, t.language, t.title)))
-      Try(Await.result(fut, Duration(10, "seconds"))).flatMap { translations =>
-        Traverse[List].sequence(translations.toList)
-      }
+      Try(Await.result(fut, timeoutDur)).flatMap(translations => Traverse[List].sequence(translations.toList))
     }
 
-    private def updateResourceTitleAndTranslations(res: Resource, defaultTitle: ArticleTitle, article: Article)(
-        implicit ec: ExecutionContext) = {
-      val resourceUpdateResult =
-        Try(Await.result(updateResource(res.copy(name = defaultTitle.title)), Duration(10, "seconds"))).flatten
-
-      val translationUpdateResult = updateResourceTranslations(res.id, article.title)
-
-      (resourceUpdateResult, translationUpdateResult) match {
-        case (Success(s1), Success(_)) => Success(s1)
-        case (Failure(ex), _)          => Failure(ex)
-        case (_, Failure(ex))          => Failure(ex)
-      }
-    }
-
-    private def updateResourceTranslations(resourceId: String, titles: Seq[ArticleTitle])(
-        implicit ec: ExecutionContext) = {
-      val fut = Future.sequence(titles.map(t => updateResourceTranslation(resourceId, t.language, t.title)))
-      Try(Await.result(fut, Duration(10, "seconds"))).flatMap { translations =>
-        Traverse[List].sequence(translations.toList)
-      }
-    }
-
-    private def updateResourceTranslation(resourceId: String, lang: String, name: String)(
+    private[integration] def updateResourceTranslation(resourceId: String, lang: String, name: String)(
         implicit ec: ExecutionContext) =
       putRaw(s"$TaxonomyApiEndpoint/resources/$resourceId/translations/$lang", Translation(name))
 
-    private def updateTopicTranslation(topicId: String, lang: String, name: String)(implicit ec: ExecutionContext) =
+    private[integration] def updateTopicTranslation(topicId: String, lang: String, name: String)(
+        implicit ec: ExecutionContext) =
       putRaw(s"$TaxonomyApiEndpoint/topics/$topicId/translations/$lang", Translation(name))
 
-    private def updateResource(resource: Resource)(implicit formats: Formats, ec: ExecutionContext) = {
+    private[integration] def updateResource(resource: Resource)(implicit formats: Formats, ec: ExecutionContext) = {
       putRaw[Resource](s"$TaxonomyApiEndpoint/resources/${resource.id}", resource)
     }
 
-    private def updateTopic(topic: Topic)(implicit formats: Formats, ec: ExecutionContext) = {
+    private[integration] def updateTopic(topic: Topic)(implicit formats: Formats, ec: ExecutionContext) = {
       putRaw[Topic](s"$TaxonomyApiEndpoint/topics/${topic.id}", topic)
     }
 
@@ -144,7 +138,7 @@ trait TaxonomyApiClient {
       ndlaClient.fetchWithForwardedAuth[A](Http(url).timeout(taxonomyTimeout, taxonomyTimeout).params(params))
     }
 
-    private def putRaw[B <: AnyRef](url: String, data: B, params: (String, String)*)(
+    private[integration] def putRaw[B <: AnyRef](url: String, data: B, params: (String, String)*)(
         implicit formats: org.json4s.Formats,
         ec: ExecutionContext): Future[Try[B]] = {
       Future {
