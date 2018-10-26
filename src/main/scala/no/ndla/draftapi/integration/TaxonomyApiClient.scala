@@ -30,14 +30,6 @@ trait TaxonomyApiClient {
     private val taxonomyTimeout = 20 * 1000 // 20 Seconds
     implicit val formats: DefaultFormats.type = DefaultFormats
 
-    def queryResource(articleId: Long): Try[List[Resource]] = {
-      get[List[Resource]](s"$TaxonomyApiEndpoint/queries/resources", "contentURI" -> s"urn:article:$articleId")
-    }
-
-    def queryTopic(articleId: Long): Try[List[Topic]] = {
-      get[List[Topic]](s"$TaxonomyApiEndpoint/queries/topics", "contentURI" -> s"urn:article:$articleId")
-    }
-
     def updateTaxonomyIfExists(articleId: Long, article: Article): Try[Long] = {
       // Get places to update names
       val resourcesAndTopics = for {
@@ -48,10 +40,17 @@ trait TaxonomyApiClient {
       resourcesAndTopics match {
         case Success((res, top)) =>
           Language.findByLanguageOrBestEffort(article.title, Language.DefaultLanguage) match {
-            case Some(defaultTitle) =>
+            case Some(title) =>
+              val upRecsourceTrans =
+                updateTranslations(_: String, _: Seq[ArticleTitle], updateResourceTranslation)
+              val upTopicTrans =
+                updateTranslations(_: String, _: Seq[ArticleTitle], updateTopicTranslation)
+
               // Do the updates
-              val resources = res.map(r => updateResourceTitleAndTranslations(r, defaultTitle, article))
-              val topics = top.map(t => updateTopicTitleAndTranslations(t, defaultTitle, article))
+              val resources =
+                res.map(r => updateTitleAndTranslations(r, title, article, updateResource, upRecsourceTrans))
+              val topics =
+                top.map(t => updateTitleAndTranslations(t, title, article, updateTopic, upTopicTrans))
 
               // Log errors
               resources
@@ -83,9 +82,14 @@ trait TaxonomyApiClient {
       }
     }
 
-    private def updateResourceTitleAndTranslations(res: Resource, defaultTitle: ArticleTitle, article: Article) = {
-      val resourceResult = updateResource(res.copy(name = defaultTitle.title))
-      val translationResult = updateResourceTranslations(res.id, article.title)
+    private def updateTitleAndTranslations[T <: Taxonomy[T]](
+        tax: T,
+        defaultTitle: ArticleTitle,
+        article: Article,
+        updateFunc: T => Try[T],
+        updateTranslationsFunc: (String, Seq[ArticleTitle]) => Try[List[Translation]]) = {
+      val resourceResult = updateFunc(tax.withName(defaultTitle.title))
+      val translationResult = updateTranslationsFunc(tax.id, article.title)
 
       (resourceResult, translationResult) match {
         case (Success(s1), Success(_)) => Success(s1)
@@ -94,24 +98,10 @@ trait TaxonomyApiClient {
       }
     }
 
-    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, article: Article) = {
-      val topicResult = updateTopic(top.copy(name = defaultTitle.title))
-      val translationResult = updateTopicTranslations(top.id, article.title)
-
-      (topicResult, translationResult) match {
-        case (Success(s1), Success(_)) => Success(s1)
-        case (Failure(ex), _)          => Failure(ex)
-        case (_, Failure(ex))          => Failure(ex)
-      }
-    }
-
-    private def updateResourceTranslations(resId: String, titles: Seq[ArticleTitle]) = {
-      val tries = titles.map(t => updateResourceTranslation(resId, t.language, t.title))
-      Traverse[List].sequence(tries.toList)
-    }
-
-    private def updateTopicTranslations(topicId: String, titles: Seq[ArticleTitle]) = {
-      val tries = titles.map(t => updateTopicTranslation(topicId, t.language, t.title))
+    private def updateTranslations(id: String,
+                                   titles: Seq[ArticleTitle],
+                                   updateTranslationFunc: (String, String, String) => Try[Translation]) = {
+      val tries = titles.map(t => updateTranslationFunc(id, t.language, t.title))
       Traverse[List].sequence(tries.toList)
     }
 
@@ -121,17 +111,20 @@ trait TaxonomyApiClient {
     private[integration] def updateTopicTranslation(topicId: String, lang: String, name: String) =
       putRaw(s"$TaxonomyApiEndpoint/topics/$topicId/translations/$lang", Translation(name))
 
-    private[integration] def updateResource(resource: Resource)(implicit formats: Formats) = {
+    private[integration] def updateResource(resource: Resource)(implicit formats: Formats) =
       putRaw[Resource](s"$TaxonomyApiEndpoint/resources/${resource.id}", resource)
-    }
 
-    private[integration] def updateTopic(topic: Topic)(implicit formats: Formats) = {
+    private[integration] def updateTopic(topic: Topic)(implicit formats: Formats) =
       putRaw[Topic](s"$TaxonomyApiEndpoint/topics/${topic.id}", topic)
-    }
 
-    private def get[A](url: String, params: (String, String)*)(implicit mf: Manifest[A]): Try[A] = {
+    private def get[A](url: String, params: (String, String)*)(implicit mf: Manifest[A]): Try[A] =
       ndlaClient.fetchWithForwardedAuth[A](Http(url).timeout(taxonomyTimeout, taxonomyTimeout).params(params))
-    }
+
+    def queryResource(articleId: Long): Try[List[Resource]] =
+      get[List[Resource]](s"$TaxonomyApiEndpoint/queries/resources", "contentURI" -> s"urn:article:$articleId")
+
+    def queryTopic(articleId: Long): Try[List[Topic]] =
+      get[List[Topic]](s"$TaxonomyApiEndpoint/queries/topics", "contentURI" -> s"urn:article:$articleId")
 
     private[integration] def putRaw[B <: AnyRef](url: String, data: B, params: (String, String)*)(
         implicit formats: org.json4s.Formats): Try[B] = {
@@ -150,8 +143,17 @@ trait TaxonomyApiClient {
   }
 }
 
-sealed trait Taxonomy { val id: String; val name: String; val contentUri: Option[String] }
+trait Taxonomy[E <: Taxonomy[E]] {
+  self: E =>
+  val id: String
+  def name: String
+  def withName(name: String): E
+}
 case class UpdateResource(contentUri: String, name: String)
-case class Resource(id: String, name: String, contentUri: Option[String]) extends Taxonomy
-case class Topic(id: String, name: String, contentUri: Option[String]) extends Taxonomy
+case class Resource(id: String, name: String, contentUri: Option[String]) extends Taxonomy[Resource] {
+  def withName(name: String): Resource = this.copy(name = name)
+}
+case class Topic(id: String, name: String, contentUri: Option[String]) extends Taxonomy[Topic] {
+  def withName(name: String): Topic = this.copy(name = name)
+}
 case class Translation(name: String)
