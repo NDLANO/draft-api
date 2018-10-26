@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.indexes.IndexDefinition
+import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.mappings.{FieldDefinition, MappingDefinition}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi._
@@ -31,7 +31,7 @@ trait IndexService {
     val repository: Repository[D]
 
     def getMapping: MappingDefinition
-    def createIndexRequest(domainModel: D, indexName: String): IndexDefinition
+    def createIndexRequest(domainModel: D, indexName: String): IndexRequest
 
     def indexDocument(imported: D): Try[D] = {
       for {
