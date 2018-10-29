@@ -6,12 +6,10 @@
  */
 
 package no.ndla.draftapi.integration
-import java.util.concurrent.Executors
 
 import cats.Traverse
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.network.{AuthUser, NdlaClient}
-import no.ndla.network.model.HttpRequestException
 import no.ndla.draftapi.DraftApiProperties.Domain
 import no.ndla.draftapi.model.domain.{Article, ArticleTitle, Language}
 import org.json4s.{DefaultFormats, Formats}
@@ -31,65 +29,45 @@ trait TaxonomyApiClient {
     implicit val formats: DefaultFormats.type = DefaultFormats
 
     def updateTaxonomyIfExists(articleId: Long, article: Article): Try[Long] = {
-      // Get places to update names
-      val resourcesAndTopics = for {
+      for {
         resources <- queryResource(articleId)
+        _ <- updateTaxonomy[Resource](resources, article.title, updateResourceTitleAndTranslations)
         topics <- queryTopic(articleId)
-      } yield (resources, topics)
+        _ <- updateTaxonomy[Topic](topics, article.title, updateTopicTitleAndTranslations)
+      } yield articleId
+    }
 
-      resourcesAndTopics match {
-        case Success((res, top)) =>
-          Language.findByLanguageOrBestEffort(article.title, Language.DefaultLanguage) match {
-            case Some(title) =>
-              val upRecsourceTrans =
-                updateTranslations(_: String, _: Seq[ArticleTitle], updateResourceTranslation)
-              val upTopicTrans =
-                updateTranslations(_: String, _: Seq[ArticleTitle], updateTopicTranslation)
-
-              // Do the updates
-              val resources =
-                res.map(r => updateTitleAndTranslations(r, title, article, updateResource, upRecsourceTrans))
-              val topics =
-                top.map(t => updateTitleAndTranslations(t, title, article, updateTopic, upTopicTrans))
-
-              // Log errors
-              resources
-                .collect { case Failure(ex) => ex }
-                .foreach(ex => logger.warn(s"Taxonomy update failed with: ${ex.getMessage}"))
-              topics
-                .collect { case Failure(ex) => ex }
-                .foreach(ex => logger.warn(s"Taxonomy update failed with: ${ex.getMessage}"))
-
-              // Return an error if there was one
-              val resourceResult = resources.collectFirst { case Failure(ex) => ex } match {
-                case Some(ex) => Failure(ex)
-                case None     => Success(articleId)
-              }
-
-              val topicResult = topics.collectFirst { case Failure(ex) => ex } match {
-                case Some(ex) => Failure(ex)
-                case None     => Success(articleId)
-              }
-
-              (resourceResult, topicResult) match {
-                case (Success(r), Success(t)) => Success(r)
-                case (Failure(ex), _)         => Failure(ex)
-                case (_, Failure(ex))         => Failure(ex)
-              }
-            case None => Failure(new RuntimeException("This is a bug, no name was found for published article."))
-          }
-        case Failure(ex) => Failure(ex)
+    /**
+      * Updates the taxonomy for an article
+      *
+      * @param resource Resources or Topics of article
+      * @param titles Titles that are to be updated as translations
+      * @param updateFunc Function that updates taxonomy and translations ([[updateResourceTitleAndTranslations]] or [[updateTopicTitleAndTranslations]])
+      * @tparam T Taxonomy resource type ([[Resource]] or [[Topic]])
+      * @return List of Resources or Topics that were updated if none failed.
+      */
+    private def updateTaxonomy[T](resource: Seq[T],
+                                  titles: Seq[ArticleTitle],
+                                  updateFunc: (T, ArticleTitle, Seq[ArticleTitle]) => Try[T]): Try[List[T]] = {
+      Language.findByLanguageOrBestEffort(titles, Language.DefaultLanguage) match {
+        case Some(title) =>
+          val updated = resource.map(updateFunc(_, title, titles))
+          updated
+            .collect { case Failure(ex) => ex }
+            .foreach(ex => logger.warn(s"Taxonomy update failed with: ${ex.getMessage}"))
+          Traverse[List].sequence(updated.toList)
+        case None => Failure(new RuntimeException("This is a bug, no name was found for published article."))
       }
     }
 
     private def updateTitleAndTranslations[T <: Taxonomy[T]](
-        tax: T,
+        res: T,
         defaultTitle: ArticleTitle,
-        article: Article,
+        titles: Seq[ArticleTitle],
         updateFunc: T => Try[T],
-        updateTranslationsFunc: (String, Seq[ArticleTitle]) => Try[List[Translation]]) = {
-      val resourceResult = updateFunc(tax.withName(defaultTitle.title))
-      val translationResult = updateTranslationsFunc(tax.id, article.title)
+        updateTranslationsFunc: Seq[ArticleTitle] => Try[List[Translation]]) = {
+      val resourceResult = updateFunc(res.withName(defaultTitle.title))
+      val translationResult = updateTranslationsFunc(titles)
 
       (resourceResult, translationResult) match {
         case (Success(s1), Success(_)) => Success(s1)
@@ -103,6 +81,18 @@ trait TaxonomyApiClient {
                                    updateTranslationFunc: (String, String, String) => Try[Translation]) = {
       val tries = titles.map(t => updateTranslationFunc(id, t.language, t.title))
       Traverse[List].sequence(tries.toList)
+    }
+
+    private def updateResourceTitleAndTranslations(res: Resource,
+                                                   defaultTitle: ArticleTitle,
+                                                   titles: Seq[ArticleTitle]) = {
+      val updateTranslationsFunc = updateTranslations(res.id, _: Seq[ArticleTitle], updateResourceTranslation)
+      updateTitleAndTranslations(res, defaultTitle, titles, updateResource, updateTranslationsFunc)
+    }
+
+    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, titles: Seq[ArticleTitle]) = {
+      val updateTranslationsFunc = updateTranslations(top.id, _: Seq[ArticleTitle], updateTopicTranslation)
+      updateTitleAndTranslations(top, defaultTitle, titles, updateTopic, updateTranslationsFunc)
     }
 
     private[integration] def updateResourceTranslation(resourceId: String, lang: String, name: String) =
@@ -149,7 +139,6 @@ trait Taxonomy[E <: Taxonomy[E]] {
   def name: String
   def withName(name: String): E
 }
-case class UpdateResource(contentUri: String, name: String)
 case class Resource(id: String, name: String, contentUri: Option[String]) extends Taxonomy[Resource] {
   def withName(name: String): Resource = this.copy(name = name)
 }
