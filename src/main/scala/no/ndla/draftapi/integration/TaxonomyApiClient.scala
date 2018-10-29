@@ -134,7 +134,6 @@ trait TaxonomyApiClient {
 }
 
 trait Taxonomy[E <: Taxonomy[E]] {
-  self: E =>
   val id: String
   def name: String
   def withName(name: String): E
