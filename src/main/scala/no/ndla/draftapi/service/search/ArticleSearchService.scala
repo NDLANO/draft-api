@@ -9,14 +9,14 @@ package no.ndla.draftapi.service.search
 
 import java.util.concurrent.Executors
 
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -85,7 +85,7 @@ trait ArticleSearchService {
                       sort: Sort.Value,
                       page: Int,
                       pageSize: Int,
-                      queryBuilder: BoolQueryDefinition,
+                      queryBuilder: BoolQuery,
                       articleTypes: Seq[String],
                       fallback: Boolean): Try[api.SearchResult] = {
 

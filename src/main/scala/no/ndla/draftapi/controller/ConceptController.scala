@@ -89,7 +89,7 @@ trait ConceptController {
     val getAllConcepts =
       (apiOperation[ConceptSearchResult]("getAllConcepts")
         summary "Show all concepts"
-        notes "Shows all concepts. You can search it too."
+        description "Shows all concepts. You can search it too."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[String]](query),
@@ -119,7 +119,7 @@ trait ConceptController {
     val getAllConceptsPost =
       (apiOperation[ConceptSearchResult]("searchConcepts")
         summary "Show all concepts"
-        notes "Shows all concepts. You can search it too."
+        description "Shows all concepts. You can search it too."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           bodyParam[ConceptSearchParams],
@@ -145,7 +145,7 @@ trait ConceptController {
     val getConceptById =
       (apiOperation[String]("getConceptById")
         summary "Show concept with a specified id"
-        notes "Shows the concept for the specified id."
+        description "Shows the concept for the specified id."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[String]](language),
@@ -167,7 +167,7 @@ trait ConceptController {
     val newConcept =
       (apiOperation[Concept]("newConceptById")
         summary "Create new concept"
-        notes "Create new concept"
+        description "Create new concept"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           bodyParam[NewConcept]
@@ -188,7 +188,7 @@ trait ConceptController {
     val updateConcept =
       (apiOperation[Concept]("updateConceptById")
         summary "Update a concept"
-        notes "Update a concept"
+        description "Update a concept"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           bodyParam[NewConcept]
@@ -210,7 +210,7 @@ trait ConceptController {
     val getInternalIdByExternalId =
       (apiOperation[ContentId]("getInternalIdByExternalId")
         summary "Get internal id of concept for a specified ndla_node_id"
-        notes "Get internal id of concept for a specified ndla_node_id"
+        description "Get internal id of concept for a specified ndla_node_id"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asPathParam[Long](deprecatedNodeId)

@@ -85,7 +85,7 @@ trait AgreementController {
     val getAllAgreements =
       (apiOperation[AgreementSearchResult]("getAllAgreements")
         summary "Show all agreements"
-        notes "Shows all agreements. You can search too."
+        description "Shows all agreements. You can search too."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[String]](query),
@@ -113,7 +113,7 @@ trait AgreementController {
     val getAgreementById =
       (apiOperation[Agreement]("getAgreementById")
         summary "Show agreement with a specified Id"
-        notes "Shows the agreement for the specified id."
+        description "Shows the agreement for the specified id."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
@@ -133,7 +133,7 @@ trait AgreementController {
     val newAgreement =
       (apiOperation[Agreement]("newAgreement")
         summary "Create a new agreement"
-        notes "Creates a new agreement"
+        description "Creates a new agreement"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           bodyParam[NewAgreement]
@@ -157,7 +157,7 @@ trait AgreementController {
     val updateAgreement =
       (apiOperation[Agreement]("updateAgreement")
         summary "Update an existing agreement"
-        notes "Update an existing agreement"
+        description "Update an existing agreement"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asPathParam[Long](agreementId),

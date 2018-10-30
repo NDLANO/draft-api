@@ -19,7 +19,7 @@ import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import no.ndla.mapping.License.{CC_BY}
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 
 import scala.util.{Failure, Success}
 

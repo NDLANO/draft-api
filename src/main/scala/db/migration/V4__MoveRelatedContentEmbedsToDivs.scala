@@ -7,9 +7,7 @@
 
 package db.migration
 
-import java.sql.Connection
-
-import org.flywaydb.core.api.migration.jdbc.JdbcMigration
+import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s.Extraction.decompose
 import org.json4s.JsonAST.JArray
 import org.json4s.native.JsonMethods.{compact, parse, render}
@@ -22,12 +20,12 @@ import scalikejdbc.{DB, DBSession, _}
 
 import scala.collection.JavaConverters._
 
-class V4__MoveRelatedContentEmbedsToDivs extends JdbcMigration {
+class V4__MoveRelatedContentEmbedsToDivs extends BaseJavaMigration {
 
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
 
-  override def migrate(connection: Connection): Unit = {
-    val db = DB(connection)
+  override def migrate(context: Context): Unit = {
+    val db = DB(context.getConnection)
     db.autoClose(false)
 
     db.withinTx { implicit session =>

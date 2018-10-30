@@ -8,6 +8,7 @@
 package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
+import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
@@ -16,7 +17,6 @@ import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.network.NdlaClient
-import org.postgresql.ds.PGPoolingDataSource
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 
 object ComponentRegistry
@@ -24,6 +24,7 @@ object ComponentRegistry
     with InternController
     with ConverterService
     with StateTransitionRules
+    with TaxonomyApiClient
     with ConceptController
     with ConceptSearchService
     with ConceptIndexService
@@ -53,17 +54,9 @@ object ComponentRegistry
 
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 
-  implicit val swagger = new DraftSwagger
+  implicit val swagger: DraftSwagger = new DraftSwagger
 
-  lazy val dataSource = new PGPoolingDataSource
-  dataSource.setUser(DraftApiProperties.MetaUserName)
-  dataSource.setPassword(DraftApiProperties.MetaPassword)
-  dataSource.setDatabaseName(DraftApiProperties.MetaResource)
-  dataSource.setServerName(DraftApiProperties.MetaServer)
-  dataSource.setPortNumber(DraftApiProperties.MetaPort)
-  dataSource.setInitialConnections(DraftApiProperties.MetaInitialConnections)
-  dataSource.setMaxConnections(DraftApiProperties.MetaMaxConnections)
-  dataSource.setCurrentSchema(DraftApiProperties.MetaSchema)
+  override val dataSource: HikariDataSource = DataSource.getHikariDataSource
   connectToDatabase()
 
   lazy val internController = new InternController
@@ -99,5 +92,6 @@ object ComponentRegistry
   lazy val clock = new SystemClock
 
   lazy val articleApiClient = new ArticleApiClient
+  lazy val taxonomyApiClient = new TaxonomyApiClient
   lazy val user = new User
 }

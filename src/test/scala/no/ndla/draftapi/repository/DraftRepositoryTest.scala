@@ -45,7 +45,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   override def beforeAll(): Unit = {
-    val datasource = getDataSource
+    val datasource = testDataSource
     if (serverIsListening) {
       DBMigrator.migrate(datasource)
       ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
@@ -92,6 +92,15 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
     repository.delete(id1)
     repository.delete(id2)
+  }
+
+  test("ExternalIds should not contains NULLs") {
+    assume(databaseIsAvailable, "Database is unavailable")
+    val art1 = sampleArticle.copy(id = Some(10))
+    repository.insertWithExternalIds(art1, null, List.empty, None)
+    val result1 = repository.getExternalIdsFromId(10)
+
+    result1 should be(List.empty)
   }
 
 }

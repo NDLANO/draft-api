@@ -17,9 +17,7 @@ import no.ndla.draftapi.model.api.{AgreementSearchResult, ResultWindowTooLargeEx
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.service.ConverterService
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import org.elasticsearch.ElasticsearchException
-import org.elasticsearch.index.IndexNotFoundException
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -70,7 +68,7 @@ trait AgreementSearchService {
                       sort: Sort.Value,
                       page: Int,
                       pageSize: Int,
-                      queryBuilder: BoolQueryDefinition): Try[AgreementSearchResult] = {
+                      queryBuilder: BoolQuery): Try[AgreementSearchResult] = {
       val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
 
       val filters = List(idFilter)
