@@ -10,7 +10,7 @@ package no.ndla.draftapi.service
 import cats.effect.IO
 import io.lemonlabs.uri.Uri
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, ValidationException, NotFoundException}
+import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.auth.UserInfo.{AdminRoles, SetPublishRoles}
 import no.ndla.draftapi.integration.{
@@ -24,6 +24,7 @@ import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.search.ArticleIndexService
+import no.ndla.validation.{ValidationException, ValidationMessage}
 
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
@@ -154,8 +155,10 @@ trait StateTransitionRules {
       if (pathsUsingArticle.isEmpty)
         articleApiClient.unpublishArticle(article)
       else
-        Failure(ValidationException(
-          s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article"))
+        Failure(
+          new ValidationException(
+            s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article",
+            Seq.empty))
     }
 
     private def removeFromSearch(article: domain.Article): Try[domain.Article] =
