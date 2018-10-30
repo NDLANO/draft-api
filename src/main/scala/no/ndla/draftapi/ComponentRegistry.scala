@@ -24,6 +24,7 @@ object ComponentRegistry
     with InternController
     with ConverterService
     with StateTransitionRules
+    with LearningpathApiClient
     with TaxonomyApiClient
     with ConceptController
     with ConceptSearchService
@@ -93,5 +94,6 @@ object ComponentRegistry
 
   lazy val articleApiClient = new ArticleApiClient
   lazy val taxonomyApiClient = new TaxonomyApiClient
+  lazy val learningpathApiClient = new LearningpathApiClient
   lazy val user = new User
 }

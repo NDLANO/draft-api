@@ -81,6 +81,7 @@ object DraftApiProperties extends LazyLogging {
   val CorrelationIdHeader = "X-Correlation-ID"
 
   val ArticleApiHost = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
+  val LearningpathApiHost = propOrElse("LEARNINGPATH_API_HOST", "learningpath-api.ndla-local")
 
   lazy val Domain = Domains.get(Environment)
 

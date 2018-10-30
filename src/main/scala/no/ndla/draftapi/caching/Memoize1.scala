@@ -11,7 +11,11 @@ import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
 import no.ndla.draftapi.DraftApiProperties.ApiClientsCacheAgeInMs
 
-class Memoize[R](maxCacheAgeMs: Long, f: () => R, autoRefreshCache: Boolean) extends (() => R) {
+private[caching] class Memoize[R](maxCacheAgeMs: Long,
+                                  f: () => R,
+                                  autoRefreshCache: Boolean,
+                                  shouldCacheResult: R => Boolean)
+    extends (() => Option[R]) {
   case class CacheValue(value: R, lastUpdated: Long) {
     def isExpired: Boolean = lastUpdated + maxCacheAgeMs <= System.currentTimeMillis()
   }
@@ -19,7 +23,10 @@ class Memoize[R](maxCacheAgeMs: Long, f: () => R, autoRefreshCache: Boolean) ext
   private[this] var cache: Option[CacheValue] = None
 
   private def renewCache = {
-    cache = Some(CacheValue(f(), System.currentTimeMillis()))
+    val result = f()
+
+    if (shouldCacheResult(result))
+      cache = Some(CacheValue(result, System.currentTimeMillis()))
   }
 
   if (autoRefreshCache) {
@@ -30,22 +37,26 @@ class Memoize[R](maxCacheAgeMs: Long, f: () => R, autoRefreshCache: Boolean) ext
     ex.scheduleAtFixedRate(task, 20, maxCacheAgeMs, TimeUnit.MILLISECONDS)
   }
 
-  def apply(): R = {
+  def apply(): Option[R] = {
     cache match {
-      case Some(cachedValue) if autoRefreshCache       => cachedValue.value
-      case Some(cachedValue) if !cachedValue.isExpired => cachedValue.value
+      case Some(cachedValue) if autoRefreshCache       => Some(cachedValue.value)
+      case Some(cachedValue) if !cachedValue.isExpired => Some(cachedValue.value)
       case _ =>
         renewCache
-        cache.get.value
+        cache.map(_.value)
     }
   }
 
 }
 
 object Memoize {
-  def apply[R](f: () => R) = new Memoize(ApiClientsCacheAgeInMs, f, autoRefreshCache = false)
+
+  def apply[R](f: () => R, shouldCacheResult: R => Boolean = (_: R) => true) =
+    new Memoize(ApiClientsCacheAgeInMs, f, autoRefreshCache = false, shouldCacheResult)
 }
 
 object MemoizeAutoRenew {
-  def apply[R](f: () => R) = new Memoize(ApiClientsCacheAgeInMs, f, autoRefreshCache = true)
+
+  def apply[R](f: () => R, shouldCacheResult: R => Boolean = (_: R) => true) =
+    new Memoize(ApiClientsCacheAgeInMs, f, autoRefreshCache = true, shouldCacheResult)
 }

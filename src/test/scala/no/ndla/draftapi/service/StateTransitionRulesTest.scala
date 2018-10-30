@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.service
 
+import no.ndla.draftapi.caching.Memoize
+import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -15,7 +17,7 @@ import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers._
 import scalikejdbc.DBSession
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
@@ -59,6 +61,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val expectedStatus = domain.Status(UNPUBLISHED, Set.empty)
     val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus)
 
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() => Success(Seq.empty)))
     when(articleApiClient.unpublishArticle(expectedArticle)).thenReturn(Success(expectedArticle))
 
     val (Success(res), sideEffect) =
@@ -99,6 +102,52 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val (Success(res), _) = doTransitionWithoutSideEffect(publishedArticle, UNPUBLISHED, TestData.userWIthAdminAccess)
 
     res.status should equal(expected)
+  }
+
+  test("unpublishArticle should fail if article is used in a learningstep") {
+    val articleId: Long = 7
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val learningSteps: Seq[LearningStep] =
+      Seq(LearningStep(Some(1), Seq(TestData.sampleEmbedUrl.copy(url = s"/article/$articleId"))))
+    val learningPath = TestData.sampleLearningPath.copy(learningsteps = learningSteps)
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() =>
+      Success(Seq(learningPath))))
+
+    val res = StateTransitionRules.unpublishArticle(article)
+    res.isFailure should be(true)
+  }
+
+  test("unpublishArticle should fail if article is used in a learningstep with a taxonomy-url") {
+    val articleId: Long = 7
+    val externalId = "169243"
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val learningSteps: Seq[LearningStep] =
+      Seq(
+        LearningStep(Some(1),
+                     Seq(TestData.sampleEmbedUrl.copy(
+                       url = s"/unknown/subjects/subject:15/topic:1:166611/topic:1:182229/resource:1:$externalId"))))
+    val learningPath = TestData.sampleLearningPath.copy(learningsteps = learningSteps)
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() =>
+      Success(Seq(learningPath))))
+    when(draftRepository.getIdFromExternalId(any[String])(any[DBSession])).thenReturn(Some(articleId.toLong))
+
+    val res = StateTransitionRules.unpublishArticle(article)
+    res.isFailure should be(true)
+  }
+
+  test("unpublishArticle should succeed if article is not used in a learningstep") {
+    val articleId = 7
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val learningSteps: Seq[LearningStep] =
+      Seq(LearningStep(Some(1), Seq(TestData.sampleEmbedUrl.copy(url = s"/article/1234"))))
+    val learningPath = TestData.sampleLearningPath.copy(learningsteps = learningSteps)
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() =>
+      Success(Seq(learningPath))))
+    when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
+
+    val res = StateTransitionRules.unpublishArticle(article)
+    res.isSuccess should be(true)
+    verify(articleApiClient, times(1)).unpublishArticle(article)
   }
 
 }

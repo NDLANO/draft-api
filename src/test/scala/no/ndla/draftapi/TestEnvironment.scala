@@ -44,6 +44,7 @@ trait TestEnvironment
     with MockitoSugar
     with ConverterService
     with StateTransitionRules
+    with LearningpathApiClient
     with NdlaClient
     with SearchConverterService
     with ReadService
@@ -82,6 +83,7 @@ trait TestEnvironment
   val ndlaClient = mock[NdlaClient]
   val searchConverterService = mock[SearchConverterService]
   val e4sClient = mock[NdlaE4sClient]
+  override val learningpathApiClient: LearningpathApiClient = mock[LearningpathApiClient]
 
   val clock = mock[SystemClock]
 

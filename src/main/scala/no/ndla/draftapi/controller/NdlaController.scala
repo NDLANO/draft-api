@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.ComponentRegistry
 import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
-import no.ndla.draftapi.auth.{User, UserInfo}
 import no.ndla.draftapi.model.api.{
   AccessDeniedException,
   ArticlePublishException,
