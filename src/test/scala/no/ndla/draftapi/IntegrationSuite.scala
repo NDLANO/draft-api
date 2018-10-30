@@ -7,13 +7,11 @@
 
 package no.ndla.draftapi
 
-import javax.sql.DataSource
-
+import com.zaxxer.hikari.HikariDataSource
 import no.ndla.network.secrets.PropertyKeys
-import org.postgresql.ds.PGPoolingDataSource
+import no.ndla.draftapi.integration.DataSource.getHikariDataSource
 
 abstract class IntegrationSuite extends UnitSuite {
-
   setEnv(PropertyKeys.MetaUserNameKey, "postgres")
   setEnvIfAbsent(PropertyKeys.MetaPasswordKey, "hemmelig")
   setEnv(PropertyKeys.MetaResourceKey, "postgres")
@@ -21,16 +19,5 @@ abstract class IntegrationSuite extends UnitSuite {
   setEnv(PropertyKeys.MetaPortKey, "5432")
   setEnv(PropertyKeys.MetaSchemaKey, "draftapitest")
 
-  lazy val getDataSource: DataSource = {
-    val datasource = new PGPoolingDataSource()
-    datasource.setUser(DraftApiProperties.MetaUserName)
-    datasource.setPassword(DraftApiProperties.MetaPassword)
-    datasource.setDatabaseName(DraftApiProperties.MetaResource)
-    datasource.setServerName(DraftApiProperties.MetaServer)
-    datasource.setPortNumber(DraftApiProperties.MetaPort)
-    datasource.setInitialConnections(DraftApiProperties.MetaInitialConnections)
-    datasource.setMaxConnections(DraftApiProperties.MetaMaxConnections)
-    datasource.setCurrentSchema(DraftApiProperties.MetaSchema)
-    datasource
-  }
+  val testDataSource: HikariDataSource = getHikariDataSource
 }

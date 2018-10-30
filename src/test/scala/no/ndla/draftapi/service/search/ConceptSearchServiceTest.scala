@@ -22,7 +22,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
   val tmpDir: Path = Files.createTempDirectory(this.getClass.getName)
   val localNodeSettings: Map[String, String] = LocalNode.requiredSettings(this.getClass.getName, tmpDir.toString)
   val localNode: InternalLocalNode = LocalNode(localNodeSettings)
-  override val e4sClient: NdlaE4sClient = NdlaE4sClient(localNode.http(true))
+  override val e4sClient: NdlaE4sClient = NdlaE4sClient(localNode.client(true))
 
   override val conceptSearchService = new ConceptSearchService
   override val conceptIndexService = new ConceptIndexService

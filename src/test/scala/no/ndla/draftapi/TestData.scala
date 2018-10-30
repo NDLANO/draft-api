@@ -389,6 +389,7 @@ object TestData {
                                                             None,
                                                             None))
   val statusWithAwaitingPublishing = Set(ArticleStatus.DRAFT, ArticleStatus.QUEUED_FOR_PUBLISHING)
+  val statusWithPublished = domain.Status(ArticleStatus.PUBLISHED, Set.empty)
   val statusWithDraft = domain.Status(ArticleStatus.DRAFT, Set.empty)
   val statusWithProposal = domain.Status(ArticleStatus.PROPOSAL, Set.empty)
   val statusWithUserTest = domain.Status(ArticleStatus.USER_TEST, Set.empty)

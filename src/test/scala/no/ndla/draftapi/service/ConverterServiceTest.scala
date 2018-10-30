@@ -19,7 +19,7 @@ import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import no.ndla.mapping.License.{CC_BY}
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 
 import scala.util.{Failure, Success}
 
@@ -146,11 +146,11 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(PROPOSAL.toString).length should be(4)
     res(USER_TEST.toString).length should be(4)
     res(AWAITING_QUALITY_ASSURANCE.toString).length should be(4)
-    res(QUALITY_ASSURED.toString).length should be(1)
-    res(QUEUED_FOR_PUBLISHING.toString).length should be(1)
-    res(PUBLISHED.toString).length should be(2)
-    res(AWAITING_UNPUBLISHING.toString).length should be(1)
-    res(UNPUBLISHED.toString).length should be(1)
+    res(QUALITY_ASSURED.toString).length should be(2)
+    res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
+    res(PUBLISHED.toString).length should be(3)
+    res(AWAITING_UNPUBLISHING.toString).length should be(2)
+    res(UNPUBLISHED.toString).length should be(2)
   }
 
   test("stateTransitionsToApi should return only certain entries if user only has set_to_publish") {
@@ -160,11 +160,11 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(PROPOSAL.toString).length should be(5)
     res(USER_TEST.toString).length should be(4)
     res(AWAITING_QUALITY_ASSURANCE.toString).length should be(4)
-    res(QUALITY_ASSURED.toString).length should be(2)
-    res(QUEUED_FOR_PUBLISHING.toString).length should be(1)
-    res(PUBLISHED.toString).length should be(2)
-    res(AWAITING_UNPUBLISHING.toString).length should be(1)
-    res(UNPUBLISHED.toString).length should be(1)
+    res(QUALITY_ASSURED.toString).length should be(3)
+    res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
+    res(PUBLISHED.toString).length should be(3)
+    res(AWAITING_UNPUBLISHING.toString).length should be(2)
+    res(UNPUBLISHED.toString).length should be(2)
   }
 
   test("stateTransitionsToApi should return all entries if user is admin") {
@@ -174,11 +174,11 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(PROPOSAL.toString).length should be(6)
     res(USER_TEST.toString).length should be(5)
     res(AWAITING_QUALITY_ASSURANCE.toString).length should be(5)
-    res(QUALITY_ASSURED.toString).length should be(3)
-    res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
-    res(PUBLISHED.toString).length should be(3)
-    res(AWAITING_UNPUBLISHING.toString).length should be(3)
-    res(UNPUBLISHED.toString).length should be(3)
+    res(QUALITY_ASSURED.toString).length should be(4)
+    res(QUEUED_FOR_PUBLISHING.toString).length should be(3)
+    res(PUBLISHED.toString).length should be(4)
+    res(AWAITING_UNPUBLISHING.toString).length should be(4)
+    res(UNPUBLISHED.toString).length should be(4)
   }
 
 }

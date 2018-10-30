@@ -12,7 +12,7 @@ import no.ndla.draftapi.{DraftSwagger, TestEnvironment, UnitSuite}
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.model.domain.{ArticleIds, ImportId}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatra.test.scalatest.ScalatraFunSuite
 

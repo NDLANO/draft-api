@@ -13,7 +13,7 @@ import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes}
 import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import scalikejdbc.DBSession
 
 import scala.util.Success

@@ -7,28 +7,25 @@
 
 package db.migration
 
-import java.sql.Connection
-
-import org.flywaydb.core.api.migration.jdbc.JdbcMigration
+import io.lemonlabs.uri.dsl._
+import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s.Extraction.decompose
 import org.json4s.JsonAST.JArray
 import org.json4s.native.JsonMethods.{compact, parse, render}
 import org.json4s.{DefaultFormats, JValue}
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
 import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
-import com.netaporter.uri.dsl._
 
 import scala.collection.JavaConverters._
 
-class V6__MoveToNewFileEmbedFormat extends JdbcMigration {
+class V6__MoveToNewFileEmbedFormat extends BaseJavaMigration {
 
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
 
-  override def migrate(connection: Connection): Unit = {
-    val db = DB(connection)
+  override def migrate(context: Context): Unit = {
+    val db = DB(context.getConnection)
     db.autoClose(false)
 
     db.withinTx { implicit session =>
@@ -81,7 +78,7 @@ class V6__MoveToNewFileEmbedFormat extends JdbcMigration {
         embedUrl match {
           case Some(url) =>
             // If data-url exists we remove it and add path
-            embed.attr("data-path", url.path)
+            embed.attr("data-path", url.path.toString)
             embed.removeAttr("data-url")
           case None =>
           // If data-url does not exists we assume we are on the new format and do nothing

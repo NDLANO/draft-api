@@ -8,8 +8,8 @@
 package no.ndla.draftapi.service.search
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.indexes.IndexDefinition
-import com.sksamuel.elastic4s.mappings.{MappingDefinition, NestedFieldDefinition}
+import com.sksamuel.elastic4s.indexes.IndexRequest
+import com.sksamuel.elastic4s.mappings.{MappingDefinition, NestedField}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Article
@@ -28,7 +28,7 @@ trait ArticleIndexService {
     override val searchIndex: String = DraftApiProperties.DraftSearchIndex
     override val repository: Repository[Article] = draftRepository
 
-    override def createIndexRequest(domainModel: Article, indexName: String): IndexDefinition = {
+    override def createIndexRequest(domainModel: Article, indexName: String): IndexRequest = {
       val source = write(searchConverterService.asSearchableArticle(domainModel))
       indexInto(indexName / documentType).doc(source).id(domainModel.id.get.toString)
     }

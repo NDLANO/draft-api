@@ -58,7 +58,7 @@ trait DraftController {
     val getTags =
       (apiOperation[ArticleTag]("getTags")
         summary "Retrieves a list of all previously used tags in articles"
-        notes "Retrieves a list of all previously used tags in articles"
+        description "Retrieves a list of all previously used tags in articles"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[Int]](size),
@@ -126,7 +126,7 @@ trait DraftController {
     val getAllArticles =
       (apiOperation[List[SearchResult]]("getAllArticles")
         summary "Show all articles"
-        notes "Shows all articles. You can search it too."
+        description "Shows all articles. You can search it too."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[String]](articleTypes),
@@ -158,7 +158,7 @@ trait DraftController {
     val getAllArticlesPost =
       (apiOperation[List[SearchResult]]("getAllArticlesPost")
         summary "Show all articles"
-        notes "Shows all articles. You can search it too."
+        description "Shows all articles. You can search it too."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[String]](language),
@@ -186,7 +186,7 @@ trait DraftController {
     val getArticleById =
       (apiOperation[Article]("getArticleById")
         summary "Show article with a specified Id"
-        notes "Shows the article for the specified id."
+        description "Shows the article for the specified id."
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asPathParam[Long](articleId),
@@ -210,7 +210,7 @@ trait DraftController {
     val getInternalIdByExternalId =
       (apiOperation[ContentId]("getInternalIdByExternalId")
         summary "Get internal id of article for a specified ndla_node_id"
-        notes "Get internal id of article for a specified ndla_node_id"
+        description "Get internal id of article for a specified ndla_node_id"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asPathParam[Long](deprecatedNodeId)
@@ -229,7 +229,7 @@ trait DraftController {
     val getLicenses =
       (apiOperation[List[License]]("getLicenses")
         summary "Show all valid licenses"
-        notes "Shows all valid licenses"
+        description "Shows all valid licenses"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asQueryParam[Option[String]](filter),
@@ -258,7 +258,7 @@ trait DraftController {
     val newArticle =
       (apiOperation[Article]("newArticle")
         summary "Create a new article"
-        notes "Creates a new article"
+        description "Creates a new article"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           bodyParam[NewArticle]
@@ -287,19 +287,20 @@ trait DraftController {
       }
     }
 
-    val updateArticle =
-      (apiOperation[Article]("updateArticle")
-        summary "Update an existing article"
-        notes "Update an existing article"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](articleId),
-          bodyParam[UpdatedArticle]
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
-
-    patch("/:article_id", operation(updateArticle)) {
+    patch(
+      "/:article_id",
+      operation(
+        apiOperation[Article]("updateArticle")
+          summary "Update an existing article"
+          description "Update an existing article"
+          parameters (
+            asHeaderParam[Option[String]](correlationId),
+            asPathParam[Long](articleId),
+            bodyParam[UpdatedArticle]
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response403, response404, response500))
+    ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val externalId = paramAsListOfString("externalId")
@@ -329,7 +330,7 @@ trait DraftController {
       operation(
         apiOperation[Article]("updateArticleStatus")
           summary "Update status of an article"
-          notes "Update status of an article"
+          description "Update status of an article"
           parameters (
             asPathParam[Long](articleId),
             asPathParam[String](statuss)
@@ -354,7 +355,7 @@ trait DraftController {
     val validateArticle =
       (apiOperation[ContentId]("validateArticle")
         summary "Validate an article"
-        notes "Validate an article"
+        description "Validate an article"
         parameters (
           asHeaderParam[Option[String]](correlationId),
           asPathParam[Long](articleId)
@@ -375,7 +376,7 @@ trait DraftController {
       operation(
         apiOperation[Map[String, List[String]]]("getStatusStateMachine")
           summary "Get status state machine"
-          notes "Get status state machine"
+          description "Get status state machine"
           authorizations "oauth2"
           responseMessages response500
       )

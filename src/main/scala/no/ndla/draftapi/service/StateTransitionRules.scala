@@ -8,12 +8,18 @@
 package no.ndla.draftapi.service
 
 import cats.effect.IO
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, ValidationException}
+import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, ValidationException, NotFoundException}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.auth.UserInfo.{AdminRoles, SetPublishRoles}
-import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningStep, LearningpathApiClient}
+import no.ndla.draftapi.integration.{
+  LearningPath,
+  LearningStep,
+  LearningpathApiClient,
+  ArticleApiClient,
+  TaxonomyApiClient
+}
 import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
@@ -23,9 +29,15 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 trait StateTransitionRules {
-  this: WriteService with DraftRepository with ArticleApiClient with LearningpathApiClient with ArticleIndexService =>
+  this: WriteService
+    with DraftRepository
+    with ArticleApiClient
+    with TaxonomyApiClient
+    with LearningpathApiClient
+    with ArticleIndexService =>
 
   object StateTransitionRules {
+
     import StateTransition._
 
     // format: off
@@ -51,17 +63,22 @@ trait StateTransitionRules {
       (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST),
       (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  require AdminRoles keepStates Set(IMPORTED, USER_TEST) withSideEffect publishArticle,
        QUALITY_ASSURED            -> DRAFT,
+       QUALITY_ASSURED            -> QUALITY_ASSURED,
       (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST) require SetPublishRoles keepCurrentOnTransition,
       (QUALITY_ASSURED            -> PUBLISHED)                  require AdminRoles keepStates Set(IMPORTED, USER_TEST) withSideEffect publishArticle keepCurrentOnTransition,
       (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
+       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING,
        QUEUED_FOR_PUBLISHING      -> DRAFT,
        PUBLISHED                  -> DRAFT,
+       PUBLISHED                  -> PROPOSAL,
       (PUBLISHED                  -> AWAITING_UNPUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) keepCurrentOnTransition,
       (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle,
        AWAITING_UNPUBLISHING      -> DRAFT,
+       AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING,
       (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
       (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle,
       (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
+       UNPUBLISHED                -> PROPOSAL,
        UNPUBLISHED                -> DRAFT,
       (UNPUBLISHED                -> ARCHIVED)                   keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect removeFromSearch
     )
@@ -100,8 +117,13 @@ trait StateTransitionRules {
     }
 
     private def publishArticle(article: domain.Article): Try[Article] = {
-      val externalIds = draftRepository.getExternalIdsFromId(article.id.get)
-      articleApiClient.updateArticle(article.id.get, article, externalIds)
+      article.id match {
+        case Some(id) =>
+          val externalIds = draftRepository.getExternalIdsFromId(id)
+          taxonomyApiClient.updateTaxonomyIfExists(id, article)
+          articleApiClient.updateArticle(id, article, externalIds)
+        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
+      }
     }
 
     private[this] def learningstepContainsArticleEmbed(articleId: Long, steps: LearningStep): Boolean = {
@@ -110,7 +132,7 @@ trait StateTransitionRules {
       val TaxonomyUrl = raw"""^.+/(?:resource|topic):[0-9]:([0-9]+)$$""".r
 
       urls.exists(url => {
-        url.pathRaw match {
+        url.path.toStringRaw match {
           case DirectArticleUrl(f)     => f == s"$articleId"
           case TaxonomyUrl(externalId) => draftRepository.getIdFromExternalId(externalId).contains(articleId)
           case _                       => false

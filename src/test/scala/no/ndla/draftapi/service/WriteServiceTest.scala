@@ -14,7 +14,7 @@ import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -42,22 +42,22 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.withId(articleId)).thenReturn(Option(article))
     when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
     when(articleIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
-      Try(invocation.getArgumentAt(0, article.getClass)))
+      Try(invocation.getArgument[Article](0)))
     when(agreementIndexService.indexDocument(any[Agreement])).thenAnswer((invocation: InvocationOnMock) =>
-      Try(invocation.getArgumentAt(0, agreement.getClass)))
+      Try(invocation.getArgument[Agreement](0)))
     when(readService.addUrlsOnEmbedResources(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
-      invocation.getArgumentAt(0, article.getClass))
+      invocation.getArgument[Article](0))
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
     when(clock.now()).thenReturn(today)
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession]))
       .thenAnswer((invocation: InvocationOnMock) => {
-        val arg = invocation.getArgumentAt(0, article.getClass)
+        val arg = invocation.getArgument[Article](0)
         Try(arg.copy(revision = Some(arg.revision.get + 1)))
       })
     when(agreementRepository.update(any[Agreement])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
-      val arg = invocation.getArgumentAt(0, agreement.getClass)
+      val arg = invocation.getArgument[Agreement](0)
       Try(arg)
     })
   }
@@ -289,7 +289,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result.status should equal(api.Status("PROPOSAL", Seq.empty))
   }
 
-  test("updateArticle should use current stauts or DRAFT if user-defined status is not set") {
+  test(
+    "updateArticle should set status to PROPOSAL if user-defined status is undefined and current status is PUBLISHEd") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
+
+    val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithPublished)
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    val Success(result) = service.updateArticle(existing.id.get,
+                                                updatedArticle,
+                                                List.empty,
+                                                Seq.empty,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None,
+                                                None)
+    result.status should equal(api.Status("PROPOSAL", Seq.empty))
+  }
+
+  test("updateArticle should use current status if user-defined status is not set") {
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
 
     {
@@ -345,7 +362,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   None,
                                                   None,
                                                   None)
-      result.status should equal(api.Status("DRAFT", Seq.empty))
+      result.status should equal(api.Status("QUEUED_FOR_PUBLISHING", Seq.empty))
     }
   }
 
@@ -357,7 +374,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenReturn(Success(article))
     when(articleApiClient.updateArticle(any[Long], any[domain.Article], any[List[String]]))
       .thenAnswer(a => {
-        Success(a.getArgumentAt(1, domain.Article.getClass))
+        Success(a.getArgument(1))
       })
   }
 

@@ -7,7 +7,6 @@
 
 package no.ndla.draftapi.integration
 
-import com.netaporter.uri.Uri
 import no.ndla.draftapi.DraftApiProperties.LearningpathApiHost
 import no.ndla.draftapi.caching.Memoize
 import no.ndla.draftapi.service.ConverterService

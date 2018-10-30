@@ -9,7 +9,7 @@ package no.ndla.draftapi.service.search
 
 import java.util.concurrent.Executors
 
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.Elastic4sClient
@@ -67,7 +67,7 @@ trait ConceptSearchService {
                       sort: Sort.Value,
                       page: Int,
                       pageSize: Int,
-                      queryBuilder: BoolQueryDefinition,
+                      queryBuilder: BoolQuery,
                       fallback: Boolean): Try[api.ConceptSearchResult] = {
       val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
 
