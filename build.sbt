@@ -25,6 +25,17 @@ appProperties := {
   prop
 }
 
+import com.itv.scalapact.plugin._
+val pactVersion = "2.3.3"
+
+val pactTestFramework = Seq(
+  "com.itv" %% "scalapact-circe-0-9" % pactVersion % "test",
+  "com.itv" %% "scalapact-http4s-0-18" % pactVersion,
+  "com.itv" %% "scalapact-scalatest" % pactVersion % "test",
+  "com.github.tomakehurst" % "wiremock" % "2.19.0" % "test",
+  "ru.yandex.qatools.embed" % "postgresql-embedded" % "2.9" % "test"
+)
+
 lazy val draft_api = (project in file("."))
   .settings(
     name := "draft-api",
@@ -33,7 +44,7 @@ lazy val draft_api = (project in file("."))
     scalaVersion := Scalaversion,
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.36",
       "ndla" %% "mapping" % "0.10",
       "ndla" %% "validation" % "0.28",
@@ -70,8 +81,8 @@ lazy val draft_api = (project in file("."))
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-core" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % FlywayVersion,
-      "io.lemonlabs" %% "scala-uri" % "1.3.1",
-      "org.typelevel" %% "cats-effect" % CatsEffectVersion
+      "io.lemonlabs" %% "scala-uri" % "1.3.1"
+      //"org.typelevel" %% "cats-effect" % CatsEffectVersion
     ),
   )
   .enablePlugins(DockerPlugin)

@@ -370,8 +370,8 @@ object TestData {
 
   val sampleDomainAgreement = Agreement(
     id = Some(1),
-    title = "tittledur",
-    content = "contentur",
+    title = "Title",
+    content = "Content",
     copyright = byNcSaCopyright,
     created = DateTime.now().minusDays(4).toDate,
     updated = DateTime.now().minusDays(2).toDate,
