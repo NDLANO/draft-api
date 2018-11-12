@@ -13,6 +13,7 @@ import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.validation.ValidationException
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers._
 import scalikejdbc.DBSession
@@ -146,6 +147,52 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
 
     val res = StateTransitionRules.unpublishArticle(article)
+    res.isSuccess should be(true)
+    verify(articleApiClient, times(1)).unpublishArticle(article)
+  }
+
+  test("checkIfArticleIsUsedInLearningStep should fail if article is used in a learningstep") {
+    val articleId: Long = 7
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val learningSteps: Seq[LearningStep] =
+      Seq(LearningStep(Some(1), Seq(TestData.sampleEmbedUrl.copy(url = s"/article/$articleId"))))
+    val learningPath = TestData.sampleLearningPath.copy(learningsteps = learningSteps)
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() =>
+      Success(Seq(learningPath))))
+
+    val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
+    res.getMessage should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
+  }
+
+  test("checkIfArticleIsUsedInLearningStep  should fail if article is used in a learningstep with a taxonomy-url") {
+    val articleId: Long = 7
+    val externalId = "169243"
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val learningSteps: Seq[LearningStep] =
+      Seq(
+        LearningStep(Some(1),
+                     Seq(TestData.sampleEmbedUrl.copy(
+                       url = s"/unknown/subjects/subject:15/topic:1:166611/topic:1:182229/resource:1:$externalId"))))
+    val learningPath = TestData.sampleLearningPath.copy(learningsteps = learningSteps)
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() =>
+      Success(Seq(learningPath))))
+    when(draftRepository.getIdFromExternalId(any[String])(any[DBSession])).thenReturn(Some(articleId.toLong))
+
+    val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
+    res.getMessage should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
+  }
+
+  test("checkIfArticleIsUsedInLearningStep  should succeed if article is not used in a learningstep") {
+    val articleId = 7
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val learningSteps: Seq[LearningStep] =
+      Seq(LearningStep(Some(1), Seq(TestData.sampleEmbedUrl.copy(url = s"/article/1234"))))
+    val learningPath = TestData.sampleLearningPath.copy(learningsteps = learningSteps)
+    when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() =>
+      Success(Seq(learningPath))))
+    when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
+
+    val res = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
     res.isSuccess should be(true)
     verify(articleApiClient, times(1)).unpublishArticle(article)
   }

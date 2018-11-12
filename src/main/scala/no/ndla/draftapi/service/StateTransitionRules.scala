@@ -14,10 +14,10 @@ import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundExcepti
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.auth.UserInfo.{AdminRoles, SetPublishRoles}
 import no.ndla.draftapi.integration.{
+  ArticleApiClient,
   LearningPath,
   LearningStep,
   LearningpathApiClient,
-  ArticleApiClient,
   TaxonomyApiClient
 }
 import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
@@ -72,10 +72,10 @@ trait StateTransitionRules {
        QUEUED_FOR_PUBLISHING      -> DRAFT,
        PUBLISHED                  -> DRAFT,
        PUBLISHED                  -> PROPOSAL,
-      (PUBLISHED                  -> AWAITING_UNPUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) keepCurrentOnTransition,
+      (PUBLISHED                  -> AWAITING_UNPUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
       (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle,
        AWAITING_UNPUBLISHING      -> DRAFT,
-       AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING,
+      (AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep,
       (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
       (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle,
       (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
@@ -150,15 +150,28 @@ trait StateTransitionRules {
       }
     }
 
-    private[service] def unpublishArticle(article: domain.Article): Try[domain.Article] = {
-      val pathsUsingArticle = learningPathsUsingArticle(article.id.getOrElse(1)).map(_.id.getOrElse(-1))
+    private def doIfArticleIsUnusedByLearningpath(articleId: Long)(
+        callback: => Try[domain.Article]): Try[domain.Article] = {
+      val pathsUsingArticle = learningPathsUsingArticle(articleId).map(_.id.getOrElse(-1))
       if (pathsUsingArticle.isEmpty)
-        articleApiClient.unpublishArticle(article)
+        callback
       else
         Failure(
           new ValidationException(
             s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article",
             Seq.empty))
+    }
+
+    private[service] def checkIfArticleIsUsedInLearningStep(article: domain.Article): Try[domain.Article] = {
+      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
+        Success(article)
+      }
+    }
+
+    private[service] def unpublishArticle(article: domain.Article): Try[domain.Article] = {
+      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
+        articleApiClient.unpublishArticle(article)
+      }
     }
 
     private def removeFromSearch(article: domain.Article): Try[domain.Article] =
