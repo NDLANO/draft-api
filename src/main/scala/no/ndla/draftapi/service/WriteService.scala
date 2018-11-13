@@ -205,7 +205,7 @@ trait WriteService {
     def deleteLanguage(id: Long, language: String): Try[Boolean] = {
       val someArticle = draftRepository.withId(id)
       val article = someArticle.get
-      article.content.size match {
+      article.title.size match {
         case 1 => Failure(NotFoundException("Only one language left"))
         case _ =>
           val title = article.title.filter(_.language != language)
