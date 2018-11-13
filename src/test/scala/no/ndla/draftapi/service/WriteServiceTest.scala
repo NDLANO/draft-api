@@ -372,7 +372,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("That delete article removes language from all languagefields") {
-    val article = TestData.sampleDomainArticle.copy(title = Seq(ArticleTitle("title", "nb"), ArticleTitle("title", "nn")))
+    val article =
+      TestData.sampleDomainArticle.copy(title = Seq(ArticleTitle("title", "nb"), ArticleTitle("title", "nn")))
     val articleCaptor: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
 
     when(draftRepository.withId(article.id.get)).thenReturn(Some(article))
