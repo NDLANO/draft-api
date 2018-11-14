@@ -203,30 +203,33 @@ trait WriteService {
     }
 
     def deleteLanguage(id: Long, language: String): Try[Boolean] = {
-      val someArticle = draftRepository.withId(id)
-      val article = someArticle.get
-      article.title.size match {
-        case 1 => Failure(NotFoundException("Only one language left"))
-        case _ =>
-          val title = article.title.filter(_.language != language)
-          val content = article.content.filter(_.language != language)
-          val articleIntroduction = article.introduction.filter(_.language != language)
-          val metaDescription = article.metaDescription.filter(_.language != language)
-          val tags = article.tags.filter(_.language != language)
-          val metaImage = article.metaImage.filter(_.language != language)
-          val visualElement = article.visualElement.filter(_.language != language)
-          val newArticle = article.copy(
-            title = title,
-            content = content,
-            introduction = articleIntroduction,
-            metaDescription = metaDescription,
-            tags = tags,
-            metaImage = metaImage,
-            visualElement = visualElement
-          )
-          draftRepository.update(newArticle)
-          Success(true)
+      draftRepository.withId(id) match {
+        case Some(article) =>
+          article.title.size match {
+            case 1 => Failure(OperationNotAllowedException("Only one language left"))
+            case _ =>
+              val title = article.title.filter(_.language != language)
+              val content = article.content.filter(_.language != language)
+              val articleIntroduction = article.introduction.filter(_.language != language)
+              val metaDescription = article.metaDescription.filter(_.language != language)
+              val tags = article.tags.filter(_.language != language)
+              val metaImage = article.metaImage.filter(_.language != language)
+              val visualElement = article.visualElement.filter(_.language != language)
+              val newArticle = article.copy(
+                title = title,
+                content = content,
+                introduction = articleIntroduction,
+                metaDescription = metaDescription,
+                tags = tags,
+                metaImage = metaImage,
+                visualElement = visualElement
+              )
+              draftRepository.update(newArticle)
+              Success(true)
+          }
+        case None => Failure(NotFoundException("Article does not exist"))
       }
+
     }
 
     def deleteArticle(id: Long): Try[api.ContentId] = {
