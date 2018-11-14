@@ -31,6 +31,7 @@ object JettyLauncher extends LazyLogging {
 
     buildMostUsedTagsCache()
     logger.info(s"Built tags cache in ${System.currentTimeMillis() - startMillis} ms.")
+
     val context = new ServletContextHandler()
     context.setContextPath("/")
     context.addEventListener(new ScalatraListener)

@@ -28,8 +28,8 @@ trait ArticleApiClient {
   this: NdlaClient with ConverterService =>
   val articleApiClient: ArticleApiClient
 
-  class ArticleApiClient {
-    private val InternalEndpoint = s"http://$ArticleApiHost/intern"
+  class ArticleApiClient(ArticleBaseUrl: String = s"http://$ArticleApiHost") {
+    private val InternalEndpoint = s"$ArticleBaseUrl/intern"
     private val deleteTimeout = 1000 * 10 // 10 seconds
 
     def allocateArticleId(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
