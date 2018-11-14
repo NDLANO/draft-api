@@ -21,8 +21,8 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
 
   // Pact CDC imports
   import com.itv.scalapact.ScalaPactForger._
-  import com.itv.scalapact.circe09._
-  import com.itv.scalapact.http4s18._
+  import com.itv.scalapact.argonaut62._
+  import com.itv.scalapact.http4s16a._
 
   val idResponse = ContentId(1)
 

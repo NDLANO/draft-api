@@ -20,8 +20,8 @@ import org.mockito.Mockito._
 
 class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
-  import com.itv.scalapact.circe09._
-  import com.itv.scalapact.http4s18._
+  import com.itv.scalapact.argonaut62._
+  import com.itv.scalapact.http4s16a._
 
   def findFreePort: Int = {
     def closeQuietly(socket: ServerSocket): Unit = {

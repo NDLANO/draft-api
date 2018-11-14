@@ -29,8 +29,8 @@ import com.itv.scalapact.plugin._
 val pactVersion = "2.3.3"
 
 val pactTestFramework = Seq(
-  "com.itv" %% "scalapact-circe-0-9" % pactVersion % "test",
-  "com.itv" %% "scalapact-http4s-0-18" % pactVersion,
+  "com.itv" %% "scalapact-argonaut-6-2" % pactVersion % "test",
+  "com.itv" %% "scalapact-http4s-0-16a" % pactVersion % "test",
   "com.itv" %% "scalapact-scalatest" % pactVersion % "test",
   "com.github.tomakehurst" % "wiremock" % "2.19.0" % "test"
 )
@@ -80,8 +80,8 @@ lazy val draft_api = (project in file("."))
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-core" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % FlywayVersion,
-      "io.lemonlabs" %% "scala-uri" % "1.3.1"
-      //"org.typelevel" %% "cats-effect" % CatsEffectVersion
+      "io.lemonlabs" %% "scala-uri" % "1.3.1",
+      "org.typelevel" %% "cats-effect" % CatsEffectVersion
     ),
   )
   .enablePlugins(DockerPlugin)
