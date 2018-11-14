@@ -10,13 +10,12 @@ package no.ndla.draftapi
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
-import no.ndla.mapping.License.CC_BY
 import ArticleStatus._
 import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.NewAgreement
 import org.joda.time.{DateTime, DateTimeZone}
-import no.ndla.mapping.License.CC_BY_NC_SA
+import no.ndla.mapping.License.{CC_BY_NC_SA, CC_BY, CC_BY_SA}
 
 object TestData {
 
@@ -373,6 +372,16 @@ object TestData {
     title = "Title",
     content = "Content",
     copyright = byNcSaCopyright,
+    created = DateTime.now().minusDays(4).toDate,
+    updated = DateTime.now().minusDays(2).toDate,
+    updatedBy = userWithWriteAccess.id
+  )
+
+  val sampleBySaDomainAgreement = Agreement(
+    id = Some(1),
+    title = "Title",
+    content = "Content",
+    copyright = Copyright(Some(CC_BY_SA.toString), Some("Origin"), List(), List(), List(), None, None, None),
     created = DateTime.now().minusDays(4).toDate,
     updated = DateTime.now().minusDays(2).toDate,
     updatedBy = userWithWriteAccess.id

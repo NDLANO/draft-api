@@ -1,15 +1,22 @@
-package no.ndla.draftapi
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2018 NDLA
+ *
+ * See LICENSE
+ */
+
+package no.ndla.draftapi.CDC
 
 import java.io.IOException
 import java.net.ServerSocket
 
 import com.itv.scalapact.ScalaPactVerify._
 import com.itv.scalapact.shared.ProviderStateResult
-import com.zaxxer.hikari.HikariDataSource
+import no.ndla.draftapi._
 import org.eclipse.jetty.server.Server
-import org.mockito.Mockito._
 import scalikejdbc._
-import no.ndla.draftapi.TestEnvironment
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
 
 class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
@@ -45,11 +52,16 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
   override def beforeAll(): Unit = {
 
-    def deleteSchema()(implicit session: DBSession = AutoSession): Unit = {
+    def deleteSchema(): Unit = {
       println("Deleting test schema to prepare for CDC testing...")
-      sql"drop schema if exists draftapitest cascade;"
-        .execute()
-        .apply()
+      val datasource = testDataSource
+      DBMigrator.migrate(datasource)
+      ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
+      DB autoCommit (implicit session => {
+        sql"drop schema if exists draftapitest cascade;"
+          .execute()
+          .apply()
+      })
     }
     deleteSchema()
 
@@ -57,9 +69,9 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
     server = Some(JettyLauncher.startServer(serverPort))
 
     // Setting up some state for the tests to use
-    agreementRepository.insert(TestData.sampleDomainAgreement)
-    draftRepository.insert(TestData.sampleDomainArticle)
-    conceptRepository.insertWithExternalId(TestData.sampleConcept, "4444")
+    ComponentRegistry.agreementRepository.insert(TestData.sampleBySaDomainAgreement)
+    ComponentRegistry.draftRepository.insert(TestData.sampleDomainArticle)
+    ComponentRegistry.conceptRepository.insertWithExternalId(TestData.sampleConcept, "4444")
   }
 
   override def afterAll(): Unit = server.foreach(_.stop())
