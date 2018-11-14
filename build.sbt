@@ -32,8 +32,7 @@ val pactTestFramework = Seq(
   "com.itv" %% "scalapact-circe-0-9" % pactVersion % "test",
   "com.itv" %% "scalapact-http4s-0-18" % pactVersion,
   "com.itv" %% "scalapact-scalatest" % pactVersion % "test",
-  "com.github.tomakehurst" % "wiremock" % "2.19.0" % "test",
-  "ru.yandex.qatools.embed" % "postgresql-embedded" % "2.9" % "test"
+  "com.github.tomakehurst" % "wiremock" % "2.19.0" % "test"
 )
 
 lazy val draft_api = (project in file("."))

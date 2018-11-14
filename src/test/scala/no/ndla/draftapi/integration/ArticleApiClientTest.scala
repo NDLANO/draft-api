@@ -41,7 +41,9 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
                          matchingRules = None)
           .willRespondWith(
             status = 200,
-            body = write(idResponse)
+            headers = Map.empty,
+            body = write(idResponse),
+            matchingRules = bodyRegexRule("id", "^[0-9]+$") // The id is hard to predict. Just make sure its a number
           )
       )
       .runConsumerTest { mockConfig =>
