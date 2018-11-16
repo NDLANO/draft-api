@@ -202,7 +202,7 @@ trait WriteService {
       }
     }
 
-    def deleteLanguage(id: Long, language: String): Try[Boolean] = {
+    def deleteLanguage(id: Long, language: String): Try[api.Article] = {
       draftRepository.withId(id) match {
         case Some(article) =>
           article.title.size match {
@@ -224,8 +224,11 @@ trait WriteService {
                 metaImage = metaImage,
                 visualElement = visualElement
               )
-              draftRepository.update(newArticle)
-              Success(true)
+              draftRepository
+                .update(newArticle)
+                .flatMap(
+                  converterService.toApiArticle(_, Language.AllLanguages)
+                )
           }
         case None => Failure(NotFoundException("Article does not exist"))
       }

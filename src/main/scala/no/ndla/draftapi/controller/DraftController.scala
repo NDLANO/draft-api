@@ -371,18 +371,6 @@ trait DraftController {
       }
     }
 
-    val deleteLanguage =
-      (apiOperation[Boolean]("deleteLanguage")
-        summary "Delete language from article"
-        description "Delete language from article"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](articleId),
-          asPathParam[String](language)
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
-
     delete(
       "/:article_id/language/:language",
       operation(
