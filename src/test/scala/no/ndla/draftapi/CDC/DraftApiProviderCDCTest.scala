@@ -11,12 +11,15 @@ import java.io.IOException
 import java.net.ServerSocket
 
 import com.itv.scalapact.ScalaPactVerify._
-import com.itv.scalapact.shared.ProviderStateResult
+import com.itv.scalapact.shared.{BrokerPublishData, ProviderStateResult}
 import no.ndla.draftapi._
 import org.eclipse.jetty.server.Server
 import scalikejdbc._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import sys.process._
+
+import scala.util.Try
 
 class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
@@ -77,8 +80,18 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
   override def afterAll(): Unit = server.foreach(_.stop())
 
   test("That pacts from broker are working.") {
+    // Get git version to publish validity for
+    val versionString = for {
+      shortCommit <- Try("git rev-parse --short HEAD".!!.trim)
+      dirtyness <- Try("git status --porcelain".!!.trim != "").map {
+        case true  => "-dirty"
+        case false => ""
+      }
+    } yield s"$shortCommit$dirtyness"
+    val publishResults = versionString.map(version => BrokerPublishData(version, None)).toOption
+
     verifyPact
-      .withPactSource(pactBroker("http://pact-broker.ndla-local", "draft-api", List("article-api"), None))
+      .withPactSource(pactBroker("http://pact-broker.ndla-local", "draft-api", List("article-api"), publishResults))
       .setupProviderState("given") { _ =>
         ProviderStateResult(true)
       }
