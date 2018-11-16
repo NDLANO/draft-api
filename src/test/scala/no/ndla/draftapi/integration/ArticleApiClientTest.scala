@@ -26,15 +26,31 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
 
   val idResponse = ContentId(1)
 
-  test("allocating an article id should return a long") {
+  test("allocating an article and concept id should return a long") {
     forgePact
       .between("draft-api")
       .and("article-api")
       .addInteraction(
         interaction
-          .description("Allocating an id should return a long")
+          .description("Allocating an article id should return a long")
           .uponReceiving(method = POST,
                          path = "/intern/id/article/allocate",
+                         query = None,
+                         headers = Map("Authorization" -> TestData.authHeaderWithWriteRole),
+                         body = None,
+                         matchingRules = None)
+          .willRespondWith(
+            status = 200,
+            headers = Map.empty,
+            body = write(idResponse),
+            matchingRules = bodyRegexRule("id", "^[0-9]+$") // The id is hard to predict. Just make sure its a number
+          )
+      )
+      .addInteraction(
+        interaction
+          .description("Allocating an concept id should return a long")
+          .uponReceiving(method = POST,
+                         path = "/intern/id/concept/allocate",
                          query = None,
                          headers = Map("Authorization" -> TestData.authHeaderWithWriteRole),
                          body = None,
@@ -49,7 +65,8 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
       .runConsumerTest { mockConfig =>
         AuthUser.setHeader(TestData.authHeaderWithWriteRole)
         val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
-        val Success(id: Long) = articleApiClient.allocateArticleId(List("1234", "4567"), List("1", "2"))
+        articleApiClient.allocateArticleId(List("1234", "4567"), List("1", "2")) should be(Success(1))
+        articleApiClient.allocateConceptId(List("1234", "4567")) should be(Success(1))
       }
   }
 }

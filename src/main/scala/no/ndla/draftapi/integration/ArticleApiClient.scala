@@ -52,11 +52,6 @@ trait ArticleApiClient {
       post[ContentId](s"$InternalEndpoint/id/concept/allocate", params: _*).map(_.id)
     }
 
-    def getValidationErrors(article: Article): Try[Set[ValidationMessage]] = {
-      implicit val formats = Article.formats
-      postWithData[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
-    }
-
     def updateConcept(id: Long, concept: api.ArticleApiConcept): Try[api.ArticleApiConcept] = {
       implicit val format = org.json4s.DefaultFormats
       postWithData[api.ArticleApiConcept, api.ArticleApiConcept](s"$InternalEndpoint/concept/$id", concept)
