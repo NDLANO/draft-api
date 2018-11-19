@@ -9,17 +9,16 @@ package no.ndla.draftapi.integration
 
 import java.util.Date
 
-import no.ndla.draftapi.model.api.{ContentId, Copyright}
-import no.ndla.draftapi.model.domain.Status
-import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.draftapi.model.api.ContentId
+import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.{IntegrationSuite, TestEnvironment}
 import no.ndla.network.AuthUser
-import org.json4s.{DefaultFormats, Formats}
 import org.json4s.native.Serialization.write
+import org.json4s.{DefaultFormats, Formats}
 
 import scala.util.Success
 
-class ArticleApiClientTest extends UnitSuite with TestEnvironment {
+class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
   implicit val formats: DefaultFormats = DefaultFormats
   override val ndlaClient = new NdlaClient
 
@@ -29,10 +28,11 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
   import com.itv.scalapact.http4s16a._
 
   val idResponse = ContentId(1)
+  override val converterService = new ConverterService
 
   val exampleToken =
     "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9FSTFNVVU0T0RrNU56TTVNekkyTXpaRE9EazFOMFl3UXpkRE1EUXlPRFZDUXpRM1FUSTBNQSJ9.eyJodHRwczovL25kbGEubm8vY2xpZW50X2lkIjogInh4eHl5eSIsICJpc3MiOiAiaHR0cHM6Ly9uZGxhLmV1LmF1dGgwLmNvbS8iLCAic3ViIjogInh4eHl5eUBjbGllbnRzIiwgImF1ZCI6ICJuZGxhX3N5c3RlbSIsICJpYXQiOiAxNTEwMzA1NzczLCAiZXhwIjogMTUxMDM5MjE3MywgInNjb3BlIjogImFydGljbGVzLXRlc3Q6cHVibGlzaCBkcmFmdHMtdGVzdDp3cml0ZSBkcmFmdHMtdGVzdDpzZXRfdG9fcHVibGlzaCBhcnRpY2xlcy10ZXN0OndyaXRlIiwgImd0eSI6ICJjbGllbnQtY3JlZGVudGlhbHMifQ.gsM-U84ykgaxMSbL55w6UYIIQUouPIB6YOmJuj1KhLFnrYctu5vwYBo80zyr1je9kO_6L-rI7SUnrHVao9DFBZJmfFfeojTxIT3CE58hoCdxZQZdPUGePjQzROWRWeDfG96iqhRcepjbVF9pMhKp6FNqEVOxkX00RZg9vFT8iMM"
-  val authHeaderMap = Map("Authorization" -> exampleToken)
+  val authHeaderMap = Map("Authorization" -> s"Bearer $exampleToken")
 
   test("allocating an article and concept id should return a long") {
     forgePact
@@ -71,7 +71,7 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
           )
       )
       .runConsumerTest { mockConfig =>
-        AuthUser.setHeader(exampleToken)
+        AuthUser.setHeader(s"Bearer $exampleToken")
         val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
         articleApiClient.allocateArticleId(List("1234", "4567"), List("1", "2")) should be(Success(1))
         articleApiClient.allocateConceptId(List("1234", "4567")) should be(Success(1))
@@ -111,19 +111,46 @@ class ArticleApiClientTest extends UnitSuite with TestEnvironment {
       notes = Seq()
     )
 
+    val draftConcept = domain.Concept(
+      id = Some(1),
+      title = Seq(domain.ConceptTitle("Title", "nb")),
+      content = Seq(domain.ConceptContent("Title", "nb")),
+      copyright = Some(copyright),
+      created = new Date(0),
+      updated = new Date(0)
+    )
+    val conceptToUpdate = converterService.toArticleApiConcept(draftConcept)
+
     forgePact
       .between("draft-api")
       .and("article-api")
       .addInteraction(
         interaction
           .description("Updating an article returns 200")
-          .uponReceiving(POST, "/intern/article/1", None, authHeaderMap, write(articleToUpdate), None)
+          .uponReceiving(method = POST,
+                         path = "/intern/article/1",
+                         query = None,
+                         headers = authHeaderMap,
+                         body = write(articleToUpdate),
+                         matchingRules = None)
+          .willRespondWith(200)
+      )
+      .addInteraction(
+        interaction
+          .description("Updating a concept returns 200")
+          .uponReceiving(method = POST,
+                         path = "/intern/concept/1",
+                         query = None,
+                         headers = authHeaderMap,
+                         body = write(conceptToUpdate),
+                         matchingRules = None)
           .willRespondWith(200)
       )
       .runConsumerTest { mockConfig =>
-        AuthUser.setHeader(exampleToken)
+        AuthUser.setHeader(s"Bearer $exampleToken")
         val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
         articleApiClient.updateArticle(1, articleToUpdate, List("1234"))
+        articleApiClient.updateConcept(1, conceptToUpdate)
       }
   }
 }
