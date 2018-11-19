@@ -34,7 +34,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
     "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9FSTFNVVU0T0RrNU56TTVNekkyTXpaRE9EazFOMFl3UXpkRE1EUXlPRFZDUXpRM1FUSTBNQSJ9.eyJodHRwczovL25kbGEubm8vY2xpZW50X2lkIjogInh4eHl5eSIsICJpc3MiOiAiaHR0cHM6Ly9uZGxhLmV1LmF1dGgwLmNvbS8iLCAic3ViIjogInh4eHl5eUBjbGllbnRzIiwgImF1ZCI6ICJuZGxhX3N5c3RlbSIsICJpYXQiOiAxNTEwMzA1NzczLCAiZXhwIjogMTUxMDM5MjE3MywgInNjb3BlIjogImFydGljbGVzLXRlc3Q6cHVibGlzaCBkcmFmdHMtdGVzdDp3cml0ZSBkcmFmdHMtdGVzdDpzZXRfdG9fcHVibGlzaCBhcnRpY2xlcy10ZXN0OndyaXRlIiwgImd0eSI6ICJjbGllbnQtY3JlZGVudGlhbHMifQ.gsM-U84ykgaxMSbL55w6UYIIQUouPIB6YOmJuj1KhLFnrYctu5vwYBo80zyr1je9kO_6L-rI7SUnrHVao9DFBZJmfFfeojTxIT3CE58hoCdxZQZdPUGePjQzROWRWeDfG96iqhRcepjbVF9pMhKp6FNqEVOxkX00RZg9vFT8iMM"
   val authHeaderMap = Map("Authorization" -> s"Bearer $exampleToken")
 
-  test("allocating an article and concept id should return a long") {
+  test("that allocating an article and concept id should return a long") {
     forgePact
       .between("draft-api")
       .and("article-api")
@@ -78,7 +78,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       }
   }
 
-  test("updating articles and concepts should work and return updated version") {
+  test("that updating articles and concepts should work and return updated version") {
     implicit val formats: Formats = domain.Article.formats
     val copyright = domain.Copyright(
       Some("CC-BY-SA-4.0"),
@@ -151,6 +151,42 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
         val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
         articleApiClient.updateArticle(1, articleToUpdate, List("1234"))
         articleApiClient.updateConcept(1, conceptToUpdate)
+      }
+  }
+
+  test("that deleting an article or a concept should return 200") {
+    val contentId = ContentId(1)
+
+    forgePact
+      .between("draft-api")
+      .and("article-api")
+      .addInteraction(
+        interaction
+          .description("Deleting an article should return 200")
+          .uponReceiving(method = DELETE,
+                         path = "/intern/article/1/",
+                         query = None,
+                         headers = authHeaderMap,
+                         body = None,
+                         matchingRules = None)
+          .willRespondWith(200, write(contentId))
+      )
+      .addInteraction(
+        interaction
+          .description("Deleting a concept should return 200")
+          .uponReceiving(method = DELETE,
+                         path = "/intern/concept/1/",
+                         query = None,
+                         headers = authHeaderMap,
+                         body = None,
+                         matchingRules = None)
+          .willRespondWith(200, write(contentId))
+      )
+      .runConsumerTest { mockConfig =>
+        AuthUser.setHeader(s"Bearer $exampleToken")
+        val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
+        articleApiClient.deleteArticle(1) should be(Success(contentId))
+        articleApiClient.deleteConcept(1) should be(Success(contentId))
       }
   }
 }
