@@ -41,6 +41,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Allocating an article id should return a long")
+          .given("articles")
           .uponReceiving(method = POST,
                          path = "/intern/id/article/allocate",
                          query = None,
@@ -57,6 +58,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Allocating an concept id should return a long")
+          .given("concepts")
           .uponReceiving(method = POST,
                          path = "/intern/id/concept/allocate",
                          query = None,
@@ -127,6 +129,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Updating an article returns 200")
+          .given("articles")
           .uponReceiving(method = POST,
                          path = "/intern/article/1",
                          query = None,
@@ -138,6 +141,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Updating a concept returns 200")
+          .given("concepts")
           .uponReceiving(method = POST,
                          path = "/intern/concept/1",
                          query = None,
@@ -163,6 +167,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Deleting an article should return 200")
+          .given("articles")
           .uponReceiving(method = DELETE,
                          path = "/intern/article/1/",
                          query = None,
@@ -174,6 +179,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Deleting a concept should return 200")
+          .given("concepts")
           .uponReceiving(method = DELETE,
                          path = "/intern/concept/1/",
                          query = None,
