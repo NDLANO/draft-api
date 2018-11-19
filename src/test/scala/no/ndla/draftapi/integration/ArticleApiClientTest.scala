@@ -218,4 +218,28 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
         articleApiCient.unpublishArticle(testArticle).isSuccess should be(true)
       }
   }
+
+  test("that verifying an article returns 200 if valid") {
+    val articleApiArticle = converterService.toArticleApiArticle(testArticle)
+    forgePact
+      .between("draft-api")
+      .and("article-api")
+      .addInteraction(
+        interaction
+          .description("Validating article returns 200")
+          .given("empty")
+          .uponReceiving(method = POST,
+                         path = "/intern/validate/article",
+                         query = None,
+                         headers = authHeaderMap,
+                         body = write(articleApiArticle),
+                         matchingRules = None)
+          .willRespondWith(200, write(articleApiArticle))
+      )
+      .runConsumerTest { mockConfig =>
+        AuthUser.setHeader(s"Bearer $exampleToken")
+        val articleApiCient = new ArticleApiClient(mockConfig.baseUrl)
+        articleApiCient.validateArticle(articleApiArticle, importValidate = false).isSuccess should be(true)
+      }
+  }
 }
