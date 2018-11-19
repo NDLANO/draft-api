@@ -72,7 +72,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .addInteraction(
         interaction
           .description("Allocating an article id should return a long")
-          .given("articles")
+          .given("empty")
           .uponReceiving(method = POST,
                          path = "/intern/id/article/allocate",
                          query = None,
@@ -83,13 +83,13 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
             status = 200,
             headers = Map.empty,
             body = write(idResponse),
-            matchingRules = bodyRegexRule("id", "^[0-9]+$") // The id is hard to predict. Just make sure its a number
+            matchingRules = None
           )
       )
       .addInteraction(
         interaction
           .description("Allocating an concept id should return a long")
-          .given("concepts")
+          .given("empty")
           .uponReceiving(method = POST,
                          path = "/intern/id/concept/allocate",
                          query = None,
@@ -100,7 +100,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
             status = 200,
             headers = Map.empty,
             body = write(idResponse),
-            matchingRules = bodyRegexRule("id", "^[0-9]+$") // The id is hard to predict. Just make sure its a number
+            matchingRules = None
           )
       )
       .runConsumerTest { mockConfig =>
