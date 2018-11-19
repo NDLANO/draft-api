@@ -9,12 +9,10 @@ package no.ndla.draftapi.service
 
 import java.util.Date
 
-import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.domain.{Article, _}
-import no.ndla.draftapi.model.api.{Status, _}
-import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PUBLISHED, PROPOSAL}
+import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
@@ -202,6 +200,39 @@ trait WriteService {
           } yield apiArticle
         case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
+    }
+
+    def deleteLanguage(id: Long, language: String): Try[api.Article] = {
+      draftRepository.withId(id) match {
+        case Some(article) =>
+          article.title.size match {
+            case 1 => Failure(OperationNotAllowedException("Only one language left"))
+            case _ =>
+              val title = article.title.filter(_.language != language)
+              val content = article.content.filter(_.language != language)
+              val articleIntroduction = article.introduction.filter(_.language != language)
+              val metaDescription = article.metaDescription.filter(_.language != language)
+              val tags = article.tags.filter(_.language != language)
+              val metaImage = article.metaImage.filter(_.language != language)
+              val visualElement = article.visualElement.filter(_.language != language)
+              val newArticle = article.copy(
+                title = title,
+                content = content,
+                introduction = articleIntroduction,
+                metaDescription = metaDescription,
+                tags = tags,
+                metaImage = metaImage,
+                visualElement = visualElement
+              )
+              draftRepository
+                .update(newArticle)
+                .flatMap(
+                  converterService.toApiArticle(_, Language.AllLanguages)
+                )
+          }
+        case None => Failure(NotFoundException("Article does not exist"))
+      }
+
     }
 
     def deleteArticle(id: Long): Try[api.ContentId] = {

@@ -371,6 +371,28 @@ trait DraftController {
       }
     }
 
+    delete(
+      "/:article_id/language/:language",
+      operation(
+        apiOperation[Article]("deleteLanguage")
+          summary "Delete language from article"
+          description "Delete language from article"
+          parameters (
+            asHeaderParam[Option[String]](correlationId),
+            asPathParam[Long](articleId),
+            asPathParam[String](language)
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response403, response404, response500))
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val id = long(this.articleId.paramName)
+        val language = params(this.language.paramName)
+        writeService.deleteLanguage(id, language)
+      }
+    }
+
     get(
       "/status-state-machine/",
       operation(

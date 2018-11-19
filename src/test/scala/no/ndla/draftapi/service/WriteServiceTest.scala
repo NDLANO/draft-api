@@ -15,7 +15,7 @@ import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import scalikejdbc.DBSession
@@ -364,6 +364,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   None)
       result.status should equal(api.Status("QUEUED_FOR_PUBLISHING", Seq.empty))
     }
+  }
+
+  test("That delete article should fail when only one language") {
+    val Failure(result) = service.deleteLanguage(article.id.get, "nb")
+    result.getMessage should equal("Only one language left")
+  }
+
+  test("That delete article removes language from all languagefields") {
+    val article =
+      TestData.sampleDomainArticle.copy(id = Some(3),
+                                        title = Seq(ArticleTitle("title", "nb"), ArticleTitle("title", "nn")))
+    val articleCaptor: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+
+    when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+    service.deleteLanguage(article.id.get, "nn")
+    verify(draftRepository).update(articleCaptor.capture(), anyBoolean())
+
+    articleCaptor.getValue.title.length should be(1)
   }
 
   private def setupSuccessfulPublishMock(id: Long): Unit = {
