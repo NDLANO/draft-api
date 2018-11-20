@@ -15,10 +15,9 @@ import com.itv.scalapact.shared.{BrokerPublishData, ProviderStateResult}
 import no.ndla.draftapi._
 import org.eclipse.jetty.server.Server
 import scalikejdbc._
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
-import sys.process._
 
+import scala.sys.process._
+import scala.util.Properties.{envOrElse, envOrNone}
 import scala.util.Try
 
 class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
@@ -53,49 +52,77 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
   var server: Option[Server] = None
   val serverPort: Int = findFreePort
 
+  def deleteSchema(): Unit = {
+    println("Deleting test schema to prepare for CDC testing...")
+    val datasource = testDataSource
+    DBMigrator.migrate(datasource)
+    ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
+    DB autoCommit (implicit session => {
+      sql"drop schema if exists articleapitest cascade;"
+        .execute()
+        .apply()
+    })
+    DBMigrator.migrate(datasource)
+    ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
+  }
+
   override def beforeAll(): Unit = {
-
-    def deleteSchema(): Unit = {
-      println("Deleting test schema to prepare for CDC testing...")
-      val datasource = testDataSource
-      DBMigrator.migrate(datasource)
-      ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
-      DB autoCommit (implicit session => {
-        sql"drop schema if exists draftapitest cascade;"
-          .execute()
-          .apply()
-      })
-    }
-    deleteSchema()
-
     println(s"Running CDC tests with component on localhost:$serverPort")
     server = Some(JettyLauncher.startServer(serverPort))
-
-    // Setting up some state for the tests to use
-    ComponentRegistry.agreementRepository.insert(TestData.sampleBySaDomainAgreement)
-    ComponentRegistry.draftRepository.insert(TestData.sampleDomainArticle)
-    ComponentRegistry.conceptRepository.insertWithExternalId(TestData.sampleConcept, "4444")
   }
+
+  private def setupArticles() =
+    (1 to 10)
+      .map(id => {
+        ComponentRegistry.draftRepository.insert(TestData.sampleDomainArticle.copy(id = Some(id)))
+      })
+
+  private def setupConcepts() =
+    (1 to 10)
+      .map(id => {
+        ComponentRegistry.conceptRepository.insertWithExternalId(TestData.sampleConcept.copy(id = Some(id)), s"4444$id")
+      })
+
+  private def setupAgreements() =
+    (1 to 10)
+      .map(id => {
+        ComponentRegistry.agreementRepository.insert(TestData.sampleBySaDomainAgreement.copy(id = Some(id)))
+      })
 
   override def afterAll(): Unit = server.foreach(_.stop())
 
-  test("That pacts from broker are working.") {
-    // Get git version to publish validity for
-    val versionString = for {
+  private def getGitVersion =
+    for {
       shortCommit <- Try("git rev-parse --short HEAD".!!.trim)
       dirtyness <- Try("git status --porcelain".!!.trim != "").map {
         case true  => "-dirty"
         case false => ""
       }
     } yield s"$shortCommit$dirtyness"
-    val publishResults = versionString.map(version => BrokerPublishData(version, None)).toOption
 
-    verifyPact
-      .withPactSource(pactBroker("http://pact-broker.ndla-local", "draft-api", List("article-api"), publishResults))
-      .setupProviderState("given") { _ =>
-        ProviderStateResult(true)
-      }
-      .runStrictVerificationAgainst("localhost", serverPort)
+  test("That pacts from broker are working.") {
+    val isTravis = envOrElse("TRAVIS", "false").toBoolean
+    val publishResults = if (isTravis) {
+      getGitVersion.map(version => BrokerPublishData(version, None)).toOption
+    } else { None }
+
+    val broker = for {
+      url <- envOrNone("PACT_BROKER_URL")
+      broker <- pactBroker(url, "draft-api", List("article-api"), publishResults)
+    } yield broker
+
+    broker match {
+      case Some(b) =>
+        verifyPact
+          .withPactSource(b)
+          .setupProviderState("given") {
+            case "articles"   => deleteSchema(); ProviderStateResult(setupArticles().nonEmpty)
+            case "concepts"   => deleteSchema(); ProviderStateResult(setupConcepts().nonEmpty)
+            case "agreements" => deleteSchema(); ProviderStateResult(setupAgreements().nonEmpty)
+            case "empty"      => deleteSchema(); ProviderStateResult(true)
+          }
+          .runStrictVerificationAgainst("localhost", serverPort)
+      case None => throw new RuntimeException("Could not get broker settings...")
+    }
   }
-
 }
