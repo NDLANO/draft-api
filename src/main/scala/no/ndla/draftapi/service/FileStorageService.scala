@@ -13,6 +13,7 @@ import com.amazonaws.services.s3.model._
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.AttachmentStorageName
 import no.ndla.draftapi.integration.AmazonClient
+import no.ndla.draftapi.model.domain
 
 import scala.util.Try
 
@@ -20,22 +21,38 @@ trait FileStorageService {
   this: AmazonClient =>
   val fileStorage: FileStorageService
 
-  class FileStorageService extends LazyLogging {
+  case class Uploaded(path: String, contentLength: Long, contentType: String)
 
-    def uploadFromStream(stream: InputStream, storageKey: String, contentType: String, size: Long): Try[String] = {
+  class FileStorageService extends LazyLogging {
+    private val resourceDirectory = "resources"
+
+    def uploadResourceFromStream(stream: InputStream,
+                                 storageKey: String,
+                                 contentType: String,
+                                 size: Long): Try[Uploaded] = {
       val metadata = new ObjectMetadata()
       metadata.setContentType(contentType)
       metadata.setContentLength(size)
 
-      Try(amazonClient.putObject(new PutObjectRequest(AttachmentStorageName, storageKey, stream, metadata))).map(_ =>
-        storageKey)
+      val uploadPath = s"$resourceDirectory/$storageKey"
+
+      Try(
+        amazonClient
+          .putObject(new PutObjectRequest(AttachmentStorageName, uploadPath, stream, metadata))
+      ).map(
+        por =>
+          Uploaded(
+            uploadPath,
+            por.getMetadata.getContentLength,
+            por.getMetadata.getContentType,
+        ))
     }
 
-    def objectExists(storageKey: String): Boolean = {
-      Try(amazonClient.doesObjectExist(AttachmentStorageName, storageKey)).getOrElse(false)
-    }
+    def resourceExists(storageKey: String): Boolean =
+      Try(amazonClient.doesObjectExist(AttachmentStorageName, s"$resourceDirectory/$storageKey")).getOrElse(false)
 
-    def deleteObject(storageKey: String): Try[_] = Try(amazonClient.deleteObject(AttachmentStorageName, storageKey))
+    def deleteResource(storageKey: String): Try[_] =
+      Try(amazonClient.deleteObject(AttachmentStorageName, s"$resourceDirectory/$storageKey"))
   }
 
 }

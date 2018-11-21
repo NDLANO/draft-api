@@ -318,10 +318,8 @@ trait WriteService {
         .flatMap(id => conceptRepository.newEmptyConcept(id, externalIds))
     }
 
-    def storeFile(file: FileItem): Try[api.UploadedFile] = {
-      uploadFile(file).map(f =>
-        api.UploadedFile(f.fileName, f.contentType, f.fileExtension, s"files/resources/${f.fileName}"))
-    }
+    def storeFile(file: FileItem): Try[api.UploadedFile] =
+      uploadFile(file).map(f => api.UploadedFile(f.fileName, f.contentType, f.fileExtension, s"/files/${f.filePath}"))
 
     private[service] def getFileExtension(fileName: String): (String, Option[String]) =
       fileName.lastIndexOf(".") match {
@@ -333,17 +331,15 @@ trait WriteService {
       val (filenameWithoutExt, fileExtension) = getFileExtension(file.name)
 
       val contentType = file.getContentType.getOrElse("")
-      val fileName =
-        Stream
-          .continually(fileNameWithRandomElement(filenameWithoutExt, fileExtension.getOrElse("")))
-          .dropWhile(f => fileStorage.objectExists(s"resources/$f"))
-          .head
+      val fileName = Stream
+        .continually(fileNameWithRandomElement(filenameWithoutExt, fileExtension.getOrElse("")))
+        .dropWhile(fileStorage.resourceExists)
+        .head
 
-      val x = fileStorage
-        .uploadFromStream(new ByteArrayInputStream(file.get), s"resources/$fileName", contentType, file.size)
-      x.map(filePath => {
-        domain.UploadedFile(filePath, file.size, contentType, fileExtension)
-      })
+      fileStorage
+        .uploadResourceFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size)
+        .map(uploaded =>
+          domain.UploadedFile(fileName, uploaded.path, uploaded.contentLength, uploaded.contentType, fileExtension))
     }
 
     private[service] def fileNameWithRandomElement(filename: String, extension: String, length: Int = 20): String = {

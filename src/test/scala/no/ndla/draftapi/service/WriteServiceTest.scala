@@ -406,21 +406,29 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(fileToUpload.size).thenReturn(fileBytes.length)
     when(fileToUpload.getContentType).thenReturn(Some("application/pdf"))
     when(fileToUpload.name).thenReturn("myfile.pdf")
-    when(fileStorage.objectExists(anyString())).thenReturn(false)
-    when(fileStorage
-      .uploadFromStream(any[ByteArrayInputStream], anyString(), eqTo("application/pdf"), eqTo(fileBytes.length.toLong)))
-      .thenAnswer((i: InvocationOnMock) => Success(i.getArgument[String](1)))
+    when(fileStorage.resourceExists(anyString())).thenReturn(false)
+    when(
+      fileStorage
+        .uploadResourceFromStream(any[ByteArrayInputStream],
+                                  anyString(),
+                                  eqTo("application/pdf"),
+                                  eqTo(fileBytes.length.toLong)))
+      .thenAnswer((i: InvocationOnMock) => {
+        val fn = i.getArgument[String](1)
+        val up = Uploaded(s"resource/$fn", fileBytes.length, "application/pdf")
+        Success(up)
+      })
 
     val uploaded = service.uploadFile(fileToUpload)
 
     val storageKeyCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
     uploaded.isSuccess should be(true)
-    verify(fileStorage, times(1)).objectExists(anyString)
-    verify(fileStorage, times(1)).uploadFromStream(any[ByteArrayInputStream],
-                                                   storageKeyCaptor.capture(),
-                                                   eqTo("application/pdf"),
-                                                   eqTo(fileBytes.length.toLong))
-    storageKeyCaptor.getValue.startsWith("resources/myfile") should be(true)
+    verify(fileStorage, times(1)).resourceExists(anyString)
+    verify(fileStorage, times(1)).uploadResourceFromStream(any[ByteArrayInputStream],
+                                                           storageKeyCaptor.capture(),
+                                                           eqTo("application/pdf"),
+                                                           eqTo(fileBytes.length.toLong))
+    storageKeyCaptor.getValue.startsWith("myfile") should be(true)
     storageKeyCaptor.getValue.endsWith(".pdf") should be(true)
   }
 }

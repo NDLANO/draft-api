@@ -7,4 +7,8 @@
 
 package no.ndla.draftapi.model.domain
 
-case class UploadedFile(fileName: String, size: Long, contentType: String, fileExtension: Option[String])
+case class UploadedFile(fileName: String,
+                        filePath: String,
+                        size: Long,
+                        contentType: String,
+                        fileExtension: Option[String])
