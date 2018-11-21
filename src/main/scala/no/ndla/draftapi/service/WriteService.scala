@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi.service
 
+import java.io.ByteArrayInputStream
 import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
@@ -19,8 +20,10 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
+import org.scalatra.servlet.FileItem
+import math.max
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 trait WriteService {
   this: DraftRepository
@@ -34,7 +37,7 @@ trait WriteService {
     with Clock
     with ReadService
     with ArticleApiClient
-    with ArticleApiClient =>
+    with FileStorageService =>
   val writeService: WriteService
 
   class WriteService {
@@ -315,5 +318,39 @@ trait WriteService {
         .flatMap(id => conceptRepository.newEmptyConcept(id, externalIds))
     }
 
+    def storeFile(file: FileItem): Try[api.UploadedFile] = {
+      uploadFile(file).map(f =>
+        api.UploadedFile(f.fileName, f.contentType, f.fileExtension, s"files/resources/${f.fileName}"))
+    }
+
+    private[service] def getFileExtension(fileName: String): (String, Option[String]) =
+      fileName.lastIndexOf(".") match {
+        case index: Int if index > -1 => (fileName.substring(0, index), Some(fileName.substring(index)))
+        case _                        => (fileName, None)
+      }
+
+    private[service] def uploadFile(file: FileItem): Try[domain.UploadedFile] = {
+      val (filenameWithoutExt, fileExtension) = getFileExtension(file.name)
+
+      val contentType = file.getContentType.getOrElse("")
+      val fileName =
+        Stream
+          .continually(fileNameWithRandomElement(filenameWithoutExt, fileExtension.getOrElse("")))
+          .dropWhile(f => fileStorage.objectExists(s"resources/$f"))
+          .head
+
+      val x = fileStorage
+        .uploadFromStream(new ByteArrayInputStream(file.get), s"resources/$fileName", contentType, file.size)
+      x.map(filePath => {
+        domain.UploadedFile(filePath, file.size, contentType, fileExtension)
+      })
+    }
+
+    private[service] def fileNameWithRandomElement(filename: String, extension: String, length: Int = 20): String = {
+      val extensionWithDot =
+        if (!extension.headOption.contains('.') && extension.length > 0) s".$extension" else extension
+      val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
+      s"$filename$randomString$extensionWithDot"
+    }
   }
 }

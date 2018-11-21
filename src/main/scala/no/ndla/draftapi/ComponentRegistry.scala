@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi
 
+import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.typesafe.scalalogging.LazyLogging
 import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
@@ -48,6 +50,8 @@ object ComponentRegistry
     with SearchConverterService
     with ReadService
     with WriteService
+    with FileStorageService
+    with AmazonClient
     with ContentValidator
     with Clock
     with User
@@ -87,6 +91,9 @@ object ComponentRegistry
   lazy val readService = new ReadService
   lazy val writeService = new WriteService
   lazy val reindexClient = new ReindexClient
+
+  lazy val fileStorage = new FileStorageService
+  val amazonClient: AmazonS3 = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build()
 
   lazy val e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()
 

@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.service
 
+import java.io.{ByteArrayInputStream, InputStream}
+
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api.{AccessDeniedException, ArticleApiArticle, ContentId}
 import no.ndla.draftapi.model.domain._
@@ -14,10 +16,11 @@ import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
-import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
+import org.scalatra.servlet.FileItem
 import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success, Try}
@@ -384,16 +387,40 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     articleCaptor.getValue.title.length should be(1)
   }
 
-  private def setupSuccessfulPublishMock(id: Long): Unit = {
-    val article =
-      TestData.sampleArticleWithByNcSa
-        .copy(id = Some(id), status = domain.Status(domain.ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty))
-    val apiArticle = converterService.toArticleApiArticle(article)
-    when(draftRepository.update(any[Article], any[Boolean])(any[DBSession])).thenReturn(Success(article))
-    when(articleApiClient.updateArticle(any[Long], any[domain.Article], any[List[String]]))
-      .thenAnswer(a => {
-        Success(a.getArgument(1))
-      })
+  test("That get file extension will split extension and name as expected") {
+    val a = "test.pdf"
+    val b = "test"
+    val c = "te.st.jpeg"
+    val d = ".te....st.bin"
+
+    service.getFileExtension(a) should be(("test", Some(".pdf")))
+    service.getFileExtension(b) should be(("test", None))
+    service.getFileExtension(c) should be(("te.st", Some(".jpeg")))
+    service.getFileExtension(d) should be((".te....st", Some(".bin")))
   }
 
+  test("uploading file calls fileStorageService as expected") {
+    val fileToUpload = mock[FileItem]
+    val fileBytes: Array[Byte] = "these are not the bytes you're looking for".getBytes
+    when(fileToUpload.get).thenReturn(fileBytes)
+    when(fileToUpload.size).thenReturn(fileBytes.length)
+    when(fileToUpload.getContentType).thenReturn(Some("application/pdf"))
+    when(fileToUpload.name).thenReturn("myfile.pdf")
+    when(fileStorage.objectExists(anyString())).thenReturn(false)
+    when(fileStorage
+      .uploadFromStream(any[ByteArrayInputStream], anyString(), eqTo("application/pdf"), eqTo(fileBytes.length.toLong)))
+      .thenAnswer((i: InvocationOnMock) => Success(i.getArgument[String](1)))
+
+    val uploaded = service.uploadFile(fileToUpload)
+
+    val storageKeyCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
+    uploaded.isSuccess should be(true)
+    verify(fileStorage, times(1)).objectExists(anyString)
+    verify(fileStorage, times(1)).uploadFromStream(any[ByteArrayInputStream],
+                                                   storageKeyCaptor.capture(),
+                                                   eqTo("application/pdf"),
+                                                   eqTo(fileBytes.length.toLong))
+    storageKeyCaptor.getValue.startsWith("resources/myfile") should be(true)
+    storageKeyCaptor.getValue.endsWith(".pdf") should be(true)
+  }
 }

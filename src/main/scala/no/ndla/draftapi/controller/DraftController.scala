@@ -17,8 +17,10 @@ import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.servlet.FileUploadSupport
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 import org.scalatra.{Created, NoContent, NotFound, Ok}
 
@@ -28,7 +30,7 @@ trait DraftController {
   this: ReadService with WriteService with ArticleSearchService with ConverterService with ContentValidator with User =>
   val draftController: DraftController
 
-  class DraftController(implicit val swagger: Swagger) extends NdlaController {
+  class DraftController(implicit val swagger: Swagger) extends NdlaController with FileUploadSupport {
     protected implicit override val jsonFormats: Formats = DefaultFormats
     protected val applicationDescription = "API for accessing draft articles from ndla.no."
 
@@ -54,6 +56,7 @@ trait DraftController {
     private val filter = Param("filter", "A filter to include a specific entry")
     private val filterNot = Param("filterNot", "A filter to remove a specific entry")
     private val statuss = Param("STATUS", "An article status")
+    private val file = Param("file", "File to upload")
 
     val getTags =
       (apiOperation[ArticleTag]("getTags")
@@ -404,6 +407,26 @@ trait DraftController {
       )
     ) {
       converterService.stateTransitionsToApi(user.getUser)
+    }
+
+    post(
+      "/upload-file/",
+      operation(
+        apiOperation[api.UploadedFile]("uploadFile")
+          summary "Uploads provided file"
+          description "Uploads provided file"
+          authorizations "oauth2"
+          responseMessages (response400, response403, response500))
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canSetPublish) {
+        fileParams.get(file.paramName) match {
+          case Some(f) => writeService.storeFile(f)
+          case None =>
+            errorHandler(
+              new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain a file"))))
+        }
+      }
     }
 
   }

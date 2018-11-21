@@ -83,6 +83,8 @@ object DraftApiProperties extends LazyLogging {
   val ArticleApiHost = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
   val LearningpathApiHost = propOrElse("LEARNINGPATH_API_HOST", "learningpath-api.ndla-local")
 
+  val AttachmentStorageName = s"$Environment.article-attachments.ndla"
+
   lazy val Domain = Domains.get(Environment)
 
   lazy val secrets = readSecrets(SecretsFile) match {
