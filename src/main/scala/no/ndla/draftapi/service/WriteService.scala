@@ -338,15 +338,14 @@ trait WriteService {
 
       fileStorage
         .uploadResourceFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size)
-        .map(uploaded =>
-          domain.UploadedFile(fileName, uploaded.path, uploaded.contentLength, uploaded.contentType, fileExtension))
+        .map(uploadPath => domain.UploadedFile(fileName, uploadPath, file.size, contentType, fileExtension))
     }
 
     private[service] def fileNameWithRandomElement(filename: String, extension: String, length: Int = 20): String = {
       val extensionWithDot =
         if (!extension.headOption.contains('.') && extension.length > 0) s".$extension" else extension
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
-      s"$filename$randomString$extensionWithDot"
+      s"$filename-$randomString$extensionWithDot"
     }
   }
 }

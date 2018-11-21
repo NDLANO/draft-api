@@ -415,8 +415,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                   eqTo(fileBytes.length.toLong)))
       .thenAnswer((i: InvocationOnMock) => {
         val fn = i.getArgument[String](1)
-        val up = Uploaded(s"resource/$fn", fileBytes.length, "application/pdf")
-        Success(up)
+        Success(s"resource/$fn")
       })
 
     val uploaded = service.uploadFile(fileToUpload)

@@ -10,8 +10,8 @@ package no.ndla.draftapi.controller
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.draftapi.validation.ContentValidator
@@ -22,7 +22,7 @@ import org.joda.time.DateTime
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.servlet.FileUploadSupport
 import org.scalatra.swagger.{ResponseMessage, Swagger}
-import org.scalatra.{Created, NoContent, NotFound, Ok}
+import org.scalatra.{Created, NotFound, Ok}
 
 import scala.util.{Failure, Success}
 
@@ -416,12 +416,21 @@ trait DraftController {
           summary "Uploads provided file"
           description "Uploads provided file"
           authorizations "oauth2"
+          consumes "multipart/form-data"
+          parameters (
+            asHeaderParam[Option[String]](correlationId),
+            asFileParam(file)
+        )
           responseMessages (response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canSetPublish) {
         fileParams.get(file.paramName) match {
-          case Some(f) => writeService.storeFile(f)
+          case Some(fileToUpload) =>
+            writeService.storeFile(fileToUpload) match {
+              case Success(uploadedFile) => uploadedFile
+              case Failure(ex)           => errorHandler(ex)
+            }
           case None =>
             errorHandler(
               new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain a file"))))

@@ -33,7 +33,8 @@ import org.json4s.{DefaultFormats, Formats}
 import org.postgresql.util.PSQLException
 import org.scalatra.json.NativeJsonSupport
 import org.scalatra._
-import org.scalatra.swagger.SwaggerSupport
+import org.scalatra.swagger.DataType.ValueDataType
+import org.scalatra.swagger.{ParamType, Parameter, SwaggerSupport}
 import org.scalatra.util.NotNothing
 
 import scala.util.{Failure, Success, Try}
@@ -107,6 +108,11 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     headerParam[T](param.paramName).description(param.description)
   protected def asPathParam[T: Manifest: NotNothing](param: Param) =
     pathParam[T](param.paramName).description(param.description)
+  protected def asFileParam(param: Param) =
+    Parameter(name = param.paramName,
+              `type` = ValueDataType("file"),
+              description = Some(param.description),
+              paramType = ParamType.Form)
 
   def long(paramName: String)(implicit request: HttpServletRequest): Long = {
     val paramValue = params(paramName)
