@@ -92,6 +92,28 @@ object DraftApiProperties extends LazyLogging {
     case Failure(exception) => throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
   }
 
+  lazy val supportedUploadExtensions = Set(
+    ".csv",
+    ".doc",
+    ".docx",
+    ".ggb",
+    ".json",
+    ".odp",
+    ".ods",
+    ".odt",
+    ".pdf",
+    ".ppt",
+    ".pptx",
+    ".pub",
+    ".rtf",
+    ".tex",
+    ".tsv",
+    ".txt",
+    ".xls",
+    ".xlsx",
+    ".xml"
+  )
+
   def booleanProp(key: String) = prop(key).toBoolean
 
   def prop(key: String): String = {
