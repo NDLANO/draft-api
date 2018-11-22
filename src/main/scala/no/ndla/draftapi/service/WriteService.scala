@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi.service
 
+import java.io.ByteArrayInputStream
 import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
@@ -19,8 +20,12 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService}
 import no.ndla.draftapi.validation.ContentValidator
+import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
+import no.ndla.validation.{ValidationException, ValidationMessage}
+import org.scalatra.servlet.FileItem
 
-import scala.util.{Failure, Success, Try}
+import math.max
+import scala.util.{Failure, Random, Success, Try}
 
 trait WriteService {
   this: DraftRepository
@@ -34,7 +39,7 @@ trait WriteService {
     with Clock
     with ReadService
     with ArticleApiClient
-    with ArticleApiClient =>
+    with FileStorageService =>
   val writeService: WriteService
 
   class WriteService {
@@ -315,5 +320,46 @@ trait WriteService {
         .flatMap(id => conceptRepository.newEmptyConcept(id, externalIds))
     }
 
+    def storeFile(file: FileItem): Try[api.UploadedFile] =
+      uploadFile(file).map(f => api.UploadedFile(f.fileName, f.contentType, f.fileExtension, s"/files/${f.filePath}"))
+
+    private[service] def getFileExtension(fileName: String): Try[String] = {
+      val badExtensionError =
+        new ValidationException(
+          errors = Seq(ValidationMessage(
+            "file",
+            s"The file must have one of the supported file extensions: '${supportedUploadExtensions.mkString(", ")}'")))
+
+      fileName.lastIndexOf(".") match {
+        case index: Int if index > -1 =>
+          supportedUploadExtensions.find(_ == fileName.substring(index).toLowerCase) match {
+            case Some(e) => Success(e)
+            case _       => Failure(badExtensionError)
+          }
+        case _ => Failure(badExtensionError)
+
+      }
+    }
+
+    private[service] def uploadFile(file: FileItem): Try[domain.UploadedFile] = {
+      getFileExtension(file.name).flatMap(fileExtension => {
+        val contentType = file.getContentType.getOrElse("")
+        val fileName = Stream
+          .continually(randomFilename(fileExtension))
+          .dropWhile(fileStorage.resourceExists)
+          .head
+
+        fileStorage
+          .uploadResourceFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size)
+          .map(uploadPath => domain.UploadedFile(fileName, uploadPath, file.size, contentType, fileExtension))
+      })
+    }
+
+    private[service] def randomFilename(extension: String, length: Int = 20): String = {
+      val extensionWithDot =
+        if (!extension.headOption.contains('.') && extension.length > 0) s".$extension" else extension
+      val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
+      s"$randomString$extensionWithDot"
+    }
   }
 }

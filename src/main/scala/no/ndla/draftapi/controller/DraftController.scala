@@ -10,7 +10,7 @@ package no.ndla.draftapi.controller
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.{api, domain}
+import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
@@ -19,8 +19,9 @@ import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
 import org.joda.time.DateTime
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.servlet.FileUploadSupport
 import org.scalatra.swagger.{ResponseMessage, Swagger}
-import org.scalatra.{Created, NoContent, NotFound, Ok}
+import org.scalatra.{Created, NotFound, Ok}
 
 import scala.util.{Failure, Success}
 
@@ -405,6 +406,5 @@ trait DraftController {
     ) {
       converterService.stateTransitionsToApi(user.getUser)
     }
-
   }
 }

@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi
 
+import com.amazonaws.services.s3.AmazonS3
 import com.typesafe.scalalogging.LazyLogging
 import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
@@ -50,6 +51,9 @@ trait TestEnvironment
     with ReadService
     with WriteService
     with ContentValidator
+    with FileController
+    with FileStorageService
+    with AmazonClient
     with Clock
     with User
     with ArticleApiClient {
@@ -62,6 +66,7 @@ trait TestEnvironment
 
   val internController = mock[InternController]
   val draftController = mock[DraftController]
+  val fileController = mock[FileController]
   val conceptController = mock[ConceptController]
   val agreementController = mock[AgreementController]
 
@@ -79,6 +84,9 @@ trait TestEnvironment
   val contentValidator = mock[ContentValidator]
   val importValidator = mock[ContentValidator]
   val reindexClient = mock[ReindexClient]
+
+  lazy val fileStorage = mock[FileStorageService]
+  val amazonClient: AmazonS3 = mock[AmazonS3]
 
   val ndlaClient = mock[NdlaClient]
   val searchConverterService = mock[SearchConverterService]

@@ -83,12 +83,36 @@ object DraftApiProperties extends LazyLogging {
   val ArticleApiHost = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
   val LearningpathApiHost = propOrElse("LEARNINGPATH_API_HOST", "learningpath-api.ndla-local")
 
+  val AttachmentStorageName = s"$Environment.article-attachments.ndla"
+
   lazy val Domain = Domains.get(Environment)
 
   lazy val secrets = readSecrets(SecretsFile) match {
     case Success(values)    => values
     case Failure(exception) => throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
   }
+
+  lazy val supportedUploadExtensions = Set(
+    ".csv",
+    ".doc",
+    ".docx",
+    ".ggb",
+    ".json",
+    ".odp",
+    ".ods",
+    ".odt",
+    ".pdf",
+    ".ppt",
+    ".pptx",
+    ".pub",
+    ".rtf",
+    ".tex",
+    ".tsv",
+    ".txt",
+    ".xls",
+    ".xlsx",
+    ".xml"
+  )
 
   def booleanProp(key: String) = prop(key).toBoolean
 
