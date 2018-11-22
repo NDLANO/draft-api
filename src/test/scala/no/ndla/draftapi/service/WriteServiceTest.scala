@@ -390,13 +390,15 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("That get file extension will split extension and name as expected") {
     val a = "test.pdf"
     val b = "test"
-    val c = "te.st.jpeg"
-    val d = ".te....st.bin"
+    val c = "te.st.csv"
+    val d = ".te....st.txt"
+    val e = "kek.jpeg"
 
-    service.getFileExtension(a) should be(Some(".pdf"))
-    service.getFileExtension(b) should be(None)
-    service.getFileExtension(c) should be(Some(".jpeg"))
-    service.getFileExtension(d) should be(Some(".bin"))
+    service.getFileExtension(a) should be(Success(".pdf"))
+    service.getFileExtension(b).isFailure should be(true)
+    service.getFileExtension(c) should be(Success(".csv"))
+    service.getFileExtension(d) should be(Success(".txt"))
+    service.getFileExtension(e).isFailure should be(true)
   }
 
   test("uploading file calls fileStorageService as expected") {
