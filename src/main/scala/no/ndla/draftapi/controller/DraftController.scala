@@ -10,14 +10,13 @@ package no.ndla.draftapi.controller
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
-import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.service.search.ArticleSearchService
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
-import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.joda.time.DateTime
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.servlet.FileUploadSupport
@@ -30,7 +29,7 @@ trait DraftController {
   this: ReadService with WriteService with ArticleSearchService with ConverterService with ContentValidator with User =>
   val draftController: DraftController
 
-  class DraftController(implicit val swagger: Swagger) extends NdlaController with FileUploadSupport {
+  class DraftController(implicit val swagger: Swagger) extends NdlaController {
     protected implicit override val jsonFormats: Formats = DefaultFormats
     protected val applicationDescription = "API for accessing draft articles from ndla.no."
 
@@ -56,7 +55,6 @@ trait DraftController {
     private val filter = Param("filter", "A filter to include a specific entry")
     private val filterNot = Param("filterNot", "A filter to remove a specific entry")
     private val statuss = Param("STATUS", "An article status")
-    private val file = Param("file", "File to upload")
 
     val getTags =
       (apiOperation[ArticleTag]("getTags")
@@ -408,35 +406,5 @@ trait DraftController {
     ) {
       converterService.stateTransitionsToApi(user.getUser)
     }
-
-    post(
-      "/file/",
-      operation(
-        apiOperation[api.UploadedFile]("uploadFile")
-          summary "Uploads provided file"
-          description "Uploads provided file"
-          authorizations "oauth2"
-          consumes "multipart/form-data"
-          parameters (
-            asHeaderParam[Option[String]](correlationId),
-            asFileParam(file)
-        )
-          responseMessages (response400, response403, response500))
-    ) {
-      val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canSetPublish) {
-        fileParams.get(file.paramName) match {
-          case Some(fileToUpload) =>
-            writeService.storeFile(fileToUpload) match {
-              case Success(uploadedFile) => uploadedFile
-              case Failure(ex)           => errorHandler(ex)
-            }
-          case None =>
-            errorHandler(
-              new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain a file"))))
-        }
-      }
-    }
-
   }
 }

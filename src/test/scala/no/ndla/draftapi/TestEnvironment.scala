@@ -51,6 +51,7 @@ trait TestEnvironment
     with ReadService
     with WriteService
     with ContentValidator
+    with FileController
     with FileStorageService
     with AmazonClient
     with Clock
@@ -65,6 +66,7 @@ trait TestEnvironment
 
   val internController = mock[InternController]
   val draftController = mock[DraftController]
+  val fileController = mock[FileController]
   val conceptController = mock[ConceptController]
   val agreementController = mock[AgreementController]
 

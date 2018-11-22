@@ -50,6 +50,7 @@ object ComponentRegistry
     with SearchConverterService
     with ReadService
     with WriteService
+    with FileController
     with FileStorageService
     with AmazonClient
     with ContentValidator
@@ -66,6 +67,7 @@ object ComponentRegistry
 
   lazy val internController = new InternController
   lazy val draftController = new DraftController
+  lazy val fileController = new FileController
   lazy val agreementController = new AgreementController
   lazy val conceptController = new ConceptController
   lazy val resourcesApp = new ResourcesApp
