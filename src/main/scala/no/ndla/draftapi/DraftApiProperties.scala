@@ -10,15 +10,16 @@ package no.ndla.draftapi
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.network.secrets.PropertyKeys
 import no.ndla.network.secrets.Secrets.readSecrets
-import no.ndla.network.Domains
+import no.ndla.network.{AuthUser, Domains}
 import no.ndla.validation.ResourceType
 
 import scala.util.Properties._
 import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
+  val Environment = propOrElse("NDLA_ENVIRONMENT", "local")
   val ApplicationName = "draft-api"
-  val Auth0LoginEndpoint = "https://ndla.eu.auth0.com/authorize"
+  val Auth0LoginEndpoint = s"https://${AuthUser.getAuth0HostForEnv(Environment)}/authorize"
   val DraftRoleWithWriteAccess = "drafts:write"
   val DraftRoleWithPublishAccess = "drafts:set_to_publish"
   val ArticleRoleWithPublishAccess = "articles:publish"
@@ -27,7 +28,6 @@ object DraftApiProperties extends LazyLogging {
 
   val ApplicationPort = propOrElse("APPLICATION_PORT", "80").toInt
   val ContactEmail = "christergundersen@ndla.no"
-  val Environment = propOrElse("NDLA_ENVIRONMENT", "local")
 
   lazy val MetaUserName = prop(PropertyKeys.MetaUserNameKey)
   lazy val MetaPassword = prop(PropertyKeys.MetaPasswordKey)
