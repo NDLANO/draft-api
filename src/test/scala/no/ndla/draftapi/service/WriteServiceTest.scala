@@ -393,10 +393,10 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val c = "te.st.jpeg"
     val d = ".te....st.bin"
 
-    service.getFileExtension(a) should be(("test", Some(".pdf")))
-    service.getFileExtension(b) should be(("test", None))
-    service.getFileExtension(c) should be(("te.st", Some(".jpeg")))
-    service.getFileExtension(d) should be((".te....st", Some(".bin")))
+    service.getFileExtension(a) should be(Some(".pdf"))
+    service.getFileExtension(b) should be(None)
+    service.getFileExtension(c) should be(Some(".jpeg"))
+    service.getFileExtension(d) should be(Some(".bin"))
   }
 
   test("uploading file calls fileStorageService as expected") {
@@ -427,7 +427,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                            storageKeyCaptor.capture(),
                                                            eqTo("application/pdf"),
                                                            eqTo(fileBytes.length.toLong))
-    storageKeyCaptor.getValue.startsWith("myfile") should be(true)
     storageKeyCaptor.getValue.endsWith(".pdf") should be(true)
   }
 }

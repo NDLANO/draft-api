@@ -410,7 +410,7 @@ trait DraftController {
     }
 
     post(
-      "/upload-file/",
+      "/file/",
       operation(
         apiOperation[api.UploadedFile]("uploadFile")
           summary "Uploads provided file"

@@ -321,18 +321,17 @@ trait WriteService {
     def storeFile(file: FileItem): Try[api.UploadedFile] =
       uploadFile(file).map(f => api.UploadedFile(f.fileName, f.contentType, f.fileExtension, s"/files/${f.filePath}"))
 
-    private[service] def getFileExtension(fileName: String): (String, Option[String]) =
+    private[service] def getFileExtension(fileName: String): Option[String] =
       fileName.lastIndexOf(".") match {
-        case index: Int if index > -1 => (fileName.substring(0, index), Some(fileName.substring(index)))
-        case _                        => (fileName, None)
+        case index: Int if index > -1 => Some(fileName.substring(index))
+        case _                        => None
       }
 
     private[service] def uploadFile(file: FileItem): Try[domain.UploadedFile] = {
-      val (filenameWithoutExt, fileExtension) = getFileExtension(file.name)
-
+      val fileExtension = getFileExtension(file.name)
       val contentType = file.getContentType.getOrElse("")
       val fileName = Stream
-        .continually(fileNameWithRandomElement(filenameWithoutExt, fileExtension.getOrElse("")))
+        .continually(randomFilename(fileExtension.getOrElse("")))
         .dropWhile(fileStorage.resourceExists)
         .head
 
@@ -341,11 +340,11 @@ trait WriteService {
         .map(uploadPath => domain.UploadedFile(fileName, uploadPath, file.size, contentType, fileExtension))
     }
 
-    private[service] def fileNameWithRandomElement(filename: String, extension: String, length: Int = 20): String = {
+    private[service] def randomFilename(extension: String, length: Int = 20): String = {
       val extensionWithDot =
         if (!extension.headOption.contains('.') && extension.length > 0) s".$extension" else extension
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
-      s"$filename-$randomString$extensionWithDot"
+      s"$randomString$extensionWithDot"
     }
   }
 }
