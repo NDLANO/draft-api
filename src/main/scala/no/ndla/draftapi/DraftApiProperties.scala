@@ -24,8 +24,6 @@ object DraftApiProperties extends LazyLogging {
   val DraftRoleWithPublishAccess = "drafts:set_to_publish"
   val ArticleRoleWithPublishAccess = "articles:publish"
 
-  val SecretsFile = "draft-api.secrets"
-
   val ApplicationPort = propOrElse("APPLICATION_PORT", "80").toInt
   val ContactEmail = "christergundersen@ndla.no"
 
@@ -87,9 +85,13 @@ object DraftApiProperties extends LazyLogging {
 
   lazy val Domain = Domains.get(Environment)
 
-  lazy val secrets = readSecrets(SecretsFile) match {
-    case Success(values)    => values
-    case Failure(exception) => throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
+  lazy val secrets = {
+    val SecretsFile = "draft-api.secrets"
+    readSecrets(SecretsFile) match {
+      case Success(values) => values
+      case Failure(exception) =>
+        throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
+    }
   }
 
   lazy val supportedUploadExtensions = Set(
