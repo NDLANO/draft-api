@@ -1,7 +1,6 @@
-pactBrokerAddress := "http://pact-broker.ndla-local"
+pactBrokerAddress := sys.env.get("PACT_BROKER_URL").get
 pactContractVersion := git.gitHeadCommit.value
   .map(sha => sha.take(7))
   .get
+pactContractTags := List(git.gitCurrentBranch.value)
 
-providerName := "draft-api"
-consumerNames := Seq("article-api")
