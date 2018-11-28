@@ -1,11 +1,13 @@
-pactBrokerAddress := sys.env.get("PACT_BROKER_URL").get
+import scala.sys.process._
 
-pactContractTags := Seq(
-  sys.env
-    .get("TRAVIS_BRANCH")
-    .getOrElse(git.gitCurrentBranch.value)
+pactBrokerAddress := sys.env("PACT_BROKER_URL")
+pactBrokerCredentials := (
+  sys.env("PACT_BROKER_USERNAME"),
+  sys.env("PACT_BROKER_PASSWORD")
 )
-
-pactContractVersion := git.gitHeadCommit.value
-  .map(sha => sha.take(7))
-  .get
+pactContractTags := Seq(
+  sys.env.getOrElse(
+    "TRAVIS_BRANCH",
+    git.gitCurrentBranch.value
+  ))
+pactContractVersion := ("git rev-parse --short HEAD" !!).trim

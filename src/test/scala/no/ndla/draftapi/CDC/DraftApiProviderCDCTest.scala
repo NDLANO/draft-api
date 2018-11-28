@@ -11,7 +11,7 @@ import java.io.IOException
 import java.net.ServerSocket
 
 import com.itv.scalapact.ScalaPactVerify._
-import com.itv.scalapact.shared.{BrokerPublishData, ProviderStateResult, TaggedConsumer}
+import com.itv.scalapact.shared.{BasicAuthenticationCredentials, BrokerPublishData, ProviderStateResult, TaggedConsumer}
 import no.ndla.draftapi._
 import org.eclipse.jetty.server.Server
 import org.scalatest.Tag
@@ -115,7 +115,13 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
     val broker = for {
       url <- envOrNone("PACT_BROKER_URL")
-      broker <- pactBrokerWithTags(url, "draft-api", publishResults, consumersToVerify)
+      username <- envOrNone("PACT_BROKER_USERNAME")
+      password <- envOrNone("PACT_BROKER_PASSWORD")
+      broker <- pactBrokerWithTags(url,
+                                   "draft-api",
+                                   publishResults,
+                                   consumersToVerify,
+                                   Some(BasicAuthenticationCredentials(username, password)))
     } yield broker
 
     broker match {

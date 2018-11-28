@@ -26,7 +26,7 @@ appProperties := {
 }
 
 import com.itv.scalapact.plugin._
-val pactVersion = "2.3.3-NDLA"
+val pactVersion = "2.3.3-NDLA-2"
 
 val pactTestFramework = Seq(
   "com.itv" %% "scalapact-argonaut-6-2" % pactVersion % "test",
