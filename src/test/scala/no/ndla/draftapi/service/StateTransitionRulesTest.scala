@@ -12,6 +12,7 @@ import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
+import no.ndla.draftapi.model.domain.Status
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
 import org.mockito.Mockito._
@@ -195,6 +196,22 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val res = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
     res.isSuccess should be(true)
     verify(articleApiClient, times(1)).unpublishArticle(article)
+  }
+
+  test("validateArticle should be called when transitioning to QUEUED_FOR_PUBLISHING") {
+    val articleId = 7
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val status = Status(QUALITY_ASSURED, Set.empty)
+
+    val transitionsToTest = StateTransitionRules.StateTransitions.filter(_.to == QUEUED_FOR_PUBLISHING)
+    transitionsToTest.foreach(
+      t =>
+        StateTransitionRules
+          .doTransition(article.copy(status = status.copy(current = t.from)),
+                        QUEUED_FOR_PUBLISHING,
+                        TestData.userWIthAdminAccess)
+          .unsafeRunSync())
+    verify(contentValidator, times(transitionsToTest.size)).validateArticle(any[domain.Article], any[Boolean])
   }
 
 }
