@@ -145,7 +145,8 @@ trait AgreementController {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val newAgreement = extract[NewAgreement](request.body)
-        writeService.newAgreement(newAgreement, userInfo) match {
+
+        newAgreement.flatMap(writeService.newAgreement(_, userInfo)) match {
           case Success(agreement) =>
             reindexClient.reindexAll()
             Created(body = agreement)
@@ -172,7 +173,7 @@ trait AgreementController {
       doOrAccessDenied(userInfo.canWrite) {
         val agreementId = long(this.agreementId.paramName)
         val updatedAgreement = extract[UpdatedAgreement](request.body)
-        writeService.updateAgreement(agreementId, updatedAgreement, userInfo) match {
+        updatedAgreement.flatMap(writeService.updateAgreement(agreementId, _, userInfo)) match {
           case Success(agreement) =>
             reindexClient.reindexAll()
             Ok(body = agreement)

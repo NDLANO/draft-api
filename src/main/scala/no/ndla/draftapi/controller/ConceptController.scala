@@ -129,17 +129,19 @@ trait ConceptController {
         responseMessages (response400, response500))
 
     post("/search/", operation(getAllConceptsPost)) {
-      val searchParams = extract[ConceptSearchParams](request.body)
+      extract[ConceptSearchParams](request.body) match {
+        case Success(searchParams) =>
+          val query = searchParams.query
+          val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
+          val language = searchParams.language.getOrElse(Language.NoLanguage)
+          val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
+          val page = searchParams.page.getOrElse(1)
+          val idList = searchParams.idList
+          val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      val query = searchParams.query
-      val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-      val language = searchParams.language.getOrElse(Language.NoLanguage)
-      val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
-      val page = searchParams.page.getOrElse(1)
-      val idList = searchParams.idList
-      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
-
-      search(query, sort, language, page, pageSize, idList, fallback)
+          search(query, sort, language, page, pageSize, idList, fallback)
+        case Failure(ex) => errorHandler(ex)
+      }
     }
 
     val getConceptById =
@@ -178,7 +180,7 @@ trait ConceptController {
     post("/", operation(newConcept)) {
       doOrAccessDenied(user.getUser.canWrite) {
         val nid = params("externalId")
-        writeService.newConcept(extract[NewConcept](request.body), nid) match {
+        extract[NewConcept](request.body).flatMap(writeService.newConcept(_, nid)) match {
           case Success(c)  => c
           case Failure(ex) => errorHandler(ex)
         }
@@ -200,7 +202,8 @@ trait ConceptController {
       doOrAccessDenied(user.getUser.canWrite) {
         val externalId = paramOrNone("externalId")
 
-        writeService.updateConcept(long(this.conceptId.paramName), extract[UpdatedConcept](request.body), externalId) match {
+        extract[UpdatedConcept](request.body)
+          .flatMap(writeService.updateConcept(long(this.conceptId.paramName), _, externalId)) match {
           case Success(c)  => c
           case Failure(ex) => errorHandler(ex)
         }
