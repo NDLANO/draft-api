@@ -375,8 +375,9 @@ trait DraftController {
       val validationMessage = updateArticle match {
         case Success(art) =>
           contentValidator.validateArticleApiArticle(long(this.articleId.paramName), art, importValidate, user.getUser)
-        case Failure(_) =>
+        case Failure(_) if request.body.isEmpty =>
           contentValidator.validateArticleApiArticle(long(this.articleId.paramName), importValidate)
+        case Failure(ex) => Failure(ex)
       }
 
       validationMessage match {

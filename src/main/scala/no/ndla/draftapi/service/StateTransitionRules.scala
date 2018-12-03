@@ -157,10 +157,9 @@ trait StateTransitionRules {
       if (pathsUsingArticle.isEmpty)
         callback
       else
-        Failure(
-          new ValidationException(
-            s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article",
-            Seq.empty))
+        Failure(new ValidationException(errors = Seq(ValidationMessage(
+          "status.current",
+          s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article"))))
     }
 
     private[service] def checkIfArticleIsUsedInLearningStep(article: domain.Article): Try[domain.Article] = {
