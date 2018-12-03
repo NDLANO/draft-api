@@ -162,7 +162,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
       Success(Seq(learningPath))))
 
     val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
-    res.getMessage should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
+    res.errors.head.message should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
   }
 
   test("checkIfArticleIsUsedInLearningStep  should fail if article is used in a learningstep with a taxonomy-url") {
@@ -180,7 +180,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     when(draftRepository.getIdFromExternalId(any[String])(any[DBSession])).thenReturn(Some(articleId.toLong))
 
     val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
-    res.getMessage should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
+    res.errors.head.message should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
   }
 
   test("checkIfArticleIsUsedInLearningStep  should succeed if article is not used in a learningstep") {
