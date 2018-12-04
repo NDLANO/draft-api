@@ -363,7 +363,8 @@ trait DraftController {
         description "Validate an article"
         parameters (
           asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](articleId)
+          asPathParam[Long](articleId),
+          bodyParam[Option[UpdatedArticle]]
       )
         authorizations "oauth2"
         responseMessages (response400, response403, response404, response500))
