@@ -169,19 +169,21 @@ trait DraftController {
         responseMessages (response400, response500))
 
     post("/search/", operation(getAllArticlesPost)) {
-      val searchParams = extract[ArticleSearchParams](request.body)
+      extract[ArticleSearchParams](request.body) match {
+        case Success(searchParams) =>
+          val query = searchParams.query
+          val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
+          val language = searchParams.language.getOrElse(Language.AllLanguages)
+          val license = searchParams.license
+          val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
+          val page = searchParams.page.getOrElse(1)
+          val idList = searchParams.idList
+          val articleTypesFilter = searchParams.articleTypes
+          val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      val query = searchParams.query
-      val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-      val language = searchParams.language.getOrElse(Language.AllLanguages)
-      val license = searchParams.license
-      val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
-      val page = searchParams.page.getOrElse(1)
-      val idList = searchParams.idList
-      val articleTypesFilter = searchParams.articleTypes
-      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
-
-      search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+        case Failure(ex) => errorHandler(ex)
+      }
     }
 
     val getArticleById =
@@ -275,13 +277,14 @@ trait DraftController {
         val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
         val externalSubjectids = paramAsListOfString("externalSubjectIds")
         val importId = paramOrNone("importId")
-        writeService.newArticle(extract[NewArticle](request.body),
-                                externalId,
-                                externalSubjectids,
-                                userInfo,
-                                oldNdlaCreatedDate,
-                                oldNdlaUpdatedDate,
-                                importId) match {
+        extract[NewArticle](request.body).flatMap(
+          writeService.newArticle(_,
+                                  externalId,
+                                  externalSubjectids,
+                                  userInfo,
+                                  oldNdlaCreatedDate,
+                                  oldNdlaUpdatedDate,
+                                  importId)) match {
           case Success(article)   => Created(body = article)
           case Failure(exception) => errorHandler(exception)
         }
@@ -312,14 +315,15 @@ trait DraftController {
         val id = long(this.articleId.paramName)
         val updateArticle = extract[UpdatedArticle](request.body)
 
-        writeService.updateArticle(id,
-                                   updateArticle,
-                                   externalId,
-                                   externalSubjectIds,
-                                   userInfo,
-                                   oldNdlaCreateddDate,
-                                   oldNdlaUpdatedDate,
-                                   importId) match {
+        updateArticle.flatMap(
+          writeService.updateArticle(id,
+                                     _,
+                                     externalId,
+                                     externalSubjectIds,
+                                     userInfo,
+                                     oldNdlaCreateddDate,
+                                     oldNdlaUpdatedDate,
+                                     importId)) match {
           case Success(article)   => Ok(body = article)
           case Failure(exception) => errorHandler(exception)
         }
@@ -366,8 +370,18 @@ trait DraftController {
 
     put("/:article_id/validate/", operation(validateArticle)) {
       val importValidate = booleanOrDefault("import_validate", default = false)
-      contentValidator.validateArticleApiArticle(long(this.articleId.paramName), importValidate) match {
-        case Success(id) => id
+      val updateArticle = extract[UpdatedArticle](request.body)
+
+      val validationMessage = updateArticle match {
+        case Success(art) =>
+          contentValidator.validateArticleApiArticle(long(this.articleId.paramName), art, importValidate, user.getUser)
+        case Failure(_) if request.body.isEmpty =>
+          contentValidator.validateArticleApiArticle(long(this.articleId.paramName), importValidate)
+        case Failure(ex) => Failure(ex)
+      }
+
+      validationMessage match {
+        case Success(x)  => x
         case Failure(ex) => errorHandler(ex)
       }
     }

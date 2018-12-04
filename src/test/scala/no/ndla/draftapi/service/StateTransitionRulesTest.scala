@@ -12,6 +12,7 @@ import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
+import no.ndla.draftapi.model.domain.Status
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
 import org.mockito.Mockito._
@@ -161,7 +162,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
       Success(Seq(learningPath))))
 
     val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
-    res.getMessage should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
+    res.errors.head.message should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
   }
 
   test("checkIfArticleIsUsedInLearningStep  should fail if article is used in a learningstep with a taxonomy-url") {
@@ -179,7 +180,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     when(draftRepository.getIdFromExternalId(any[String])(any[DBSession])).thenReturn(Some(articleId.toLong))
 
     val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
-    res.getMessage should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
+    res.errors.head.message should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
   }
 
   test("checkIfArticleIsUsedInLearningStep  should succeed if article is not used in a learningstep") {
@@ -195,6 +196,22 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val res = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article)
     res.isSuccess should be(true)
     verify(articleApiClient, times(1)).unpublishArticle(article)
+  }
+
+  test("validateArticle should be called when transitioning to QUEUED_FOR_PUBLISHING") {
+    val articleId = 7
+    val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
+    val status = Status(QUALITY_ASSURED, Set.empty)
+
+    val transitionsToTest = StateTransitionRules.StateTransitions.filter(_.to == QUEUED_FOR_PUBLISHING)
+    transitionsToTest.foreach(
+      t =>
+        StateTransitionRules
+          .doTransition(article.copy(status = status.copy(current = t.from)),
+                        QUEUED_FOR_PUBLISHING,
+                        TestData.userWIthAdminAccess)
+          .unsafeRunSync())
+    verify(contentValidator, times(transitionsToTest.size)).validateArticle(any[domain.Article], any[Boolean])
   }
 
 }

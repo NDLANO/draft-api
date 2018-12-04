@@ -357,6 +357,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     {
       val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithQueuedForPublishing)
       when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+      when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(existing))
       val Success(result) = service.updateArticle(existing.id.get,
                                                   updatedArticle,
                                                   List.empty,

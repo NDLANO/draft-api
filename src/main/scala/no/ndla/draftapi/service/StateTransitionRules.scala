@@ -24,6 +24,7 @@ import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.search.ArticleIndexService
+import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation.{ValidationException, ValidationMessage}
 
 import scala.language.postfixOps
@@ -35,6 +36,7 @@ trait StateTransitionRules {
     with ArticleApiClient
     with TaxonomyApiClient
     with LearningpathApiClient
+    with ContentValidator
     with ArticleIndexService =>
 
   object StateTransitionRules {
@@ -50,7 +52,7 @@ trait StateTransitionRules {
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
       (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
-      (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require SetPublishRoles,
+      (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) withSideEffect validateArticle require SetPublishRoles,
       (PROPOSAL                   -> PUBLISHED)                  require AdminRoles withSideEffect publishArticle,
       (PROPOSAL                   -> AWAITING_QUALITY_ASSURANCE) keepCurrentOnTransition,
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL),
@@ -63,19 +65,19 @@ trait StateTransitionRules {
       (AWAITING_QUALITY_ASSURANCE -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL),
       (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST),
       (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  require AdminRoles keepStates Set(IMPORTED, USER_TEST) withSideEffect publishArticle,
-       QUALITY_ASSURED            -> DRAFT,
        QUALITY_ASSURED            -> QUALITY_ASSURED,
-      (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST) require SetPublishRoles keepCurrentOnTransition,
+       QUALITY_ASSURED            -> DRAFT,
+      (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST) require SetPublishRoles withSideEffect validateArticle keepCurrentOnTransition,
       (QUALITY_ASSURED            -> PUBLISHED)                  require AdminRoles keepStates Set(IMPORTED, USER_TEST) withSideEffect publishArticle keepCurrentOnTransition,
+       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING       withSideEffect validateArticle,
       (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
-       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING,
        QUEUED_FOR_PUBLISHING      -> DRAFT,
        PUBLISHED                  -> DRAFT,
        PUBLISHED                  -> PROPOSAL,
       (PUBLISHED                  -> AWAITING_UNPUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
       (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle,
-       AWAITING_UNPUBLISHING      -> DRAFT,
       (AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep,
+       AWAITING_UNPUBLISHING      -> DRAFT,
       (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
       (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect unpublishArticle,
       (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) require AdminRoles withSideEffect publishArticle,
@@ -88,10 +90,9 @@ trait StateTransitionRules {
     private def getTransition(from: ArticleStatus.Value,
                               to: ArticleStatus.Value,
                               user: UserInfo): Option[StateTransition] = {
-      StateTransitions.find(transition => transition.from == from && transition.to == to) match {
-        case Some(t) if user.hasRoles(t.requiredRoles) || user.isAdmin => Some(t)
-        case _                                                         => None
-      }
+      StateTransitions
+        .find(transition => transition.from == from && transition.to == to)
+        .filter(t => user.hasRoles(t.requiredRoles) || user.isAdmin)
     }
 
     private[service] def doTransitionWithoutSideEffect(
@@ -156,10 +157,9 @@ trait StateTransitionRules {
       if (pathsUsingArticle.isEmpty)
         callback
       else
-        Failure(
-          new ValidationException(
-            s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article",
-            Seq.empty))
+        Failure(new ValidationException(errors = Seq(ValidationMessage(
+          "status.current",
+          s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article"))))
     }
 
     private[service] def checkIfArticleIsUsedInLearningStep(article: domain.Article): Try[domain.Article] = {
@@ -177,6 +177,8 @@ trait StateTransitionRules {
     private def removeFromSearch(article: domain.Article): Try[domain.Article] =
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
-  }
+    private def validateArticle(article: domain.Article): Try[domain.Article] =
+      contentValidator.validateArticle(article, false)
 
+  }
 }
