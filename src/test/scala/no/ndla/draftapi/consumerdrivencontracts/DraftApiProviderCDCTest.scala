@@ -5,7 +5,7 @@
  * See LICENSE
  */
 
-package no.ndla.draftapi.CDC
+package no.ndla.draftapi.consumerdrivencontracts
 
 import java.io.IOException
 import java.net.ServerSocket
@@ -105,12 +105,13 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
   test("That pacts from broker are working.", PactProviderTest) {
     val isTravis = envOrElse("TRAVIS", "false").toBoolean
-    val publishResults = if (isTravis) {
+    val isPullRequest = envOrElse("TRAVIS_PULL_REQUEST", "false").toBoolean
+    val publishResults = if (isTravis && !isPullRequest) {
       getGitVersion.map(version => BrokerPublishData(version, None)).toOption
     } else { None }
 
     val consumersToVerify = List(
-      TaggedConsumer("article-api", List("cdc"))
+      TaggedConsumer("article-api", List("master"))
     )
 
     val broker = for {
