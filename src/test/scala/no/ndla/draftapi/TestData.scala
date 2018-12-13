@@ -184,8 +184,8 @@ object TestData {
     Seq(ArticleIntroduction("This is an introduction", "en")),
     Seq.empty,
     Seq.empty,
-    DateTime.now().minusDays(4).toDate,
-    DateTime.now().minusDays(2).toDate,
+    DateTime.now().minusDays(4).withMillisOfSecond(0).toDate,
+    DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     userWithWriteAccess.id,
     ArticleType.Standard,
     Seq.empty
