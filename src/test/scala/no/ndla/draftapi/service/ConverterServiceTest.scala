@@ -16,10 +16,11 @@ import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.ArticleTitle
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
-import no.ndla.mapping.License.{CC_BY}
+import no.ndla.mapping.License.CC_BY
 import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers._
+import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success}
 
@@ -76,7 +77,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val apiArticle = TestData.newArticle.copy(content = Some(content), visualElement = Some(visualElement))
     val expectedTime = TestData.today
 
-    when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
     when(clock.now()).thenReturn(expectedTime)
 
     val Success(result) = service.toDomainArticle(apiArticle, List.empty, TestData.userWithWriteAccess, None, None)
@@ -91,7 +92,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val created = new DateTime("2016-12-06T16:20:05Z").toDate
     val updated = new DateTime("2017-03-07T21:18:19Z").toDate
 
-    when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
 
     val Success(result) =
       service.toDomainArticle(apiArticle, List.empty, TestData.userWithWriteAccess, Some(created), Some(updated))

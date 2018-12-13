@@ -54,7 +54,7 @@ object Article extends SQLSyntaxSupport[Article] {
   def apply(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
     val meta = read[Article](rs.string(lp.c("document")))
     Article(
-      Some(rs.long(lp.c("id"))),
+      Some(rs.long(lp.c("article_id"))),
       Some(rs.int(lp.c("revision"))),
       meta.status,
       meta.title,

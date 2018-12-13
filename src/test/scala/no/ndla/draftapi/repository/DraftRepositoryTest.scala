@@ -186,6 +186,18 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.getIdFromExternalId("9999") should be(None)
   }
 
+  test("That newArticleId creates the latest available article_id") {
+    assume(databaseIsAvailable, "Database is unavailable")
+    repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+    repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+    repository.insert(sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+    repository.insert(sampleArticle.copy(id = Some(3), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+    repository.insert(sampleArticle.copy(id = Some(4), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+    repository.insert(sampleArticle.copy(id = Some(5), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
+
+    repository.newArticleId() should be(Success(6))
+  }
+
   test("That idsWithStatus returns correct drafts") {
     assume(databaseIsAvailable, "Database is unavailable")
     repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
@@ -222,7 +234,9 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   test("That getArticlesByPage returns all latest articles") {
     assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
-    val art2 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
+    val art2 = sampleArticle.copy(id = Some(1),
+                                  revision = Some(2),
+                                  status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art3 = sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art4 = sampleArticle.copy(id = Some(3), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art5 = sampleArticle.copy(id = Some(4), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
@@ -235,11 +249,16 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.insert(art6)
 
     val pageSize = 4
-    repository.getArticlesByPage(pageSize, pageSize * 0) should be(Seq(
-      art1, art2, art3, art4
-    ))
-    repository.getArticlesByPage(pageSize, pageSize * 1) should be(Seq(
-      art5, art6
-    ))
+    repository.getArticlesByPage(pageSize, pageSize * 0) should be(
+      Seq(
+        art2,
+        art3,
+        art4,
+        art5
+      ))
+    repository.getArticlesByPage(pageSize, pageSize * 1) should be(
+      Seq(
+        art6
+      ))
   }
 }

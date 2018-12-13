@@ -40,9 +40,8 @@ trait ConverterService {
                         user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      articleApiClient.allocateArticleId(List.empty, Seq.empty) match {
-        case Failure(ex) =>
-          Failure(ex)
+      draftRepository.newArticleId() match {
+        case Failure(ex) => Failure(ex)
         case Success(id) =>
           val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
           val domainContent = newArticle.content

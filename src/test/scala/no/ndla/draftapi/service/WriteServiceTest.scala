@@ -54,7 +54,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(contentValidator.validateAgreement(any[Agreement], any[Seq[ValidationMessage]])).thenReturn(Success(agreement))
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
     when(clock.now()).thenReturn(today)
-    when(draftRepository.update(any[Article], any[Boolean])(any[DBSession]))
+    when(draftRepository.updateArticle(any[Article], any[Boolean])(any[DBSession]))
       .thenAnswer((invocation: InvocationOnMock) => {
         val arg = invocation.getArgument[Article](0)
         Try(arg.copy(revision = Some(arg.revision.get + 1)))
@@ -69,7 +69,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List.empty)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(articleApiClient.allocateArticleId(any[List[String]], any[Seq[String]])).thenReturn(Success(1: Long))
+    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
 
     service
       .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None, None)
@@ -383,7 +383,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     when(draftRepository.withId(anyLong())).thenReturn(Some(article))
     service.deleteLanguage(article.id.get, "nn")
-    verify(draftRepository).update(articleCaptor.capture(), anyBoolean())
+    verify(draftRepository).updateArticle(articleCaptor.capture(), anyBoolean())
 
     articleCaptor.getValue.title.length should be(1)
   }
