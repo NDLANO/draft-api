@@ -309,9 +309,7 @@ trait WriteService {
     }
 
     def newEmptyArticle(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
-      articleApiClient
-        .allocateArticleId(externalIds, externalSubjectIds)
-        .flatMap(id => draftRepository.newEmptyArticle(id, externalIds, externalSubjectIds))
+      draftRepository.newArticleId().flatMap(id => draftRepository.newEmptyArticle(id, externalIds, externalSubjectIds))
     }
 
     def newEmptyConcept(externalIds: List[String]): Try[Long] = {
