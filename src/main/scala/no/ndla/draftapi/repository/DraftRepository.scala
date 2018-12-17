@@ -86,8 +86,8 @@ trait DraftRepository {
 
     def newArticleId()(implicit session: DBSession = AutoSession): Try[Long] = {
       Try(
-        sql"""select article_id from ${Article.table} ORDER BY article_id DESC LIMIT 1"""
-          .map(rs => rs.long("article_id"))
+        sql"""select max(article_id) from ${Article.table}"""
+          .map(rs => rs.long("max"))
           .single()
           .apply()
       ) match {
@@ -136,7 +136,6 @@ trait DraftRepository {
       val newRevision = article.revision.getOrElse(0) + 1
 
       val a = Article.syntax("ar")
-      val b = Article.syntax("arb")
 
       val deletedCount = withSQL {
         delete
@@ -145,11 +144,11 @@ trait DraftRepository {
           .eq(a.c("article_id"), article.id)
           .and
           .notIn(a.id,
-                 select(b.id)
-                   .from(Article as b)
+                 select(a.id)
+                   .from(Article as a)
                    .where
-                   .eq(b.c("article_id"), article.id)
-                   .orderBy(b.revision)
+                   .eq(a.c("article_id"), article.id)
+                   .orderBy(a.revision)
                    .desc
                    .limit(1))
       }.update.apply
