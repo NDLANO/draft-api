@@ -25,7 +25,28 @@ appProperties := {
   prop
 }
 
+import com.itv.scalapact.plugin._
+// TODO: Change this to official version when scala-pact supports basic auth and tagging
+// https://github.com/ITV/scala-pact/issues/110
+// https://github.com/ITV/scala-pact/pull/111
+val pactVersion = "2.3.3-NDLA-2"
+
+val pactTestFramework = Seq(
+  "com.itv" %% "scalapact-argonaut-6-2" % pactVersion % "test",
+  "com.itv" %% "scalapact-http4s-0-16a" % pactVersion % "test",
+  "com.itv" %% "scalapact-scalatest" % pactVersion % "test"
+)
+
+lazy val PactTest = config("pact") extend (Test)
 lazy val draft_api = (project in file("."))
+  .configs(PactTest)
+  .settings(
+    inConfig(PactTest)(Defaults.testTasks),
+    // Since pactTest gets its options from Test configuration, the 'Test' (default) config won't run PactProviderTests
+    // To run all tests use pact config ('sbt pact:test')
+    Test / testOptions := Seq(Tests.Argument("-l", "PactProviderTest")),
+    PactTest / testOptions := Seq.empty
+  )
   .settings(
     name := "draft-api",
     organization := appProperties.value.getProperty("NDLAOrganization"),
@@ -33,7 +54,7 @@ lazy val draft_api = (project in file("."))
     scalaVersion := Scalaversion,
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.36",
       "ndla" %% "mapping" % "0.10",
       "ndla" %% "validation" % "0.29",
@@ -106,13 +127,6 @@ assembly / assemblyMergeStrategy := {
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
 }
-
-// Don't run Integration tests in default run on Travis as there is no elasticsearch localhost:9200 there yet.
-// NB this line will unfortunalty override runs on your local commandline so that
-// sbt "test-only -- -n no.ndla.tag.IntegrationTest"
-// will not run unless this line gets commented out or you remove the tag over the test class
-// This should be solved better!
-Test / testOptions += Tests.Argument("-l", "no.ndla.tag.IntegrationTest")
 
 // Make the docker task depend on the assembly task, which generates a fat JAR file
 docker := (docker dependsOn assembly).value

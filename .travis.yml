@@ -12,6 +12,12 @@ cache:
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
   - find $HOME/.sbt -name "*.lock" -delete
+matrix:
+  include:
+    - stage: Unit tests with pact publication
+      script: sbt ++$TRAVIS_SCALA_VERSION pactPublish
+    - stage: Pact provider verification tests
+      script: sbt ++$TRAVIS_SCALA_VERSION "pact:testOnly -- -n PactProviderTest"
 env:
   - META_PASSWORD=""
 services:

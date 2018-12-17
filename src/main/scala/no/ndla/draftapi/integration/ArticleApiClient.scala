@@ -28,8 +28,8 @@ trait ArticleApiClient {
   this: NdlaClient with ConverterService =>
   val articleApiClient: ArticleApiClient
 
-  class ArticleApiClient {
-    private val InternalEndpoint = s"http://$ArticleApiHost/intern"
+  class ArticleApiClient(ArticleBaseUrl: String = s"http://$ArticleApiHost") {
+    private val InternalEndpoint = s"$ArticleBaseUrl/intern"
     private val deleteTimeout = 1000 * 10 // 10 seconds
 
     def allocateArticleId(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
@@ -50,11 +50,6 @@ trait ArticleApiClient {
         case _                     => Seq.empty
       }
       post[ContentId](s"$InternalEndpoint/id/concept/allocate", params: _*).map(_.id)
-    }
-
-    def getValidationErrors(article: Article): Try[Set[ValidationMessage]] = {
-      implicit val formats = Article.formats
-      postWithData[Set[ValidationMessage], Article](s"$InternalEndpoint/validate/article", article)
     }
 
     def updateConcept(id: Long, concept: api.ArticleApiConcept): Try[api.ArticleApiConcept] = {

@@ -33,7 +33,6 @@ object DraftApiProperties extends LazyLogging {
   lazy val MetaServer = prop(PropertyKeys.MetaServerKey)
   lazy val MetaPort = prop(PropertyKeys.MetaPortKey).toInt
   lazy val MetaSchema = prop(PropertyKeys.MetaSchemaKey)
-  val MetaInitialConnections = 3
   val MetaMaxConnections = 20
 
   val resourceHtmlEmbedTag = "embed"
@@ -116,20 +115,18 @@ object DraftApiProperties extends LazyLogging {
     ".xml"
   )
 
-  def booleanProp(key: String) = prop(key).toBoolean
+  def booleanProp(key: String): Boolean = prop(key).toBoolean
 
   def prop(key: String): String = {
     propOrElse(key, throw new RuntimeException(s"Unable to load property $key"))
   }
 
-  def propOrElse(key: String, default: => String): String = {
+  def propOpt(key: String): Option[String] = {
     secrets.get(key).flatten match {
-      case Some(secret) => secret
-      case None =>
-        envOrNone(key) match {
-          case Some(env) => env
-          case None      => default
-        }
+      case Some(secret) => Some(secret)
+      case None         => envOrNone(key)
     }
   }
+
+  def propOrElse(key: String, default: => String): String = propOpt(key).getOrElse(default)
 }
