@@ -71,23 +71,6 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .and("article-api")
       .addInteraction(
         interaction
-          .description("Allocating an article id should return a long")
-          .given("empty")
-          .uponReceiving(method = POST,
-                         path = "/intern/id/article/allocate",
-                         query = None,
-                         headers = authHeaderMap,
-                         body = None,
-                         matchingRules = None)
-          .willRespondWith(
-            status = 200,
-            headers = Map.empty,
-            body = write(idResponse),
-            matchingRules = None
-          )
-      )
-      .addInteraction(
-        interaction
           .description("Allocating an concept id should return a long")
           .given("empty")
           .uponReceiving(method = POST,
@@ -106,7 +89,6 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .runConsumerTest { mockConfig =>
         AuthUser.setHeader(s"Bearer $exampleToken")
         val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
-        articleApiClient.allocateArticleId(List("1234", "4567"), List("1", "2")) should be(Success(1))
         articleApiClient.allocateConceptId(List("1234", "4567")) should be(Success(1))
       }
   }
