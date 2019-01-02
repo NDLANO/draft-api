@@ -32,17 +32,6 @@ trait ArticleApiClient {
     private val InternalEndpoint = s"$ArticleBaseUrl/intern"
     private val deleteTimeout = 1000 * 10 // 10 seconds
 
-    def allocateArticleId(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
-      implicit val format = org.json4s.DefaultFormats
-
-      val params = externalIds match {
-        case nids if nids.nonEmpty =>
-          Seq("external-id" -> nids.mkString(","), "external-subject-id" -> externalSubjectIds.mkString(","))
-        case _ => Seq.empty
-      }
-      post[ContentId](s"$InternalEndpoint/id/article/allocate", params: _*).map(_.id)
-    }
-
     def allocateConceptId(externalIds: List[String]): Try[Long] = {
       implicit val format = org.json4s.DefaultFormats
       val params = externalIds match {
@@ -119,6 +108,5 @@ trait ArticleApiClient {
           .header("content-type", "application/json")
       )
     }
-
   }
 }

@@ -120,7 +120,7 @@ trait WriteService {
           for {
             convertedArticleT <- converterService.updateStatus(status, draft, user).attempt.unsafeRunSync().toTry
             convertedArticle <- convertedArticleT
-            updatedArticle <- draftRepository.update(convertedArticle, isImported)
+            updatedArticle <- draftRepository.updateArticle(convertedArticle, isImported)
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
       }
@@ -134,7 +134,7 @@ trait WriteService {
       val updateFunc = externalIds match {
         case Nil =>
           (a: domain.Article) =>
-            draftRepository.update(a, isImported = isImported)
+            draftRepository.updateArticle(a, isImported = isImported)
         case nids =>
           (a: domain.Article) =>
             draftRepository.updateWithExternalIds(a, nids, externalSubjectIds, importId)
@@ -230,7 +230,7 @@ trait WriteService {
                 visualElement = visualElement
               )
               draftRepository
-                .update(newArticle)
+                .updateArticle(newArticle)
                 .flatMap(
                   converterService.toApiArticle(_, Language.AllLanguages)
                 )
@@ -242,7 +242,7 @@ trait WriteService {
 
     def deleteArticle(id: Long): Try[api.ContentId] = {
       draftRepository
-        .delete(id)
+        .deleteArticle(id)
         .flatMap(articleIndexService.deleteDocument)
         .map(api.ContentId)
     }
@@ -309,9 +309,7 @@ trait WriteService {
     }
 
     def newEmptyArticle(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
-      articleApiClient
-        .allocateArticleId(externalIds, externalSubjectIds)
-        .flatMap(id => draftRepository.newEmptyArticle(id, externalIds, externalSubjectIds))
+      draftRepository.newArticleId().flatMap(id => draftRepository.newEmptyArticle(id, externalIds, externalSubjectIds))
     }
 
     def newEmptyConcept(externalIds: List[String]): Try[Long] = {
