@@ -22,7 +22,7 @@ import no.ndla.draftapi.model.api.{
   ResultWindowTooLargeException,
   ValidationError
 }
-import no.ndla.draftapi.model.domain.emptySomeToNone
+import no.ndla.draftapi.model.domain.{NdlaSearchException, emptySomeToNone}
 import no.ndla.network.model.HttpRequestException
 import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -81,6 +81,10 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
           logger.error(s"Problem with remote service: ${h.getMessage}")
           BadGateway(body = Error.GenericError)
       }
+    case nse: NdlaSearchException
+        if nse.rf.error.rootCause.exists(x =>
+          x.`type` == "search_context_missing_exception" || x.reason == "Cannot parse scroll id") =>
+      BadRequest(body = Error.InvalidSearchContext)
     case t: Throwable =>
       logger.error(Error.GenericError.toString, t)
       InternalServerError(body = Error.GenericError)
