@@ -90,29 +90,31 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
       InternalServerError(body = Error.GenericError)
   }
 
-  case class Param(paramName: String, description: String)
+  case class Param[T](paramName: String, description: String)(implicit mf: Manifest[T])
 
-  protected val correlationId = Param("X-Correlation-ID", "User supplied correlation-id. May be omitted.")
-  protected val pageNo = Param("page", "The page number of the search hits to display.")
-  protected val pageSize = Param("page-size", "The number of search hits to display for each page.")
-  protected val sort = Param(
+  protected val correlationId =
+    Param[Option[String]]("X-Correlation-ID", "User supplied correlation-id. May be omitted.")
+  protected val pageNo = Param[Option[Int]]("page", "The page number of the search hits to display.")
+  protected val pageSize = Param[Option[Int]]("page-size", "The number of search hits to display for each page.")
+  protected val sort = Param[Option[String]](
     "sort",
     """The sorting used on results.
              The following are supported: relevance, -relevance, title, -title, lastUpdated, -lastUpdated, id, -id.
              Default is by -relevance (desc) when query is set, and title (asc) when query is empty.""".stripMargin
   )
-  protected val deprecatedNodeId = Param("deprecated_node_id", "Id of deprecated NDLA node")
-  protected val language = Param("language", "The ISO 639-1 language code describing language.")
-  protected val license = Param("license", "Return only results with provided license.")
-  protected val fallback = Param("fallback", "Fallback to existing language if language is specified.")
+  protected val deprecatedNodeId = Param[Long]("deprecated_node_id", "Id of deprecated NDLA node")
+  protected val language = Param[Option[String]]("language", "The ISO 639-1 language code describing language.")
+  protected val pathLanguage = Param[String]("language", "The ISO 639-1 language code describing language.")
+  protected val license = Param[Option[String]]("license", "Return only results with provided license.")
+  protected val fallback = Param[Option[Boolean]]("fallback", "Fallback to existing language if language is specified.")
 
-  protected def asQueryParam[T: Manifest: NotNothing](param: Param) =
+  protected def asQueryParam[T: Manifest: NotNothing](param: Param[T]) =
     queryParam[T](param.paramName).description(param.description)
-  protected def asHeaderParam[T: Manifest: NotNothing](param: Param) =
+  protected def asHeaderParam[T: Manifest: NotNothing](param: Param[T]) =
     headerParam[T](param.paramName).description(param.description)
-  protected def asPathParam[T: Manifest: NotNothing](param: Param) =
+  protected def asPathParam[T: Manifest: NotNothing](param: Param[T]) =
     pathParam[T](param.paramName).description(param.description)
-  protected def asFileParam(param: Param) =
+  protected def asFileParam(param: Param[_]) =
     Parameter(name = param.paramName,
               `type` = ValueDataType("file"),
               description = Some(param.description),

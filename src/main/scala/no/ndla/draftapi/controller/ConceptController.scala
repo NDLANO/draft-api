@@ -8,7 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.auth.{Role, User}
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api.{
   Concept,
   ConceptSearchParams,
@@ -19,8 +19,8 @@ import no.ndla.draftapi.model.api.{
   UpdatedConcept
 }
 import no.ndla.draftapi.model.domain.{Language, Sort}
-import no.ndla.draftapi.service.{ReadService, WriteService}
 import no.ndla.draftapi.service.search.ConceptSearchService
+import no.ndla.draftapi.service.{ReadService, WriteService}
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.NotFound
 import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
@@ -42,11 +42,12 @@ trait ConceptController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    private val query = Param("query", "Return only concepts with content matching the specified query.")
-    private val conceptIds = Param(
+    private val query =
+      Param[Option[String]]("query", "Return only concepts with content matching the specified query.")
+    private val conceptIds = Param[Option[Seq[Long]]](
       "ids",
       "Return only concepts that have one of the provided ids. To provide multiple ids, separate by comma (,).")
-    private val conceptId = Param("concept_id", "Id of the concept that is to be returned")
+    private val conceptId = Param[Long]("concept_id", "Id of the concept that is to be returned")
 
     private def search(query: Option[String],
                        sort: Option[Sort.Value],
@@ -86,25 +87,26 @@ trait ConceptController {
 
     }
 
-    val getAllConcepts =
-      (apiOperation[ConceptSearchResult]("getAllConcepts")
-        summary "Show all concepts"
-        description "Shows all concepts. You can search it too."
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asQueryParam[Option[String]](query),
-          asQueryParam[Option[String]](conceptIds),
-          asQueryParam[Option[String]](language),
-          asQueryParam[Option[String]](query),
-          asQueryParam[Option[Int]](pageNo),
-          asQueryParam[Option[Int]](pageSize),
-          asQueryParam[Option[String]](sort),
-          asQueryParam[Option[Boolean]](fallback)
-      )
-        authorizations "oauth2"
-        responseMessages (response500))
-
-    get("/", operation(getAllConcepts)) {
+    get(
+      "/",
+      operation(
+        apiOperation[ConceptSearchResult]("getAllConcepts")
+          summary "Show all concepts"
+          description "Shows all concepts. You can search it too."
+          parameters (
+            asHeaderParam(correlationId),
+            asQueryParam(query),
+            asQueryParam(conceptIds),
+            asQueryParam(language),
+            asQueryParam(query),
+            asQueryParam(pageNo),
+            asQueryParam(pageSize),
+            asQueryParam(sort),
+            asQueryParam(fallback)
+        )
+          authorizations "oauth2"
+          responseMessages response500)
+    ) {
       val query = paramOrNone(this.query.paramName)
       val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
       val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
@@ -116,19 +118,20 @@ trait ConceptController {
       search(query, sort, language, page, pageSize, idList, fallback)
     }
 
-    val getAllConceptsPost =
-      (apiOperation[ConceptSearchResult]("searchConcepts")
-        summary "Show all concepts"
-        description "Shows all concepts. You can search it too."
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          bodyParam[ConceptSearchParams],
-          asQueryParam[Option[Boolean]](fallback)
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response500))
-
-    post("/search/", operation(getAllConceptsPost)) {
+    post(
+      "/search/",
+      operation(
+        apiOperation[ConceptSearchResult]("searchConcepts")
+          summary "Show all concepts"
+          description "Shows all concepts. You can search it too."
+          parameters (
+            asHeaderParam(correlationId),
+            bodyParam[ConceptSearchParams],
+            asQueryParam(fallback)
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response500))
+    ) {
       extract[ConceptSearchParams](request.body) match {
         case Success(searchParams) =>
           val query = searchParams.query
@@ -144,19 +147,20 @@ trait ConceptController {
       }
     }
 
-    val getConceptById =
-      (apiOperation[String]("getConceptById")
-        summary "Show concept with a specified id"
-        description "Shows the concept for the specified id."
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asQueryParam[Option[String]](language),
-          asPathParam[Long](conceptId)
-      )
-        authorizations "oauth2"
-        responseMessages (response404, response500))
-
-    get("/:concept_id", operation(getConceptById)) {
+    get(
+      "/:concept_id",
+      operation(
+        apiOperation[String]("getConceptById")
+          summary "Show concept with a specified id"
+          description "Shows the concept for the specified id."
+          parameters (
+            asHeaderParam(correlationId),
+            asQueryParam(language),
+            asPathParam(conceptId)
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
       val conceptId = long(this.conceptId.paramName)
       val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
 
@@ -166,18 +170,19 @@ trait ConceptController {
       }
     }
 
-    val newConcept =
-      (apiOperation[Concept]("newConceptById")
-        summary "Create new concept"
-        description "Create new concept"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          bodyParam[NewConcept]
-      )
-        authorizations "oauth2"
-        responseMessages (response404, response500))
-
-    post("/", operation(newConcept)) {
+    post(
+      "/",
+      operation(
+        apiOperation[Concept]("newConceptById")
+          summary "Create new concept"
+          description "Create new concept"
+          parameters (
+            asHeaderParam(correlationId),
+            bodyParam[NewConcept]
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
       doOrAccessDenied(user.getUser.canWrite) {
         val nid = params("externalId")
         extract[NewConcept](request.body).flatMap(writeService.newConcept(_, nid)) match {
@@ -187,18 +192,19 @@ trait ConceptController {
       }
     }
 
-    val updateConcept =
-      (apiOperation[Concept]("updateConceptById")
-        summary "Update a concept"
-        description "Update a concept"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          bodyParam[NewConcept]
-      )
-        authorizations "oauth2"
-        responseMessages (response404, response500))
-
-    patch("/:concept_id", operation(updateConcept)) {
+    patch(
+      "/:concept_id",
+      operation(
+        apiOperation[Concept]("updateConceptById")
+          summary "Update a concept"
+          description "Update a concept"
+          parameters (
+            asHeaderParam(correlationId),
+            bodyParam[NewConcept]
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
       doOrAccessDenied(user.getUser.canWrite) {
         val externalId = paramOrNone("externalId")
 
@@ -210,18 +216,19 @@ trait ConceptController {
       }
     }
 
-    val getInternalIdByExternalId =
-      (apiOperation[ContentId]("getInternalIdByExternalId")
-        summary "Get internal id of concept for a specified ndla_node_id"
-        description "Get internal id of concept for a specified ndla_node_id"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](deprecatedNodeId)
-      )
-        authorizations "oauth2"
-        responseMessages (response404, response500))
-
-    get("/external_id/:deprecated_node_id", operation(getInternalIdByExternalId)) {
+    get(
+      "/external_id/:deprecated_node_id",
+      operation(
+        apiOperation[ContentId]("getInternalIdByExternalId")
+          summary "Get internal id of concept for a specified ndla_node_id"
+          description "Get internal id of concept for a specified ndla_node_id"
+          parameters (
+            asHeaderParam(correlationId),
+            asPathParam(deprecatedNodeId)
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
       val externalId = long(deprecatedNodeId.paramName)
       readService.getInternalConceptIdByExternalId(externalId) match {
         case Some(id) => id
