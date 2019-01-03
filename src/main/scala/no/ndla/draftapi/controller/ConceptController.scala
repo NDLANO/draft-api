@@ -19,16 +19,16 @@ import no.ndla.draftapi.model.api.{
   UpdatedConcept
 }
 import no.ndla.draftapi.model.domain.{Language, Sort}
-import no.ndla.draftapi.service.search.ConceptSearchService
+import no.ndla.draftapi.service.search.{ConceptSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ReadService, WriteService}
 import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.NotFound
+import org.scalatra.{NotFound, Ok}
 import org.scalatra.swagger.{ResponseMessage, Swagger, SwaggerSupport}
 
 import scala.util.{Failure, Success}
 
 trait ConceptController {
-  this: ReadService with WriteService with ConceptSearchService with User =>
+  this: ReadService with WriteService with SearchConverterService with ConceptSearchService with User =>
   val conceptController: ConceptController
 
   class ConceptController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -48,6 +48,21 @@ trait ConceptController {
       "ids",
       "Return only concepts that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val conceptId = Param[Long]("concept_id", "Id of the concept that is to be returned")
+
+    private def scrollOr(orFunction: => Any): Any = {
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+
+      paramOrNone(this.scrollId.paramName) match {
+        case Some(scroll) =>
+          conceptSearchService.scroll(scroll, language) match {
+            case Success(scrollResult) =>
+              val responseHeader = scrollResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
+              Ok(searchConverterService.asApiConceptSearchResult(scrollResult), headers = responseHeader)
+            case Failure(ex) => errorHandler(ex)
+          }
+        case None => orFunction
+      }
+    }
 
     private def search(query: Option[String],
                        sort: Option[Sort.Value],
@@ -81,8 +96,10 @@ trait ConceptController {
       }
 
       result match {
-        case Success(searchResult) => searchResult
-        case Failure(ex)           => errorHandler(ex)
+        case Success(searchResult) =>
+          val responseHeader = searchResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
+          Ok(searchConverterService.asApiConceptSearchResult(searchResult), headers = responseHeader)
+        case Failure(ex) => errorHandler(ex)
       }
 
     }
@@ -102,20 +119,24 @@ trait ConceptController {
             asQueryParam(pageNo),
             asQueryParam(pageSize),
             asQueryParam(sort),
-            asQueryParam(fallback)
+            asQueryParam(fallback),
+            asQueryParam(scrollId)
         )
           authorizations "oauth2"
           responseMessages response500)
     ) {
-      val query = paramOrNone(this.query.paramName)
-      val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
-      val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
-      val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
-      val page = intOrDefault(this.pageNo.paramName, 1)
-      val idList = paramAsListOfLong(this.conceptIds.paramName)
-      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      scrollOr {
+        val query = paramOrNone(this.query.paramName)
+        val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
+        val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
+        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
+        val page = intOrDefault(this.pageNo.paramName, 1)
+        val idList = paramAsListOfLong(this.conceptIds.paramName)
+        val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      search(query, sort, language, page, pageSize, idList, fallback)
+        search(query, sort, language, page, pageSize, idList, fallback)
+
+      }
     }
 
     post(
@@ -127,23 +148,26 @@ trait ConceptController {
           parameters (
             asHeaderParam(correlationId),
             bodyParam[ConceptSearchParams],
-            asQueryParam(fallback)
+            asQueryParam(fallback),
+            asQueryParam(scrollId)
         )
           authorizations "oauth2"
           responseMessages (response400, response500))
     ) {
-      extract[ConceptSearchParams](request.body) match {
-        case Success(searchParams) =>
-          val query = searchParams.query
-          val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-          val language = searchParams.language.getOrElse(Language.NoLanguage)
-          val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
-          val page = searchParams.page.getOrElse(1)
-          val idList = searchParams.idList
-          val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      scrollOr {
+        extract[ConceptSearchParams](request.body) match {
+          case Success(searchParams) =>
+            val query = searchParams.query
+            val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
+            val language = searchParams.language.getOrElse(Language.NoLanguage)
+            val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
+            val page = searchParams.page.getOrElse(1)
+            val idList = searchParams.idList
+            val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-          search(query, sort, language, page, pageSize, idList, fallback)
-        case Failure(ex) => errorHandler(ex)
+            search(query, sort, language, page, pageSize, idList, fallback)
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 

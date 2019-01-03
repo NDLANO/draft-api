@@ -11,7 +11,7 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.Sort
+import no.ndla.draftapi.model.domain.{Language, Sort}
 import no.ndla.draftapi.service.search.{AgreementSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import org.json4s.{DefaultFormats, Formats}
@@ -51,6 +51,21 @@ trait AgreementController {
       "Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val agreementId = Param[Long]("agreement_id", "Id of the agreement that is to be returned")
 
+    private def scrollOr(orFunction: => Any): Any = {
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+
+      paramOrNone(this.scrollId.paramName) match {
+        case Some(scroll) =>
+          agreementSearchService.scroll(scroll, language) match {
+            case Success(scrollResult) =>
+              val responseHeader = scrollResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
+              Ok(searchConverterService.asApiAgreementSearchResult(scrollResult), headers = responseHeader)
+            case Failure(ex) => errorHandler(ex)
+          }
+        case None => orFunction
+      }
+    }
+
     private def search(query: Option[String],
                        sort: Option[Sort.Value],
                        license: Option[String],
@@ -78,8 +93,10 @@ trait AgreementController {
       }
 
       result match {
-        case Success(searchResult) => searchResult
-        case Failure(ex)           => errorHandler(ex)
+        case Success(searchResult) =>
+          val responseHeader = searchResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
+          Ok(searchConverterService.asApiAgreementSearchResult(searchResult), headers = responseHeader)
+        case Failure(ex) => errorHandler(ex)
       }
     }
 
@@ -97,19 +114,22 @@ trait AgreementController {
             asQueryParam(license),
             asQueryParam(pageNo),
             asQueryParam(pageSize),
-            asQueryParam(sort)
+            asQueryParam(sort),
+            asQueryParam(scrollId)
         )
           authorizations "oauth2"
           responseMessages response500)
     ) {
-      val query = paramOrNone(this.query.paramName)
-      val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
-      val license = paramOrNone(this.license.paramName)
-      val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
-      val page = intOrDefault(this.pageNo.paramName, 1)
-      val idList = paramAsListOfLong(this.agreementIds.paramName)
+      scrollOr {
+        val query = paramOrNone(this.query.paramName)
+        val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
+        val license = paramOrNone(this.license.paramName)
+        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
+        val page = intOrDefault(this.pageNo.paramName, 1)
+        val idList = paramAsListOfLong(this.agreementIds.paramName)
 
-      search(query, sort, license, page, pageSize, idList)
+        search(query, sort, license, page, pageSize, idList)
+      }
     }
 
     get(

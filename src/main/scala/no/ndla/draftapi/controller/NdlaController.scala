@@ -10,7 +10,12 @@ package no.ndla.draftapi.controller
 import javax.servlet.http.HttpServletRequest
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.ComponentRegistry
-import no.ndla.draftapi.DraftApiProperties.{CorrelationIdHeader, CorrelationIdKey}
+import no.ndla.draftapi.DraftApiProperties.{
+  CorrelationIdHeader,
+  CorrelationIdKey,
+  ElasticSearchScrollKeepAlive,
+  ElasticSearchIndexMaxResultWindow
+}
 import no.ndla.draftapi.model.api.{
   AccessDeniedException,
   ArticlePublishException,
@@ -22,7 +27,8 @@ import no.ndla.draftapi.model.api.{
   ResultWindowTooLargeException,
   ValidationError
 }
-import no.ndla.draftapi.model.domain.{NdlaSearchException, emptySomeToNone}
+import no.ndla.draftapi.model.domain.{Language, NdlaSearchException, emptySomeToNone}
+import no.ndla.draftapi.service.search.SearchService
 import no.ndla.network.model.HttpRequestException
 import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -107,6 +113,15 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
   protected val pathLanguage = Param[String]("language", "The ISO 639-1 language code describing language.")
   protected val license = Param[Option[String]]("license", "Return only results with provided license.")
   protected val fallback = Param[Option[Boolean]]("fallback", "Fallback to existing language if language is specified.")
+  protected val scrollId = Param[Option[String]](
+    "search-context",
+    s"""A search context retrieved from the response header of a previous search.
+       |If search-context is specified, all other query parameters, except '${this.language.paramName}' and '${this.fallback.paramName}' are ignored
+       |For the rest of the parameters the original search of the search-context is used.
+       |The search context may change between scrolls. Always use the most recent one (The context if unused dies after $ElasticSearchScrollKeepAlive).
+       |Used to enable scrolling past $ElasticSearchIndexMaxResultWindow results.
+      """.stripMargin
+  )
 
   protected def asQueryParam[T: Manifest: NotNothing](param: Param[T]) =
     queryParam[T](param.paramName).description(param.description)

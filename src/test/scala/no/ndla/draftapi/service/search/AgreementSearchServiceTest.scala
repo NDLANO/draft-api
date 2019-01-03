@@ -56,7 +56,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
                               None,
                               None)
 
-  val today = DateTime.now()
+  val today: DateTime = DateTime.now()
 
   val sampleAgreement = new Agreement(
     Some(1),
@@ -68,34 +68,39 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     "ndla1234"
   )
 
-  val agreement1 = sampleAgreement.copy(id = Some(2), title = "Aper får lov", content = "Aper får kjempe seg fremover")
+  val agreement1: Agreement =
+    sampleAgreement.copy(id = Some(2), title = "Aper får lov", content = "Aper får kjempe seg fremover")
 
-  val agreement2 =
+  val agreement2: Agreement =
     sampleAgreement.copy(id = Some(3), title = "Ugler er slemme", content = "Ugler er de slemmeste dyrene")
 
-  val agreement3 = sampleAgreement.copy(id = Some(4),
-                                        title = "Tyven stjeler penger",
-                                        content = "Det er ikke hemmelig at tyven er den som stjeler penger")
+  val agreement3: Agreement = sampleAgreement.copy(id = Some(4),
+                                                   title = "Tyven stjeler penger",
+                                                   content = "Det er ikke hemmelig at tyven er den som stjeler penger")
 
-  val agreement4 =
+  val agreement4: Agreement =
     sampleAgreement.copy(id = Some(5), title = "Vi får låne bildene", content = "Vi får låne bildene av kjeltringene")
 
-  val agreement5 =
+  val agreement5: Agreement =
     sampleAgreement.copy(id = Some(6), title = "Kjeltringer er ikke velkomne", content = "De er slemmere enn kjeft")
-  val agreement6 = sampleAgreement.copy(id = Some(7), title = "Du er en tyv", content = "Det er du som er tyven")
 
-  val agreement7 = sampleAgreement.copy(id = Some(8),
-                                        title = "Lurerier er ikke bra",
-                                        content = "Lurerier er bare lov dersom du er en tyv")
+  val agreement6: Agreement =
+    sampleAgreement.copy(id = Some(7), title = "Du er en tyv", content = "Det er du som er tyven")
 
-  val agreement8 =
+  val agreement7: Agreement = sampleAgreement.copy(id = Some(8),
+                                                   title = "Lurerier er ikke bra",
+                                                   content = "Lurerier er bare lov dersom du er en tyv")
+
+  val agreement8: Agreement =
     sampleAgreement.copy(id = Some(9), title = "Hvorfor er aper så slemme", content = "Har du blitt helt ape")
 
-  val agreement9 =
+  val agreement9: Agreement =
     sampleAgreement.copy(id = Some(10), title = "Du er en av dem du", content = "Det er ikke snilt å være en av dem")
-  val agreement10 = sampleAgreement.copy(id = Some(11), title = "Woopie", content = "This agreement is not copyrighted")
 
-  override def beforeAll = {
+  val agreement10: Agreement =
+    sampleAgreement.copy(id = Some(11), title = "Woopie", content = "This agreement is not copyrighted")
+
+  override def beforeAll: Unit = {
     agreementIndexService.createIndexWithName(DraftApiProperties.AgreementSearchIndex)
 
     agreementIndexService.indexDocument(agreement1)
@@ -114,7 +119,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     })
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     agreementIndexService.deleteIndexWithName(Some(DraftApiProperties.AgreementSearchIndex))
   }
 
@@ -141,7 +146,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdAsc)
     val hits = results.results
     results.totalCount should be(10)
-    hits(0).id should be(2)
+    hits.head.id should be(2)
     hits(1).id should be(3)
     hits(2).id should be(4)
     hits(3).id should be(5)
@@ -165,7 +170,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleAsc)
     val hits = results.results
     results.totalCount should be(10)
-    hits(0).id should be(2)
+    hits.head.id should be(2)
     hits(1).id should be(10)
     hits(2).id should be(7)
     hits(3).id should be(9)
@@ -180,7 +185,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleDesc)
     val hits = results.results
     results.totalCount should be(10)
-    hits(0).id should be(11)
+    hits.head.id should be(11)
     hits(1).id should be(5)
     hits(2).id should be(3)
     hits(3).id should be(4)
@@ -196,7 +201,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     val Success(page1) = agreementSearchService.all(List(), None, 1, 2, Sort.ByTitleAsc)
     val hits1 = page1.results
     page1.totalCount should be(10)
-    page1.page should be(1)
+    page1.page.get should be(1)
     hits1.size should be(2)
     hits1.head.id should be(2)
     hits1.last.id should be(10)
@@ -204,7 +209,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     val Success(page2) = agreementSearchService.all(List(), None, 2, 2, Sort.ByTitleAsc)
     val hits2 = page2.results
     page2.totalCount should be(10)
-    page2.page should be(2)
+    page2.page.get should be(2)
     hits2.size should be(2)
     hits2.head.id should be(7)
     hits2.last.id should be(9)
@@ -254,7 +259,28 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     hits.map(_.id) should equal(Seq(8, 2))
   }
 
-  def blockUntil(predicate: () => Boolean) = {
+  test("That scrolling works as expected") {
+    val pageSize = 2
+    val expectedIds = List(2, 3, 4, 5, 6, 7, 8, 9, 10, 11).sliding(pageSize, pageSize).toList
+
+    val Success(initialSearch) =
+      agreementSearchService.all(List.empty, None, 1, pageSize, Sort.ByIdAsc)
+
+    val Success(scroll1) = agreementSearchService.scroll(initialSearch.scrollId.get, "all")
+    val Success(scroll2) = agreementSearchService.scroll(scroll1.scrollId.get, "all")
+    val Success(scroll3) = agreementSearchService.scroll(scroll2.scrollId.get, "all")
+    val Success(scroll4) = agreementSearchService.scroll(scroll3.scrollId.get, "all")
+    val Success(scroll5) = agreementSearchService.scroll(scroll4.scrollId.get, "all")
+
+    initialSearch.results.map(_.id) should be(expectedIds.head)
+    scroll1.results.map(_.id) should be(expectedIds(1))
+    scroll2.results.map(_.id) should be(expectedIds(2))
+    scroll3.results.map(_.id) should be(expectedIds(3))
+    scroll4.results.map(_.id) should be(expectedIds(4))
+    scroll5.results.map(_.id) should be(List.empty)
+  }
+
+  def blockUntil(predicate: () => Boolean): Unit = {
     var backoff = 0
     var done = false
 
