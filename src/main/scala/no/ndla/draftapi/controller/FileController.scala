@@ -46,7 +46,7 @@ trait FileController {
           authorizations "oauth2"
           consumes "multipart/form-data"
           parameters (
-            asHeaderParam[Option[String]](correlationId),
+            asHeaderParam(correlationId),
             asFileParam(file)
         )
           responseMessages (response400, response403, response500))

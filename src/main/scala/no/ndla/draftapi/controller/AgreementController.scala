@@ -11,7 +11,7 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.Sort
+import no.ndla.draftapi.model.domain.{Language, Sort}
 import no.ndla.draftapi.service.search.{AgreementSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import org.json4s.{DefaultFormats, Formats}
@@ -44,11 +44,27 @@ trait AgreementController {
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    private val query = Param("query", "Return only agreements with content matching the specified query.")
-    private val agreementIds = Param(
+    private val query =
+      Param[Option[String]]("query", "Return only agreements with content matching the specified query.")
+    private val agreementIds = Param[Option[Seq[String]]](
       "ids",
       "Return only agreements that have one of the provided ids. To provide multiple ids, separate by comma (,).")
-    private val agreementId = Param("agreement_id", "Id of the agreement that is to be returned")
+    private val agreementId = Param[Long]("agreement_id", "Id of the agreement that is to be returned")
+
+    private def scrollOr(orFunction: => Any): Any = {
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+
+      paramOrNone(this.scrollId.paramName) match {
+        case Some(scroll) =>
+          agreementSearchService.scroll(scroll, language) match {
+            case Success(scrollResult) =>
+              val responseHeader = scrollResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
+              Ok(searchConverterService.asApiAgreementSearchResult(scrollResult), headers = responseHeader)
+            case Failure(ex) => errorHandler(ex)
+          }
+        case None => orFunction
+      }
+    }
 
     private def search(query: Option[String],
                        sort: Option[Sort.Value],
@@ -77,51 +93,58 @@ trait AgreementController {
       }
 
       result match {
-        case Success(searchResult) => searchResult
-        case Failure(ex)           => errorHandler(ex)
+        case Success(searchResult) =>
+          val responseHeader = searchResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
+          Ok(searchConverterService.asApiAgreementSearchResult(searchResult), headers = responseHeader)
+        case Failure(ex) => errorHandler(ex)
       }
     }
 
-    val getAllAgreements =
-      (apiOperation[AgreementSearchResult]("getAllAgreements")
-        summary "Show all agreements"
-        description "Shows all agreements. You can search too."
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asQueryParam[Option[String]](query),
-          asQueryParam[Option[String]](agreementIds),
-          asQueryParam[Option[String]](language),
-          asQueryParam[Option[String]](license),
-          asQueryParam[Option[Int]](pageNo),
-          asQueryParam[Option[Int]](pageSize),
-          asQueryParam[Option[String]](sort)
-      )
-        authorizations "oauth2"
-        responseMessages response500)
+    get(
+      "/",
+      operation(
+        apiOperation[AgreementSearchResult]("getAllAgreements")
+          summary "Show all agreements"
+          description "Shows all agreements. You can search too."
+          parameters (
+            asHeaderParam(correlationId),
+            asQueryParam(query),
+            asQueryParam(agreementIds),
+            asQueryParam(language),
+            asQueryParam(license),
+            asQueryParam(pageNo),
+            asQueryParam(pageSize),
+            asQueryParam(sort),
+            asQueryParam(scrollId)
+        )
+          authorizations "oauth2"
+          responseMessages response500)
+    ) {
+      scrollOr {
+        val query = paramOrNone(this.query.paramName)
+        val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
+        val license = paramOrNone(this.license.paramName)
+        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
+        val page = intOrDefault(this.pageNo.paramName, 1)
+        val idList = paramAsListOfLong(this.agreementIds.paramName)
 
-    get("/", operation(getAllAgreements)) {
-      val query = paramOrNone(this.query.paramName)
-      val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
-      val license = paramOrNone(this.license.paramName)
-      val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
-      val page = intOrDefault(this.pageNo.paramName, 1)
-      val idList = paramAsListOfLong(this.agreementIds.paramName)
-
-      search(query, sort, license, page, pageSize, idList)
+        search(query, sort, license, page, pageSize, idList)
+      }
     }
 
-    val getAgreementById =
-      (apiOperation[Agreement]("getAgreementById")
-        summary "Show agreement with a specified Id"
-        description "Shows the agreement for the specified id."
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
-      )
-        authorizations "oauth2"
-        responseMessages (response404, response500))
-
-    get("/:agreement_id", operation(getAgreementById)) {
+    get(
+      "/:agreement_id",
+      operation(
+        apiOperation[Agreement]("getAgreementById")
+          summary "Show agreement with a specified Id"
+          description "Shows the agreement for the specified id."
+          parameters (
+            asHeaderParam[Option[String]](correlationId),
+            pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
       val agreementId = long(this.agreementId.paramName)
 
       readService.agreementWithId(agreementId) match {
@@ -130,18 +153,19 @@ trait AgreementController {
       }
     }
 
-    val newAgreement =
-      (apiOperation[Agreement]("newAgreement")
-        summary "Create a new agreement"
-        description "Creates a new agreement"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          bodyParam[NewAgreement]
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response500))
-
-    post("/", operation(newAgreement)) {
+    post(
+      "/",
+      operation(
+        apiOperation[Agreement]("newAgreement")
+          summary "Create a new agreement"
+          description "Creates a new agreement"
+          parameters (
+            asHeaderParam(correlationId),
+            bodyParam[NewAgreement]
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response403, response500))
+    ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val newAgreement = extract[NewAgreement](request.body)
@@ -155,19 +179,20 @@ trait AgreementController {
       }
     }
 
-    val updateAgreement =
-      (apiOperation[Agreement]("updateAgreement")
-        summary "Update an existing agreement"
-        description "Update an existing agreement"
-        parameters (
-          asHeaderParam[Option[String]](correlationId),
-          asPathParam[Long](agreementId),
-          bodyParam[UpdatedAgreement]
-      )
-        authorizations "oauth2"
-        responseMessages (response400, response403, response404, response500))
-
-    patch("/:agreement_id", operation(updateAgreement)) {
+    patch(
+      "/:agreement_id",
+      operation(
+        apiOperation[Agreement]("updateAgreement")
+          summary "Update an existing agreement"
+          description "Update an existing agreement"
+          parameters (
+            asHeaderParam(correlationId),
+            asPathParam(agreementId),
+            bodyParam[UpdatedAgreement]
+        )
+          authorizations "oauth2"
+          responseMessages (response400, response403, response404, response500))
+    ) {
       val userInfo = user.getUser
 
       doOrAccessDenied(userInfo.canWrite) {

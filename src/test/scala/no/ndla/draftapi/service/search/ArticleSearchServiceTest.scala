@@ -56,9 +56,9 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
                               None,
                               None)
 
-  val today = DateTime.now()
+  val today: DateTime = DateTime.now()
 
-  val article1 = TestData.sampleArticleWithByNcSa.copy(
+  val article1: Article = TestData.sampleArticleWithByNcSa.copy(
     id = Option(1),
     title = List(ArticleTitle("Batmen er på vift med en bil", "nb")),
     introduction = List(ArticleIntroduction("Batmen", "nb")),
@@ -69,7 +69,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.minusDays(3).toDate
   )
 
-  val article2 = TestData.sampleArticleWithPublicDomain.copy(
+  val article2: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(2),
     title = List(ArticleTitle("Pingvinen er ute og går", "nb")),
     introduction = List(ArticleIntroduction("Pingvinen", "nb")),
@@ -79,7 +79,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.minusDays(2).toDate
   )
 
-  val article3 = TestData.sampleArticleWithPublicDomain.copy(
+  val article3: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(3),
     title = List(ArticleTitle("Donald Duck kjører bil", "nb")),
     introduction = List(ArticleIntroduction("Donald Duck", "nb")),
@@ -89,7 +89,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.minusDays(1).toDate
   )
 
-  val article4 = TestData.sampleArticleWithCopyrighted.copy(
+  val article4: Article = TestData.sampleArticleWithCopyrighted.copy(
     id = Option(4),
     title = List(ArticleTitle("Superman er ute og flyr", "nb")),
     introduction = List(ArticleIntroduction("Superman", "nb")),
@@ -100,7 +100,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.toDate
   )
 
-  val article5 = TestData.sampleArticleWithPublicDomain.copy(
+  val article5: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(5),
     title = List(ArticleTitle("Hulken løfter biler", "nb")),
     introduction = List(ArticleIntroduction("Hulken", "nb")),
@@ -111,7 +111,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     notes = Seq("kakemonster")
   )
 
-  val article6 = TestData.sampleArticleWithPublicDomain.copy(
+  val article6: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(6),
     title = List(ArticleTitle("Loke og Tor prøver å fange midgaardsormen", "nb")),
     introduction = List(ArticleIntroduction("Loke og Tor", "nb")),
@@ -123,7 +123,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.minusDays(25).toDate
   )
 
-  val article7 = TestData.sampleArticleWithPublicDomain.copy(
+  val article7: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(7),
     title = List(ArticleTitle("Yggdrasil livets tre", "nb")),
     introduction = List(ArticleIntroduction("Yggdrasil", "nb")),
@@ -133,7 +133,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.minusDays(15).toDate
   )
 
-  val article8 = TestData.sampleArticleWithPublicDomain.copy(
+  val article8: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(8),
     title = List(ArticleTitle("Baldur har mareritt", "nb")),
     introduction = List(ArticleIntroduction("Baldur", "nb")),
@@ -144,7 +144,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     articleType = ArticleType.TopicArticle
   )
 
-  val article9 = TestData.sampleArticleWithPublicDomain.copy(
+  val article9: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(9),
     title = List(ArticleTitle("Baldur har mareritt om Ragnarok", "nb")),
     introduction = List(ArticleIntroduction("Baldur", "nb")),
@@ -155,18 +155,18 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     articleType = ArticleType.TopicArticle
   )
 
-  val article10 = TestData.sampleArticleWithPublicDomain.copy(
+  val article10: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(10),
     title = List(ArticleTitle("This article is in english", "en")),
     introduction = List(ArticleIntroduction("Engulsk", "en")),
-    content = List(ArticleContent("<p>Something something <em>english</em> What", "en")),
+    content = List(ArticleContent("<p>Something something <em>english</em> What about", "en")),
     tags = List(ArticleTag(List("englando"), "en")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
     articleType = ArticleType.TopicArticle
   )
 
-  val article11 = TestData.sampleArticleWithPublicDomain.copy(
+  val article11: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(11),
     title = List(ArticleTitle("Katter", "nb"), ArticleTitle("Cats", "en")),
     introduction = List(ArticleIntroduction("Katter er store", "nb"), ArticleIntroduction("Cats are big", "en")),
@@ -177,7 +177,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     articleType = ArticleType.TopicArticle
   )
 
-  override def beforeAll = {
+  override def beforeAll: Unit = {
     articleIndexService.createIndexWithName(DraftApiProperties.DraftSearchIndex)
 
     articleIndexService.indexDocument(article1)
@@ -195,7 +195,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     blockUntil(() => articleSearchService.countDocuments == 11)
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     articleIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftSearchIndex))
   }
 
@@ -398,7 +398,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
                                                   fallback = false)
     val hits1 = page1.results
     page1.totalCount should be(9)
-    page1.page should be(1)
+    page1.page.get should be(1)
     hits1.size should be(2)
     hits1.head.id should be(8)
     hits1.last.id should be(9)
@@ -413,7 +413,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
                                                   fallback = false)
     val hits2 = page2.results
     page2.totalCount should be(9)
-    page2.page should be(2)
+    page2.page.get should be(2)
     hits2.size should be(2)
     hits2.head.id should be(1)
     hits2.last.id should be(3)
@@ -610,7 +610,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     val hits = search.results
 
     search.totalCount should equal(10)
-    hits(0).id should equal(1)
+    hits.head.id should equal(1)
     hits(1).id should equal(2)
     hits(2).id should equal(3)
     hits(3).id should equal(5)
@@ -683,7 +683,50 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     search.results(2).title.language should equal("en")
   }
 
-  def blockUntil(predicate: () => Boolean) = {
+  test("That scrolling works as expected") {
+    val pageSize = 2
+    val expectedIds = List(1, 2, 3, 5, 6, 7, 8, 9, 10, 11).sliding(pageSize, pageSize).toList
+
+    val Success(initialSearch) =
+      articleSearchService.all(List.empty, "all", None, 1, pageSize, Sort.ByIdAsc, Seq.empty, fallback = true)
+
+    val Success(scroll1) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
+    val Success(scroll2) = articleSearchService.scroll(scroll1.scrollId.get, "all")
+    val Success(scroll3) = articleSearchService.scroll(scroll2.scrollId.get, "all")
+    val Success(scroll4) = articleSearchService.scroll(scroll3.scrollId.get, "all")
+    val Success(scroll5) = articleSearchService.scroll(scroll4.scrollId.get, "all")
+
+    initialSearch.results.map(_.id) should be(expectedIds.head)
+    scroll1.results.map(_.id) should be(expectedIds(1))
+    scroll2.results.map(_.id) should be(expectedIds(2))
+    scroll3.results.map(_.id) should be(expectedIds(3))
+    scroll4.results.map(_.id) should be(expectedIds(4))
+    scroll5.results.map(_.id) should be(List.empty)
+  }
+
+  test("That highlighting works when scrolling") {
+    val Success(initialSearch) =
+      articleSearchService.matchingQuery("about",
+                                         List.empty,
+                                         "all",
+                                         None,
+                                         1,
+                                         1,
+                                         Sort.ByIdAsc,
+                                         Seq.empty,
+                                         fallback = true)
+    val Success(scroll) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
+
+    initialSearch.results.size should be(1)
+    initialSearch.results.head.id should be(10)
+
+    scroll.results.size should be(1)
+    scroll.results.head.id should be(11)
+    scroll.results.head.title.language should be("en")
+    scroll.results.head.title.title should be("Cats")
+  }
+
+  def blockUntil(predicate: () => Boolean): Unit = {
     var backoff = 0
     var done = false
 

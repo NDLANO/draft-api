@@ -9,17 +9,18 @@ package no.ndla.draftapi.service.search
 
 import java.util.concurrent.Executors
 
-import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.DraftApiProperties
-import no.ndla.draftapi.integration.Elastic4sClient
-import no.ndla.draftapi.model.api
-import no.ndla.draftapi.model.api.{AgreementSearchResult, ResultWindowTooLargeException}
-import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.service.ConverterService
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.DraftApiProperties.{ElasticSearchIndexMaxResultWindow, ElasticSearchScrollKeepAlive}
+import no.ndla.draftapi.integration.Elastic4sClient
+import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.api.ResultWindowTooLargeException
+import no.ndla.draftapi.model.domain._
+import no.ndla.draftapi.service.ConverterService
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
 import scala.util.{Failure, Success, Try}
 
 trait AgreementSearchService {
@@ -41,7 +42,7 @@ trait AgreementSearchService {
             license: Option[String],
             page: Int,
             pageSize: Int,
-            sort: Sort.Value): Try[AgreementSearchResult] = {
+            sort: Sort.Value): Try[SearchResult[api.AgreementSummary]] = {
       executeSearch(withIdIn, license, sort, page, pageSize, boolQuery())
     }
 
@@ -50,7 +51,7 @@ trait AgreementSearchService {
                       license: Option[String],
                       page: Int,
                       pageSize: Int,
-                      sort: Sort.Value): Try[AgreementSearchResult] = {
+                      sort: Sort.Value): Try[SearchResult[api.AgreementSummary]] = {
 
       val fullQuery = boolQuery()
         .must(
@@ -68,7 +69,7 @@ trait AgreementSearchService {
                       sort: Sort.Value,
                       page: Int,
                       pageSize: Int,
-                      queryBuilder: BoolQuery): Try[AgreementSearchResult] = {
+                      queryBuilder: BoolQuery): Try[SearchResult[api.AgreementSummary]] = {
       val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
 
       val filters = List(idFilter)
@@ -76,26 +77,32 @@ trait AgreementSearchService {
 
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
       val requestedResultWindow = pageSize * page
-      if (requestedResultWindow > DraftApiProperties.ElasticSearchIndexMaxResultWindow) {
+      if (requestedResultWindow > ElasticSearchIndexMaxResultWindow) {
         logger.info(
-          s"Max supported results are ${DraftApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
+          s"Max supported results are $ElasticSearchIndexMaxResultWindow, user requested $requestedResultWindow")
         Failure(new ResultWindowTooLargeException())
       } else {
-        e4sClient.execute {
-          search(searchIndex)
-            .size(numResults)
-            .from(startAt)
-            .query(filteredSearch)
-            .sortBy(getSortDefinition(sort))
-        } match {
+
+        val searchToExecute = search(searchIndex)
+          .size(numResults)
+          .from(startAt)
+          .query(filteredSearch)
+          .sortBy(getSortDefinition(sort))
+
+        // Only add scroll param if it is first page
+        val searchWithScroll =
+          if (startAt != 0) { searchToExecute } else { searchToExecute.scroll(ElasticSearchScrollKeepAlive) }
+
+        e4sClient.execute { searchWithScroll } match {
           case Success(response) =>
             Success(
-              AgreementSearchResult(
+              SearchResult(
                 response.result.totalHits,
-                page,
+                Some(page),
                 numResults,
                 Language.NoLanguage,
-                getHits(response.result, Language.NoLanguage)
+                getHits(response.result, Language.NoLanguage),
+                response.result.scrollId
               ))
           case Failure(ex) =>
             errorHandler(ex)
@@ -103,8 +110,9 @@ trait AgreementSearchService {
       }
     }
 
-    override def scheduleIndexDocuments() = {
-      implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
+    override def scheduleIndexDocuments(): Unit = {
+      implicit val ec: ExecutionContextExecutorService =
+        ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val f = Future {
         agreementIndexService.indexDocuments
       }

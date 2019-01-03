@@ -9,20 +9,19 @@ package no.ndla.draftapi.service.search
 
 import com.sksamuel.elastic4s.http.search.SearchHit
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.model.api.{AgreementSearchResult, ArticleSearchResult, ConceptSearchResult}
+import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.search._
 import no.ndla.draftapi.model.{api, domain}
+import no.ndla.draftapi.service.ConverterService
+import no.ndla.mapping.ISO639
 import no.ndla.network.ApplicationUrl
-import org.jsoup.Jsoup
+import org.joda.time.DateTime
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.read
-
-import scala.collection.JavaConverters._
-import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.service.ConverterService
-import no.ndla.mapping.ISO639
-import org.joda.time.DateTime
+import org.jsoup.Jsoup
 
 trait SearchConverterService {
   this: ConverterService =>
@@ -158,6 +157,7 @@ trait SearchConverterService {
 
     /**
       * Attempts to extract language that hit from highlights in elasticsearch response.
+      *
       * @param result Elasticsearch hit.
       * @return Language if found.
       */
@@ -186,6 +186,28 @@ trait SearchConverterService {
           keyToLanguage(result.sourceAsMap.keys)
       }
     }
+
+    def asApiSearchResult(searchResult: SearchResult[api.ArticleSummary]): ArticleSearchResult =
+      api.ArticleSearchResult(
+        searchResult.totalCount,
+        searchResult.page,
+        searchResult.pageSize,
+        searchResult.results
+      )
+
+    def asApiAgreementSearchResult(searchResult: SearchResult[api.AgreementSummary]): AgreementSearchResult =
+      api.AgreementSearchResult(searchResult.totalCount,
+                                searchResult.page,
+                                searchResult.pageSize,
+                                searchResult.language,
+                                searchResult.results)
+
+    def asApiConceptSearchResult(searchResult: SearchResult[api.ConceptSummary]): ConceptSearchResult =
+      api.ConceptSearchResult(searchResult.totalCount,
+                              searchResult.page,
+                              searchResult.pageSize,
+                              searchResult.language,
+                              searchResult.results)
 
   }
 }

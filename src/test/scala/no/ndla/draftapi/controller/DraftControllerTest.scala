@@ -9,28 +9,24 @@ package no.ndla.draftapi.controller
 
 import java.util.Date
 
-import no.ndla.draftapi.TestData.{
-  authHeaderWithAllRoles,
-  authHeaderWithWriteRole,
-  authHeaderWithWrongRole,
-  authHeaderWithoutAnyRoles
-}
+import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import no.ndla.mapping.License.getLicenses
+import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.{read, write}
-import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalatra.test.scalatest.ScalatraFunSuite
 
 import scala.util.{Failure, Success}
 
 class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFunSuite {
-  implicit val formats = org.json4s.DefaultFormats
-  implicit val swagger = new DraftSwagger
+  implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+  implicit val swagger: DraftSwagger = new DraftSwagger
 
   lazy val controller = new DraftController
   addServlet(controller, "/test")
@@ -41,7 +37,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   val lang = "nb"
   val articleId = 1
 
-  override def beforeEach = {
+  override def beforeEach: Unit = {
     when(user.getUser).thenReturn(TestData.userWithWriteAccess)
   }
 
@@ -92,7 +88,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   }
 
   test("GET / should use size of id-list as page-size if defined") {
-    val searchMock = mock[api.SearchResult]
+    val searchMock = mock[domain.SearchResult[api.ArticleSummary]]
+    when(searchMock.scrollId).thenReturn(None)
     when(
       articleSearchService.all(any[List[Long]],
                                any[String],
@@ -205,5 +202,112 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     put("/test/1/validate/") {
       status should equal(200)
     }
+  }
+
+  test("That scrollId is in header, and not in body") {
+    val scrollId =
+      "DnF1ZXJ5VGhlbkZldGNoCgAAAAAAAAC1Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAthYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAALcWLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC4Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAuRYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAALsWLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC9Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAuhYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAAL4WLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC8Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFE="
+    val searchResponse = domain.SearchResult[api.ArticleSummary](
+      0,
+      Some(1),
+      10,
+      "nb",
+      Seq.empty[api.ArticleSummary],
+      Some(scrollId)
+    )
+    when(
+      articleSearchService.all(any[List[Long]],
+                               any[String],
+                               any[Option[String]],
+                               any[Int],
+                               any[Int],
+                               any[Sort.Value],
+                               any[Seq[String]],
+                               any[Boolean]))
+      .thenReturn(Success(searchResponse))
+
+    get(s"/test/") {
+      status should be(200)
+      body.contains(scrollId) should be(false)
+      header("search-context") should be(scrollId)
+    }
+  }
+
+  test("That scrolling uses scroll and not searches normally") {
+    reset(articleSearchService)
+    val scrollId =
+      "DnF1ZXJ5VGhlbkZldGNoCgAAAAAAAAC1Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAthYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAALcWLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC4Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAuRYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAALsWLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC9Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAuhYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAAL4WLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC8Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFE="
+    val searchResponse = domain.SearchResult[api.ArticleSummary](
+      0,
+      Some(1),
+      10,
+      "nb",
+      Seq.empty[api.ArticleSummary],
+      Some(scrollId)
+    )
+
+    when(articleSearchService.scroll(anyString, anyString)).thenReturn(Success(searchResponse))
+
+    get(s"/test?search-context=$scrollId") {
+      status should be(200)
+    }
+
+    verify(articleSearchService, times(0)).all(any[List[Long]],
+                                               any[String],
+                                               any[Option[String]],
+                                               any[Int],
+                                               any[Int],
+                                               any[Sort.Value],
+                                               any[Seq[String]],
+                                               any[Boolean])
+    verify(articleSearchService, times(0)).matchingQuery(any[String],
+                                                         any[List[Long]],
+                                                         any[String],
+                                                         any[Option[String]],
+                                                         any[Int],
+                                                         any[Int],
+                                                         any[Sort.Value],
+                                                         any[Seq[String]],
+                                                         any[Boolean])
+    verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
+  }
+
+  test("That scrolling with POST uses scroll and not searches normally") {
+    reset(articleSearchService)
+    val scrollId =
+      "DnF1ZXJ5VGhlbkZldGNoCgAAAAAAAAC1Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAthYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAALcWLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC4Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAuRYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAALsWLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC9Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFEAAAAAAAAAuhYtY2VPYWFvRFQ5aWNSbzRFYVZSTEhRAAAAAAAAAL4WLWNlT2Fhb0RUOWljUm80RWFWUkxIUQAAAAAAAAC8Fi1jZU9hYW9EVDlpY1JvNEVhVlJMSFE="
+    val searchResponse = domain.SearchResult[api.ArticleSummary](
+      0,
+      Some(1),
+      10,
+      "nb",
+      Seq.empty[api.ArticleSummary],
+      Some(scrollId)
+    )
+
+    when(articleSearchService.scroll(anyString, anyString)).thenReturn(Success(searchResponse))
+
+    post(s"/test/search/?search-context=$scrollId") {
+      status should be(200)
+    }
+
+    verify(articleSearchService, times(0)).all(any[List[Long]],
+                                               any[String],
+                                               any[Option[String]],
+                                               any[Int],
+                                               any[Int],
+                                               any[Sort.Value],
+                                               any[Seq[String]],
+                                               any[Boolean])
+    verify(articleSearchService, times(0)).matchingQuery(any[String],
+                                                         any[List[Long]],
+                                                         any[String],
+                                                         any[Option[String]],
+                                                         any[Int],
+                                                         any[Int],
+                                                         any[Sort.Value],
+                                                         any[Seq[String]],
+                                                         any[Boolean])
+    verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 }

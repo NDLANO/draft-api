@@ -17,6 +17,7 @@ import org.eclipse.jetty.server.Server
 import org.scalatest.Tag
 import scalikejdbc._
 
+import scala.concurrent.duration._
 import scala.sys.process._
 import scala.util.Properties.{envOrElse, envOrNone}
 import scala.util.Try
@@ -105,7 +106,7 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
   test("That pacts from broker are working.", PactProviderTest) {
     val isTravis = envOrElse("TRAVIS", "false").toBoolean
-    val isPullRequest = envOrElse("TRAVIS_PULL_REQUEST", "false").toBoolean
+    val isPullRequest = envOrElse("TRAVIS_PULL_REQUEST", "false") == "false"
     val publishResults = if (isTravis && !isPullRequest) {
       getGitVersion.map(version => BrokerPublishData(version, None)).toOption
     } else { None }
@@ -135,7 +136,7 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
             case "agreements" => deleteSchema(); ProviderStateResult(setupAgreements().nonEmpty)
             case "empty"      => deleteSchema(); ProviderStateResult(true)
           }
-          .runStrictVerificationAgainst("localhost", serverPort)
+          .runStrictVerificationAgainst("localhost", serverPort, 10.seconds)
       case None => throw new RuntimeException("Could not get broker settings...")
     }
   }
