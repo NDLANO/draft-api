@@ -187,9 +187,7 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
 
   def extract[T](json: String)(implicit mf: scala.reflect.Manifest[T]): Try[T] = {
     Try { read[T](json) } match {
-      case Failure(e) =>
-        logger.error(e.getMessage, e)
-        Failure(new ValidationException(errors = Seq(ValidationMessage("body", e.getMessage))))
+      case Failure(e)    => Failure(new ValidationException(errors = Seq(ValidationMessage("body", e.getMessage))))
       case Success(data) => Success(data)
     }
   }
