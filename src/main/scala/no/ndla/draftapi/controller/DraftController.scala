@@ -69,7 +69,7 @@ trait DraftController {
       * @param orFunction Function to execute if no scrollId in parameters (Usually searching)
       * @return A Try with scroll result, or the return of the orFunction (Usually a try with a search result).
       */
-    private def scrollOr(orFunction: => Any): Any = {
+    private def scrollSearchOr(orFunction: => Any): Any = {
       val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
 
       paramOrNone(this.scrollId.paramName) match {
@@ -176,7 +176,7 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages response500)
     ) {
-      scrollOr {
+      scrollSearchOr {
         val query = paramOrNone(this.query.paramName)
         val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
         val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
@@ -206,7 +206,7 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages (response400, response500))
     ) {
-      scrollOr {
+      scrollSearchOr {
         extract[ArticleSearchParams](request.body) match {
           case Success(searchParams) =>
             val query = searchParams.query
