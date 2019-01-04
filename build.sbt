@@ -34,7 +34,7 @@ val pactTestFramework = Seq(
   "com.itv" %% "scalapact-scalatest" % pactVersion % "test"
 )
 
-lazy val PactTest = config("pact") extend (Test)
+lazy val PactTest = config("pact") extend Test
 lazy val draft_api = (project in file("."))
   .configs(PactTest)
   .settings(
@@ -54,7 +54,7 @@ lazy val draft_api = (project in file("."))
     libraryDependencies ++= pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.36",
       "ndla" %% "mapping" % "0.10",
-      "ndla" %% "validation" % "0.29",
+      "ndla" %% "validation" % "0.30",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",
@@ -104,7 +104,7 @@ checkfmt := {
   noErrorsInMainFiles && noErrorsInTestFiles && noErrorsInSbtConfigFiles
 }
 
-Test / test := ((Test / test).dependsOn(Test / checkfmt)).value
+Test / test := (Test / test).dependsOn(Test / checkfmt).value
 
 val fmt = taskKey[Unit]("Automatically apply code style fixes")
 fmt := {
