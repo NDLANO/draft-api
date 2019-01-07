@@ -9,7 +9,7 @@ val Jettyversion = "9.4.12.v20180830"
 val AwsSdkversion = "1.11.434"
 val MockitoVersion = "2.23.0"
 val Elastic4sVersion = "6.3.7"
-val JacksonVersion = "2.9.7"
+val JacksonVersion = "2.9.8"
 val ElasticsearchVersion = "6.3.2"
 val Json4SVersion = "3.5.4"
 val CatsEffectVersion = "1.0.0"
@@ -78,7 +78,7 @@ lazy val draft_api = (project in file("."))
       "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-aws" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-embedded" % Elastic4sVersion % "test",
-      "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion, // Overriding jackson-databind used in elastic4s because of https://app.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-72451 (and more)
+      "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion, // Overriding jackson-databind used in dependencies because of https://app.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-72884
       "org.apache.lucene" % "lucene-queryparser" % "7.1.0", // Overriding lucene-queryparser used in elasticsearch because of https://snyk.io/vuln/SNYK-JAVA-ORGAPACHELUCENE-31569
       "org.scalatest" %% "scalatest" % ScalaTestVersion % "test",
       "org.jsoup" % "jsoup" % "1.11.3",
