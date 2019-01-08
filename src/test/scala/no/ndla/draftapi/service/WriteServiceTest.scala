@@ -282,41 +282,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                           None) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
-  test("That updateArticle removes visualElement if not topic article") {
-    val newContent = "NyContentTest"
-    val updatedApiArticle =
-      api.UpdatedArticle(1,
-                         Some("en"),
-                         None,
-                         None,
-                         Some(newContent),
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         Some("standard"),
-                         None)
-    val expectedArticle = topicArticle.copy(
-      revision = Some(article.revision.get + 1),
-      content = Seq(ArticleContent(newContent, "en")),
-      updated = today,
-      articleType = ArticleType.Standard,
-      visualElement = Seq.empty
-    )
-
-    service.updateArticle(articleId,
-                          updatedApiArticle,
-                          List.empty,
-                          Seq.empty,
-                          TestData.userWithWriteAccess,
-                          None,
-                          None,
-                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
-  }
-
   test("updateArticle should use user-defined status if defined") {
     val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithDraft)
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = Some("PROPOSAL"))

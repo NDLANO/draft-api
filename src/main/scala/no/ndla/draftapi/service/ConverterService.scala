@@ -445,11 +445,6 @@ trait ConverterService {
           Failure(new ValidationException(errors = Seq(error)))
         case None => Success(partiallyConverted)
         case Some(lang) =>
-          val mergedVisualElement =
-            if (partiallyConverted.articleType == ArticleType.TopicArticle)
-              mergeLanguageFields(toMergeInto.visualElement,
-                                  article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq)
-            else Seq()
           Success(
             partiallyConverted.copy(
               title = mergeLanguageFields(toMergeInto.title,
@@ -460,7 +455,8 @@ trait ConverterService {
               tags = article.tags
                 .map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang)))
                 .getOrElse(toMergeInto.tags),
-              visualElement = mergedVisualElement,
+              visualElement = mergeLanguageFields(toMergeInto.visualElement,
+                                                  article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
               introduction = mergeLanguageFields(toMergeInto.introduction,
                                                  article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
               metaDescription =
