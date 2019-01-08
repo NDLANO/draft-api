@@ -49,7 +49,7 @@ trait ConceptController {
       "Return only concepts that have one of the provided ids. To provide multiple ids, separate by comma (,).")
     private val conceptId = Param[Long]("concept_id", "Id of the concept that is to be returned")
 
-    private def scrollOr(orFunction: => Any): Any = {
+    private def scrollSearchOr(orFunction: => Any): Any = {
       val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
 
       paramOrNone(this.scrollId.paramName) match {
@@ -125,7 +125,7 @@ trait ConceptController {
           authorizations "oauth2"
           responseMessages response500)
     ) {
-      scrollOr {
+      scrollSearchOr {
         val query = paramOrNone(this.query.paramName)
         val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
         val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
@@ -154,7 +154,7 @@ trait ConceptController {
           authorizations "oauth2"
           responseMessages (response400, response500))
     ) {
-      scrollOr {
+      scrollSearchOr {
         extract[ConceptSearchParams](request.body) match {
           case Success(searchParams) =>
             val query = searchParams.query
