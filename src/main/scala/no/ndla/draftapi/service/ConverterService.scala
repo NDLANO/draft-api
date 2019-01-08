@@ -14,10 +14,10 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
+import no.ndla.draftapi.model.api.{NewAgreement, NewArticle, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, LanguageField}
+import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
@@ -56,6 +56,8 @@ trait ConverterService {
           val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
           val oldUpdatedDate = oldNdlaUpdatedDate.map(date => new DateTime(date).toDate)
 
+          val notes = newNotes(newArticle.notes, user, status)
+
           Success(
             domain.Article(
               id = Some(id),
@@ -77,8 +79,15 @@ trait ConverterService {
               updated = oldUpdatedDate.getOrElse(clock.now()),
               updatedBy = user.id,
               articleType = ArticleType.valueOfOrError(newArticle.articleType),
-              newArticle.notes
+              notes
             ))
+      }
+    }
+
+    private def newNotes(notes: Seq[String], user: UserInfo, status: Status) = {
+      notes match {
+        case Nil => Seq.empty
+        case l   => Seq(domain.EditorNote(l.toList, user.id, status, new Date()))
       }
     }
 
@@ -229,7 +238,7 @@ trait ConverterService {
             article.updatedBy,
             article.articleType.toString,
             supportedLanguages,
-            article.notes
+            article.notes.map(toApiEditorNote)
           ))
       } else {
         Failure(
@@ -265,6 +274,9 @@ trait ConverterService {
       }
 
     }
+
+    def toApiEditorNote(note: domain.EditorNote): api.EditorNote =
+      api.EditorNote(note.notes, note.user, toApiStatus(note.status), note.timestamp)
 
     def toApiStatus(status: domain.Status): api.Status =
       api.Status(status.current.toString, status.other.map(_.toString).toSeq)
@@ -428,6 +440,8 @@ trait ConverterService {
 
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
+      val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status)).getOrElse(Seq.empty)
+
       val partiallyConverted = toMergeInto.copy(
         revision = Option(article.revision),
         copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
@@ -436,7 +450,7 @@ trait ConverterService {
         updated = updatedDate,
         updatedBy = user.id,
         articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
-        notes = article.notes.getOrElse(toMergeInto.notes)
+        notes = toMergeInto.notes ++ newEditorialNotes
       )
 
       article.language match {
@@ -487,6 +501,7 @@ trait ConverterService {
           val status =
             if (isImported) domain.Status(DRAFT, Set(ArticleStatus.IMPORTED))
             else domain.Status(DRAFT, Set.empty)
+
           Success(
             domain.Article(
               id = Some(id),
@@ -505,7 +520,7 @@ trait ConverterService {
               updated = updatedDate,
               user.id,
               articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
-              article.notes.getOrElse(Seq.empty)
+              article.notes.map(n => newNotes(n, user, status)).getOrElse(Seq.empty)
             ))
       }
     }

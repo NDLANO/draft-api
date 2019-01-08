@@ -40,7 +40,7 @@ case class Article(id: Option[Long],
                    updated: Date,
                    updatedBy: String,
                    articleType: ArticleType.Value,
-                   notes: Seq[String])
+                   notes: Seq[EditorNote])
     extends Content
 
 object Article extends SQLSyntaxSupport[Article] {

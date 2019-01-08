@@ -8,6 +8,7 @@
 package no.ndla.draftapi.service.search
 
 import java.nio.file.{Files, Path}
+import java.util.Date
 
 import com.sksamuel.elastic4s.embedded.LocalNode
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
@@ -108,7 +109,11 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     tags = List(ArticleTag(List("hulk"), "nb")),
     created = today.minusDays(40).toDate,
     updated = today.minusDays(35).toDate,
-    notes = Seq("kakemonster")
+    notes = Seq(
+      EditorNote(List("kakemonster"),
+                 TestData.userWithWriteAccess.id,
+                 Status(ArticleStatus.DRAFT, Set.empty),
+                 new Date()))
   )
 
   val article6: Article = TestData.sampleArticleWithPublicDomain.copy(
