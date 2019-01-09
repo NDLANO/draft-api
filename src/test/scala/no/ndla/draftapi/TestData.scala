@@ -171,7 +171,7 @@ object TestData {
     Seq.empty
   )
 
-  val sampleArticleWithPublicDomain = Article(
+  val sampleTopicArticle = Article(
     Option(1),
     Option(1),
     domain.Status(DRAFT, Set.empty),
@@ -181,6 +181,26 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq(VisualElement("image", "en")),
+    Seq(ArticleIntroduction("This is an introduction", "en")),
+    Seq.empty,
+    Seq.empty,
+    DateTime.now().minusDays(4).withMillisOfSecond(0).toDate,
+    DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
+    userWithWriteAccess.id,
+    ArticleType.TopicArticle,
+    Seq.empty
+  )
+
+  val sampleArticleWithPublicDomain = Article(
+    Option(1),
+    Option(1),
+    domain.Status(DRAFT, Set.empty),
+    Seq(ArticleTitle("test", "en")),
+    Seq(ArticleContent("<section><div>test</div></section>", "en")),
+    Some(publicDomainCopyright),
+    Seq.empty,
+    Seq.empty,
+    Seq.empty,
     Seq(ArticleIntroduction("This is an introduction", "en")),
     Seq.empty,
     Seq.empty,

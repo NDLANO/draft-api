@@ -37,6 +37,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   val article: Article =
     TestData.sampleArticleWithPublicDomain.copy(id = Some(articleId), created = yesterday, updated = yesterday)
+
+  val topicArticle: Article =
+    TestData.sampleTopicArticle.copy(id = Some(articleId), created = yesterday, updated = yesterday)
   val agreement: Agreement = TestData.sampleDomainAgreement.copy(id = Some(agreementId))
 
   override def beforeEach() = {
@@ -234,6 +237,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                          None,
                                          None)
     val updatedRequiredLib = api.RequiredLibrary("tjup", "tjap", "tjim")
+    val updatedArticleType = "topic-article"
 
     val updatedApiArticle = api.UpdatedArticle(
       1,
@@ -248,7 +252,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some(updatedVisualElement),
       Some(updatedCopyright),
       Some(Seq(updatedRequiredLib)),
-      None,
+      Some(updatedArticleType),
       None
     )
 
@@ -264,7 +268,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       introduction = Seq(ArticleIntroduction(updatedIntro, "en")),
       metaDescription = Seq(ArticleMetaDescription(updatedMetaDescription, "en")),
       metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
-      updated = today
+      updated = today,
+      articleType = ArticleType.TopicArticle
     )
 
     service.updateArticle(articleId,
