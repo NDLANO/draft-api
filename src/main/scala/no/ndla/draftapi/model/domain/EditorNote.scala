@@ -8,4 +8,4 @@
 package no.ndla.draftapi.model.domain
 import java.util.Date
 
-case class EditorNote(notes: Seq[String], user: String, status: Status, timestamp: Date)
+case class EditorNote(note: String, user: String, status: Status, timestamp: Date)

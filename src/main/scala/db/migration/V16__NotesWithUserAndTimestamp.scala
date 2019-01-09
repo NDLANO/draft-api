@@ -11,7 +11,6 @@ import java.util.Date
 
 import no.ndla.draftapi.model.domain._
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
-import org.json4s.JsonAST.JArray
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods.{compact, parse, render}
 import org.json4s.{Extraction, Formats}
@@ -20,7 +19,7 @@ import scalikejdbc.{DB, DBSession, _}
 
 import scala.util.{Success, Try}
 
-class V15__NotesWithUserAndTimestamp extends BaseJavaMigration {
+class V16__NotesWithUserAndTimestamp extends BaseJavaMigration {
   implicit val formats: Formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus)
 
   override def migrate(context: Context): Unit = {
@@ -64,20 +63,12 @@ class V15__NotesWithUserAndTimestamp extends BaseJavaMigration {
 
   def convertNotes(document: String): String = {
     val oldArticle = parse(document)
-    Try(oldArticle.extract[V14__Article]) match {
+    Try(oldArticle.extract[V15__Article]) match {
       case Success(old) =>
         val newArticle = oldArticle.mapField {
           case ("notes", _) =>
-            val editorNotes = Seq(
-              EditorNote(
-                old.notes,
-                old.updatedBy,
-                old.status,
-                old.updated
-              ))
-
+            val editorNotes = old.notes.map(EditorNote(_, "System", old.status, old.updated))
             val notesWithNewFormat = Extraction.decompose(editorNotes)
-
             ("notes", notesWithNewFormat)
           case x => x
         }
@@ -96,5 +87,5 @@ class V15__NotesWithUserAndTimestamp extends BaseJavaMigration {
       .apply
   }
 
-  case class V14__Article(status: Status, updated: Date, updatedBy: String, notes: Seq[String])
+  case class V15__Article(status: Status, updated: Date, notes: Seq[String])
 }

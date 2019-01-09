@@ -110,10 +110,8 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     created = today.minusDays(40).toDate,
     updated = today.minusDays(35).toDate,
     notes = Seq(
-      EditorNote(List("kakemonster"),
-                 TestData.userWithWriteAccess.id,
-                 Status(ArticleStatus.DRAFT, Set.empty),
-                 new Date()))
+      EditorNote("kakemonster", TestData.userWithWriteAccess.id, Status(ArticleStatus.DRAFT, Set.empty), new Date())
+    )
   )
 
   val article6: Article = TestData.sampleArticleWithPublicDomain.copy(

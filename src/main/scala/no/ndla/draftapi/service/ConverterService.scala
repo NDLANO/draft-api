@@ -87,7 +87,7 @@ trait ConverterService {
     private def newNotes(notes: Seq[String], user: UserInfo, status: Status) = {
       notes match {
         case Nil => Seq.empty
-        case l   => Seq(domain.EditorNote(l.toList, user.id, status, new Date()))
+        case l   => l.map(domain.EditorNote(_, user.id, status, new Date()))
       }
     }
 
@@ -276,7 +276,7 @@ trait ConverterService {
     }
 
     def toApiEditorNote(note: domain.EditorNote): api.EditorNote =
-      api.EditorNote(note.notes, note.user, toApiStatus(note.status), note.timestamp)
+      api.EditorNote(note.note, note.user, toApiStatus(note.status), note.timestamp)
 
     def toApiStatus(status: domain.Status): api.Status =
       api.Status(status.current.toString, status.other.map(_.toString).toSeq)
