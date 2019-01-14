@@ -87,13 +87,13 @@ trait DraftRepository {
     def newArticleId()(implicit session: DBSession = AutoSession): Try[Long] = {
       Try(
         sql"""select max(article_id) from ${Article.table}"""
-          .map(rs => rs.long("max"))
+          .map(rs => rs.longOpt("max"))
           .single()
           .apply()
       ) match {
-        case Success(Some(id)) => Success(1 + id)
-        case Success(None)     => Success(1)
-        case Failure(ex)       => Failure(ex)
+        case Success(Some(Some(id))) => Success(1 + id)
+        case Success(_)              => Success(1)
+        case Failure(ex)             => Failure(ex)
       }
     }
 
