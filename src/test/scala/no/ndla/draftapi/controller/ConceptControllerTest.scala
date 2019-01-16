@@ -27,6 +27,10 @@ class ConceptControllerTest extends UnitSuite with TestEnvironment with Scalatra
   val conceptId = 1
   val lang = "nb"
 
+  override def beforeEach: Unit = {
+    when(user.getUser).thenReturn(TestData.userWithWriteAccess)
+  }
+
   test("/<concept_id> should return 200 if the cover was found") {
     when(readService.conceptWithId(1, lang)).thenReturn(Some(TestData.sampleApiConcept))
     get(s"/test/$conceptId?language=$lang") {

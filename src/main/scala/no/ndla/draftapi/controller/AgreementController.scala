@@ -120,15 +120,18 @@ trait AgreementController {
           authorizations "oauth2"
           responseMessages response500)
     ) {
-      scrollSearchOr {
-        val query = paramOrNone(this.query.paramName)
-        val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
-        val license = paramOrNone(this.license.paramName)
-        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
-        val page = intOrDefault(this.pageNo.paramName, 1)
-        val idList = paramAsListOfLong(this.agreementIds.paramName)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        scrollSearchOr {
+          val query = paramOrNone(this.query.paramName)
+          val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
+          val license = paramOrNone(this.license.paramName)
+          val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
+          val page = intOrDefault(this.pageNo.paramName, 1)
+          val idList = paramAsListOfLong(this.agreementIds.paramName)
 
-        search(query, sort, license, page, pageSize, idList)
+          search(query, sort, license, page, pageSize, idList)
+        }
       }
     }
 
@@ -145,11 +148,14 @@ trait AgreementController {
           authorizations "oauth2"
           responseMessages (response404, response500))
     ) {
-      val agreementId = long(this.agreementId.paramName)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val agreementId = long(this.agreementId.paramName)
 
-      readService.agreementWithId(agreementId) match {
-        case Some(agreement) => agreement
-        case None            => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
+        readService.agreementWithId(agreementId) match {
+          case Some(agreement) => agreement
+          case None            => NotFound(body = Error(Error.NOT_FOUND, s"No agreement with id $agreementId found"))
+        }
       }
     }
 

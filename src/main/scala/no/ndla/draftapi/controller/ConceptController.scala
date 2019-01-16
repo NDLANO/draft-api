@@ -185,12 +185,15 @@ trait ConceptController {
           authorizations "oauth2"
           responseMessages (response404, response500))
     ) {
-      val conceptId = long(this.conceptId.paramName)
-      val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val conceptId = long(this.conceptId.paramName)
+        val language = paramOrDefault(this.language.paramName, Language.NoLanguage)
 
-      readService.conceptWithId(conceptId, language) match {
-        case Some(concept) => concept
-        case None          => NotFound(body = Error(Error.NOT_FOUND, s"No concept with id $conceptId found"))
+        readService.conceptWithId(conceptId, language) match {
+          case Some(concept) => concept
+          case None          => NotFound(body = Error(Error.NOT_FOUND, s"No concept with id $conceptId found"))
+        }
       }
     }
 
