@@ -15,6 +15,7 @@ import org.postgresql.util.PGobject
 import scalaj.http.Http
 import scalikejdbc.{DB, DBSession, _}
 import no.ndla.draftapi.DraftApiProperties.Domain
+import no.ndla.draftapi.model.domain.ArticleType
 
 import scala.util.Try
 
@@ -65,7 +66,8 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
 
     while (numPagesLeft > 0) {
       allArticles(offset * 1000).map {
-        case (id, articleId, document) => updateArticle(convertArticleUpdate(document, articleId, topicIds, resourceIds), id)
+        case (id, articleId, document) =>
+          updateArticle(convertArticleUpdate(document, articleId, topicIds, resourceIds), id)
       }
       numPagesLeft -= 1
       offset += 1
@@ -77,9 +79,9 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
 
     val newArticle = oldArticle.mapField {
       case ("articleType", _: JString) if topicIds.contains(id) =>
-        "articleType" -> JString("topic-article")
+        "articleType" -> JString(ArticleType.TopicArticle.toString)
       case ("articleType", _: JString) if resourceIds.contains(id) && !topicIds.contains(id) =>
-        "articleType" -> JString("standard")
+        "articleType" -> JString(ArticleType.Standard.toString)
       case x => x
     }
     compact(render(newArticle))
