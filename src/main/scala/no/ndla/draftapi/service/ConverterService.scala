@@ -56,38 +56,40 @@ trait ConverterService {
           val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
           val oldUpdatedDate = oldNdlaUpdatedDate.map(date => new DateTime(date).toDate)
 
-          val notes = newNotes(newArticle.notes, user, status)
-
-          Success(
-            domain.Article(
-              id = Some(id),
-              revision = None,
-              status,
-              title = domainTitles,
-              content = domainContent,
-              copyright = newArticle.copyright.map(toDomainCopyright),
-              tags = toDomainTag(newArticle.tags, newArticle.language),
-              requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
-              visualElement =
-                newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-              introduction =
-                newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-              metaDescription =
-                newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-              metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
-              created = oldCreatedDate.getOrElse(clock.now()),
-              updated = oldUpdatedDate.getOrElse(clock.now()),
-              updatedBy = user.id,
-              articleType = ArticleType.valueOfOrError(newArticle.articleType),
-              notes
+          newNotes(newArticle.notes, user, status).map(
+            notes =>
+              domain.Article(
+                id = Some(id),
+                revision = None,
+                status,
+                title = domainTitles,
+                content = domainContent,
+                copyright = newArticle.copyright.map(toDomainCopyright),
+                tags = toDomainTag(newArticle.tags, newArticle.language),
+                requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
+                visualElement =
+                  newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
+                introduction =
+                  newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
+                metaDescription =
+                  newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
+                metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
+                created = oldCreatedDate.getOrElse(clock.now()),
+                updated = oldUpdatedDate.getOrElse(clock.now()),
+                updatedBy = user.id,
+                articleType = ArticleType.valueOfOrError(newArticle.articleType),
+                notes
             ))
       }
     }
 
-    private def newNotes(notes: Seq[String], user: UserInfo, status: Status) = {
+    private[service] def newNotes(notes: Seq[String], user: UserInfo, status: Status): Try[Seq[EditorNote]] = {
       notes match {
-        case Nil => Seq.empty
-        case l   => l.map(domain.EditorNote(_, user.id, status, new Date()))
+        case Nil                  => Success(Seq.empty)
+        case l if !l.contains("") => Success(l.map(domain.EditorNote(_, user.id, status, new Date())))
+        case _ =>
+          Failure(
+            new ValidationException(errors = Seq(ValidationMessage("notes", "A note can not be an empty string"))))
       }
     }
 
@@ -441,47 +443,61 @@ trait ConverterService {
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate =
         if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else article.updated.getOrElse(toMergeInto.updated)
-      val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status)).getOrElse(Seq.empty)
-      val partiallyConverted = toMergeInto.copy(
-        revision = Option(article.revision),
-        copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
-        requiredLibraries = article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
-        created = createdDate,
-        updated = updatedDate,
-        updatedBy = user.id,
-        articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
-        notes = toMergeInto.notes ++ newEditorialNotes
-      )
+      val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status))
 
-      article.language match {
-        case None if languageFieldIsDefined(article) =>
-          val error = ValidationMessage("language", "This field must be specified when updating language fields")
-          Failure(new ValidationException(errors = Seq(error)))
-        case None => Success(partiallyConverted)
-        case Some(lang) =>
-          Success(
-            partiallyConverted.copy(
-              title = mergeLanguageFields(toMergeInto.title,
-                                          article.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))),
-              content = mergeLanguageFields(toMergeInto.content,
-                                            article.content.toSeq.map(c =>
-                                              toDomainContent(api.ArticleContent(c, lang)))),
-              tags = article.tags
-                .map(tags => mergeLanguageFields(toMergeInto.tags, toDomainTag(tags, lang)))
-                .getOrElse(toMergeInto.tags),
-              visualElement = mergeLanguageFields(toMergeInto.visualElement,
-                                                  article.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq),
-              introduction = mergeLanguageFields(toMergeInto.introduction,
-                                                 article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq),
-              metaDescription =
-                mergeLanguageFields(toMergeInto.metaDescription,
-                                    article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq),
-              metaImage = mergeLanguageFields(toMergeInto.metaImage,
-                                              article.metaImage
-                                                .map(toDomainMetaImage(_, lang))
-                                                .toSeq)
-            ))
+      val mergedNotes = newEditorialNotes match {
+        case Some(Failure(ex))    => Failure(ex)
+        case Some(Success(notes)) => Success(toMergeInto.notes ++ notes)
+        case None                 => Success(Seq.empty)
       }
+
+      mergedNotes match {
+        case Failure(ex) => Failure(ex)
+        case Success(allNotes) =>
+          val partiallyConverted = toMergeInto.copy(
+            revision = Option(article.revision),
+            copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+            requiredLibraries =
+              article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
+            created = createdDate,
+            updated = updatedDate,
+            updatedBy = user.id,
+            articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
+            notes = allNotes
+          )
+
+          article.language match {
+            case None if languageFieldIsDefined(article) =>
+              val error = ValidationMessage("language", "This field must be specified when updating language fields")
+              Failure(new ValidationException(errors = Seq(error)))
+            case None => Success(partiallyConverted)
+            case Some(lang) =>
+              Success(mergeArticleLanguageFields(partiallyConverted, article, lang))
+          }
+      }
+
+    }
+
+    private def mergeArticleLanguageFields(toMergeInto: Article,
+                                           updatedArticle: api.UpdatedArticle,
+                                           lang: String): Article = {
+      val updatedTitles = updatedArticle.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))
+      val updatedContents = updatedArticle.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))
+      val updatedTags = updatedArticle.tags.map(tags => toDomainTag(tags, lang))
+      val updatedVisualElement = updatedArticle.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq
+      val updatedIntroductions = updatedArticle.introduction.map(i => toDomainIntroduction(i, lang)).toSeq
+      val updatedMetaDescriptions = updatedArticle.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq
+      val updatedMetaImage = updatedArticle.metaImage.map(toDomainMetaImage(_, lang)).toSeq
+
+      toMergeInto.copy(
+        title = mergeLanguageFields(toMergeInto.title, updatedTitles),
+        content = mergeLanguageFields(toMergeInto.content, updatedContents),
+        tags = updatedTags.map(ut => mergeLanguageFields(toMergeInto.tags, ut)).getOrElse(Seq.empty),
+        visualElement = mergeLanguageFields(toMergeInto.visualElement, updatedVisualElement),
+        introduction = mergeLanguageFields(toMergeInto.introduction, updatedIntroductions),
+        metaDescription = mergeLanguageFields(toMergeInto.metaDescription, updatedMetaDescriptions),
+        metaImage = mergeLanguageFields(toMergeInto.metaImage, updatedMetaImage)
+      )
     }
 
     def toDomainArticle(id: Long,
@@ -502,25 +518,32 @@ trait ConverterService {
             if (isImported) domain.Status(DRAFT, Set(ArticleStatus.IMPORTED))
             else domain.Status(DRAFT, Set.empty)
 
-          Success(
-            domain.Article(
-              id = Some(id),
-              revision = Some(1),
-              status = status,
-              title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
-              content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
-              copyright = article.copyright.map(toDomainCopyright),
-              tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
-              requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
-              visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
-              introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
-              metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-              metaImage = article.metaImage.map(m => toDomainMetaImage(m, lang)).toSeq,
-              created = createdDate,
-              updated = updatedDate,
-              user.id,
-              articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
-              article.notes.map(n => newNotes(n, user, status)).getOrElse(Seq.empty)
+          val mergedNotes = article.notes.map(n => newNotes(n, user, status)) match {
+            case Some(Failure(ex))    => Failure(ex)
+            case Some(Success(notes)) => Success(notes)
+            case None                 => Success(Seq.empty)
+          }
+
+          mergedNotes.map(
+            notes =>
+              domain.Article(
+                id = Some(id),
+                revision = Some(1),
+                status = status,
+                title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
+                content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
+                copyright = article.copyright.map(toDomainCopyright),
+                tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
+                requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
+                visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
+                introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
+                metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
+                metaImage = article.metaImage.map(m => toDomainMetaImage(m, lang)).toSeq,
+                created = createdDate,
+                updated = updatedDate,
+                updatedBy = user.id,
+                articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
+                notes = notes
             ))
       }
     }
