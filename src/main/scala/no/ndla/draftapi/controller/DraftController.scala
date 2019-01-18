@@ -98,17 +98,20 @@ trait DraftController {
           responseMessages response500
           authorizations "oauth2")
     ) {
-      val defaultSize = 20
-      val language = paramOrDefault("language", Language.AllLanguages)
-      val size = intOrDefault("size", defaultSize) match {
-        case tooSmall if tooSmall < 1 => defaultSize
-        case x                        => x
-      }
-      val tags = readService.getNMostUsedTags(size, language)
-      if (tags.isEmpty) {
-        NotFound(body = Error(Error.NOT_FOUND, s"No tags with language $language was found"))
-      } else {
-        tags
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val defaultSize = 20
+        val language = paramOrDefault("language", Language.AllLanguages)
+        val size = intOrDefault("size", defaultSize) match {
+          case tooSmall if tooSmall < 1 => defaultSize
+          case x                        => x
+        }
+        val tags = readService.getNMostUsedTags(size, language)
+        if (tags.isEmpty) {
+          NotFound(body = Error(Error.NOT_FOUND, s"No tags with language $language was found"))
+        } else {
+          tags
+        }
       }
     }
 
@@ -176,18 +179,21 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages response500)
     ) {
-      scrollSearchOr {
-        val query = paramOrNone(this.query.paramName)
-        val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
-        val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
-        val license = paramOrNone(this.license.paramName)
-        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
-        val page = intOrDefault(this.pageNo.paramName, 1)
-        val idList = paramAsListOfLong(this.articleIds.paramName)
-        val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
-        val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        scrollSearchOr {
+          val query = paramOrNone(this.query.paramName)
+          val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
+          val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+          val license = paramOrNone(this.license.paramName)
+          val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
+          val page = intOrDefault(this.pageNo.paramName, 1)
+          val idList = paramAsListOfLong(this.articleIds.paramName)
+          val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
+          val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-        search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+        }
       }
     }
 
@@ -206,23 +212,25 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages (response400, response500))
     ) {
-      scrollSearchOr {
-        extract[ArticleSearchParams](request.body) match {
-          case Success(searchParams) =>
-            val query = searchParams.query
-            val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-            val language = searchParams.language.getOrElse(Language.AllLanguages)
-            val license = searchParams.license
-            val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
-            val page = searchParams.page.getOrElse(1)
-            val idList = searchParams.idList
-            val articleTypesFilter = searchParams.articleTypes
-            val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        scrollSearchOr {
+          extract[ArticleSearchParams](request.body) match {
+            case Success(searchParams) =>
+              val query = searchParams.query
+              val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
+              val language = searchParams.language.getOrElse(Language.AllLanguages)
+              val license = searchParams.license
+              val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
+              val page = searchParams.page.getOrElse(1)
+              val idList = searchParams.idList
+              val articleTypesFilter = searchParams.articleTypes
+              val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-            search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
-          case Failure(ex) => errorHandler(ex)
+              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+            case Failure(ex) => errorHandler(ex)
+          }
         }
-
       }
     }
 
@@ -241,13 +249,16 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages (response404, response500))
     ) {
-      val articleId = long(this.articleId.paramName)
-      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
-      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val articleId = long(this.articleId.paramName)
+        val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+        val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      readService.withId(articleId, language, fallback) match {
-        case Success(article) => article
-        case Failure(ex)      => errorHandler(ex)
+        readService.withId(articleId, language, fallback) match {
+          case Success(article) => article
+          case Failure(ex)      => errorHandler(ex)
+        }
       }
     }
 
@@ -264,10 +275,13 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages (response404, response500))
     ) {
-      val externalId = long(this.deprecatedNodeId.paramName)
-      readService.getInternalArticleIdByExternalId(externalId) match {
-        case Some(id) => id
-        case None     => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val externalId = long(this.deprecatedNodeId.paramName)
+        readService.getInternalArticleIdByExternalId(externalId) match {
+          case Some(id) => id
+          case None     => NotFound(body = Error(Error.NOT_FOUND, s"No article with id $externalId"))
+        }
       }
     }
 
@@ -285,20 +299,23 @@ trait DraftController {
           responseMessages (response403, response500)
           authorizations "oauth2")
     ) {
-      val filterNot = paramOrNone(this.filterNot.paramName)
-      val filter = paramOrNone(this.filter.paramName)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val filterNot = paramOrNone(this.filterNot.paramName)
+        val filter = paramOrNone(this.filter.paramName)
 
-      val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses
-        .filter {
-          case license: LicenseDefinition if filter.isDefined => license.license.toString.contains(filter.get)
-          case _                                              => true
-        }
-        .filterNot {
-          case license: LicenseDefinition if filterNot.isDefined => license.license.toString.contains(filterNot.get)
-          case _                                                 => false
-        }
+        val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses
+          .filter {
+            case license: LicenseDefinition if filter.isDefined => license.license.toString.contains(filter.get)
+            case _                                              => true
+          }
+          .filterNot {
+            case license: LicenseDefinition if filterNot.isDefined => license.license.toString.contains(filterNot.get)
+            case _                                                 => false
+          }
 
-      licenses.map(x => License(x.license.toString, Option(x.description), x.url))
+        licenses.map(x => License(x.license.toString, Option(x.description), x.url))
+      }
     }
 
     post(
@@ -415,20 +432,26 @@ trait DraftController {
           authorizations "oauth2"
           responseMessages (response400, response403, response404, response500))
     ) {
-      val importValidate = booleanOrDefault("import_validate", default = false)
-      val updateArticle = extract[UpdatedArticle](request.body)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val importValidate = booleanOrDefault("import_validate", default = false)
+        val updateArticle = extract[UpdatedArticle](request.body)
 
-      val validationMessage = updateArticle match {
-        case Success(art) =>
-          contentValidator.validateArticleApiArticle(long(this.articleId.paramName), art, importValidate, user.getUser)
-        case Failure(_) if request.body.isEmpty =>
-          contentValidator.validateArticleApiArticle(long(this.articleId.paramName), importValidate)
-        case Failure(ex) => Failure(ex)
-      }
+        val validationMessage = updateArticle match {
+          case Success(art) =>
+            contentValidator.validateArticleApiArticle(long(this.articleId.paramName),
+                                                       art,
+                                                       importValidate,
+                                                       user.getUser)
+          case Failure(_) if request.body.isEmpty =>
+            contentValidator.validateArticleApiArticle(long(this.articleId.paramName), importValidate)
+          case Failure(ex) => Failure(ex)
+        }
 
-      validationMessage match {
-        case Success(x)  => x
-        case Failure(ex) => errorHandler(ex)
+        validationMessage match {
+          case Success(x)  => x
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
@@ -464,7 +487,10 @@ trait DraftController {
           responseMessages response500
       )
     ) {
-      converterService.stateTransitionsToApi(user.getUser)
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        converterService.stateTransitionsToApi(user.getUser)
+      }
     }
   }
 }

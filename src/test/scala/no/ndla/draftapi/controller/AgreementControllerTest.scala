@@ -26,6 +26,10 @@ class AgreementControllerTest extends UnitSuite with TestEnvironment with Scalat
 
   val agreementId = 1
 
+  override def beforeEach: Unit = {
+    when(user.getUser).thenReturn(TestData.userWithWriteAccess)
+  }
+
   test("/<agreement_id> should return 200 if the agreement was found") {
     when(readService.agreementWithId(1)).thenReturn(Some(TestData.sampleApiAgreement))
     get(s"/test/$agreementId") {
