@@ -50,7 +50,7 @@ trait DraftController {
 
     private val query =
       Param[Option[String]]("query", "Return only articles with content matching the specified query.")
-    private val articleId = Param[Long]("article_id", "Id of the article that is to be fecthed")
+    private val articleId = Param[Long]("article_id", "Id of the article that is to be fetched")
     private val size = Param[Option[Int]]("size", "Limit the number of results to this many elements")
     private val articleTypes = Param[Option[String]](
       "articleTypes",

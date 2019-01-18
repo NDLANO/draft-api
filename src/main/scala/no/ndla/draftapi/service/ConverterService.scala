@@ -439,9 +439,9 @@ trait ConverterService {
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
 
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
-      val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
+      val updatedDate =
+        if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else article.updated.getOrElse(toMergeInto.updated)
       val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status)).getOrElse(Seq.empty)
-
       val partiallyConverted = toMergeInto.copy(
         revision = Option(article.revision),
         copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
