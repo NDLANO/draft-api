@@ -9,15 +9,16 @@ package no.ndla.draftapi.controller
 
 import java.util.concurrent.{Executors, TimeUnit}
 
-import no.ndla.draftapi.auth.{Role, User}
+import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
+import org.json4s.Formats
 import org.json4s.ext.EnumNameSerializer
-import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
@@ -71,6 +72,49 @@ trait InternController {
           logger.warn(agreementFail.getMessage, agreementFail)
           InternalServerError(agreementFail.getMessage)
       }
+    }
+
+    delete("/index") {
+      implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
+      def pluralIndex(n: Int) = if (n == 1) "1 index" else s"$n indexes"
+
+      val indexes = for {
+        articleIndex <- Future { articleIndexService.findAllIndexes(DraftApiProperties.DraftSearchIndex) }
+        conceptIndex <- Future { conceptIndexService.findAllIndexes(DraftApiProperties.ConceptSearchIndex) }
+        agreementIndex <- Future { agreementIndexService.findAllIndexes(DraftApiProperties.AgreementSearchIndex) }
+      } yield (articleIndex, conceptIndex, agreementIndex)
+
+      val deleteResults: Seq[Try[_]] = Await.result(indexes, Duration(10, TimeUnit.MINUTES)) match {
+        case (Failure(articleFail), _, _)   => halt(status = 500, body = articleFail.getMessage)
+        case (_, Failure(conceptFail), _)   => halt(status = 500, body = conceptFail.getMessage)
+        case (_, _, Failure(agreementFail)) => halt(status = 500, body = agreementFail.getMessage)
+        case (Success(articleIndexes), Success(conceptIndexes), Success(agreementIndexes)) => {
+          val articleDeleteResults = articleIndexes.map(index => {
+            logger.info(s"Deleting article index $index")
+            articleIndexService.deleteIndexWithName(Option(index))
+          })
+          val conceptDeleteResults = conceptIndexes.map(index => {
+            logger.info(s"Deleting concept index $index")
+            conceptIndexService.deleteIndexWithName(Option(index))
+          })
+          val agreementDeleteResults = agreementIndexes.map(index => {
+            logger.info(s"Deleting concept index $index")
+            agreementIndexService.deleteIndexWithName(Option(index))
+          })
+          articleDeleteResults ++ conceptDeleteResults ++ agreementDeleteResults
+        }
+      }
+
+      val (errors, successes) = deleteResults.partition(_.isFailure)
+      if (errors.nonEmpty) {
+        val message = s"Failed to delete ${pluralIndex(errors.length)}: " +
+          s"${errors.map(_.failed.get.getMessage).mkString(", ")}. " +
+          s"${pluralIndex(successes.length)} were deleted successfully."
+        halt(status = 500, body = message)
+      } else {
+        Ok(body = s"Deleted ${pluralIndex(successes.length)}")
+      }
+
     }
 
     get("/ids") {
