@@ -16,9 +16,9 @@ import com.sksamuel.elastic4s.mappings.{FieldDefinition, MappingDefinition}
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClient
+import no.ndla.draftapi.model.domain.Language.languageAnalyzers
 import no.ndla.draftapi.model.domain.{Content, ReindexResult}
 import no.ndla.draftapi.repository.Repository
-import no.ndla.draftapi.model.domain.Language.languageAnalyzers
 
 import scala.util.{Failure, Success, Try}
 
@@ -142,6 +142,19 @@ trait IndexService {
           case Failure(ex) => Failure(ex)
         }
 
+      }
+    }
+
+    def findAllIndexes(indexName: String): Try[Seq[String]] = {
+      val response = e4sClient.execute {
+        getAliases()
+      }
+
+      response match {
+        case Success(results) =>
+          Success(results.result.mappings.toList.map { case (index, _) => index.name }.filter(_.startsWith(indexName)))
+        case Failure(ex) =>
+          Failure(ex)
       }
     }
 
