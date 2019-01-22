@@ -9,7 +9,7 @@ package db.migration
 
 import java.util.Date
 
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.domain.ArticleType
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 import org.json4s.Formats
 import org.json4s.ext.EnumNameSerializer
@@ -55,7 +55,7 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
       s"""{"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]}}"""
 
     val expected =
-      s"""{"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$coe1,$coe2],"status":{"current":"PUBLISHED","other":[]}}""" // TODO: Not published
+      s"""{"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$coe1,$coe2],"status":{"current":"AWAITING_QUALITY_ASSURANCE","other":[]}}"""
 
     val res = migration.convertTopicArticle(old)
 
@@ -69,23 +69,50 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
     val old =
       s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]}}"""
     val expected =
-      s"""{"articleType":"topic-article","visualElement":[$ve1,$ve3],"content":[$coe1,$coe2],"status":{"current":"PUBLISHED","other":[]}}""" // TODO: Not published
+      s"""{"articleType":"topic-article","visualElement":[$ve1,$ve3],"content":[$coe1,$coe2],"status":{"current":"AWAITING_QUALITY_ASSURANCE","other":[]}}"""
 
     val res = migration.convertTopicArticle(old)
     res should be(expected)
   }
 
-  test("Status should be sucessfully updated to wait for quality assurance") { ??? }
+  test("Status should be sucessfully updated to wait for quality assurance if it is published") {
+    implicit val formats
+      : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(migration.V16__ArticleStatus) + new EnumNameSerializer(
+      ArticleType)
+
+    val old1 =
+      s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":["IMPORTED"]},"notes":[]}"""
+    val old2 =
+      s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1],"status":{"current":"PUBLISHED","other":["IMPORTED"]},"notes":[]}"""
+    val old3 =
+      s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"DRAFT","other":["IMPORTED"]},"notes":[]}"""
+
+    val res1 = migration.convertTopicArticle(old1)
+    val res2 = migration.convertTopicArticle(old2)
+    val res3 = migration.convertTopicArticle(old3)
+
+    val status1 = (parse(res1) \ "status").extract[migration.V16__Status]
+    status1.current should be(migration.V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE)
+    status1.other should be(Set(migration.V16__ArticleStatus.IMPORTED))
+
+    val status2 = (parse(res2) \ "status").extract[migration.V16__Status]
+    status2.current should be(migration.V16__ArticleStatus.PUBLISHED)
+    status2.other should be(Set(migration.V16__ArticleStatus.IMPORTED))
+
+    val status3 = (parse(res3) \ "status").extract[migration.V16__Status]
+    status3.current should be(migration.V16__ArticleStatus.DRAFT)
+    status3.other should be(Set(migration.V16__ArticleStatus.IMPORTED))
+  }
 
   test("Notes should be added if embed is deleted") {
     implicit val formats
-      : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
+      : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(migration.V16__ArticleStatus) + new EnumNameSerializer(
       ArticleType)
 
     val d = write(new Date())
     val existingNote = s"""{"note":"kake","user":"testleif","timestamp":$d,"status":{"current":"DRAFT","other":[]}}"""
     val noteText =
-      s"Any embed before text has been deleted. Status changed to '${ArticleStatus.AWAITING_QUALITY_ASSURANCE}'."
+      s"Any embed before text has been deleted. Status changed to '${migration.V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'."
 
     val old1 =
       s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]},"notes":[$existingNote]}"""
