@@ -7,11 +7,14 @@
 
 package db.migration
 
+import java.util.Date
+
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType}
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 import org.json4s.Formats
 import org.json4s.ext.EnumNameSerializer
-import org.json4s.native.JsonMethods.{compact, parse, render}
+import org.json4s.native.JsonMethods.parse
+import org.json4s.native.Serialization.write
 
 class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestEnvironment {
   val migration = new V17__MoveTopicArticleEmbedToVisualElement
@@ -22,8 +25,8 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
   val ve1 = s"""{"resource":"$embed1","language":"nb"}"""
   val ve2 = s"""{"resource":"$embed2","language":"nn"}"""
   val ve3 = s"""{"resource":"$embed3","language":"nn"}"""
-  val co1 = """{"content":"<section><h1>No extract anything here brother</h1>","language":"nb"}"""
-  val co2 = s"""{"content":"<section>$embed3<h1>Extract something here brother</h1>","language":"nn"}"""
+  val co1 = """{"content":"<section><h1>No extract anything here brother</h1></section>","language":"nb"}"""
+  val co2 = s"""{"content":"<section>$embed3<h1>Extract something here brother</h1></section>","language":"nn"}"""
 
   test("embed should be extracted if before all text") {
     val old =
@@ -54,7 +57,7 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
     val expected =
       s"""{"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$coe1,$coe2],"status":{"current":"PUBLISHED","other":[]}}""" // TODO: Not published
 
-    val res = migration.convertArticle(old)
+    val res = migration.convertTopicArticle(old)
 
     res should be(expected)
   }
@@ -68,7 +71,7 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
     val expected =
       s"""{"articleType":"topic-article","visualElement":[$ve1,$ve3],"content":[$coe1,$coe2],"status":{"current":"PUBLISHED","other":[]}}""" // TODO: Not published
 
-    val res = migration.convertArticle(old)
+    val res = migration.convertTopicArticle(old)
     res should be(expected)
   }
 
@@ -79,26 +82,25 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
       : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
       ArticleType)
 
-    val ts = "abc"
+    val d = write(new Date())
+    val existingNote = s"""{"note":"kake","user":"testleif","timestamp":$d,"status":{"current":"DRAFT","other":[]}}"""
     val noteText =
       s"Any embed before text has been deleted. Status changed to '${ArticleStatus.AWAITING_QUALITY_ASSURANCE}'."
-    val coe1 = """{"content":"<section><h1>No extract anything here brother</h1></section>","language":"nb"}"""
-    val coe2 = """{"content":"<section><h1>Extract something here brother</h1></section>","language":"nn"}"""
-    val note = s"""{"note":"$noteText","user":"System","status":{"current":"PUBLISHED","other":[]},"timestamp":"$ts"}"""
 
     val old1 =
-      s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]},"notes":[]}"""
+      s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]},"notes":[$existingNote]}"""
     val old2 =
       s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1],"status":{"current":"PUBLISHED","other":[]},"notes":[]}"""
 
-    val res1 = migration.convertArticle(old1)
+    val res1 = migration.convertTopicArticle(old1)
     val notes1 = (parse(res1) \ "notes").extract[Seq[migration.V16__EditorNote]]
-    notes1.head.note should be(noteText)
-    notes1.head.user should be("System")
+    notes1.head.note should be("kake")
+    notes1(1).note should be(noteText)
+    notes1(1).user should be("System")
+    notes1.size should be(2)
 
-    val res2 = migration.convertArticle(old2)
+    val res2 = migration.convertTopicArticle(old2)
     val notes2 = (parse(res2) \ "notes").extract[Seq[migration.V16__EditorNote]]
     notes2.isEmpty should be(true)
   }
-
 }

@@ -8,6 +8,7 @@
 package db.migration
 
 import java.util.Date
+import java.util.UUID.randomUUID
 
 import no.ndla.draftapi.model.domain._
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
@@ -15,14 +16,10 @@ import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods.{compact, parse, render}
 import org.json4s.{Extraction, Formats}
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Entities.EscapeMode
 import org.jsoup.nodes.TextNode
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
-import java.util.UUID.randomUUID
-
-import org.jsoup.nodes.Entities.EscapeMode
-
-import scala.util.{Success, Try}
 
 class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
   override def migrate(context: Context): Unit = {
@@ -41,7 +38,7 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
 
     while (numPagesLeft > 0) {
       allArticles(offset * 1000).map {
-        case (id, document) => updateArticle(convertArticle(document), id)
+        case (id, document) => updateArticle(convertTopicArticle(document), id)
       }
       numPagesLeft -= 1
       offset += 1
@@ -49,14 +46,14 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
   }
 
   def countAllArticles(implicit session: DBSession): Option[Long] = {
-    sql"select count(*) from articledata where document is not NULL"
+    sql"select count(*) from articledata where document is not NULL and document#>'{articleType}'='topic-article'"
       .map(rs => rs.long("count"))
       .single()
       .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
-    sql"select id, document from articledata where document is not null order by id limit 1000 offset $offset"
+    sql"select id, document from articledata where document is not null and document#>'{articleType}'='topic-article' order by id limit 1000 offset $offset"
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
@@ -64,7 +61,7 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
       .apply()
   }
 
-  def convertArticle(document: String): String = {
+  def convertTopicArticle(document: String): String = {
     implicit val formats
       : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
       ArticleType)
@@ -72,54 +69,42 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
     val oldArticle = parse(document)
     val extractedArticle = oldArticle.extract[V16__Article]
 
-    var modified = false
+    val contentWithExtractedEmbeds = extractedArticle.content.map(cont => {
+      val (extractedEmbed, newContentString) = extractEmbedFromContent(cont.content)
+      cont.copy(content = newContentString) -> extractedEmbed
+    })
 
-    if (extractedArticle.articleType == ArticleType.TopicArticle) {
+    val contentIsChanged = extractedArticle.content != contentWithExtractedEmbeds.map(_._1)
 
-      val newArticle = extractedArticle.content.foldLeft(extractedArticle.copy(content = Seq.empty)) {
-        (article, content) =>
-          val (extractedEmbed, newContentString) = extractEmbedFromContent(content.content)
-
-          val (visualElementForLang, visualElementsWithoutLang) =
-            article.visualElement.partition(v => content.language == v.language)
-
-          modified = extractedEmbed.isDefined
-
-          val visualElements = visualElementForLang.headOption match {
-            case Some(ve) => visualElementsWithoutLang ++ Seq(ve)
-            case None     => visualElementsWithoutLang ++ extractedEmbed.map(V16__VisualElement(_, content.language))
-          }
-
-          article.copy(
-            visualElement = visualElements,
-            content = article.content :+ content.copy(content = newContentString)
-          )
-      }
-
-      val updatedArticle = oldArticle.mapField {
-        case ("visualElement", _) => "visualElement" -> Extraction.decompose(newArticle.visualElement)
-        case ("content", _)       => "content" -> Extraction.decompose(newArticle.content)
-        case ("notes", n) =>
-          val existingNotes = n.extract[Seq[V16__EditorNote]]
-          val noteToAppend =
-            if (modified) {
-              Some(
-                V16__EditorNote(
-                  s"Any embed before text has been deleted. Status changed to '${ArticleStatus.AWAITING_QUALITY_ASSURANCE.toString}'.",
-                  "System",
-                  newArticle.status,
-                  new Date()
-                ))
-            } else { None }
-
-          "notes" -> Extraction.decompose(existingNotes ++ noteToAppend)
-        case x => x
-      }
-
-      compact(render(updatedArticle))
-    } else {
-      document
+    val newVisualElements = contentWithExtractedEmbeds.collect {
+      case (content, Some(extractedEmbed))
+          if !extractedArticle.visualElement.map(_.language).contains(content.language) =>
+        V16__VisualElement(extractedEmbed, content.language)
     }
+
+    val allVisualElements = extractedArticle.visualElement ++ newVisualElements
+
+    val updatedArticle = oldArticle.mapField {
+      case ("visualElement", _) => "visualElement" -> Extraction.decompose(allVisualElements)
+      case ("content", _)       => "content" -> Extraction.decompose(contentWithExtractedEmbeds.map(_._1))
+      case ("notes", n) =>
+        val existingNotes = n.extract[Seq[V16__EditorNote]]
+        val noteToAppend =
+          if (contentIsChanged) {
+            Some(
+              V16__EditorNote(
+                s"Any embed before text has been deleted. Status changed to '${ArticleStatus.AWAITING_QUALITY_ASSURANCE}'.",
+                "System",
+                extractedArticle.status,
+                new Date()
+              ))
+          } else { None }
+
+        "notes" -> Extraction.decompose(existingNotes ++ noteToAppend)
+      case x => x
+    }
+
+    compact(render(updatedArticle))
   }
 
   /** Returns a tuple with (extracted embed, new content body) */
