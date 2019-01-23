@@ -52,10 +52,10 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
     val coe1 = """{"content":"<section><h1>No extract anything here brother</h1></section>","language":"nb"}"""
     val coe2 = """{"content":"<section><h1>Extract something here brother</h1></section>","language":"nn"}"""
     val old =
-      s"""{"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]}}"""
+      s"""{"metaDescription":[{"content":"what","language":"nb"}],"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]}}"""
 
     val expected =
-      s"""{"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$coe1,$coe2],"status":{"current":"AWAITING_QUALITY_ASSURANCE","other":[]}}"""
+      s"""{"metaDescription":[{"content":"what","language":"nb"}],"articleType":"topic-article","visualElement":[$ve1,$ve2],"content":[$coe1,$coe2],"status":{"current":"AWAITING_QUALITY_ASSURANCE","other":[]}}"""
 
     val res = migration.convertTopicArticle(old)
 
@@ -112,7 +112,7 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
     val d = write(new Date())
     val existingNote = s"""{"note":"kake","user":"testleif","timestamp":$d,"status":{"current":"DRAFT","other":[]}}"""
     val noteText =
-      s"Any embed before text has been deleted. Status changed to '${migration.V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'."
+      s"Any embed before text has been deleted and made a visual element if possible. Status changed to '${migration.V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'."
 
     val old1 =
       s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]},"notes":[$existingNote]}"""

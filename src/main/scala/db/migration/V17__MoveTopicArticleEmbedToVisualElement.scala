@@ -12,6 +12,7 @@ import java.util.UUID.randomUUID
 
 import no.ndla.draftapi.model.domain.ArticleType
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
+import org.json4s.JsonAST.{JArray, JObject}
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods.{compact, parse, render}
 import org.json4s.{Extraction, Formats}
@@ -22,7 +23,6 @@ import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
 import scala.language.{implicitConversions, postfixOps}
-import scala.util.{Success, Try}
 
 class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
   override def migrate(context: Context): Unit = {
@@ -94,9 +94,9 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
       val allVisualElements = extractedArticle.visualElement ++ newVisualElements
 
       val updatedArticle = oldArticle.mapField {
-        case ("visualElement", _) => "visualElement" -> Extraction.decompose(allVisualElements)
-        case ("content", _)       => "content" -> Extraction.decompose(contentWithExtractedEmbeds.map(_._1))
-        case ("status", oldStatus) =>
+        case ("visualElement", _: JArray) => "visualElement" -> Extraction.decompose(allVisualElements)
+        case ("content", _: JArray)       => "content" -> Extraction.decompose(contentWithExtractedEmbeds.map(_._1))
+        case ("status", oldStatus: JObject) =>
           val os = oldStatus.extract[V16__Status]
           val newStatus =
             if (os.current == V16__ArticleStatus.PUBLISHED) {
@@ -106,10 +106,10 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
             }
 
           "status" -> Extraction.decompose(newStatus)
-        case ("notes", n) =>
+        case ("notes", n: JArray) =>
           val existingNotes = n.extract[Seq[V16__EditorNote]]
           val noteToAppend = V16__EditorNote(
-            s"Any embed before text has been deleted and moved to visualElements if possible. Status changed to '${V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'.",
+            s"Any embed before text has been deleted and made a visual element if possible. Status changed to '${V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'.",
             "System",
             extractedArticle.status,
             new Date()
