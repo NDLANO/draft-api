@@ -30,11 +30,11 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
     db.autoClose(false)
 
     db.withinTx { implicit session =>
-      migrateArticleNotes
+      migrateTopicArticleEmbeds
     }
   }
 
-  def migrateArticleNotes(implicit session: DBSession): Unit = {
+  def migrateTopicArticleEmbeds(implicit session: DBSession): Unit = {
     val count = countAllTopicArticles.get
     var numPagesLeft = (count / 1000) + 1
     var offset = 0L
@@ -69,6 +69,11 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
       .apply()
   }
 
+  private def newStatus(extractedArticle: V16__Article): V16__Status =
+    if (extractedArticle.status.current == V16__ArticleStatus.PUBLISHED)
+      extractedArticle.status.copy(current = V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE)
+    else extractedArticle.status
+
   def convertTopicArticle(document: String): String = {
     implicit val formats
       : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(V16__ArticleStatus) + new EnumNameSerializer(
@@ -92,32 +97,19 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
       }
 
       val allVisualElements = extractedArticle.visualElement ++ newVisualElements
+      val updatedStatus = newStatus(extractedArticle)
+      val noteToAppend = V16__EditorNote(
+        s"Any embed before text has been deleted and made a visual element if possible. Status changed to '${V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'.",
+        "System",
+        extractedArticle.status,
+        new Date()
+      )
 
-      val updatedArticle = oldArticle.mapField {
-        case ("visualElement", _: JArray) => "visualElement" -> Extraction.decompose(allVisualElements)
-        case ("content", _: JArray)       => "content" -> Extraction.decompose(contentWithExtractedEmbeds.map(_._1))
-        case ("status", oldStatus: JObject) =>
-          val os = oldStatus.extract[V16__Status]
-          val newStatus =
-            if (os.current == V16__ArticleStatus.PUBLISHED) {
-              os.copy(current = V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE)
-            } else {
-              os
-            }
-
-          "status" -> Extraction.decompose(newStatus)
-        case ("notes", n: JArray) =>
-          val existingNotes = n.extract[Seq[V16__EditorNote]]
-          val noteToAppend = V16__EditorNote(
-            s"Any embed before text has been deleted and made a visual element if possible. Status changed to '${V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'.",
-            "System",
-            extractedArticle.status,
-            new Date()
-          )
-
-          "notes" -> Extraction.decompose(existingNotes :+ noteToAppend)
-        case x => x
-      }
+      val updatedArticle = oldArticle
+        .replace(List("visualElement"), Extraction.decompose(allVisualElements))
+        .replace(List("content"), Extraction.decompose(contentWithExtractedEmbeds.map(_._1)))
+        .replace(List("status"), Extraction.decompose(updatedStatus))
+        .replace(List("notes"), Extraction.decompose(extractedArticle.notes :+ noteToAppend))
 
       compact(render(updatedArticle))
     } else { document }
@@ -173,7 +165,8 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
   case class V16__Article(content: Seq[V16__Content],
                           visualElement: Seq[V16__VisualElement],
                           articleType: ArticleType.Value,
-                          status: V16__Status)
+                          status: V16__Status,
+                          notes: Seq[V16__EditorNote])
 
   object V16__ArticleStatus extends Enumeration {
 
