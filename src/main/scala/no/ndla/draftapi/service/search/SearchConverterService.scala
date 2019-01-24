@@ -57,7 +57,7 @@ trait SearchConverterService {
           .toSeq
           .flatten,
         articleType = ai.articleType.toString,
-        notes = ai.notes,
+        notes = ai.notes.map(_.note),
         defaultTitle = defaultTitle.map(_.title)
       )
     }

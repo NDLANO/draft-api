@@ -13,7 +13,7 @@ import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.ArticleStatus._
-import no.ndla.draftapi.model.domain.ArticleTitle
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleTitle, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import no.ndla.mapping.License.CC_BY
@@ -180,6 +180,12 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(PUBLISHED.toString).length should be(4)
     res(AWAITING_UNPUBLISHING.toString).length should be(4)
     res(UNPUBLISHED.toString).length should be(4)
+  }
+
+  test("newNotes should fail if empty strings are recieved") {
+    service
+      .newNotes(Seq("", "jonas"), UserInfo.apply("Kari"), Status(ArticleStatus.PROPOSAL, Set.empty))
+      .isFailure should be(true)
   }
 
 }
