@@ -13,6 +13,7 @@ import no.ndla.draftapi.ComponentRegistry.{
   fileController,
   healthController,
   internController,
+  ruleController,
   resourcesApp
 }
 import no.ndla.draftapi.DraftSwagger
@@ -27,6 +28,7 @@ class ScalatraBootstrap extends LifeCycle {
     context.mount(fileController, "/draft-api/v1/files", "files")
     context.mount(agreementController, "/draft-api/v1/agreements/", "agreements")
     context.mount(conceptController, "/draft-api/v1/concepts", "concepts")
+    context.mount(ruleController, "/draft-api/v1/rules", "rules")
     context.mount(resourcesApp, "/draft-api/api-docs")
     context.mount(internController, "/intern")
     context.mount(healthController, "/health")
