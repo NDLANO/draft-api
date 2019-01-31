@@ -56,7 +56,8 @@ object ComponentRegistry
     with ContentValidator
     with Clock
     with User
-    with ArticleApiClient {
+    with ArticleApiClient
+    with RuleController {
 
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 
@@ -70,6 +71,7 @@ object ComponentRegistry
   lazy val fileController = new FileController
   lazy val agreementController = new AgreementController
   lazy val conceptController = new ConceptController
+  lazy val ruleController = new RuleController
   lazy val resourcesApp = new ResourcesApp
   lazy val healthController = new HealthController
 
