@@ -17,6 +17,8 @@ import scala.util.Properties._
 import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
+  val IsKubernetes: Boolean = envOrNone("NDLA_IS_KUBERNETES").isDefined
+
   val Environment = propOrElse("NDLA_ENVIRONMENT", "local")
   val ApplicationName = "draft-api"
   val Auth0LoginEndpoint = s"https://${AuthUser.getAuth0HostForEnv(Environment)}/authorize"
@@ -123,9 +125,10 @@ object DraftApiProperties extends LazyLogging {
   }
 
   def propOpt(key: String): Option[String] = {
-    secrets.get(key).flatten match {
-      case Some(secret) => Some(secret)
-      case None         => envOrNone(key)
+    envOrNone(key) match {
+      case Some(prop)            => Some(prop)
+      case None if !IsKubernetes => secrets.get(key).flatten
+      case _                     => None
     }
   }
 
