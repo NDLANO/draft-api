@@ -56,8 +56,8 @@ trait RuleController {
       "/mathml/",
       operation(
         apiOperation[Map[String, Any]](nickname = "getMathMLRules")
-          summary "Show all mathml validation rules"
-          description "Shows all the mathml validation rules."
+          summary "Show all MathML validation rules"
+          description "Shows all the MathML validation rules."
           parameters asHeaderParam(correlationId)
           authorizations "oauth2"
           responseMessages (response403, response500)
