@@ -99,7 +99,7 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
       val allVisualElements = extractedArticle.visualElement ++ newVisualElements
       val updatedStatus = newStatus(extractedArticle)
       val noteToAppend = V16__EditorNote(
-        s"Any embed before text has been deleted and made a visual element if possible. Status changed to '${V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'.",
+        s"Embed plassert før første tekst har blitt slettet og gjort om til visuelt element, dersom det var mulig. Status har blitt endret til 'Til kvalitetssikring'.",
         "System",
         extractedArticle.status,
         new Date()

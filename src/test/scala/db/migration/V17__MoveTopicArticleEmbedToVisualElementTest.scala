@@ -112,7 +112,7 @@ class V17__MoveTopicArticleEmbedToVisualElementTest extends UnitSuite with TestE
     val d = write(new Date())
     val existingNote = s"""{"note":"kake","user":"testleif","timestamp":$d,"status":{"current":"DRAFT","other":[]}}"""
     val noteText =
-      s"Any embed before text has been deleted and made a visual element if possible. Status changed to '${migration.V16__ArticleStatus.AWAITING_QUALITY_ASSURANCE}'."
+      s"Embed plassert før første tekst har blitt slettet og gjort om til visuelt element, dersom det var mulig. Status har blitt endret til 'Til kvalitetssikring'."
 
     val old1 =
       s"""{"articleType":"topic-article","visualElement":[$ve1],"content":[$co1,$co2],"status":{"current":"PUBLISHED","other":[]},"notes":[$existingNote]}"""
