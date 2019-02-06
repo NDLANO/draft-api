@@ -47,11 +47,17 @@ object DraftApiProperties extends LazyLogging {
     ResourceType.File.toString -> Domain
   )
 
-  val internalApiUrls = Map(
-    "article-api" -> "http://article-api.ndla-local/intern",
-    "audio-api" -> "http://audio-api.ndla-local/intern",
-    "draft-api" -> "http://draft-api.ndla-local/intern",
-    "image-api" -> "http://image-api.ndla-local/intern"
+  val ArticleApiHost: String = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
+  val LearningpathApiHost: String = propOrElse("LEARNINGPATH_API_HOST", "learningpath-api.ndla-local")
+  val AudioApiHost: String = propOrElse("AUDIO_API_HOST", "audio-api.ndla-local")
+  val DraftApiHost: String = propOrElse("DRAFT_API_HOST", "draft-api.ndla-local")
+  val ImageApiHost: String = propOrElse("IMAGE_API_HOST", "image-api.ndla-local")
+
+  val internalApiUrls: Map[String, String] = Map(
+    "article-api" -> s"http://$ArticleApiHost/intern",
+    "audio-api" -> s"http://$AudioApiHost/intern",
+    "draft-api" -> s"http://$DraftApiHost/intern",
+    "image-api" -> s"http://$ImageApiHost/intern"
   )
 
   val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
@@ -79,9 +85,6 @@ object DraftApiProperties extends LazyLogging {
 
   val CorrelationIdKey = "correlationID"
   val CorrelationIdHeader = "X-Correlation-ID"
-
-  val ArticleApiHost = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
-  val LearningpathApiHost = propOrElse("LEARNINGPATH_API_HOST", "learningpath-api.ndla-local")
 
   val AttachmentStorageName = s"$Environment.article-attachments.ndla"
 
