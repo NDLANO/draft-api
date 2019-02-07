@@ -97,7 +97,13 @@ object ComponentRegistry
   lazy val reindexClient = new ReindexClient
 
   lazy val fileStorage = new FileStorageService
-  val amazonClient: AmazonS3 = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build()
+  val currentRegion: Option[Regions] = Option(Regions.getCurrentRegion).map(region => Regions.fromName(region.getName))
+
+  val amazonClient: AmazonS3 =
+    AmazonS3ClientBuilder
+      .standard()
+      .withRegion(currentRegion.getOrElse(Regions.EU_CENTRAL_1))
+      .build()
 
   lazy val e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()
 
