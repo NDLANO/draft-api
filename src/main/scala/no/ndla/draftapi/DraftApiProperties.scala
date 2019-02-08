@@ -86,7 +86,7 @@ object DraftApiProperties extends LazyLogging {
   val CorrelationIdKey = "correlationID"
   val CorrelationIdHeader = "X-Correlation-ID"
 
-  val AttachmentStorageName = s"$Environment.article-attachments.ndla"
+  val AttachmentStorageName = s"${Environment.replace('_', '-')}.article-attachments.ndla"
 
   lazy val Domain = Domains.get(Environment)
 
