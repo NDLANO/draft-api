@@ -7,16 +7,19 @@
 
 package no.ndla.draftapi.service
 
+import java.util.Date
+
 import no.ndla.draftapi.caching.Memoize
 import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
-import no.ndla.draftapi.model.domain.Status
+import no.ndla.draftapi.model.domain.{Article, EditorNote, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito._
-import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success, Try}
@@ -46,32 +49,43 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
   test("doTransition should publish the article when transitioning to PUBLISHED") {
     val expectedStatus = domain.Status(PUBLISHED, Set.empty)
-    val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus)
+    val editorNotes = Seq(EditorNote("Status endret", "unit_test", expectedStatus, new Date()))
+    val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
-    when(articleApiClient.updateArticle(DraftArticle.id.get, expectedArticle, List("1234")))
+    when(articleApiClient.updateArticle(eqTo(DraftArticle.id.get), any[Article], eqTo(List("1234"))))
       .thenReturn(Success(expectedArticle))
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWIthAdminAccess)
     sideEffect(res).get.status should equal(expectedStatus)
 
+    val captor = ArgumentCaptor.forClass(classOf[Article])
     verify(articleApiClient, times(1))
-      .updateArticle(DraftArticle.id.get, expectedArticle, List("1234"))
+      .updateArticle(eqTo(DraftArticle.id.get), captor.capture(), eqTo(List("1234")))
+
+    val argumentArticle: Article = captor.getValue.copy(notes = editorNotes)
+    argumentArticle should equal(expectedArticle)
   }
 
   test("doTransition should unpublish the article when transitioning to UNPUBLISHED") {
     val expectedStatus = domain.Status(UNPUBLISHED, Set.empty)
-    val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus)
+    val editorNotes = Seq(EditorNote("Status endret", "unit_test", expectedStatus, new Date()))
+    val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
 
     when(learningpathApiClient.getLearningpaths).thenReturn(Memoize[Try[Seq[LearningPath]]](() => Success(Seq.empty)))
-    when(articleApiClient.unpublishArticle(expectedArticle)).thenReturn(Success(expectedArticle))
+    when(articleApiClient.unpublishArticle(any[Article])).thenReturn(Success(expectedArticle))
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(AwaitingUnpublishArticle, UNPUBLISHED, TestData.userWIthAdminAccess)
     sideEffect(res).get.status should equal(expectedStatus)
 
+    val captor = ArgumentCaptor.forClass(classOf[Article])
+
     verify(articleApiClient, times(1))
-      .unpublishArticle(DraftArticle.copy(status = expectedStatus))
+      .unpublishArticle(captor.capture())
+
+    val argumentArticle: Article = captor.getValue.copy(notes = editorNotes)
+    argumentArticle should equal(expectedArticle)
   }
 
   test("doTransition should remove article from search when transitioning to ARCHIEVED") {
