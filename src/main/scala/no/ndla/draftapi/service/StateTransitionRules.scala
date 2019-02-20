@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.service
 
+import java.util.Date
+
 import cats.effect.IO
 import io.lemonlabs.uri.Uri
 import no.ndla.draftapi.auth.UserInfo
@@ -36,6 +38,7 @@ trait StateTransitionRules {
     with ArticleApiClient
     with TaxonomyApiClient
     with LearningpathApiClient
+    with ConverterService
     with ContentValidator
     with ArticleIndexService =>
 
@@ -103,8 +106,12 @@ trait StateTransitionRules {
         case Some(t) =>
           val currentToOther = if (t.addCurrentStateToOthersOnTransition) Set(current.status.current) else Set()
           val other = current.status.other.intersect(t.otherStatesToKeepOnTransition) ++ currentToOther
-
-          val convertedArticle = current.copy(status = domain.Status(to, other))
+          val newStatus = domain.Status(to, other)
+          val newEditorNotes =
+            if (current.status.current != to)
+              current.notes :+ domain.EditorNote("Status endret", user.id, newStatus, new Date())
+            else current.notes
+          val convertedArticle = current.copy(status = newStatus, notes = newEditorNotes)
           (Success(convertedArticle), t.sideEffect)
         case None =>
           val illegalStateTransition = IllegalStatusStateTransition(
