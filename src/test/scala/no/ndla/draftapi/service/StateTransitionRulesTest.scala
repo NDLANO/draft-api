@@ -12,7 +12,7 @@ import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
-import no.ndla.draftapi.model.domain.Status
+import no.ndla.draftapi.model.domain.{ArticleStatus, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
 import org.mockito.Mockito._
@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
 
-  val DraftStatus = domain.Status(DRAFT, Set.empty)
+  val DraftStatus = domain.Status(DRAFT, Set(QUALITY_ASSURED))
   val AwaitingUnpublishStatus = domain.Status(AWAITING_UNPUBLISHING, Set.empty)
   val UnpublishedStatus = domain.Status(UNPUBLISHED, Set.empty)
   val ProposalStatus = domain.Status(PROPOSAL, Set.empty)
