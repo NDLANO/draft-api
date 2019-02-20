@@ -10,7 +10,7 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import no.ndla.draftapi.caching.Memoize
-import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
+import no.ndla.draftapi.integration.{LearningPath, LearningStep}
 import no.ndla.draftapi.model.api.IllegalStatusStateTransition
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -18,8 +18,8 @@ import no.ndla.draftapi.model.domain.{Article, EditorNote, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
 import org.mockito.ArgumentCaptor
-import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
+import org.mockito.Mockito._
 import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success, Try}
@@ -27,7 +27,7 @@ import scala.util.{Failure, Success, Try}
 class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
 
-  val DraftStatus = domain.Status(DRAFT, Set.empty)
+  val DraftStatus = domain.Status(DRAFT, Set(QUALITY_ASSURED))
   val AwaitingUnpublishStatus = domain.Status(AWAITING_UNPUBLISHING, Set.empty)
   val UnpublishedStatus = domain.Status(UNPUBLISHED, Set.empty)
   val ProposalStatus = domain.Status(PROPOSAL, Set.empty)
@@ -63,8 +63,9 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     verify(articleApiClient, times(1))
       .updateArticle(eqTo(DraftArticle.id.get), captor.capture(), eqTo(List("1234")))
 
-    val argumentArticle: Article = captor.getValue.copy(notes = editorNotes)
-    argumentArticle should equal(expectedArticle)
+    val argumentArticle: Article = captor.getValue
+    val argumentArticleWithNotes = argumentArticle.copy(notes = editorNotes)
+    argumentArticleWithNotes should equal(expectedArticle)
   }
 
   test("doTransition should unpublish the article when transitioning to UNPUBLISHED") {
@@ -84,8 +85,9 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     verify(articleApiClient, times(1))
       .unpublishArticle(captor.capture())
 
-    val argumentArticle: Article = captor.getValue.copy(notes = editorNotes)
-    argumentArticle should equal(expectedArticle)
+    val argumentArticle: Article = captor.getValue
+    val argumentArticleWithNotes = argumentArticle.copy(notes = editorNotes)
+    argumentArticleWithNotes should equal(expectedArticle)
   }
 
   test("doTransition should remove article from search when transitioning to ARCHIEVED") {
