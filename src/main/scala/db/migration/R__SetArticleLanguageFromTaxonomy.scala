@@ -17,8 +17,10 @@ import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
 import scalaj.http.Http
 import scalikejdbc.{DB, DBSession, _}
+import no.ndla.mapping.ISO639.get6391CodeFor6392Code
 
 import scala.util.Try
+import scala.util.matching.Regex
 
 class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
@@ -27,8 +29,10 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   private val taxonomyTimeout = 20 * 1000 // 20 Seconds
 
   case class TaxonomyResource(contentUri: Option[String])
+  case class Keyword(names: List[KeywordName])
+  case class KeywordName(data: List[Map[String, String]])
 
-  override def getChecksum: Integer = 1 // Change this to something else if you want to repeat migration
+  override def getChecksum: Integer = 2 // Change this to something else if you want to repeat migration
 
   def fetchResourceFromTaxonomy(endpoint: String): Seq[Long] = {
     val url = TaxonomyApiEndpoint + endpoint
@@ -48,6 +52,40 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
         }))
   }
 
+  def fetchArticleTags(externalId: Long): Seq[ArticleTag] = {
+
+    val url = "http://api.topic.ndla.no/rest/v1/keywords/?filter%5Bnode%5D=ndlanode_" + externalId.toString
+
+    val keywords = for {
+      response <- Try(Http(url).asString)
+      extracted <- Try(parse(response.body).extract[Seq[Keyword]])
+    } yield extracted
+
+    keywords
+      .map(
+        _.flatMap(_.names)
+          .flatMap(_.data)
+          .flatMap(_.toIterable)
+          .map(t => (getISO639(t._1), t._2.trim.toLowerCase))
+          .groupBy(_._1)
+          .map(entry => (entry._1, entry._2.map(_._2)))
+          .map(t => ArticleTag(t._2, Language.languageOrUnknown(t._1)))
+          .toList)
+      .getOrElse(Seq())
+
+    //Seq()
+
+  }
+
+  def getISO639(languageUrl: String): Option[String] = {
+    val pattern = new Regex("http:\\/\\/psi\\..*\\/#(.+)")
+    Option(languageUrl) collect { case pattern(group) => group } match {
+      case Some(x) =>
+        if (x == "language-neutral") None else get6391CodeFor6392Code(x)
+      case None => None
+    }
+  }
+
   override def migrate(context: Context): Unit = {
     val db = DB(context.getConnection)
     db.autoClose(false)
@@ -61,20 +99,22 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
     val topicIds: Seq[Long] = fetchResourceFromTaxonomy("/subjects/urn:subject:15/topics?recursive=true")
     val resourceIds: Seq[Long] = fetchResourceFromTaxonomy("subjects/urn:subject:15/resources")
+    val tags: Seq[ArticleTag] = topicIds.flatMap(fetchArticleTags)
     System.out.println("length topic: " + topicIds.length)
     System.out.println("length resource: " + resourceIds.length)
+    System.out.println("tagg: " + tags.length)
     val k = for {
       topicId <- topicIds
       article <- fetchArticleInfo(topicId)
 
-    } yield convertArticleLanguage(article)
+    } yield convertArticleLanguage(article, Seq())
 
     k.map(updateArticle)
 
     val abc = for {
       resourceId <- resourceIds
       article <- fetchArticleInfo(resourceId)
-    } yield convertArticleLanguage(article)
+    } yield convertArticleLanguage(article, Seq())
 
     abc.map(updateArticle)
 
@@ -90,11 +130,11 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       .apply()
   }
 
-  def convertArticleLanguage(oldArticle: Article): Article = {
+  def convertArticleLanguage(oldArticle: Article, newTags: Seq[ArticleTag]): Article = {
     oldArticle.copy(
       title = oldArticle.title.map(copyArticleTitle),
       content = oldArticle.content.map(copyArticleContent),
-      tags = oldArticle.tags.map(copyArticleTags),
+      //tags = newTags,
       visualElement = oldArticle.visualElement.map(copyVisualElement),
       introduction = oldArticle.introduction.map(copyArticleIntroduction),
       metaDescription = oldArticle.metaDescription.map(copyArticleMetaDescription),
@@ -107,10 +147,6 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   }
 
   def copyArticleContent(field: ArticleContent): ArticleContent = {
-    if (field.language == "unknown") field.copy(language = "sma") else field
-  }
-
-  def copyArticleTags(field: ArticleTag): ArticleTag = {
     if (field.language == "unknown") field.copy(language = "sma") else field
   }
 
