@@ -9,18 +9,17 @@ package db.migration
 
 import no.ndla.draftapi.DraftApiProperties.Domain
 import no.ndla.draftapi.model.domain._
+import no.ndla.mapping.ISO639.get6391CodeFor6392Code
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s.DefaultFormats
-import org.json4s.JsonAST.{JArray, JField, JObject, JString}
-import org.json4s.native.JsonMethods.{compact, parse, render}
+import org.json4s.native.JsonMethods.parse
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
 import scalaj.http.Http
 import scalikejdbc.{DB, DBSession, _}
-import no.ndla.mapping.ISO639.get6391CodeFor6392Code
 
-import scala.util.Try
 import scala.util.matching.Regex
+import scala.util.{Failure, Random, Success, Try}
 
 class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
@@ -28,13 +27,15 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   private val TaxonomyApiEndpoint = s"$Domain/taxonomy/v1"
   private val taxonomyTimeout = 20 * 1000 // 20 Seconds
 
-  case class TaxonomyResource(contentUri: Option[String])
+  case class TaxonomyResource(contentUri: Option[String], id: Option[String])
+
+  case class Keywords(keyword: List[Keyword])
   case class Keyword(names: List[KeywordName])
   case class KeywordName(data: List[Map[String, String]])
 
-  override def getChecksum: Integer = 2 // Change this to something else if you want to repeat migration
+  override def getChecksum: Integer = Random.nextInt() // Change this to something else if you want to repeat migration
 
-  def fetchResourceFromTaxonomy(endpoint: String): Seq[Long] = {
+  def fetchResourceFromTaxonomy(endpoint: String): Seq[(Long, Long)] = {
     val url = TaxonomyApiEndpoint + endpoint
 
     val resourceList = for {
@@ -42,38 +43,38 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       extracted <- Try(parse(response.body).extract[Seq[TaxonomyResource]])
     } yield extracted
 
-    resourceList
-      .getOrElse(Seq.empty)
-      .flatMap(resource =>
-        resource.contentUri.flatMap(contentUri => {
-          val splits = contentUri.split(':')
-          val articleId = splits.lastOption.filter(_ => splits.contains("article"))
-          articleId.flatMap(idStr => Try(idStr.toLong).toOption)
-        }))
+    resourceList.getOrElse(Seq.empty).flatMap(trim)
+  }
+
+  def trim(resource: TaxonomyResource): Option[(Long, Long)] = {
+    (resource.contentUri, resource.id) match {
+      case (Some(uri), Some(id)) => Some(uri.split(':').last.toLong, id.split(':').last.toLong)
+      case _                     => None
+    }
   }
 
   def fetchArticleTags(externalId: Long): Seq[ArticleTag] = {
 
     val url = "http://api.topic.ndla.no/rest/v1/keywords/?filter%5Bnode%5D=ndlanode_" + externalId.toString
 
-    val keywords = for {
+    val keywordsT = for {
       response <- Try(Http(url).asString)
-      extracted <- Try(parse(response.body).extract[Seq[Keyword]])
+      extracted <- Try(parse(response.body).extract[Keywords])
     } yield extracted
 
-    keywords
-      .map(
-        _.flatMap(_.names)
+    keywordsT match {
+      case Failure(_) => Seq()
+      case Success(keywords) =>
+        keywords.keyword
+          .flatMap(_.names)
           .flatMap(_.data)
           .flatMap(_.toIterable)
           .map(t => (getISO639(t._1), t._2.trim.toLowerCase))
           .groupBy(_._1)
           .map(entry => (entry._1, entry._2.map(_._2)))
           .map(t => ArticleTag(t._2, Language.languageOrUnknown(t._1)))
-          .toList)
-      .getOrElse(Seq())
-
-    //Seq()
+          .toList
+    }
 
   }
 
@@ -97,27 +98,28 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
   def migrateArticles(implicit session: DBSession): Unit = {
 
-    val topicIds: Seq[Long] = fetchResourceFromTaxonomy("/subjects/urn:subject:15/topics?recursive=true")
-    val resourceIds: Seq[Long] = fetchResourceFromTaxonomy("subjects/urn:subject:15/resources")
-    val tags: Seq[ArticleTag] = topicIds.flatMap(fetchArticleTags)
-    System.out.println("length topic: " + topicIds.length)
-    System.out.println("length resource: " + resourceIds.length)
-    System.out.println("tagg: " + tags.length)
-    val k = for {
-      topicId <- topicIds
-      article <- fetchArticleInfo(topicId)
+    val topicIdsList: Seq[(Long, Long)] = fetchResourceFromTaxonomy("/subjects/urn:subject:15/topics?recursive=true")
+    val convertedTopicArticles = topicIdsList.map(topicIds => convertArticle(topicIds._1, topicIds._2))
 
-    } yield convertArticleLanguage(article, Seq())
+    for {
+      convertedArticle <- convertedTopicArticles
+      article <- convertedArticle
+    } yield updateArticle(article)
 
-    k.map(updateArticle)
+    val resourceIdsList: Seq[(Long, Long)] = fetchResourceFromTaxonomy("subjects/urn:subject:15/resources")
+    val convertedResourceArticles = resourceIdsList.map(topicIds => convertArticle(topicIds._1, topicIds._2))
 
-    val abc = for {
-      resourceId <- resourceIds
-      article <- fetchArticleInfo(resourceId)
-    } yield convertArticleLanguage(article, Seq())
+    for {
+      convertedArticle <- convertedResourceArticles
+      article <- convertedArticle
+    } yield updateArticle(article)
 
-    abc.map(updateArticle)
+  }
 
+  def convertArticle(articleId: Long, externalId: Long)(implicit session: DBSession): Option[Article] = {
+    val newTags = fetchArticleTags(externalId)
+    val oldArticle = fetchArticleInfo(articleId)
+    convertArticleLanguage(oldArticle, newTags)
   }
 
   def fetchArticleInfo(articleId: Long)(implicit session: DBSession): Option[Article] = {
@@ -130,16 +132,18 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       .apply()
   }
 
-  def convertArticleLanguage(oldArticle: Article, newTags: Seq[ArticleTag]): Article = {
-    oldArticle.copy(
-      title = oldArticle.title.map(copyArticleTitle),
-      content = oldArticle.content.map(copyArticleContent),
-      //tags = newTags,
-      visualElement = oldArticle.visualElement.map(copyVisualElement),
-      introduction = oldArticle.introduction.map(copyArticleIntroduction),
-      metaDescription = oldArticle.metaDescription.map(copyArticleMetaDescription),
-      metaImage = oldArticle.metaImage.map(copyArticleMetaImage)
-    )
+  def convertArticleLanguage(oldArticle: Option[Article], newTags: Seq[ArticleTag]): Option[Article] = {
+    oldArticle.map(
+      article =>
+        article.copy(
+          title = article.title.map(copyArticleTitle),
+          content = article.content.map(copyArticleContent),
+          tags = newTags,
+          visualElement = article.visualElement.map(copyVisualElement),
+          introduction = article.introduction.map(copyArticleIntroduction),
+          metaDescription = article.metaDescription.map(copyArticleMetaDescription),
+          metaImage = article.metaImage.map(copyArticleMetaImage)
+      ))
   }
 
   def copyArticleTitle(field: ArticleTitle): ArticleTitle = {
