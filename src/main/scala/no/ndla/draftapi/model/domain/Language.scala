@@ -25,6 +25,7 @@ object Language {
     LanguageAnalyzer("de", GermanLanguageAnalyzer),
     LanguageAnalyzer("es", SpanishLanguageAnalyzer),
     LanguageAnalyzer("se", StandardAnalyzer), // SAMI
+    LanguageAnalyzer("sma", StandardAnalyzer), // SAMI
     LanguageAnalyzer("zh", ChineseLanguageAnalyzer),
     LanguageAnalyzer(UnknownLanguage, StandardAnalyzer)
   )
