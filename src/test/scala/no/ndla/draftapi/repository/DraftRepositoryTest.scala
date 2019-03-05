@@ -47,8 +47,8 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   override def beforeAll(): Unit = {
     val datasource = testDataSource
     if (serverIsListening) {
-      DBMigrator.migrate(datasource)
       ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
+      DBMigrator.migrate(datasource)
     }
   }
 
