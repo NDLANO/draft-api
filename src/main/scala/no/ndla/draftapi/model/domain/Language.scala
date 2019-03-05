@@ -51,6 +51,14 @@ object Language {
     else
       supportedLanguages.head
   }
+
+  def languageOrUnknown(language: Option[String]): String = {
+    language.filter(_.nonEmpty) match {
+      case Some(x) => x
+      case None    => UnknownLanguage
+    }
+  }
+
 }
 
 case class LanguageAnalyzer(lang: String, analyzer: Analyzer)
