@@ -47,10 +47,12 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   }
 
   def trim(resource: TaxonomyResource): Option[(Long, Long)] = {
+
     (resource.contentUri, resource.id) match {
       case (Some(uri), Some(id)) => Some(uri.split(':').last.toLong, id.split(':').last.toLong)
       case _                     => None
     }
+
   }
 
   def fetchArticleTags(externalId: Long): Seq[ArticleTag] = {
@@ -117,33 +119,43 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   }
 
   def convertArticle(articleId: Long, externalId: Long)(implicit session: DBSession): Option[Article] = {
-    val newTags = fetchArticleTags(externalId)
+    val externalTags = fetchArticleTags(externalId)
     val oldArticle = fetchArticleInfo(articleId)
-    convertArticleLanguage(oldArticle, newTags)
+    convertArticleLanguage(oldArticle, externalTags)
   }
 
   def fetchArticleInfo(articleId: Long)(implicit session: DBSession): Option[Article] = {
     val ar = Article.syntax("ar")
     val withId =
-      sqls"ar.article_id=${articleId.toInt} AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIVED.toString} ORDER BY revision DESC LIMIT 1"
+      sqls"ar.id=${articleId.toInt} ORDER BY revision DESC LIMIT 1"
     sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $withId"
       .map(Article(ar))
       .single()
       .apply()
   }
 
-  def convertArticleLanguage(oldArticle: Option[Article], newTags: Seq[ArticleTag]): Option[Article] = {
+  def convertArticleLanguage(oldArticle: Option[Article], externalTags: Seq[ArticleTag]): Option[Article] = {
     oldArticle.map(
       article =>
         article.copy(
           title = article.title.map(copyArticleTitle),
           content = article.content.map(copyArticleContent),
-          tags = newTags,
+          tags = mergeTags(article.tags, externalTags),
           visualElement = article.visualElement.map(copyVisualElement),
           introduction = article.introduction.map(copyArticleIntroduction),
           metaDescription = article.metaDescription.map(copyArticleMetaDescription),
           metaImage = article.metaImage.map(copyArticleMetaImage)
       ))
+  }
+
+  def mergeTags(oldTags: Seq[ArticleTag], externalTags: Seq[ArticleTag]): Seq[ArticleTag] = {
+    val combinedSeq = oldTags ++ externalTags
+    combinedSeq.groupBy(_.language).map(mapEntry => createTag(mapEntry._1, mapEntry._2)).toSeq
+  }
+
+  def createTag(language: String, tags: Seq[ArticleTag]): ArticleTag = {
+    val distinctTags = tags.flatMap(_.tags).distinct
+    ArticleTag(distinctTags, language)
   }
 
   def copyArticleTitle(field: ArticleTitle): ArticleTitle = {
@@ -174,8 +186,6 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
     val dataObject = new PGobject()
     dataObject.setType("jsonb")
     dataObject.setValue(write(article))
-
-    System.out.println("Saving article with id: " + article.id)
 
     sql"update articledata set document = $dataObject where article_id=${article.id}"
       .update()
