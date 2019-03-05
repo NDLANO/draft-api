@@ -33,9 +33,9 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   case class Keyword(names: List[KeywordName])
   case class KeywordName(data: List[Map[String, String]])
 
-  override def getChecksum: Integer = Random.nextInt() // Change this to something else if you want to repeat migration
+  override def getChecksum: Integer = 0 // Change this to something else if you want to repeat migration
 
-  def fetchResourceFromTaxonomy(endpoint: String): Seq[(Long, Long)] = {
+  def fetchResourceFromTaxonomy(endpoint: String): Seq[(Long, Option[Long])] = {
     val url = TaxonomyApiEndpoint + endpoint
 
     val resourceList = for {
@@ -46,11 +46,14 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
     resourceList.getOrElse(Seq.empty).flatMap(trim)
   }
 
-  def trim(resource: TaxonomyResource): Option[(Long, Long)] = {
+  def trim(resource: TaxonomyResource): Option[(Long, Option[Long])] = {
 
-    (resource.contentUri, resource.id) match {
-      case (Some(uri), Some(id)) => Some(uri.split(':').last.toLong, id.split(':').last.toLong)
-      case _                     => None
+    val convertedArticleId = resource.contentUri.flatMap(cu => Try(cu.split(':').last.toLong).toOption)
+    val externalId = resource.id.flatMap(i => Try(i.split(':').last.toLong).toOption)
+
+    convertedArticleId match {
+      case Some(articleId) => Some(articleId, externalId)
+      case _               => None
     }
 
   }
@@ -100,7 +103,8 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
   def migrateArticles(implicit session: DBSession): Unit = {
 
-    val topicIdsList: Seq[(Long, Long)] = fetchResourceFromTaxonomy("/subjects/urn:subject:15/topics?recursive=true")
+    val topicIdsList: Seq[(Long, Option[Long])] = fetchResourceFromTaxonomy(
+      "/subjects/urn:subject:15/topics?recursive=true")
     val convertedTopicArticles = topicIdsList.map(topicIds => convertArticle(topicIds._1, topicIds._2))
 
     for {
@@ -108,7 +112,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       article <- convertedArticle
     } yield updateArticle(article)
 
-    val resourceIdsList: Seq[(Long, Long)] = fetchResourceFromTaxonomy("subjects/urn:subject:15/resources")
+    val resourceIdsList: Seq[(Long, Option[Long])] = fetchResourceFromTaxonomy("subjects/urn:subject:15/resources")
     val convertedResourceArticles = resourceIdsList.map(topicIds => convertArticle(topicIds._1, topicIds._2))
 
     for {
@@ -118,8 +122,8 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
   }
 
-  def convertArticle(articleId: Long, externalId: Long)(implicit session: DBSession): Option[Article] = {
-    val externalTags = fetchArticleTags(externalId)
+  def convertArticle(articleId: Long, externalId: Option[Long])(implicit session: DBSession): Option[Article] = {
+    val externalTags = externalId.map(fetchArticleTags).getOrElse(Seq())
     val oldArticle = fetchArticleInfo(articleId)
     convertArticleLanguage(oldArticle, externalTags)
   }
