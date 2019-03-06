@@ -50,7 +50,10 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
   def trim(resource: TaxonomyResource): Option[(Long, Option[Long])] = {
 
-    val convertedArticleId = resource.contentUri.flatMap(cu => Try(cu.split(':').last.toLong).toOption)
+    val convertedArticleId = resource.contentUri
+      .filter(_.matches("urn\\:article\\:[0-9]*"))
+      .flatMap(cu => Try(cu.split(':').last.toLong).toOption)
+
     val externalId = resource.id.flatMap(i => Try(i.split(':').last.toLong).toOption)
 
     convertedArticleId match {
