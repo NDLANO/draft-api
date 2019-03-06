@@ -12,6 +12,7 @@ import no.ndla.draftapi.model.domain._
 import no.ndla.mapping.ISO639.get6391CodeFor6392Code
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s.DefaultFormats
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods.parse
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
@@ -23,7 +24,8 @@ import scala.util.{Failure, Random, Success, Try}
 
 class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
-  implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
+    ArticleType)
   private val TaxonomyApiEndpoint = s"$Domain/taxonomy/v1"
   private val taxonomyTimeout = 20 * 1000 // 20 Seconds
 
@@ -112,7 +114,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       article <- convertedArticle
     } yield updateArticle(article)
 
-    val resourceIdsList: Seq[(Long, Option[Long])] = fetchResourceFromTaxonomy("subjects/urn:subject:15/resources")
+    val resourceIdsList: Seq[(Long, Option[Long])] = fetchResourceFromTaxonomy("/subjects/urn:subject:15/resources")
     val convertedResourceArticles = resourceIdsList.map(topicIds => convertArticle(topicIds._1, topicIds._2))
 
     for {
