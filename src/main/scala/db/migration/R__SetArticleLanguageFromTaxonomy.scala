@@ -20,7 +20,7 @@ import scalaj.http.Http
 import scalikejdbc.{DB, DBSession, _}
 
 import scala.util.matching.Regex
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
@@ -35,7 +35,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   case class Keyword(names: List[KeywordName])
   case class KeywordName(data: List[Map[String, String]])
 
-  override def getChecksum: Integer = 0 // Change this to something else if you want to repeat migration
+  override def getChecksum: Integer = 1 // Change this to something else if you want to repeat migration
 
   def fetchResourceFromTaxonomy(endpoint: String): Seq[(Long, Option[Long])] = {
     val url = TaxonomyApiEndpoint + endpoint
@@ -50,7 +50,10 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
   def trim(resource: TaxonomyResource): Option[(Long, Option[Long])] = {
 
-    val convertedArticleId = resource.contentUri.flatMap(cu => Try(cu.split(':').last.toLong).toOption)
+    val convertedArticleId = resource.contentUri
+      .filter(_.matches("urn\\:article\\:[0-9]*"))
+      .flatMap(cu => Try(cu.split(':').last.toLong).toOption)
+
     val externalId = resource.id.flatMap(i => Try(i.split(':').last.toLong).toOption)
 
     convertedArticleId match {
@@ -141,12 +144,13 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   }
 
   def convertArticleLanguage(oldArticle: Option[Article], externalTags: Seq[ArticleTag]): Option[Article] = {
+    val contentLanguages = oldArticle.map(_.content).getOrElse(Seq()).map(content => content.language)
     oldArticle.map(
       article =>
         article.copy(
           title = article.title.map(copyArticleTitle),
           content = article.content.map(copyArticleContent),
-          tags = mergeTags(article.tags, externalTags),
+          tags = mergeTags(article.tags, externalTags, contentLanguages),
           visualElement = article.visualElement.map(copyVisualElement),
           introduction = article.introduction.map(copyArticleIntroduction),
           metaDescription = article.metaDescription.map(copyArticleMetaDescription),
@@ -154,9 +158,15 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       ))
   }
 
-  def mergeTags(oldTags: Seq[ArticleTag], externalTags: Seq[ArticleTag]): Seq[ArticleTag] = {
+  def mergeTags(oldTags: Seq[ArticleTag],
+                externalTags: Seq[ArticleTag],
+                contentLanguages: Seq[String]): Seq[ArticleTag] = {
     val combinedSeq = oldTags ++ externalTags
-    combinedSeq.groupBy(_.language).map(mapEntry => createTag(mapEntry._1, mapEntry._2)).toSeq
+    combinedSeq
+      .groupBy(_.language)
+      .filter(mapEntry => contentLanguages.contains(mapEntry._1))
+      .map(mapEntry => createTag(mapEntry._1, mapEntry._2))
+      .toSeq
   }
 
   def createTag(language: String, tags: Seq[ArticleTag]): ArticleTag = {
