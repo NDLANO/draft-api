@@ -1,7 +1,9 @@
 package db.migration
-import no.ndla.draftapi.model.domain.{Article, ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.domain.{Article, ArticleStatus, ArticleType, Status}
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s.ext.EnumNameSerializer
+import org.json4s.native.Serialization.write
+import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
 class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
@@ -25,7 +27,7 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
     var numPagesLeft = (count / 1000) + 1
     var offset = 0L
     while (numPagesLeft > 0) {
-      allArticles(offset * 1000).map(updateStatus)
+      allArticles(offset * 1000).map(updateArticle)
       numPagesLeft -= 1
       offset += 1
     }
@@ -47,8 +49,26 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
       .apply()
   }
 
-  def updateStatus(article: Article) = {
+  def updateArticle(article: Article)(implicit session: DBSession) = {
+    val newArticle = article.copy(status = updateStatus(article.status))
+    saveArticle(newArticle)
+  }
 
+  def updateStatus(status: Status): Status = {
+    if (status.current == ArticleStatus.PUBLISHED) {
+      val newOther: Set[ArticleStatus.Value] = status.other.filter(value => value == ArticleStatus.IMPORTED)
+      status.copy(other = newOther)
+    } else status
+  }
+
+  def saveArticle(article: Article)(implicit session: DBSession): Long = {
+    val dataObject = new PGobject()
+    dataObject.setType("jsonb")
+    dataObject.setValue(write(article))
+
+    sql"update articledata set document = $dataObject where article_id=${article.id}"
+      .update()
+      .apply
   }
 
 }
