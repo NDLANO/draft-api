@@ -54,6 +54,7 @@ trait StateTransitionRules {
       (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
+       PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
       (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
       (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED) withSideEffect validateArticle require SetPublishRoles,
       (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
@@ -61,10 +62,12 @@ trait StateTransitionRules {
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL),
        USER_TEST                  -> PROPOSAL,
        USER_TEST                  -> DRAFT,
+       USER_TEST                  -> QUEUED_FOR_LANGUAGE,
       (USER_TEST                  -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL) keepCurrentOnTransition,
       (USER_TEST                  -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
       (AWAITING_QUALITY_ASSURANCE -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL, USER_TEST),
        AWAITING_QUALITY_ASSURANCE -> DRAFT,
+       AWAITING_QUALITY_ASSURANCE -> QUEUED_FOR_LANGUAGE,
       (AWAITING_QUALITY_ASSURANCE -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL),
       (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST),
       (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
@@ -86,7 +89,11 @@ trait StateTransitionRules {
       (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
        UNPUBLISHED                -> PROPOSAL,
        UNPUBLISHED                -> DRAFT,
-      (UNPUBLISHED                -> ARCHIVED)                   keepStates Set(IMPORTED) require AdminRoles withSideEffect removeFromSearch
+      (UNPUBLISHED                -> ARCHIVED)                   keepStates Set(IMPORTED) require AdminRoles withSideEffect removeFromSearch,
+      QUEUED_FOR_LANGUAGE         -> QUEUED_FOR_LANGUAGE,
+      QUEUED_FOR_LANGUAGE         -> PROPOSAL,
+      QUEUED_FOR_LANGUAGE         -> AWAITING_QUALITY_ASSURANCE,
+      QUEUED_FOR_LANGUAGE         -> USER_TEST
     )
     // format: on
 
