@@ -62,7 +62,6 @@ trait StateTransitionRules {
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL),
        USER_TEST                  -> PROPOSAL,
        USER_TEST                  -> DRAFT,
-       USER_TEST                  -> QUEUED_FOR_LANGUAGE,
       (USER_TEST                  -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL) keepCurrentOnTransition,
       (USER_TEST                  -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
       (AWAITING_QUALITY_ASSURANCE -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL, USER_TEST),
@@ -92,8 +91,7 @@ trait StateTransitionRules {
       (UNPUBLISHED                -> ARCHIVED)                   keepStates Set(IMPORTED) require AdminRoles withSideEffect removeFromSearch,
       QUEUED_FOR_LANGUAGE         -> QUEUED_FOR_LANGUAGE,
       QUEUED_FOR_LANGUAGE         -> PROPOSAL,
-      QUEUED_FOR_LANGUAGE         -> AWAITING_QUALITY_ASSURANCE,
-      QUEUED_FOR_LANGUAGE         -> USER_TEST
+      QUEUED_FOR_LANGUAGE         -> AWAITING_QUALITY_ASSURANCE
     )
     // format: on
 
