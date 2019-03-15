@@ -263,16 +263,17 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   test("published article creates new db version and bumps revision by two") {
-    val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.UNPUBLISHED, Set.empty), revision = Some(3))
+    val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.UNPUBLISHED, Set.empty),
+                                                    revision = Some(3))
     repository.insert(article)
     val oldCount = repository.articlesWithId(article.id.get).size
-    val updatedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty) )
+    val updatedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
     val res = repository.updateArticle(updatedArticle)
-    res.get.revision should be (Some(5))
+    res.get.revision should be(Some(5))
 
     val count = repository.articlesWithId(article.id.get).size
 
-    count should be (oldCount + 1)
+    count should be(oldCount + 1)
 
   }
 }

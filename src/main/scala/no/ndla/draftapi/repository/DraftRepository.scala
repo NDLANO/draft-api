@@ -367,8 +367,7 @@ trait DraftRepository {
     }
 
     def articlesWithId(articleId: Long): List[Article] =
-      articlesWhere(
-        sqls"ar.article_id = $articleId").toList
+      articlesWhere(sqls"ar.article_id = $articleId").toList
 
     private def articlesWhere(whereClause: SQLSyntax)(
         implicit session: DBSession = ReadOnlyAutoSession): Seq[Article] = {
