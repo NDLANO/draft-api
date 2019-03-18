@@ -231,7 +231,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     service.mergeArticleLanguageFields(art, updatedNothing, "nb") should be(art)
   }
 
-  test("mergeArticleLanguageFields should merge every field correctly") {
+  test("mergeArticleLanguageFields should replace every field correctly") {
     val status = Status(ArticleStatus.PUBLISHED, other = Set(ArticleStatus.IMPORTED))
     val art = Article(
       id = Some(3),
@@ -292,6 +292,70 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "nb") should be(expectedArticle)
+
+  }
+
+  test("mergeArticleLanguageFields should merge every field correctly") {
+    val status = Status(ArticleStatus.PUBLISHED, other = Set(ArticleStatus.IMPORTED))
+    val art = Article(
+      id = Some(3),
+      revision = Some(4),
+      status = status,
+      title = Seq(ArticleTitle("Title test", "nb")),
+      content = Seq(ArticleContent("Content test", "nb")),
+      copyright = TestData.sampleArticleWithByNcSa.copyright,
+      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb")),
+      requiredLibraries = Seq(RequiredLibrary("", "", "")),
+      visualElement = Seq(VisualElement("someembed", "nb")),
+      introduction = Seq(ArticleIntroduction("introduction", "nb")),
+      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb")),
+      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb")),
+      created = TestData.today,
+      updated = TestData.today,
+      updatedBy = "theuserthatchangeditid",
+      articleType = ArticleType.Standard,
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+    )
+
+    val expectedArticle = Article(
+      id = Some(3),
+      revision = Some(4),
+      status = status,
+      title = Seq(ArticleTitle("Title test", "nb"), ArticleTitle("NyTittel", "en")),
+      content = Seq(ArticleContent("Content test", "nb"), ArticleContent("NyContent", "en")),
+      copyright = TestData.sampleArticleWithByNcSa.copyright,
+      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb"), ArticleTag(Seq("1", "2", "3"), "en")),
+      requiredLibraries = Seq(RequiredLibrary("", "", "")),
+      visualElement = Seq(VisualElement("someembed", "nb"), VisualElement("NyVisualElement", "en")),
+      introduction = Seq(ArticleIntroduction("introduction", "nb"), ArticleIntroduction("NyIntro", "en")),
+      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb"), ArticleMetaDescription("NyMeta", "en")),
+      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb"), ArticleMetaImage("321", "NyAlt", "en")),
+      created = TestData.today,
+      updated = TestData.today,
+      updatedBy = "theuserthatchangeditid",
+      articleType = ArticleType.Standard,
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+    )
+
+    val updatedEverything = api.UpdatedArticle(
+      revision = 4,
+      language = Some("en"),
+      title = Some("NyTittel"),
+      status = None,
+      updated = None,
+      content = Some("NyContent"),
+      tags = Some(Seq("1", "2", "3")),
+      introduction = Some("NyIntro"),
+      metaDescription = Some("NyMeta"),
+      metaImage = Some(NewArticleMetaImage("321", "NyAlt")),
+      visualElement = Some("NyVisualElement"),
+      copyright = None,
+      requiredLibraries = None,
+      articleType = None,
+      notes = None
+    )
+
+    service.mergeArticleLanguageFields(art, updatedEverything, "en") should be(expectedArticle)
 
   }
 
