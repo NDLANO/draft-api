@@ -10,10 +10,10 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.model.api.IllegalStatusStateTransition
+import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NewArticleMetaImage}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain.ArticleStatus._
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleTitle, Status}
+import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import no.ndla.mapping.License.CC_BY
@@ -186,6 +186,113 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     service
       .newNotes(Seq("", "jonas"), UserInfo.apply("Kari"), Status(ArticleStatus.PROPOSAL, Set.empty))
       .isFailure should be(true)
+  }
+
+  test("Merging language fields of article should not delete not updated fields") {
+    val status = Status(ArticleStatus.PUBLISHED, other = Set(ArticleStatus.IMPORTED))
+    val art = Article(
+      id = Some(3),
+      revision = Some(4),
+      status = status,
+      title = Seq(ArticleTitle("Title test", "nb")),
+      content = Seq(ArticleContent("Content test", "nb")),
+      copyright = TestData.sampleArticleWithByNcSa.copyright,
+      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb")),
+      requiredLibraries = Seq(RequiredLibrary("", "", "")),
+      visualElement = Seq(VisualElement("someembed", "nb")),
+      introduction = Seq(ArticleIntroduction("introduction", "nb")),
+      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb")),
+      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb")),
+      created = TestData.today,
+      updated = TestData.today,
+      updatedBy = "theuserthatchangeditid",
+      articleType = ArticleType.Standard,
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+    )
+
+    val updatedNothing = api.UpdatedArticle(
+      4,
+      Some("nb"),
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None
+    )
+
+    service.mergeArticleLanguageFields(art, updatedNothing, "nb") should be(art)
+  }
+
+  test("mergeArticleLanguageFields should merge every field correctly") {
+    val status = Status(ArticleStatus.PUBLISHED, other = Set(ArticleStatus.IMPORTED))
+    val art = Article(
+      id = Some(3),
+      revision = Some(4),
+      status = status,
+      title = Seq(ArticleTitle("Title test", "nb")),
+      content = Seq(ArticleContent("Content test", "nb")),
+      copyright = TestData.sampleArticleWithByNcSa.copyright,
+      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb")),
+      requiredLibraries = Seq(RequiredLibrary("", "", "")),
+      visualElement = Seq(VisualElement("someembed", "nb")),
+      introduction = Seq(ArticleIntroduction("introduction", "nb")),
+      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb")),
+      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb")),
+      created = TestData.today,
+      updated = TestData.today,
+      updatedBy = "theuserthatchangeditid",
+      articleType = ArticleType.Standard,
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+    )
+
+    val expectedArticle = Article(
+      id = Some(3),
+      revision = Some(4),
+      status = status,
+      title = Seq(ArticleTitle("NyTittel", "nb")),
+      content = Seq(ArticleContent("NyContent", "nb")),
+      copyright = TestData.sampleArticleWithByNcSa.copyright,
+      tags = Seq(ArticleTag(Seq("1", "2", "3"), "nb")),
+      requiredLibraries = Seq(RequiredLibrary("", "", "")),
+      visualElement = Seq(VisualElement("NyVisualElement", "nb")),
+      introduction = Seq(ArticleIntroduction("NyIntro", "nb")),
+      metaDescription = Seq(ArticleMetaDescription("NyMeta", "nb")),
+      metaImage = Seq(ArticleMetaImage("321", "NyAlt", "nb")),
+      created = TestData.today,
+      updated = TestData.today,
+      updatedBy = "theuserthatchangeditid",
+      articleType = ArticleType.Standard,
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+    )
+
+    val updatedEverything = api.UpdatedArticle(
+      revision = 4,
+      language = Some("nb"),
+      title = Some("NyTittel"),
+      status = None,
+      updated = None,
+      content = Some("NyContent"),
+      tags = Some(Seq("1", "2", "3")),
+      introduction = Some("NyIntro"),
+      metaDescription = Some("NyMeta"),
+      metaImage = Some(NewArticleMetaImage("321", "NyAlt")),
+      visualElement = Some("NyVisualElement"),
+      copyright = None,
+      requiredLibraries = None,
+      articleType = None,
+      notes = None
+    )
+
+    service.mergeArticleLanguageFields(art, updatedEverything, "nb") should be(expectedArticle)
+
   }
 
 }

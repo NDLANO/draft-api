@@ -478,7 +478,7 @@ trait ConverterService {
 
     }
 
-    private def mergeArticleLanguageFields(toMergeInto: Article,
+    private[service] def mergeArticleLanguageFields(toMergeInto: Article,
                                            updatedArticle: api.UpdatedArticle,
                                            lang: String): Article = {
       val updatedTitles = updatedArticle.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))
