@@ -449,7 +449,7 @@ trait ConverterService {
       val mergedNotes = newEditorialNotes match {
         case Some(Failure(ex))    => Failure(ex)
         case Some(Success(notes)) => Success(toMergeInto.notes ++ notes)
-        case None                 => Success(Seq.empty)
+        case None                 => Success(toMergeInto.notes)
       }
 
       mergedNotes match {

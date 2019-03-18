@@ -359,4 +359,55 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   }
 
+  test("toDomainArticle should merge notes correctly") {
+    val updatedArticleWithoutNotes =
+      TestData.sampleApiUpdateArticle.copy(language = Some("nb"), title = Some("kakemonster"))
+    val updatedArticleWithNotes = TestData.sampleApiUpdateArticle.copy(language = Some("nb"),
+                                                                       title = Some("kakemonster"),
+                                                                       notes = Some(Seq("fleibede")))
+    val existingNotes = Seq(EditorNote("swoop", "", domain.Status(DRAFT, Set()), TestData.today))
+    val Success(res1) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = existingNotes),
+        updatedArticleWithoutNotes,
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+    val Success(res2) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = Seq.empty),
+        updatedArticleWithoutNotes,
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+    val Success(res3) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = existingNotes),
+        updatedArticleWithNotes,
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+    val Success(res4) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = Seq.empty),
+        updatedArticleWithNotes,
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+
+    res1.notes should be(existingNotes)
+    res2.notes should be(Seq.empty)
+
+    res3.notes.map(_.note) should be(Seq("swoop", "fleibede"))
+    res4.notes.map(_.note) should be(Seq("fleibede"))
+  }
+
 }
