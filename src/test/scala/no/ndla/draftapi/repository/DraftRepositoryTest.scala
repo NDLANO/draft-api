@@ -267,12 +267,14 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
                                                     revision = Some(3))
     repository.insert(article)
     val oldCount = repository.articlesWithId(article.id.get).size
-    val updatedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
-    val res = repository.updateArticle(updatedArticle)
-    res.get.revision should be(Some(5))
+    val publishedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
+    val updatedArticle = repository.updateArticle(publishedArticle).get
+    updatedArticle.revision should be(Some(5))
+
+    updatedArticle.notes.length should be(0)
+    updatedArticle should equal(publishedArticle.copy(notes = Seq(), revision = Some(5)))
 
     val count = repository.articlesWithId(article.id.get).size
-
     count should be(oldCount + 1)
 
   }

@@ -76,10 +76,12 @@ trait DraftRepository {
       val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(article.id.get)
       val importId: Option[String] = getImportIdFromId(article.id.get)
       val articleRevision = article.revision.getOrElse(0) + 1
+
+      val copiedArticle = article.copy(notes = Seq(), status = article.status.copy(current = ArticleStatus.PUBLISHED))
+
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
-      dataObject.setValue(write(article))
-
+      dataObject.setValue(write(copiedArticle))
       val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
 
       val dbId: Long =
