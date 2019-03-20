@@ -65,7 +65,7 @@ trait ConverterService {
                 title = domainTitles,
                 content = domainContent,
                 copyright = newArticle.copyright.map(toDomainCopyright),
-                tags = toDomainTag(newArticle.tags, newArticle.language),
+                tags = toDomainTag(newArticle.tags, newArticle.language).toSeq,
                 requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
                 visualElement =
                   newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
@@ -114,7 +114,8 @@ trait ConverterService {
 
     def toDomainTag(tag: api.ArticleTag): domain.ArticleTag = domain.ArticleTag(tag.tags, tag.language)
 
-    def toDomainTag(tag: Seq[String], language: String): Seq[domain.ArticleTag] = Seq(domain.ArticleTag(tag, language))
+    def toDomainTag(tag: Seq[String], language: String): Option[domain.ArticleTag] =
+      if (tag.nonEmpty) Some(domain.ArticleTag(tag, language)) else None
 
     def toDomainVisualElement(visual: api.VisualElement): domain.VisualElement = {
       domain.VisualElement(removeUnknownEmbedTagAttributes(visual.visualElement), visual.language)
@@ -448,7 +449,7 @@ trait ConverterService {
       val mergedNotes = newEditorialNotes match {
         case Some(Failure(ex))    => Failure(ex)
         case Some(Success(notes)) => Success(toMergeInto.notes ++ notes)
-        case None                 => Success(Seq.empty)
+        case None                 => Success(toMergeInto.notes)
       }
 
       mergedNotes match {
@@ -478,12 +479,12 @@ trait ConverterService {
 
     }
 
-    private def mergeArticleLanguageFields(toMergeInto: Article,
-                                           updatedArticle: api.UpdatedArticle,
-                                           lang: String): Article = {
+    private[service] def mergeArticleLanguageFields(toMergeInto: Article,
+                                                    updatedArticle: api.UpdatedArticle,
+                                                    lang: String): Article = {
       val updatedTitles = updatedArticle.title.toSeq.map(t => toDomainTitle(api.ArticleTitle(t, lang)))
       val updatedContents = updatedArticle.content.toSeq.map(c => toDomainContent(api.ArticleContent(c, lang)))
-      val updatedTags = updatedArticle.tags.map(tags => toDomainTag(tags, lang))
+      val updatedTags = updatedArticle.tags.flatMap(tags => toDomainTag(tags, lang)).toSeq
       val updatedVisualElement = updatedArticle.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq
       val updatedIntroductions = updatedArticle.introduction.map(i => toDomainIntroduction(i, lang)).toSeq
       val updatedMetaDescriptions = updatedArticle.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq
@@ -492,7 +493,7 @@ trait ConverterService {
       toMergeInto.copy(
         title = mergeLanguageFields(toMergeInto.title, updatedTitles),
         content = mergeLanguageFields(toMergeInto.content, updatedContents),
-        tags = updatedTags.map(ut => mergeLanguageFields(toMergeInto.tags, ut)).getOrElse(Seq.empty),
+        tags = mergeLanguageFields(toMergeInto.tags, updatedTags),
         visualElement = mergeLanguageFields(toMergeInto.visualElement, updatedVisualElement),
         introduction = mergeLanguageFields(toMergeInto.introduction, updatedIntroductions),
         metaDescription = mergeLanguageFields(toMergeInto.metaDescription, updatedMetaDescriptions),
