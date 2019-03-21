@@ -12,7 +12,7 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.DataSource
-import no.ndla.draftapi.model.api.{NotFoundException, OptimisticLockException}
+import no.ndla.draftapi.model.api.{ArticleVersioningException, NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain._
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods._
@@ -71,32 +71,37 @@ trait DraftRepository {
       article.copy(revision = Some(startRevision))
     }
 
-    def copyPublishedArticle(article: Article)(implicit session: DBSession = AutoSession): Article = {
-      val externalIds: List[String] = getExternalIdsFromId(article.id.get)
-      val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(article.id.get)
-      val importId: Option[String] = getImportIdFromId(article.id.get)
-      val articleRevision = article.revision.getOrElse(0) + 1
+    def copyPublishedArticle(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
+      article.id match {
+        case None => Failure(ArticleVersioningException("Duplication of article failed."))
+        case Some(articleId) =>
+          val externalIds: List[String] = getExternalIdsFromId(articleId)
+          val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(articleId)
+          val importId: Option[String] = getImportIdFromId(articleId)
+          val articleRevision = article.revision.getOrElse(0) + 1
 
-      val copiedArticle = article.copy(notes = Seq(), status = article.status.copy(current = ArticleStatus.PUBLISHED))
+          val copiedArticle =
+            article.copy(notes = Seq(), status = article.status.copy(current = ArticleStatus.PUBLISHED))
 
-      val dataObject = new PGobject()
-      dataObject.setType("jsonb")
-      dataObject.setValue(write(copiedArticle))
-      val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
+          val dataObject = new PGobject()
+          dataObject.setType("jsonb")
+          dataObject.setValue(write(copiedArticle))
+          val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
 
-      val dbId: Long =
-        sql"""
-             insert into ${Article.table} (external_id, external_subject_id, document, revision, import_id, article_id)
-             values (ARRAY[${externalIds}]::text[],
-                     ARRAY[${externalSubjectIds}]::text[],
-                     ${dataObject},
-                     $articleRevision,
-                     $uuid,
-                     ${article.id})
-          """.updateAndReturnGeneratedKey().apply
+          val dbId: Long =
+            sql"""
+                 insert into ${Article.table} (external_id, external_subject_id, document, revision, import_id, article_id)
+                 values (ARRAY[${externalIds}]::text[],
+                         ARRAY[${externalSubjectIds}]::text[],
+                         ${dataObject},
+                         $articleRevision,
+                         $uuid,
+                         ${articleId})
+              """.updateAndReturnGeneratedKey().apply()
 
-      logger.info(s"Inserted new article: ${article.id} (with db id $dbId)")
-      article.copy(revision = Some(articleRevision))
+          logger.info(s"Inserted new article: ${articleId} (with db id $dbId)")
+          Success(article.copy(revision = Some(articleRevision)))
+      }
     }
 
     def newEmptyArticle(id: Long, externalIds: List[String], externalSubjectIds: Seq[String])(
@@ -149,10 +154,9 @@ trait DraftRepository {
       } else {
         logger.info(s"Updated article ${article.id}")
         val updatedArticle = article.copy(revision = Some(newRevision))
-        val returnArticle = if (article.status.current == ArticleStatus.PUBLISHED) {
+        if (article.status.current == ArticleStatus.PUBLISHED) {
           copyPublishedArticle(updatedArticle)
-        } else { updatedArticle }
-        Success(returnArticle)
+        } else { Success(updatedArticle) }
       }
     }
 
