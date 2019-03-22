@@ -56,6 +56,7 @@ object Error {
 case class NotFoundException(message: String, supportedLanguages: Seq[String] = Seq.empty)
     extends RuntimeException(message)
 case class ArticlePublishException(message: String) extends RuntimeException(message)
+case class ArticleVersioningException(message: String) extends RuntimeException(message)
 
 class ArticleStatusException(message: String) extends RuntimeException(message)
 class AccessDeniedException(message: String) extends RuntimeException(message)

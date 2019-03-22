@@ -12,7 +12,7 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.DataSource
-import no.ndla.draftapi.model.api.{NotFoundException, OptimisticLockException}
+import no.ndla.draftapi.model.api.{ArticleVersioningException, NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain._
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods._
@@ -56,7 +56,7 @@ trait DraftRepository {
 
       val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
 
-      val articleId: Long =
+      val dbId: Long =
         sql"""
              insert into ${Article.table} (external_id, external_subject_id, document, revision, import_id, article_id)
              values (ARRAY[${externalIds}]::text[],
@@ -67,8 +67,41 @@ trait DraftRepository {
                      ${article.id})
           """.updateAndReturnGeneratedKey().apply
 
-      logger.info(s"Inserted new article: $articleId")
+      logger.info(s"Inserted new article: ${article.id} (with db id $dbId)")
       article.copy(revision = Some(startRevision))
+    }
+
+    def copyPublishedArticle(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
+      article.id match {
+        case None => Failure(ArticleVersioningException("Duplication of article failed."))
+        case Some(articleId) =>
+          val externalIds: List[String] = getExternalIdsFromId(articleId)
+          val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(articleId)
+          val importId: Option[String] = getImportIdFromId(articleId)
+          val articleRevision = article.revision.getOrElse(0) + 1
+
+          val copiedArticle =
+            article.copy(notes = Seq(), status = article.status.copy(current = ArticleStatus.PUBLISHED))
+
+          val dataObject = new PGobject()
+          dataObject.setType("jsonb")
+          dataObject.setValue(write(copiedArticle))
+          val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
+
+          val dbId: Long =
+            sql"""
+                 insert into ${Article.table} (external_id, external_subject_id, document, revision, import_id, article_id)
+                 values (ARRAY[${externalIds}]::text[],
+                         ARRAY[${externalSubjectIds}]::text[],
+                         ${dataObject},
+                         $articleRevision,
+                         $uuid,
+                         ${articleId})
+              """.updateAndReturnGeneratedKey().apply()
+
+          logger.info(s"Inserted new article: ${articleId} (with db id $dbId)")
+          Success(article.copy(revision = Some(articleRevision)))
+      }
     }
 
     def newEmptyArticle(id: Long, externalIds: List[String], externalSubjectIds: Seq[String])(
@@ -120,7 +153,10 @@ trait DraftRepository {
         Failure(new OptimisticLockException)
       } else {
         logger.info(s"Updated article ${article.id}")
-        Success(article.copy(revision = Some(newRevision)))
+        val updatedArticle = article.copy(revision = Some(newRevision))
+        if (article.status.current == ArticleStatus.PUBLISHED) {
+          copyPublishedArticle(updatedArticle)
+        } else { Success(updatedArticle) }
       }
     }
 
@@ -233,6 +269,29 @@ trait DraftRepository {
         .getOrElse(List.empty)
     }
 
+    private def externalSubjectIdsFromResultSet(wrappedResultSet: WrappedResultSet): List[String] = {
+      Option(wrappedResultSet.array("external_subject_id"))
+        .map(_.getArray.asInstanceOf[Array[String]])
+        .getOrElse(Array.empty)
+        .toList
+        .flatMap(Option(_))
+    }
+
+    def getExternalSubjectIdsFromId(id: Long)(implicit session: DBSession = AutoSession): Seq[String] = {
+      sql"select external_subject_id from ${Article.table} where article_id=${id.toInt} order by revision desc limit 1"
+        .map(externalSubjectIdsFromResultSet)
+        .single
+        .apply()
+        .getOrElse(List.empty)
+    }
+
+    def getImportIdFromId(id: Long)(implicit session: DBSession = AutoSession): Option[String] = {
+      sql"select import_id from ${Article.table} where article_id=${id.toInt} order by revision desc limit 1"
+        .map(rs => rs.string("import_id"))
+        .single
+        .apply()
+    }
+
     def getAllIds(implicit session: DBSession = AutoSession): Seq[ArticleIds] = {
       sql"select article_id, max(external_id) as external_id from ${Article.table} group by article_id order by article_id asc"
         .map(
@@ -312,6 +371,9 @@ trait DraftRepository {
         .single
         .apply()
     }
+
+    def articlesWithId(articleId: Long): List[Article] =
+      articlesWhere(sqls"ar.article_id = $articleId").toList
 
     private def articlesWhere(whereClause: SQLSyntax)(
         implicit session: DBSession = ReadOnlyAutoSession): Seq[Article] = {
