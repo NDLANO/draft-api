@@ -172,6 +172,41 @@ object TestData {
     Seq.empty
   )
 
+  val apiArticleUserTest = api.Article(
+    articleId,
+    Some(s"//red.ndla.no/node/$externalId"),
+    2,
+    api.Status(USER_TEST.toString, Seq.empty),
+    Some(api.ArticleTitle("title", "nb")),
+    Some(api.ArticleContent("content", "nb")),
+    Some(
+      api.Copyright(
+        Some(
+          api.License(CC_BY.toString,
+                      Some("Creative Commons Attribution 4.0 International"),
+                      Some("https://creativecommons.org/licenses/by/4.0/"))),
+        Some(""),
+        Seq.empty,
+        List(),
+        List(),
+        None,
+        None,
+        None
+      )),
+    None,
+    Seq.empty,
+    None,
+    None,
+    Some(api.ArticleMetaDescription("meta description", "nb")),
+    None,
+    today,
+    today,
+    "ndalId54321",
+    "standard",
+    Seq("nb"),
+    Seq.empty
+  )
+
   val sampleTopicArticle = Article(
     Option(1),
     Option(1),

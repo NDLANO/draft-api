@@ -11,7 +11,7 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language, Sort}
 import no.ndla.draftapi.service.search.{ArticleSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.draftapi.validation.ContentValidator
@@ -250,15 +250,16 @@ trait DraftController {
           responseMessages (response404, response500))
     ) {
       val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canWrite) {
-        val articleId = long(this.articleId.paramName)
-        val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
-        val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      val articleId = long(this.articleId.paramName)
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-        readService.withId(articleId, language, fallback) match {
-          case Success(article) => article
-          case Failure(ex)      => errorHandler(ex)
-        }
+      readService.withId(articleId, language, fallback) match {
+        case Success(article) =>
+          doOrAccessDenied(userInfo.canWrite || ArticleStatus.USER_TEST.toString.equals(article.status.current)) {
+            article
+          }
+        case Failure(ex) => errorHandler(ex)
       }
     }
 
