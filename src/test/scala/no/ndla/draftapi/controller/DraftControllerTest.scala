@@ -157,6 +157,24 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
+  test("That GET /<article_id> returns 403 if auth header does not have any roles") {
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
+    when(readService.withId(articleId, lang)).thenReturn(Success(TestData.sampleArticleV2))
+
+    get(s"/test/$articleId?language=$lang") {
+      status should equal(403)
+    }
+  }
+
+  test("That GET /<article_id> returns 200 if status is USER_TEST even if auth header does not have any roles") {
+    when(user.getUser).thenReturn(TestData.userWithNoRoles)
+    when(readService.withId(articleId, lang)).thenReturn(Success(TestData.apiArticleUserTest))
+
+    get(s"/test/$articleId?language=$lang") {
+      status should equal(200)
+    }
+  }
+
   test("That PATCH /:id returns a validation message if article is invalid") {
     patch("/test/123", invalidArticle, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(400)
