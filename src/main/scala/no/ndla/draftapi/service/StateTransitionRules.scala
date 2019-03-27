@@ -90,8 +90,11 @@ trait StateTransitionRules {
        UNPUBLISHED                -> DRAFT,
       (UNPUBLISHED                -> ARCHIVED)                   keepStates Set(IMPORTED) require AdminRoles withSideEffect removeFromSearch,
       QUEUED_FOR_LANGUAGE         -> QUEUED_FOR_LANGUAGE,
-      QUEUED_FOR_LANGUAGE         -> PROPOSAL,
-      QUEUED_FOR_LANGUAGE         -> AWAITING_QUALITY_ASSURANCE
+      (QUEUED_FOR_LANGUAGE        -> PROPOSAL)                   keepStates Set(IMPORTED),
+      (QUEUED_FOR_LANGUAGE        -> TRANSLATED)                 keepStates Set(IMPORTED),
+      TRANSLATED                  -> TRANSLATED,
+      (TRANSLATED                 -> PROPOSAL)                   keepStates Set(IMPORTED),
+      (TRANSLATED                 -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED)
     )
     // format: on
 
