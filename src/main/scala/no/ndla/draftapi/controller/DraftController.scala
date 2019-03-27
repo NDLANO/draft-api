@@ -254,12 +254,13 @@ trait DraftController {
       val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
       val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
-      readService.withId(articleId, language, fallback) match {
-        case Success(article) =>
-          doOrAccessDenied(userInfo.canWrite || ArticleStatus.USER_TEST.toString.equals(article.status.current)) {
-            article
-          }
-        case Failure(ex) => errorHandler(ex)
+      val article = readService.withId(articleId, language, fallback)
+      val isPublicStatus = article.map(_.status.current).toOption.contains(ArticleStatus.USER_TEST.toString)
+      doOrAccessDenied(userInfo.canWrite || isPublicStatus) {
+        article match {
+          case Success(a)  => a
+          case Failure(ex) => errorHandler(ex)
+        }
       }
     }
 
