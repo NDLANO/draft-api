@@ -55,7 +55,7 @@ trait InternController {
         agreementIndex <- Future { agreementIndexService.indexDocuments }
       } yield (articleIndex, conceptIndex, agreementIndex)
 
-      Await.result(indexResults, Duration(1, TimeUnit.MINUTES)) match {
+      Await.result(indexResults, Duration(10, TimeUnit.MINUTES)) match {
         case (Success(articleResult), Success(conceptResult), Success(agreementIndex)) =>
           val indexTime = math.max(articleResult.millisUsed, conceptResult.millisUsed)
           val result =
