@@ -14,9 +14,11 @@ import scalikejdbc.{DB, DBSession, _}
   *
   * See LICENSE
   */
-class V18__RemoveDummyMetaDescription extends BaseJavaMigration {
+class R__RemoveDummyMetaDescription extends BaseJavaMigration {
   implicit val formats
     : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(ArticleType)
+
+  override def getChecksum: Integer = 1 // Change this to something else if you want to repeat migration
 
   override def migrate(context: Context): Unit = {
     val db = DB(context.getConnection)
