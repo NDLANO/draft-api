@@ -78,7 +78,7 @@ class R__RemoveDummyMetaDescription extends BaseJavaMigration {
 
     val newArticle = oldArticle.mapField {
       case ("metaDescription", metaDescription: JArray) =>
-        "metaDescription" -> convertMetaDescription(metaDescription.extract[List[V17__MetaDescription]])
+        "metaDescription" -> convertMetaDescription(metaDescription.extract[List[ArticleMetaDescription]])
       case x => x
     }
     compact(render(newArticle))
