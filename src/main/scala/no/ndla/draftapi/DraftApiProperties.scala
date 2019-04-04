@@ -35,7 +35,7 @@ object DraftApiProperties extends LazyLogging {
   lazy val MetaServer = prop(PropertyKeys.MetaServerKey)
   lazy val MetaPort = prop(PropertyKeys.MetaPortKey).toInt
   lazy val MetaSchema = prop(PropertyKeys.MetaSchemaKey)
-  val MetaMaxConnections = 20
+  val MetaMaxConnections = 10
 
   val resourceHtmlEmbedTag = "embed"
   val ApiClientsCacheAgeInMs: Long = 1000 * 60 * 60 // 1 hour caching
