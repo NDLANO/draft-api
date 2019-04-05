@@ -14,7 +14,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.externalApiUrls
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{NewAgreement, NewArticle, NotFoundException}
+import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain._
@@ -77,6 +77,7 @@ trait ConverterService {
                 created = oldCreatedDate.getOrElse(clock.now()),
                 updated = oldUpdatedDate.getOrElse(clock.now()),
                 updatedBy = user.id,
+                published = newArticle.published.getOrElse(clock.now()),
                 articleType = ArticleType.valueOfOrError(newArticle.articleType),
                 notes
             ))
@@ -239,6 +240,7 @@ trait ConverterService {
             article.created,
             article.updated,
             article.updatedBy,
+            article.published,
             article.articleType.toString,
             supportedLanguages,
             article.notes.map(toApiEditorNote)
@@ -268,7 +270,7 @@ trait ConverterService {
       val (newOtherValids, newOtherInvalids) = newOther.partition(_.isSuccess)
 
       (newCurrent, newOtherInvalids, newOtherValids) match {
-        case (Failure(ex), _, _) => Failure(new ValidationException(s"Status ${status.current} is invalid", Seq()))
+        case (Failure(_), _, _) => Failure(new ValidationException(s"Status ${status.current} is invalid", Seq()))
         case (_, invalidOthers, _) if invalidOthers.nonEmpty =>
           val messages = invalidOthers.map(_.failed.get).map(x => ValidationMessage("status.other", x.getMessage))
           Failure(new ValidationException(s"One or more status(es) are invalid", messages))
@@ -442,8 +444,7 @@ trait ConverterService {
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
 
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
-      val updatedDate =
-        if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else article.updated.getOrElse(toMergeInto.updated)
+      val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status))
 
       val mergedNotes = newEditorialNotes match {
@@ -542,6 +543,7 @@ trait ConverterService {
                 metaImage = article.metaImage.map(m => toDomainMetaImage(m, lang)).toSeq,
                 created = createdDate,
                 updated = updatedDate,
+                published = article.published.getOrElse(clock.now()),
                 updatedBy = user.id,
                 articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
                 notes = notes

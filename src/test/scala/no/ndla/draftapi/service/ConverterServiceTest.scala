@@ -7,8 +7,6 @@
 
 package no.ndla.draftapi.service
 
-import java.util.Date
-
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NewArticleMetaImage}
 import no.ndla.draftapi.model.{api, domain}
@@ -137,7 +135,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("stateTransitionsToApi should return no entries if user has no roles") {
     val res = service.stateTransitionsToApi(TestData.userWithNoRoles)
-    res.forall { case (from, to) => to.isEmpty } should be(true)
+    res.forall { case (_, to) => to.isEmpty } should be(true)
   }
 
   test("stateTransitionsToApi should return only certain entries if user only has write roles") {
@@ -206,6 +204,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
+      published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
     )
@@ -249,6 +248,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
+      published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
     )
@@ -269,6 +269,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
+      published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
     )
@@ -278,7 +279,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       language = Some("nb"),
       title = Some("NyTittel"),
       status = None,
-      updated = None,
+      published = None,
       content = Some("NyContent"),
       tags = Some(Seq("1", "2", "3")),
       introduction = Some("NyIntro"),
@@ -313,6 +314,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
+      published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
     )
@@ -333,6 +335,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
+      published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
     )
@@ -342,7 +345,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       language = Some("en"),
       title = Some("NyTittel"),
       status = None,
-      updated = None,
+      published = None,
       content = Some("NyContent"),
       tags = Some(Seq("1", "2", "3")),
       introduction = Some("NyIntro"),

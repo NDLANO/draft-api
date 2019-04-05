@@ -57,6 +57,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
     created = new Date(0),
     updated = new Date(0),
     updatedBy = "updatedBy",
+    published = new Date(0),
     articleType = domain.ArticleType.Standard,
     notes = Seq()
   )

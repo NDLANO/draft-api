@@ -85,6 +85,7 @@ object TestData {
     created = new DateTime(2017, 1, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     updated = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     updatedBy = "me",
+    published = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     articleType = "standard",
     supportedLanguages = Seq("nb"),
     Seq.empty
@@ -167,6 +168,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
+    today,
     "standard",
     Seq("nb"),
     Seq.empty
@@ -202,6 +204,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
+    today,
     "standard",
     Seq("nb"),
     Seq.empty
@@ -223,6 +226,7 @@ object TestData {
     DateTime.now().minusDays(4).withMillisOfSecond(0).toDate,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     userWithWriteAccess.id,
+    DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.TopicArticle,
     Seq.empty
   )
@@ -243,6 +247,7 @@ object TestData {
     DateTime.now().minusDays(4).withMillisOfSecond(0).toDate,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     userWithWriteAccess.id,
+    DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.Standard,
     Seq.empty
   )
@@ -263,6 +268,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
+    today,
     ArticleType.Standard,
     Seq.empty
   )
@@ -283,6 +289,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
+    today,
     ArticleType.Standard,
     Seq.empty
   )
@@ -290,6 +297,7 @@ object TestData {
   val newArticle = api.NewArticle(
     "en",
     "test",
+    Some(today),
     Some("<article><div>test</div></article>"),
     Seq.empty,
     None,
@@ -337,6 +345,7 @@ object TestData {
     today,
     today,
     "ndalId54321",
+    today,
     ArticleType.Standard,
     Seq.empty
   )
@@ -374,6 +383,7 @@ object TestData {
     DateTime.now().minusDays(4).toDate,
     DateTime.now().minusDays(2).toDate,
     "ndalId54321",
+    DateTime.now().minusDays(2).toDate,
     "standard",
     Seq("en"),
     Seq.empty
