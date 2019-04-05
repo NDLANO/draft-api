@@ -392,6 +392,7 @@ trait ConverterService {
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
+        published = article.published,
         articleType = article.articleType.toString
       )
     }
