@@ -57,6 +57,7 @@ object ComponentRegistry
     with Clock
     with User
     with ArticleApiClient
+    with SearchApiClient
     with RuleController {
 
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
@@ -110,6 +111,7 @@ object ComponentRegistry
   lazy val clock = new SystemClock
 
   lazy val articleApiClient = new ArticleApiClient
+  lazy val searchApiClient = new SearchApiClient
   lazy val taxonomyApiClient = new TaxonomyApiClient
   lazy val learningpathApiClient = new LearningpathApiClient
   lazy val user = new User

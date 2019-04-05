@@ -56,7 +56,8 @@ trait TestEnvironment
     with AmazonClient
     with Clock
     with User
-    with ArticleApiClient {
+    with ArticleApiClient
+    with SearchApiClient {
   val articleSearchService = mock[ArticleSearchService]
   val articleIndexService = mock[ArticleIndexService]
   val conceptSearchService = mock[ConceptSearchService]
@@ -96,6 +97,7 @@ trait TestEnvironment
   val clock = mock[SystemClock]
 
   val articleApiClient = mock[ArticleApiClient]
+  val searchApiClient = mock[SearchApiClient]
   val taxonomyApiClient = mock[TaxonomyApiClient]
   val user = mock[User]
 }
