@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.integration.ArticleApiClient
+import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient}
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
@@ -39,6 +39,7 @@ trait WriteService {
     with Clock
     with ReadService
     with ArticleApiClient
+    with SearchApiClient
     with FileStorageService =>
   val writeService: WriteService
 
@@ -106,6 +107,7 @@ trait WriteService {
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
         insertedArticle <- Try(insertNewArticleFunction(domainArticle))
         _ <- articleIndexService.indexDocument(insertedArticle)
+        _ <- Try(searchApiClient.indexDraft(insertedArticle))
         apiArticle <- converterService.toApiArticle(insertedArticle, newArticle.language)
       } yield apiArticle
     }
@@ -144,6 +146,7 @@ trait WriteService {
         _ <- contentValidator.validateArticle(toUpdate, allowUnknownLanguage = true)
         domainArticle <- updateFunc(toUpdate)
         _ <- articleIndexService.indexDocument(domainArticle)
+        _ <- Try(searchApiClient.indexDraft(domainArticle))
       } yield domainArticle
     }
 
