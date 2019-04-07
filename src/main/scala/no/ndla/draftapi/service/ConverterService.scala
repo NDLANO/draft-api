@@ -77,7 +77,7 @@ trait ConverterService {
                 created = oldCreatedDate.getOrElse(clock.now()),
                 updated = oldUpdatedDate.getOrElse(clock.now()),
                 updatedBy = user.id,
-                published = newArticle.published.getOrElse(clock.now()),
+                published = oldUpdatedDate.getOrElse(newArticle.published.getOrElse(clock.now())), // If import use old updated. Else use new published or now
                 articleType = ArticleType.valueOfOrError(newArticle.articleType),
                 notes
             ))
