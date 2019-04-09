@@ -22,6 +22,7 @@ case class ArticleApiArticle(revision: Option[Int],
                              created: Date,
                              updated: Date,
                              updatedBy: String,
+                             published: Date,
                              articleType: String)
 case class ArticleApiTitle(title: String, language: String)
 case class ArticleApiContent(content: String, language: String)

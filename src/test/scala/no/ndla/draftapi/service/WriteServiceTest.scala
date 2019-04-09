@@ -8,6 +8,7 @@
 package no.ndla.draftapi.service
 
 import java.io.ByteArrayInputStream
+import java.util.Date
 
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
@@ -26,8 +27,8 @@ import scala.util.{Failure, Success, Try}
 class WriteServiceTest extends UnitSuite with TestEnvironment {
   override val converterService = new ConverterService
 
-  val today = DateTime.now().toDate
-  val yesterday = DateTime.now().minusDays(1).toDate
+  val today: Date = DateTime.now().toDate
+  val yesterday: Date = DateTime.now().minusDays(1).toDate
   val service = new WriteService()
 
   val articleId = 13
@@ -40,7 +41,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     TestData.sampleTopicArticle.copy(id = Some(articleId), created = yesterday, updated = yesterday)
   val agreement: Agreement = TestData.sampleDomainAgreement.copy(id = Some(agreementId))
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository)
 
     when(draftRepository.withId(articleId)).thenReturn(Option(article))
@@ -173,7 +174,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                          None,
                          None)
     val expectedArticle =
-      article.copy(revision = Some(article.revision.get + 1), content = Seq(ArticleContent(newContent, "en")))
+      article.copy(revision = Some(article.revision.get + 1),
+                   content = Seq(ArticleContent(newContent, "en")),
+                   updated = today)
 
     service.updateArticle(articleId,
                           updatedApiArticle,
@@ -204,7 +207,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                          None,
                          None)
     val expectedArticle =
-      article.copy(revision = Some(article.revision.get + 1), title = Seq(ArticleTitle(newTitle, "en")))
+      article.copy(revision = Some(article.revision.get + 1),
+                   title = Seq(ArticleTitle(newTitle, "en")),
+                   updated = today)
 
     service.updateArticle(articleId,
                           updatedApiArticle,
@@ -218,7 +223,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("That updateArticle updates multiple fields properly") {
     val updatedTitle = "NyTittelTest"
-    val updatedUpdateDate = yesterday
+    val updatedPublishedDate = yesterday
     val updatedContent = "NyContentTest"
     val updatedTags = Seq("en", "to", "tre")
     val updatedMetaDescription = "updatedMetaHere"
@@ -243,7 +248,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some("en"),
       Some(updatedTitle),
       Some("DRAFT"),
-      Some(updatedUpdateDate),
+      Some(updatedPublishedDate),
       Some(updatedContent),
       Some(updatedTags),
       Some(updatedIntro),
@@ -268,7 +273,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       introduction = Seq(ArticleIntroduction(updatedIntro, "en")),
       metaDescription = Seq(ArticleMetaDescription(updatedMetaDescription, "en")),
       metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
-      updated = yesterday,
+      updated = today,
       articleType = ArticleType.TopicArticle
     )
 

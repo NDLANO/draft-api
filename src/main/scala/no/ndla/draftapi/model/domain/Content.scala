@@ -39,6 +39,7 @@ case class Article(id: Option[Long],
                    created: Date,
                    updated: Date,
                    updatedBy: String,
+                   published: Date,
                    articleType: ArticleType.Value,
                    notes: Seq[EditorNote])
     extends Content
@@ -69,6 +70,7 @@ object Article extends SQLSyntaxSupport[Article] {
       meta.created,
       meta.updated,
       meta.updatedBy,
+      meta.published,
       meta.articleType,
       meta.notes
     )
