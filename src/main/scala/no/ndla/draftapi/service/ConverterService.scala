@@ -446,6 +446,8 @@ trait ConverterService {
 
       val createdDate = if (isImported) oldNdlaCreatedDate.getOrElse(toMergeInto.created) else toMergeInto.created
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
+      val publishedDate = article.published.getOrElse(toMergeInto.published)
+
       val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status))
 
       val mergedNotes = newEditorialNotes match {
@@ -464,6 +466,7 @@ trait ConverterService {
               article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
             created = createdDate,
             updated = updatedDate,
+            published = publishedDate,
             updatedBy = user.id,
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
             notes = allNotes

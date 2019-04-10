@@ -274,6 +274,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaDescription = Seq(ArticleMetaDescription(updatedMetaDescription, "en")),
       metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
       updated = today,
+      published = yesterday,
       articleType = ArticleType.TopicArticle
     )
 
