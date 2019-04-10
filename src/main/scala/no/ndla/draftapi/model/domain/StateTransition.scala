@@ -31,7 +31,7 @@ object StateTransition {
     val (from, to) = fromTo
     StateTransition(from,
                     to,
-                    Set(ArticleStatus.IMPORTED),
+                    Set(ArticleStatus.IMPORTED, ArticleStatus.PUBLISHED),
                     Success.apply,
                     addCurrentStateToOthersOnTransition = false,
                     UserInfo.WriteRoles)
