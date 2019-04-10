@@ -303,7 +303,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test(
-    "updateArticle should set status to PROPOSAL if user-defined status is undefined and current status is PUBLISHEd") {
+    "updateArticle should set status to PROPOSAL if user-defined status is undefined and current status is PUBLISHED") {
     val updatedArticle = TestData.sampleApiUpdateArticle.copy(status = None)
 
     val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithPublished)
@@ -316,7 +316,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                 None,
                                                 None,
                                                 None)
-    result.status should equal(api.Status("PROPOSAL", Seq.empty))
+    result.status should equal(api.Status("PROPOSAL", Seq("PUBLISHED")))
   }
 
   test("updateArticle should use current status if user-defined status is not set") {
