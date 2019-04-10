@@ -28,6 +28,9 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
 
   val DraftStatus = domain.Status(DRAFT, Set(QUALITY_ASSURED))
+  val DraftWithPublishedStatus = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
+  val PublishedStatus = domain.Status(PUBLISHED, Set(IMPORTED))
+  val UserTestStatus = domain.Status(USER_TEST, Set(PROPOSAL, IMPORTED))
   val AwaitingUnpublishStatus = domain.Status(AWAITING_UNPUBLISHING, Set.empty)
   val UnpublishedStatus = domain.Status(UNPUBLISHED, Set.empty)
   val ProposalStatus = domain.Status(PROPOSAL, Set.empty)
@@ -40,6 +43,25 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val (Success(res), _) = doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWIthAdminAccess)
 
     res.status should equal(expected)
+  }
+
+  test("doTransition should keep some states when performing a legal transition") {
+    val expected = domain.Status(USER_TEST, Set(PROPOSAL, IMPORTED))
+    val (Success(res), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = UserTestStatus), USER_TEST, TestData.userWIthAdminAccess)
+    res.status should equal(expected)
+
+    val expected2 = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
+    val (Success(res2), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = PublishedStatus), DRAFT, TestData.userWIthAdminAccess)
+    res2.status should equal(expected2)
+
+    val expected3 = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
+    val (Success(res3), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = DraftWithPublishedStatus),
+                                    DRAFT,
+                                    TestData.userWIthAdminAccess)
+    res3.status should equal(expected3)
   }
 
   test("doTransition should fail when performing an illegal transition") {
