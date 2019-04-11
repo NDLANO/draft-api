@@ -81,7 +81,7 @@ trait DraftRepository {
           val articleRevision = article.revision.getOrElse(0) + 1
 
           val copiedArticle =
-            article.copy(notes = Seq(), status = article.status.copy(current = ArticleStatus.PUBLISHED))
+            article.copy(notes = Seq())
 
           val dataObject = new PGobject()
           dataObject.setType("jsonb")
@@ -100,7 +100,7 @@ trait DraftRepository {
               """.updateAndReturnGeneratedKey().apply()
 
           logger.info(s"Inserted new article: ${articleId} (with db id $dbId)")
-          Success(article.copy(revision = Some(articleRevision)))
+          Success(copiedArticle.copy(revision = Some(articleRevision)))
       }
     }
 
@@ -211,7 +211,10 @@ trait DraftRepository {
         Failure(new OptimisticLockException)
       } else {
         logger.info(s"Updated article ${article.id}")
-        Success(article.copy(revision = Some(newRevision)))
+        val updatedArticle = article.copy(revision = Some(newRevision))
+        if (article.status.current == ArticleStatus.PUBLISHED) {
+          copyPublishedArticle(updatedArticle)
+        } else { Success(updatedArticle) }
       }
     }
 
