@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.{Failure, Success, Try}
 
-class V18__MigrateConceptsToExternalService extends BaseJavaMigration with LazyLogging {
+class V19__MigrateConceptsToExternalService extends BaseJavaMigration with LazyLogging {
 
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
   private val explanationHost = s"${DraftApiProperties.ApiGatewayHost}"

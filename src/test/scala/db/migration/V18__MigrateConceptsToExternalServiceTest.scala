@@ -12,7 +12,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{spy, _}
 
 class V18__MigrateConceptsToExternalServiceTest extends UnitSuite with TestEnvironment {
-  val migration = spy(new V18__MigrateConceptsToExternalService)
+  val migration = spy(new V19__MigrateConceptsToExternalService)
 
   val content =
     """<section> <embed data-align=\"\" data-alt=\"Alt text for image\" data-caption=\"Image caption\" data-resource=\"image\" data-resource_id=\"4765\" data-size=\"full\"> <h2>Test</h2> <p>This is paragraph</p> <h3>Header of sorts</h3> <p>Text before concept <embed data-content-id=\"5\" data-link-text=\"filtrat\" data-resource=\"concept\"> Text after concept (<em></em><span lang=\"en\"><em>english</em></span>) Now comes another concept <embed data-content-id=\"1\" data-link-text=\"permeabilitet\" data-resource=\"concept\">.</p> <p>After paragraph</p></section>"""
