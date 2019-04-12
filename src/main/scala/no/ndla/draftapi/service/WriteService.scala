@@ -92,7 +92,8 @@ trait WriteService {
                    oldNdlaCreatedDate: Option[Date],
                    oldNdlaUpdatedDate: Option[Date],
                    importId: Option[String]): Try[api.Article] = {
-      val withNotes = newArticle.copy(notes = Seq("Opprettet artikkel."))
+      val newNotes = "Opprettet artikkel." +: newArticle.notes
+      val withNotes = newArticle.copy(notes = newNotes)
       val insertNewArticleFunction = externalIds match {
         case Nil => draftRepository.insert _
         case nids =>
