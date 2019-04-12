@@ -92,6 +92,8 @@ trait WriteService {
                    oldNdlaCreatedDate: Option[Date],
                    oldNdlaUpdatedDate: Option[Date],
                    importId: Option[String]): Try[api.Article] = {
+      val newNotes = "Opprettet artikkel." +: newArticle.notes
+      val withNotes = newArticle.copy(notes = newNotes)
       val insertNewArticleFunction = externalIds match {
         case Nil => draftRepository.insert _
         case nids =>
@@ -99,7 +101,7 @@ trait WriteService {
             draftRepository.insertWithExternalIds(a, nids, externalSubjectIds, importId)
       }
       for {
-        domainArticle <- converterService.toDomainArticle(newArticle,
+        domainArticle <- converterService.toDomainArticle(withNotes,
                                                           externalIds,
                                                           user,
                                                           oldNdlaCreatedDate,
