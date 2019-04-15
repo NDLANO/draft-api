@@ -25,4 +25,5 @@ case class ArticleSummary(
     @(ApiModelProperty @field)(description = "The type of article this is. Possible values are topic-article,standard") articleType: String,
     @(ApiModelProperty @field)(description = "A list of available languages for this audio") supportedLanguages: Seq[
       String],
-    @(ApiModelProperty @field)(description = "The notes for this draft article") notes: Seq[String])
+    @(ApiModelProperty @field)(description = "The notes for this draft article") notes: Seq[String],
+    @(ApiModelProperty @field)(description = "The users saved for this draft article") users: Seq[String])
