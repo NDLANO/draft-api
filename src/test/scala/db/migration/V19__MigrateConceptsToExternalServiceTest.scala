@@ -11,7 +11,7 @@ import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{spy, _}
 
-class V18__MigrateConceptsToExternalServiceTest extends UnitSuite with TestEnvironment {
+class V19__MigrateConceptsToExternalServiceTest extends UnitSuite with TestEnvironment {
   val migration = spy(new V19__MigrateConceptsToExternalService)
 
   val content =
