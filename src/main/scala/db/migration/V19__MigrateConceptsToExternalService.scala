@@ -81,28 +81,21 @@ class V19__MigrateConceptsToExternalService extends BaseJavaMigration with LazyL
   }
 
   def getExplanationIdFromConceptId(oldConceptId: String): Option[Int] = {
-    val idsTry = for {
+    val idTry = for {
       response <- Try(
-        Http(s"$explanationHost$getConceptByExternalUrl")
+        Http(s"http://$explanationHost$getConceptByExternalUrl")
           .param("externalId", oldConceptId)
           .timeout(5000, 5000)
           .asString)
-      bodies <- Try(parse(response.body).asInstanceOf[JArray].arr)
-      ids <- Try(bodies.map(data => (data \ "id").extract[Int]))
-    } yield ids
+      body <- Try(parse(response.body))
+      id <- Try(((body \ "data") \ "id").extract[Int])
+    } yield id
 
-    idsTry match {
+    idTry match {
       case Failure(ex) =>
         logger.error(s"Some error happened when fetching new concept id from old id of '$oldConceptId'", ex)
         None
-      case Success(Nil) =>
-        logger.error(s"No new concept id found for old concept id of $oldConceptId.")
-        None
-      case Success(head :: Nil) => Some(head)
-      case Success(head :: tail) =>
-        logger.warn(
-          s"Found multiple new ids (${(head +: tail).mkString(", ")}) for old concept id of $oldConceptId. Picking $head.")
-        Some(head)
+      case Success(id) => Some(id)
     }
   }
 
