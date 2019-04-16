@@ -22,7 +22,8 @@ class SearchableArticleSerializerTest extends UnitSuite with TestEnvironment {
     authors = Seq("Jonas Natty"),
     notes = Seq("jak"),
     articleType = "standard",
-    defaultTitle = Some("tjuppidu")
+    defaultTitle = Some("tjuppidu"),
+    users = Seq("ndalId54321")
   )
 
   val searchableConcept1 = SearchableConcept(

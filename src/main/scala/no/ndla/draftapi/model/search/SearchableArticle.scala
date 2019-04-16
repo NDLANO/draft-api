@@ -21,7 +21,8 @@ case class SearchableArticle(
     authors: Seq[String],
     articleType: String,
     notes: Seq[String],
-    defaultTitle: Option[String]
+    defaultTitle: Option[String],
+    users: Seq[String]
 )
 
 case class SearchableConcept(

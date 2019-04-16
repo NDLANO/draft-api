@@ -58,7 +58,8 @@ trait SearchConverterService {
           .flatten,
         articleType = ai.articleType.toString,
         notes = ai.notes.map(_.note),
-        defaultTitle = defaultTitle.map(_.title)
+        defaultTitle = defaultTitle.map(_.title),
+        users = ai.updatedBy +: ai.notes.map(_.user)
       )
     }
 
@@ -89,6 +90,7 @@ trait SearchConverterService {
       val visualElements =
         searchableArticle.visualElement.languageValues.map(lv => domain.VisualElement(lv.value, lv.language))
       val notes = searchableArticle.notes
+      val users = searchableArticle.users
 
       val supportedLanguages = getSupportedLanguages(Seq(titles, visualElements, introductions))
 
@@ -108,7 +110,8 @@ trait SearchConverterService {
         searchableArticle.license.getOrElse(""),
         searchableArticle.articleType,
         supportedLanguages,
-        notes
+        notes,
+        users
       )
     }
 
