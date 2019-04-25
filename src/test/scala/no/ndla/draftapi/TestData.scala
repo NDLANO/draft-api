@@ -12,7 +12,7 @@ import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.DraftApiProperties.resourceHtmlEmbedTag
 import ArticleStatus._
 import no.ndla.draftapi.auth.{Role, UserInfo}
-import no.ndla.draftapi.integration.{EmbedUrl, LearningPath, LearningStep}
+import no.ndla.draftapi.integration.{LearningPath}
 import no.ndla.draftapi.model.api.NewAgreement
 import org.joda.time.{DateTime, DateTimeZone}
 import no.ndla.mapping.License.{CC_BY_NC_SA, CC_BY, CC_BY_SA}
@@ -471,7 +471,5 @@ object TestData {
   val statusWithAwaitingQA = domain.Status(ArticleStatus.AWAITING_QUALITY_ASSURANCE, Set.empty)
   val statusWithQueuedForPublishing = domain.Status(ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty)
 
-  val sampleLearningPath = LearningPath(Some(1), Seq.empty)
-  val sampleLearningStep = LearningStep(Some(1), Seq.empty)
-  val sampleEmbedUrl = EmbedUrl("/article/1", "nb", "oembed")
+  val sampleLearningPath = LearningPath(Some(1))
 }
