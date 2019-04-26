@@ -138,10 +138,11 @@ trait Taxonomy[E <: Taxonomy[E]] {
   def name: String
   def withName(name: String): E
 }
-case class Resource(id: String, name: String, contentUri: Option[String]) extends Taxonomy[Resource] {
+case class Resource(id: String, name: String, contentUri: Option[String], paths: List[String])
+    extends Taxonomy[Resource] {
   def withName(name: String): Resource = this.copy(name = name)
 }
-case class Topic(id: String, name: String, contentUri: Option[String]) extends Taxonomy[Topic] {
+case class Topic(id: String, name: String, contentUri: Option[String], paths: List[String]) extends Taxonomy[Topic] {
   def withName(name: String): Topic = this.copy(name = name)
 }
 case class Translation(name: String)
