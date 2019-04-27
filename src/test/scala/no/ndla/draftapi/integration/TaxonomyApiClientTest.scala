@@ -14,7 +14,7 @@ import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 
-import scala.concurrent.{ExecutionContext, Future, TimeoutException}
+import scala.concurrent.TimeoutException
 import scala.util.{Failure, Success}
 
 class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
@@ -33,7 +33,8 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val resource = Resource("urn:resource:1:12312", "Outdated name", Some(s"urn:article:$id"))
+    val resource =
+      Resource("urn:resource:1:12312", "Outdated name", Some(s"urn:article:$id"), List(s"/subject:1/resource:1:$id"))
 
     // format: off
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Resource](1))).when(taxonomyApiClient).putRaw(any[String], any[Resource], any[(String, String)])(any[Formats])
@@ -60,7 +61,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val topic = Topic("urn:topic:1:12312", "Outdated name", Some(s"urn:article:$id"))
+    val topic = Topic("urn:topic:1:12312", "Outdated name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
 
     // format: off
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Topic](1))) .when(taxonomyApiClient) .putRaw(any[String], any[Topic], any[(String, String)])(any[Formats])
@@ -86,8 +87,13 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val resource1 = Resource("urn:resource:1:12312", "Outdated name", Some(s"urn:article:$id"))
-    val resource2 = Resource("urn:resource:1:99551", "Outdated other name", Some(s"urn:article:$id"))
+    val resource1 =
+      Resource("urn:resource:1:12312", "Outdated name", Some(s"urn:article:$id"), List(s"/subject:1/resource:1:$id"))
+    val resource2 =
+      Resource("urn:resource:1:99551",
+               "Outdated other name",
+               Some(s"urn:article:$id"),
+               List(s"/subject:1/resource:1:$id"))
 
     // format: off
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Resource](1))).when(taxonomyApiClient).putRaw(any[String], any[Resource], any[(String, String)])(any[Formats])
@@ -116,8 +122,9 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val topic1 = Topic("urn:topic:1:12312", "Outdated name", Some(s"urn:article:$id"))
-    val topic2 = Topic("urn:topic:1:99551", "Outdated other name", Some(s"urn:article:$id"))
+    val topic1 = Topic("urn:topic:1:12312", "Outdated name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
+    val topic2 =
+      Topic("urn:topic:1:99551", "Outdated other name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
 
     // format: off
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Topic](1))).when(taxonomyApiClient).putRaw(any[String], any[Topic], any[(String, String)])(any[Formats])
@@ -147,12 +154,18 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val resource1 = Resource("urn:resource:1:12035", "Outdated res name", Some(s"urn:article:$id"))
+    val resource1 = Resource("urn:resource:1:12035",
+                             "Outdated res name",
+                             Some(s"urn:article:$id"),
+                             List(s"/subject:1/resource:1:$id"))
     val resource2 = Resource("urn:resource:1:d8a19b97-10ee-481a-b44c-dd54cffbddda",
                              "Outdated other res name",
-                             Some(s"urn:article:$id"))
-    val topic1 = Topic("urn:topic:1:12312", "Outdated top name", Some(s"urn:article:$id"))
-    val topic2 = Topic("urn:topic:1:99551", "Outdated other top name", Some(s"urn:article:$id"))
+                             Some(s"urn:article:$id"),
+                             List(s"/subject:1/topic:1:$id"))
+    val topic1 =
+      Topic("urn:topic:1:12312", "Outdated top name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
+    val topic2 =
+      Topic("urn:topic:1:99551", "Outdated other top name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
 
     // format: off
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Topic](1))).when(taxonomyApiClient).putRaw(any[String], any[Topic], any[(String, String)])(any[Formats])
@@ -190,12 +203,18 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val resource1 = Resource("urn:resource:1:12035", "Outdated res name", Some(s"urn:article:$id"))
+    val resource1 = Resource("urn:resource:1:12035",
+                             "Outdated res name",
+                             Some(s"urn:article:$id"),
+                             List(s"/subject:1/resource:1:$id"))
     val resource2 = Resource("urn:resource:1:d8a19b97-10ee-481a-b44c-dd54cffbddda",
                              "Outdated other res name",
-                             Some(s"urn:article:$id"))
-    val topic1 = Topic("urn:topic:1:12312", "Outdated top name", Some(s"urn:article:$id"))
-    val topic2 = Topic("urn:topic:1:99551", "Outdated other top name", Some(s"urn:article:$id"))
+                             Some(s"urn:article:$id"),
+                             List(s"/subject:1/resource:1:$id"))
+    val topic1 =
+      Topic("urn:topic:1:12312", "Outdated top name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
+    val topic2 =
+      Topic("urn:topic:1:99551", "Outdated other top name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
 
     // format: off
     doReturn(Success(List(resource1, resource2)), Success(List.empty)).when(taxonomyApiClient).queryResource(id)
@@ -216,10 +235,14 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val resource1 = Resource("urn:resource:1:12035", "Outdated res name", Some(s"urn:article:$id"))
+    val resource1 = Resource("urn:resource:1:12035",
+                             "Outdated res name",
+                             Some(s"urn:article:$id"),
+                             List(s"/subject:1/resource:1:$id"))
     val resource2 = Resource("urn:resource:1:d8a19b97-10ee-481a-b44c-dd54cffbddda",
                              "Outdated other res name",
-                             Some(s"urn:article:$id"))
+                             Some(s"urn:article:$id"),
+                             List(s"/subject:1/resource:1:$id"))
 
     // format: off
     doReturn(Success(List(resource1, resource2)), Success(List.empty)).when(taxonomyApiClient).queryResource(id)
@@ -240,8 +263,10 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
         ArticleTitle("Engelsk", "en")
       ))
     val id = article.id.get
-    val topic1 = Topic("urn:topic:1:12312", "Outdated top name", Some(s"urn:article:$id"))
-    val topic2 = Topic("urn:topic:1:99551", "Outdated other top name", Some(s"urn:article:$id"))
+    val topic1 =
+      Topic("urn:topic:1:12312", "Outdated top name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
+    val topic2 =
+      Topic("urn:topic:1:99551", "Outdated other top name", Some(s"urn:article:$id"), List(s"/subject:1/topic:1:$id"))
 
     // format: off
     doReturn(Failure(new RuntimeException("woawiwa")), Success(List.empty)).when(taxonomyApiClient).queryResource(id)

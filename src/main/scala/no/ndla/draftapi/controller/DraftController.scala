@@ -301,23 +301,20 @@ trait DraftController {
           responseMessages (response403, response500)
           authorizations "oauth2")
     ) {
-      val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canWrite) {
-        val filterNot = paramOrNone(this.filterNot.paramName)
-        val filter = paramOrNone(this.filter.paramName)
+      val filterNot = paramOrNone(this.filterNot.paramName)
+      val filter = paramOrNone(this.filter.paramName)
 
-        val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses
-          .filter {
-            case license: LicenseDefinition if filter.isDefined => license.license.toString.contains(filter.get)
-            case _                                              => true
-          }
-          .filterNot {
-            case license: LicenseDefinition if filterNot.isDefined => license.license.toString.contains(filterNot.get)
-            case _                                                 => false
-          }
+      val licenses: Seq[LicenseDefinition] = mapping.License.getLicenses
+        .filter {
+          case license: LicenseDefinition if filter.isDefined => license.license.toString.contains(filter.get)
+          case _                                              => true
+        }
+        .filterNot {
+          case license: LicenseDefinition if filterNot.isDefined => license.license.toString.contains(filterNot.get)
+          case _                                                 => false
+        }
 
-        licenses.map(x => License(x.license.toString, Option(x.description), x.url))
-      }
+      licenses.map(x => License(x.license.toString, Option(x.description), x.url))
     }
 
     post(
