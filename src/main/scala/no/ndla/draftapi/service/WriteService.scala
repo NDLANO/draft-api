@@ -125,6 +125,8 @@ trait WriteService {
             convertedArticleT <- converterService.updateStatus(status, draft, user).attempt.unsafeRunSync().toTry
             convertedArticle <- convertedArticleT
             updatedArticle <- draftRepository.updateArticle(convertedArticle, isImported)
+            _ <- articleIndexService.indexDocument(draft)
+            _ <- Try(searchApiClient.indexDraft(draft))
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
       }
