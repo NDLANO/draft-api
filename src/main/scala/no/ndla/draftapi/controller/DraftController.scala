@@ -268,8 +268,8 @@ trait DraftController {
       "/:article_id/history",
       operation(
         apiOperation[Article]("getArticleById")
-          summary "Show all marks for article with a specified Id"
-          description "Shows all marks for the article with the specified id."
+          summary "Get all saved articles with a specified Id, latest revision first"
+          description "Retrieves all current and previously published articles with the specified id, latest revision first."
           parameters (
             asHeaderParam(correlationId),
             asPathParam(articleId),
