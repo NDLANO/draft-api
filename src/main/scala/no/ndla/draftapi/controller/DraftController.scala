@@ -265,6 +265,31 @@ trait DraftController {
     }
 
     get(
+      "/:article_id/history",
+      operation(
+        apiOperation[Article]("getArticleById")
+          summary "Show all marks for article with a specified Id"
+          description "Shows all marks for the article with the specified id."
+          parameters (
+            asHeaderParam(correlationId),
+            asPathParam(articleId),
+            asQueryParam(language),
+            asQueryParam(fallback)
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
+      val userInfo = user.getUser
+      val articleId = long(this.articleId.paramName)
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+
+      doOrAccessDenied(userInfo.canWrite) {
+        readService.getArticles(articleId, language, fallback)
+      }
+    }
+
+    get(
       "/external_id/:deprecated_node_id",
       operation(
         apiOperation[ContentId]("getInternalIdByExternalId")

@@ -20,7 +20,7 @@ import org.jsoup.nodes.Element
 
 import scala.collection.JavaConverters._
 import scala.math.max
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 trait ReadService {
   this: DraftRepository with ConceptRepository with AgreementRepository with ConverterService =>
@@ -39,6 +39,13 @@ trait ReadService {
         case None          => Failure(NotFoundException(s"The article with id $id was not found"))
         case Some(article) => converterService.toApiArticle(article, language, fallback)
       }
+    }
+
+    def getArticles(id: Long, language: String, fallback: Boolean): Seq[api.Article] = {
+      draftRepository
+        .articlesWithId(id)
+        .map(article => converterService.toApiArticle(article, language, fallback))
+        .collect { case Success(article) => article }
     }
 
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
