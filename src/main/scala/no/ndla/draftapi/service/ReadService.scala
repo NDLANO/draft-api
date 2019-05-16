@@ -46,6 +46,8 @@ trait ReadService {
         .articlesWithId(id)
         .map(article => converterService.toApiArticle(article, language, fallback))
         .collect { case Success(article) => article }
+        .sortBy(_.revision)
+        .reverse
     }
 
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
