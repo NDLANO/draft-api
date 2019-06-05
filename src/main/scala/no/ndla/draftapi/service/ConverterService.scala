@@ -17,7 +17,7 @@ import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.model.domain._
+import no.ndla.draftapi.model.domain.{ArticleStatus, _}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.mapping.License.getLicense
@@ -197,8 +197,11 @@ trait ConverterService {
       HtmlTagRules.jsoupDocumentToString(document)
     }
 
-    def updateStatus(status: ArticleStatus.Value, article: domain.Article, user: UserInfo): IO[Try[domain.Article]] =
-      StateTransitionRules.doTransition(article, status, user)
+    def updateStatus(status: ArticleStatus.Value,
+                     article: domain.Article,
+                     user: UserInfo,
+                     isImported: Boolean): IO[Try[domain.Article]] =
+      StateTransitionRules.doTransition(article, status, user, isImported)
 
     def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
       val supportedLanguages = getSupportedLanguages(
