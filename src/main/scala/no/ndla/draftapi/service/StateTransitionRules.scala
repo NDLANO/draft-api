@@ -102,7 +102,8 @@ trait StateTransitionRules {
     private[service] def doTransitionWithoutSideEffect(
         current: domain.Article,
         to: ArticleStatus.Value,
-        user: UserInfo): (Try[domain.Article], domain.Article => Try[domain.Article]) = {
+        user: UserInfo,
+        isImported: Boolean): (Try[domain.Article], domain.Article => Try[domain.Article]) = {
       getTransition(current.status.current, to, user) match {
         case Some(t) =>
           val currentToOther = if (t.addCurrentStateToOthersOnTransition) Set(current.status.current) else Set()
@@ -110,7 +111,10 @@ trait StateTransitionRules {
           val newStatus = domain.Status(to, other)
           val newEditorNotes =
             if (current.status.current != to)
-              current.notes :+ domain.EditorNote("Status endret", user.id, newStatus, new Date())
+              current.notes :+ domain.EditorNote("Status endret",
+                                                 if (isImported) "System" else user.id,
+                                                 newStatus,
+                                                 new Date())
             else current.notes
           val convertedArticle = current.copy(status = newStatus, notes = newEditorNotes)
           (Success(convertedArticle), t.sideEffect)
@@ -121,8 +125,11 @@ trait StateTransitionRules {
       }
     }
 
-    def doTransition(current: domain.Article, to: ArticleStatus.Value, user: UserInfo): IO[Try[domain.Article]] = {
-      val (convertedArticle, sideEffect) = doTransitionWithoutSideEffect(current, to, user)
+    def doTransition(current: domain.Article,
+                     to: ArticleStatus.Value,
+                     user: UserInfo,
+                     isImported: Boolean): IO[Try[domain.Article]] = {
+      val (convertedArticle, sideEffect) = doTransitionWithoutSideEffect(current, to, user, isImported)
       IO { convertedArticle.flatMap(sideEffect) }
     }
 

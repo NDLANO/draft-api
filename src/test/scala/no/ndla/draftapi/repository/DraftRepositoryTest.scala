@@ -278,4 +278,21 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     count should be(oldCount + 1)
 
   }
+
+  test("published article keeps revison on import") {
+    val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.IMPORTED, Set.empty),
+                                                    revision = Some(1))
+    repository.insert(article)
+    val oldCount = repository.articlesWithId(article.id.get).size
+    val publishedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
+    val updatedArticle = repository.updateArticle(publishedArticle, isImported = true).get
+    updatedArticle.revision should be(Some(1))
+
+    updatedArticle.notes.length should be(0)
+    updatedArticle should equal(publishedArticle.copy(notes = Seq(), revision = Some(1)))
+
+    val count = repository.articlesWithId(article.id.get).size
+    count should be(oldCount)
+
+  }
 }
