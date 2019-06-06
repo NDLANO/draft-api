@@ -446,6 +446,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("That updateStatus indexes the updated article") {
+    reset(articleIndexService)
+    reset(searchApiClient)
 
     val articleToUpdate = TestData.sampleDomainArticle.copy(id = Some(10), updated = yesterday)
     val user = UserInfo("Pelle", Set(Role.WRITE))
@@ -457,14 +459,15 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       .get
       .get
     val updatedAndInserted = updatedArticle
-      .copy(revision = updatedArticle.revision.map(_ + 1))
-      .copy(updated = today, notes = updatedArticle.notes.map(_.copy(timestamp = today)))
+      .copy(revision = updatedArticle.revision.map(_ + 1),
+            updated = today,
+            notes = updatedArticle.notes.map(_.copy(timestamp = today)))
 
     when(draftRepository.withId(10)).thenReturn(Some(articleToUpdate))
     when(draftRepository.updateArticle(any[Article], eqTo(false))).thenReturn(Success(updatedAndInserted))
 
-    when(articleIndexService.indexDocument(updatedAndInserted)).thenReturn(Success(updatedAndInserted))
-    when(searchApiClient.indexDraft(updatedAndInserted)).thenReturn(updatedAndInserted)
+    when(articleIndexService.indexDocument(any[Article])).thenReturn(Success(updatedAndInserted))
+    when(searchApiClient.indexDraft(any[Article])).thenReturn(updatedAndInserted)
 
     service.updateArticleStatus(ArticleStatus.PROPOSAL, 10, user, isImported = false)
 
