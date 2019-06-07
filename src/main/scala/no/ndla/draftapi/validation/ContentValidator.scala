@@ -191,7 +191,7 @@ trait ContentValidator {
       NoHtmlValidator.validate(s"title.$language", title).toList ++
         validateLanguage("language", language, allowUnknownLanguage) ++
         validateLength(s"title.$language", title, 256) ++
-        validateMinumumLength(s"title.$language", title, 1)
+        validateMinimumLength(s"title.$language", title, 1)
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
@@ -271,7 +271,7 @@ trait ContentValidator {
         None
     }
 
-    private def validateMinumumLength(fieldPath: String, content: String, minLength: Int): Option[ValidationMessage] =
+    private def validateMinimumLength(fieldPath: String, content: String, minLength: Int): Option[ValidationMessage] =
       if (content.trim.length < minLength)
         Some(
           ValidationMessage(fieldPath,
