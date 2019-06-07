@@ -188,9 +188,10 @@ trait ContentValidator {
     private def validateTitle(title: String,
                               language: String,
                               allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
-      NoHtmlValidator.validate("title", title).toList ++
+      NoHtmlValidator.validate(s"title.$language", title).toList ++
         validateLanguage("language", language, allowUnknownLanguage) ++
-        validateLength("title", title, 256)
+        validateLength(s"title.$language", title, 256) ++
+        validateMinumumLength(s"title.$language", title, 1)
     }
 
     private def validateAgreementCopyright(copyright: Copyright): Seq[ValidationMessage] = {
@@ -269,6 +270,14 @@ trait ContentValidator {
       else
         None
     }
+
+    private def validateMinumumLength(fieldPath: String, content: String, minLength: Int): Option[ValidationMessage] =
+      if (content.trim.length < minLength)
+        Some(
+          ValidationMessage(fieldPath,
+                            s"This field does not meet the minimum length requirement of $minLength characters"))
+      else
+        None
 
     private def languageCodeSupported6391(languageCode: String, allowUnknownLanguage: Boolean): Boolean = {
       val languageCodes = get6391CodeFor6392CodeMappings.values.toSeq ++ (if (allowUnknownLanguage) Seq("unknown")
