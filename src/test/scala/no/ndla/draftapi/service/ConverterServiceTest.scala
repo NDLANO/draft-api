@@ -413,4 +413,13 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res4.notes.map(_.note) should be(Seq("fleibede"))
   }
 
+  test("Should not be able to go to ARCHIVED if published") {
+    val status = Status(ArticleStatus.DRAFT, other = Set(ArticleStatus.PUBLISHED))
+    val article = TestData.sampleDomainArticle.copy(status = status)
+    val Failure(res: IllegalStatusStateTransition) =
+      service.updateStatus(ARCHIVED, article, TestData.userWIthAdminAccess).unsafeRunSync()
+
+    res.getMessage should equal(s"Cannot go to ARCHIVED when article contains ${status.other}")
+  }
+
 }

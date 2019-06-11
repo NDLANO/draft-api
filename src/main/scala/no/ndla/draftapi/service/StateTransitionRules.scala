@@ -44,11 +44,11 @@ trait StateTransitionRules {
       (IMPORTED                   -> DRAFT)                      keepCurrentOnTransition,
        DRAFT                      -> DRAFT,
        DRAFT                      -> PROPOSAL,
-       DRAFT                      -> ARCHIVED                    require AdminRoles withSideEffect removeFromSearch,
+       DRAFT                      -> ARCHIVED                    require AdminRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
       (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require AdminRoles withSideEffect publishArticle,
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
-       PROPOSAL                   -> ARCHIVED                     require AdminRoles withSideEffect removeFromSearch,
+       PROPOSAL                   -> ARCHIVED                     require AdminRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
        PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
       (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
       (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticle require SetPublishRoles,
@@ -108,6 +108,12 @@ trait StateTransitionRules {
       getTransition(current.status.current, to, user) match {
         case Some(t) =>
           val currentToOther = if (t.addCurrentStateToOthersOnTransition) Set(current.status.current) else Set()
+          val containsIllegalStatuses = current.status.other.intersect(t.illegalStatuses)
+          if (containsIllegalStatuses.nonEmpty) {
+            val illegalStateTransition = IllegalStatusStateTransition(
+              s"Cannot go to $to when article contains $containsIllegalStatuses")
+            return (Failure(illegalStateTransition), _ => Failure(illegalStateTransition))
+          }
           val other = current.status.other.intersect(t.otherStatesToKeepOnTransition) ++ currentToOther
           val newStatus = domain.Status(to, other)
           val newEditorNotes =
