@@ -122,11 +122,15 @@ trait WriteService {
         case None => Failure(NotFoundException(s"No article with id $id was found"))
         case Some(draft) =>
           for {
-            convertedArticleT <- converterService.updateStatus(status, draft, user).attempt.unsafeRunSync().toTry
+            convertedArticleT <- converterService
+              .updateStatus(status, draft, user, isImported)
+              .attempt
+              .unsafeRunSync()
+              .toTry
             convertedArticle <- convertedArticleT
             updatedArticle <- draftRepository.updateArticle(convertedArticle, isImported)
-            _ <- articleIndexService.indexDocument(draft)
-            _ <- Try(searchApiClient.indexDraft(draft))
+            _ <- articleIndexService.indexDocument(updatedArticle)
+            _ <- Try(searchApiClient.indexDraft(updatedArticle))
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
       }
@@ -178,7 +182,7 @@ trait WriteService {
                                                                  oldNdlaUpdatedDate)
             newStatus <- newStatusT
             withStatusT <- converterService
-              .updateStatus(newStatus, convertedArticle, user)
+              .updateStatus(newStatus, convertedArticle, user, false)
               .attempt
               .unsafeRunSync()
               .toTry
@@ -201,7 +205,7 @@ trait WriteService {
                                                                  oldNdlaCreatedDate,
                                                                  oldNdlaUpdatedDate)
             withStatusT <- converterService
-              .updateStatus(DRAFT, convertedArticle, user)
+              .updateStatus(DRAFT, convertedArticle, user, false)
               .attempt
               .unsafeRunSync()
               .toTry

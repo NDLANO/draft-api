@@ -154,7 +154,7 @@ trait DraftRepository {
       } else {
         logger.info(s"Updated article ${article.id}")
         val updatedArticle = article.copy(revision = Some(newRevision))
-        if (article.status.current == ArticleStatus.PUBLISHED) {
+        if (article.status.current == ArticleStatus.PUBLISHED && !isImported) {
           copyPublishedArticle(updatedArticle)
         } else { Success(updatedArticle) }
       }

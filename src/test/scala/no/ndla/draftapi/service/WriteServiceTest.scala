@@ -10,6 +10,7 @@ package no.ndla.draftapi.service
 import java.io.ByteArrayInputStream
 import java.util.Date
 
+import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
@@ -442,5 +443,46 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                            eqTo("application/pdf"),
                                                            eqTo(fileBytes.length.toLong))
     storageKeyCaptor.getValue.endsWith(".pdf") should be(true)
+  }
+
+  test("That updateStatus indexes the updated article") {
+    reset(articleIndexService)
+    reset(searchApiClient)
+
+    val articleToUpdate = TestData.sampleDomainArticle.copy(id = Some(10), updated = yesterday)
+    val user = UserInfo("Pelle", Set(Role.WRITE))
+    val updatedArticle = converterService
+      .updateStatus(ArticleStatus.PROPOSAL, articleToUpdate, user, isImported = false)
+      .attempt
+      .unsafeRunSync()
+      .toTry
+      .get
+      .get
+    val updatedAndInserted = updatedArticle
+      .copy(revision = updatedArticle.revision.map(_ + 1),
+            updated = today,
+            notes = updatedArticle.notes.map(_.copy(timestamp = today)))
+
+    when(draftRepository.withId(10)).thenReturn(Some(articleToUpdate))
+    when(draftRepository.updateArticle(any[Article], eqTo(false))).thenReturn(Success(updatedAndInserted))
+
+    when(articleIndexService.indexDocument(any[Article])).thenReturn(Success(updatedAndInserted))
+    when(searchApiClient.indexDraft(any[Article])).thenReturn(updatedAndInserted)
+
+    service.updateArticleStatus(ArticleStatus.PROPOSAL, 10, user, isImported = false)
+
+    val argCap1: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+    val argCap2: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+
+    verify(articleIndexService, times(1)).indexDocument(argCap1.capture())
+    verify(searchApiClient, times(1)).indexDraft(argCap2.capture())
+
+    val captured1 = argCap1.getValue
+    captured1.copy(updated = today, notes = captured1.notes.map(_.copy(timestamp = today))) should be(
+      updatedAndInserted)
+
+    val captured2 = argCap2.getValue
+    captured2.copy(updated = today, notes = captured2.notes.map(_.copy(timestamp = today))) should be(
+      updatedAndInserted)
   }
 }

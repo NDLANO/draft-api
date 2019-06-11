@@ -128,7 +128,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("updateStatus should return an IO[Failure] if the status change is illegal") {
     val Failure(res: IllegalStatusStateTransition) =
-      service.updateStatus(PUBLISHED, TestData.sampleArticleWithByNcSa, TestData.userWithWriteAccess).unsafeRunSync()
+      service
+        .updateStatus(PUBLISHED, TestData.sampleArticleWithByNcSa, TestData.userWithWriteAccess, false)
+        .unsafeRunSync()
     res.getMessage should equal(
       s"Cannot go to PUBLISHED when article is ${TestData.sampleArticleWithByNcSa.status.current}")
   }

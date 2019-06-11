@@ -38,7 +38,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
   test("doTransition should succeed when performing a legal transition") {
     val expected = domain.Status(PUBLISHED, Set.empty)
-    val (Success(res), _) = doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWIthAdminAccess)
+    val (Success(res), _) = doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWIthAdminAccess, false)
 
     res.status should equal(expected)
   }
@@ -46,24 +46,31 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   test("doTransition should keep some states when performing a legal transition") {
     val expected = domain.Status(USER_TEST, Set(PROPOSAL, IMPORTED))
     val (Success(res), _) =
-      doTransitionWithoutSideEffect(DraftArticle.copy(status = UserTestStatus), USER_TEST, TestData.userWIthAdminAccess)
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = UserTestStatus),
+                                    USER_TEST,
+                                    TestData.userWIthAdminAccess,
+                                    false)
     res.status should equal(expected)
 
     val expected2 = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
     val (Success(res2), _) =
-      doTransitionWithoutSideEffect(DraftArticle.copy(status = PublishedStatus), DRAFT, TestData.userWIthAdminAccess)
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = PublishedStatus),
+                                    DRAFT,
+                                    TestData.userWIthAdminAccess,
+                                    false)
     res2.status should equal(expected2)
 
     val expected3 = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
     val (Success(res3), _) =
       doTransitionWithoutSideEffect(DraftArticle.copy(status = DraftWithPublishedStatus),
                                     DRAFT,
-                                    TestData.userWIthAdminAccess)
+                                    TestData.userWIthAdminAccess,
+                                    false)
     res3.status should equal(expected3)
   }
 
   test("doTransition should fail when performing an illegal transition") {
-    val (res, _) = doTransitionWithoutSideEffect(DraftArticle, QUALITY_ASSURED, TestData.userWIthAdminAccess)
+    val (res, _) = doTransitionWithoutSideEffect(DraftArticle, QUALITY_ASSURED, TestData.userWIthAdminAccess, false)
     res.isFailure should be(true)
   }
 
@@ -76,7 +83,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
       .thenReturn(Success(expectedArticle))
 
     val (Success(res), sideEffect) =
-      doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWIthAdminAccess)
+      doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWIthAdminAccess, false)
     sideEffect(res).get.status should equal(expectedStatus)
 
     val captor = ArgumentCaptor.forClass(classOf[Article])
@@ -99,7 +106,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     when(articleApiClient.unpublishArticle(any[Article])).thenReturn(Success(expectedArticle))
 
     val (Success(res), sideEffect) =
-      doTransitionWithoutSideEffect(AwaitingUnpublishArticle, UNPUBLISHED, TestData.userWIthAdminAccess)
+      doTransitionWithoutSideEffect(AwaitingUnpublishArticle, UNPUBLISHED, TestData.userWIthAdminAccess, false)
     sideEffect(res).get.status should equal(expectedStatus)
 
     val captor = ArgumentCaptor.forClass(classOf[Article])
@@ -118,7 +125,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     when(articleIndexService.deleteDocument(UnpublishedArticle.id.get)).thenReturn(Success(UnpublishedArticle.id.get))
 
     val (Success(res), sideEffect) =
-      doTransitionWithoutSideEffect(UnpublishedArticle, ARCHIVED, TestData.userWIthAdminAccess)
+      doTransitionWithoutSideEffect(UnpublishedArticle, ARCHIVED, TestData.userWIthAdminAccess, false)
     sideEffect(res).get.status should equal(expectedStatus)
 
     verify(articleIndexService, times(1))
@@ -128,18 +135,19 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   test("user without required roles should not be permitted to perform the status transition") {
     val proposalArticle = TestData.sampleArticleWithByNcSa.copy(status = ProposalStatus)
     val (Failure(ex: IllegalStatusStateTransition), _) =
-      doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWithWriteAccess)
+      doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWithWriteAccess, false)
     ex.getMessage should equal("Cannot go to PUBLISHED when article is DRAFT")
 
     val (Failure(ex2: IllegalStatusStateTransition), _) =
-      doTransitionWithoutSideEffect(proposalArticle, QUEUED_FOR_PUBLISHING, TestData.userWithWriteAccess)
+      doTransitionWithoutSideEffect(proposalArticle, QUEUED_FOR_PUBLISHING, TestData.userWithWriteAccess, false)
     ex2.getMessage should equal("Cannot go to QUEUED_FOR_PUBLISHING when article is PROPOSAL")
   }
 
   test("PUBLISHED should be removed when transitioning to UNPUBLISHED") {
     val expected = domain.Status(UNPUBLISHED, Set())
     val publishedArticle = DraftArticle.copy(status = domain.Status(current = PUBLISHED, other = Set()))
-    val (Success(res), _) = doTransitionWithoutSideEffect(publishedArticle, UNPUBLISHED, TestData.userWIthAdminAccess)
+    val (Success(res), _) =
+      doTransitionWithoutSideEffect(publishedArticle, UNPUBLISHED, TestData.userWIthAdminAccess, false)
 
     res.status should equal(expected)
   }
@@ -231,7 +239,8 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
         StateTransitionRules
           .doTransition(article.copy(status = status.copy(current = t.from)),
                         QUEUED_FOR_PUBLISHING,
-                        TestData.userWIthAdminAccess)
+                        TestData.userWIthAdminAccess,
+                        false)
           .unsafeRunSync())
     verify(contentValidator, times(transitionsToTest.size)).validateArticle(any[domain.Article], any[Boolean])
   }
