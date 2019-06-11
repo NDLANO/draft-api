@@ -419,7 +419,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val status = Status(ArticleStatus.DRAFT, other = Set(ArticleStatus.PUBLISHED))
     val article = TestData.sampleDomainArticle.copy(status = status)
     val Failure(res: IllegalStatusStateTransition) =
-      service.updateStatus(ARCHIVED, article, TestData.userWIthAdminAccess).unsafeRunSync()
+      service.updateStatus(ARCHIVED, article, TestData.userWIthAdminAccess, isImported = false).unsafeRunSync()
 
     res.getMessage should equal(s"Cannot go to ARCHIVED when article contains ${status.other}")
   }
