@@ -84,6 +84,22 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     ex.errors.head.message should be("This field exceeds the maximum permitted length of 256 characters")
   }
 
+  test("validateArticle should fail if the title is empty") {
+    val article = TestData.sampleArticleWithByNcSa.copy(title = Seq(ArticleTitle("", "nb")))
+    val Failure(ex: ValidationException) = contentValidator.validateArticle(article, false)
+
+    ex.errors.length should be(1)
+    ex.errors.head.message should be("This field does not meet the minimum length requirement of 1 characters")
+  }
+
+  test("validateArticle should fail if the title is whitespace") {
+    val article = TestData.sampleArticleWithByNcSa.copy(title = Seq(ArticleTitle("  ", "nb")))
+    val Failure(ex: ValidationException) = contentValidator.validateArticle(article, false)
+
+    ex.errors.length should be(1)
+    ex.errors.head.message should be("This field does not meet the minimum length requirement of 1 characters")
+  }
+
   test("Validation should fail if content contains other tags than section on root") {
     val article = TestData.sampleArticleWithByNcSa.copy(content = Seq(ArticleContent("<h1>lolol</h1>", "nb")))
     val result = contentValidator.validateArticle(article, false)
