@@ -18,12 +18,16 @@ case class StateTransition(from: ArticleStatus.Value,
                            otherStatesToKeepOnTransition: Set[ArticleStatus.Value],
                            sideEffect: domain.Article => Try[domain.Article],
                            addCurrentStateToOthersOnTransition: Boolean,
-                           requiredRoles: Set[Role.Value]) {
+                           requiredRoles: Set[Role.Value],
+                           illegalStatuses: Set[ArticleStatus.Value]) {
 
   def keepCurrentOnTransition: StateTransition = copy(addCurrentStateToOthersOnTransition = true)
   def keepStates(toKeep: Set[ArticleStatus.Value]): StateTransition = copy(otherStatesToKeepOnTransition = toKeep)
   def withSideEffect(sideEffect: domain.Article => Try[domain.Article]): StateTransition = copy(sideEffect = sideEffect)
   def require(roles: Set[Role.Value]): StateTransition = copy(requiredRoles = roles)
+
+  def illegalStatuses(illegalStatuses: Set[ArticleStatus.Value]): StateTransition =
+    copy(illegalStatuses = illegalStatuses)
 }
 
 object StateTransition {
@@ -34,6 +38,7 @@ object StateTransition {
                     Set(ArticleStatus.IMPORTED, ArticleStatus.PUBLISHED),
                     Success.apply,
                     addCurrentStateToOthersOnTransition = false,
-                    UserInfo.WriteRoles)
+                    UserInfo.WriteRoles,
+                    Set())
   }
 }

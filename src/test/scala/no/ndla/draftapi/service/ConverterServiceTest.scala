@@ -171,8 +171,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("stateTransitionsToApi should return all entries if user is admin") {
     val res = service.stateTransitionsToApi(TestData.userWIthAdminAccess)
     res(IMPORTED.toString).length should be(1)
-    res(DRAFT.toString).length should be(3)
-    res(PROPOSAL.toString).length should be(7)
+    res(DRAFT.toString).length should be(4)
+    res(PROPOSAL.toString).length should be(8)
     res(USER_TEST.toString).length should be(5)
     res(AWAITING_QUALITY_ASSURANCE.toString).length should be(6)
     res(QUALITY_ASSURED.toString).length should be(4)
@@ -413,6 +413,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     res3.notes.map(_.note) should be(Seq("swoop", "fleibede"))
     res4.notes.map(_.note) should be(Seq("fleibede"))
+  }
+
+  test("Should not be able to go to ARCHIVED if published") {
+    val status = Status(ArticleStatus.DRAFT, other = Set(ArticleStatus.PUBLISHED))
+    val article = TestData.sampleDomainArticle.copy(status = status)
+    val Failure(res: IllegalStatusStateTransition) =
+      service.updateStatus(ARCHIVED, article, TestData.userWIthAdminAccess, isImported = false).unsafeRunSync()
+
+    res.getMessage should equal(s"Cannot go to ARCHIVED when article contains ${status.other}")
   }
 
 }

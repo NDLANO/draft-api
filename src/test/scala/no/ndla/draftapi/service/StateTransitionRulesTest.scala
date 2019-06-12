@@ -119,7 +119,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     argumentArticleWithNotes should equal(expectedArticle)
   }
 
-  test("doTransition should remove article from search when transitioning to ARCHIEVED") {
+  test("doTransition should remove article from search when transitioning to ARCHIVED") {
     val expectedStatus = domain.Status(ARCHIVED, Set.empty)
 
     when(articleIndexService.deleteDocument(UnpublishedArticle.id.get)).thenReturn(Success(UnpublishedArticle.id.get))
