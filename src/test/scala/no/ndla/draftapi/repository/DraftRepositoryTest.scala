@@ -45,10 +45,12 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   override def beforeAll(): Unit = {
-    val datasource = testDataSource
-    if (serverIsListening) {
-      ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
-      DBMigrator.migrate(datasource)
+    Try {
+      val datasource = testDataSource.get
+      if (serverIsListening) {
+        ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
+        DBMigrator.migrate(datasource)
+      }
     }
   }
 
@@ -263,6 +265,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   test("published article creates new db version and bumps revision by two") {
+    assume(databaseIsAvailable, "Database is unavailable")
     val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.UNPUBLISHED, Set.empty),
                                                     revision = Some(3))
     repository.insert(article)
@@ -280,6 +283,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   test("published article keeps revison on import") {
+    assume(databaseIsAvailable, "Database is unavailable")
     val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.IMPORTED, Set.empty),
                                                     revision = Some(1))
     repository.insert(article)
