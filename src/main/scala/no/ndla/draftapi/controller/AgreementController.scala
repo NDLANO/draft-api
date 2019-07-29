@@ -110,7 +110,6 @@ trait AgreementController {
             asHeaderParam(correlationId),
             asQueryParam(query),
             asQueryParam(agreementIds),
-            asQueryParam(language),
             asQueryParam(license),
             asQueryParam(pageNo),
             asQueryParam(pageSize),

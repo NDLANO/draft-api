@@ -69,10 +69,8 @@ trait DraftController {
       * @param orFunction Function to execute if no scrollId in parameters (Usually searching)
       * @return A Try with scroll result, or the return of the orFunction (Usually a try with a search result).
       */
-    private def scrollSearchOr(orFunction: => Any): Any = {
-      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
-
-      paramOrNone(this.scrollId.paramName) match {
+    private def scrollSearchOr(scrollId: Option[String], language: String)(orFunction: => Any): Any = {
+      scrollId match {
         case Some(scroll) =>
           articleSearchService.scroll(scroll, language) match {
             case Success(scrollResult) =>
@@ -181,10 +179,13 @@ trait DraftController {
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
-        scrollSearchOr {
+
+        val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+        val scrollId = paramOrNone(this.scrollId.paramName)
+
+        scrollSearchOr(scrollId, language) {
           val query = paramOrNone(this.query.paramName)
           val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
-          val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
           val license = paramOrNone(this.license.paramName)
           val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
           val page = intOrDefault(this.pageNo.paramName, 1)
@@ -214,12 +215,12 @@ trait DraftController {
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
-        scrollSearchOr {
-          extract[ArticleSearchParams](request.body) match {
-            case Success(searchParams) =>
+        extract[ArticleSearchParams](request.body) match {
+          case Success(searchParams) =>
+            val language = searchParams.language.getOrElse(Language.AllLanguages)
+            scrollSearchOr(searchParams.scrollId, language) {
               val query = searchParams.query
               val sort = Sort.valueOf(searchParams.sort.getOrElse(""))
-              val language = searchParams.language.getOrElse(Language.AllLanguages)
               val license = searchParams.license
               val pageSize = searchParams.pageSize.getOrElse(DraftApiProperties.DefaultPageSize)
               val page = searchParams.page.getOrElse(1)
@@ -228,8 +229,8 @@ trait DraftController {
               val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
               search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
-            case Failure(ex) => errorHandler(ex)
-          }
+            }
+          case Failure(ex) => errorHandler(ex)
         }
       }
     }

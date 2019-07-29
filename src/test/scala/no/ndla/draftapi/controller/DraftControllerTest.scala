@@ -305,7 +305,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
     when(articleSearchService.scroll(anyString, anyString)).thenReturn(Success(searchResponse))
 
-    post(s"/test/search/?search-context=$scrollId") {
+    post(s"/test/search/", body = s"""{"scrollId": "$scrollId"}""") {
       status should be(200)
     }
 

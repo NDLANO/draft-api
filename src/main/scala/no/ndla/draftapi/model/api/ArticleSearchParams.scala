@@ -23,4 +23,8 @@ case class ArticleSearchParams(
       Long],
     @(ApiModelProperty @field)(description = "Return only articles of specific type(s)") articleTypes: List[String],
     @(ApiModelProperty @field)(description = "The sorting used on results. Default is by -relevance.") sort: Option[
-      String])
+      String],
+    @(ApiModelProperty @field)(
+      description = "A search context retrieved from the response header of a previous search.") scrollId: Option[
+      String]
+)
