@@ -11,6 +11,8 @@ import com.zaxxer.hikari.HikariDataSource
 import no.ndla.network.secrets.PropertyKeys
 import no.ndla.draftapi.integration.DataSource.getHikariDataSource
 
+import scala.util.Try
+
 abstract class IntegrationSuite extends UnitSuite {
   setEnv(PropertyKeys.MetaUserNameKey, "postgres")
   setEnvIfAbsent(PropertyKeys.MetaPasswordKey, "hemmelig")
@@ -19,5 +21,5 @@ abstract class IntegrationSuite extends UnitSuite {
   setEnv(PropertyKeys.MetaPortKey, "5432")
   setEnv(PropertyKeys.MetaSchemaKey, "draftapitest")
 
-  val testDataSource: HikariDataSource = getHikariDataSource
+  val testDataSource: Try[HikariDataSource] = Try { getHikariDataSource }
 }
