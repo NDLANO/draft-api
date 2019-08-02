@@ -140,7 +140,8 @@ trait WriteService {
                               importId: Option[String],
                               externalIds: List[String] = List.empty,
                               externalSubjectIds: Seq[String] = Seq.empty,
-                              isImported: Boolean = false): Try[domain.Article] = {
+                              shouldValidateLanguage: Option[String],
+                              isImported: Boolean = false ): Try[domain.Article] = {
       val updateFunc = externalIds match {
         case Nil =>
           (a: domain.Article) =>
@@ -150,12 +151,28 @@ trait WriteService {
             draftRepository.updateWithExternalIds(a, nids, externalSubjectIds, importId)
       }
 
+      val articleToValidate = shouldValidateLanguage match {
+        case Some(language) => getArticleOnLanguage(toUpdate, language)
+        case None => toUpdate
+      }
       for {
-        _ <- contentValidator.validateArticle(toUpdate, allowUnknownLanguage = true)
+        _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
         domainArticle <- updateFunc(toUpdate)
         _ <- articleIndexService.indexDocument(domainArticle)
         _ <- Try(searchApiClient.indexDraft(domainArticle))
       } yield domainArticle
+    }
+
+    def getArticleOnLanguage(article: domain.Article, language: String): domain.Article = {
+      article.copy(
+        content = article.content.filter(_.language == language),
+        introduction = article.introduction.filter(_.language == language),
+        metaDescription = article.metaDescription.filter(_.language == language),
+        title = article.title.filter(_.language == language),
+        tags = article.tags.filter(_.language == language),
+        visualElement = article.visualElement.filter(_.language == language),
+        metaImage = article.metaImage.filter(_.language == language)
+      )
     }
 
     def updateArticle(articleId: Long,
@@ -165,7 +182,8 @@ trait WriteService {
                       user: UserInfo,
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date],
-                      importId: Option[String]): Try[api.Article] = {
+                      importId: Option[String],
+                      validateCurrentLanguage: Boolean = false): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) =>
           val oldStatus = existing.status.current
@@ -191,7 +209,8 @@ trait WriteService {
                                             importId = importId,
                                             externalIds,
                                             externalSubjectIds,
-                                            isImported = externalIds.nonEmpty)
+                                            isImported = externalIds.nonEmpty,
+                                            shouldValidateLanguage = if (validateCurrentLanguage) updatedApiArticle.language else None )
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
@@ -210,7 +229,7 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             withStatus <- withStatusT
-            updatedArticle <- updateArticle(withStatus, importId, externalIds, externalSubjectIds)
+            updatedArticle <- updateArticle(withStatus, importId, externalIds, externalSubjectIds, shouldValidateLanguage = if (validateCurrentLanguage) updatedApiArticle.language else None)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle

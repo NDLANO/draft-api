@@ -61,6 +61,7 @@ trait DraftController {
     private val filter = Param[Option[String]]("filter", "A filter to include a specific entry")
     private val filterNot = Param[Option[String]]("filterNot", "A filter to remove a specific entry")
     private val statuss = Param[String]("STATUS", "An article status")
+    private val validateCurrentLanguage = Param[Option[Boolean]]("validationLanguage", "If one wishes to only validate current language")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
@@ -386,7 +387,8 @@ trait DraftController {
           parameters (
             asHeaderParam[Option[String]](correlationId),
             asPathParam[Long](articleId),
-            bodyParam[UpdatedArticle]
+            bodyParam[UpdatedArticle],
+            asQueryParam(validateCurrentLanguage)
         )
           authorizations "oauth2"
           responseMessages (response400, response403, response404, response500))
@@ -400,6 +402,7 @@ trait DraftController {
         val importId = paramOrNone("importId")
         val id = long(this.articleId.paramName)
         val updateArticle = extract[UpdatedArticle](request.body)
+        val validateCurrentLanguage = booleanOrDefault("validateCurrentLanguage", false)
 
         updateArticle.flatMap(
           writeService.updateArticle(id,
@@ -409,7 +412,8 @@ trait DraftController {
                                      userInfo,
                                      oldNdlaCreateddDate,
                                      oldNdlaUpdatedDate,
-                                     importId)) match {
+                                     importId,
+                                     validateCurrentLanguage)) match {
           case Success(article)   => Ok(body = article)
           case Failure(exception) => errorHandler(exception)
         }
