@@ -140,6 +140,7 @@ trait WriteService {
                               importId: Option[String],
                               externalIds: List[String] = List.empty,
                               externalSubjectIds: Seq[String] = Seq.empty,
+                              shouldValidateLanguage: Option[String],
                               isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalIds match {
         case Nil =>
@@ -150,12 +151,28 @@ trait WriteService {
             draftRepository.updateWithExternalIds(a, nids, externalSubjectIds, importId)
       }
 
+      val articleToValidate = shouldValidateLanguage match {
+        case Some(language) => getArticleOnLanguage(toUpdate, language)
+        case None           => toUpdate
+      }
       for {
-        _ <- contentValidator.validateArticle(toUpdate, allowUnknownLanguage = true)
+        _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
         domainArticle <- updateFunc(toUpdate)
         _ <- articleIndexService.indexDocument(domainArticle)
         _ <- Try(searchApiClient.indexDraft(domainArticle))
       } yield domainArticle
+    }
+
+    def getArticleOnLanguage(article: domain.Article, language: String): domain.Article = {
+      article.copy(
+        content = article.content.filter(_.language == language),
+        introduction = article.introduction.filter(_.language == language),
+        metaDescription = article.metaDescription.filter(_.language == language),
+        title = article.title.filter(_.language == language),
+        tags = article.tags.filter(_.language == language),
+        visualElement = article.visualElement.filter(_.language == language),
+        metaImage = article.metaImage.filter(_.language == language)
+      )
     }
 
     def updateArticle(articleId: Long,
@@ -187,11 +204,14 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             withStatus <- withStatusT
-            updatedArticle <- updateArticle(withStatus,
-                                            importId = importId,
-                                            externalIds,
-                                            externalSubjectIds,
-                                            isImported = externalIds.nonEmpty)
+            updatedArticle <- updateArticle(
+              withStatus,
+              importId = importId,
+              externalIds,
+              externalSubjectIds,
+              isImported = externalIds.nonEmpty,
+              shouldValidateLanguage = updatedApiArticle.language
+            )
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
@@ -210,7 +230,11 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             withStatus <- withStatusT
-            updatedArticle <- updateArticle(withStatus, importId, externalIds, externalSubjectIds)
+            updatedArticle <- updateArticle(withStatus,
+                                            importId,
+                                            externalIds,
+                                            externalSubjectIds,
+                                            shouldValidateLanguage = updatedApiArticle.language)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle

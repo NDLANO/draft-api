@@ -43,7 +43,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   val agreement: Agreement = TestData.sampleDomainAgreement.copy(id = Some(agreementId))
 
   override def beforeEach(): Unit = {
-    Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository)
+    Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository, contentValidator)
 
     when(draftRepository.withId(articleId)).thenReturn(Option(article))
     when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
@@ -485,4 +485,26 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     captured2.copy(updated = today, notes = captured2.notes.map(_.copy(timestamp = today))) should be(
       updatedAndInserted)
   }
+  test("That we only validate the given language") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language = Some("nb"))
+    val article =
+      TestData.sampleDomainArticle.copy(
+        id = Some(5),
+        content =
+          Seq(ArticleContent("<section> Valid Content </section>", "nb"), ArticleContent("<div> content <div", "nn"))
+      )
+    val nbArticle =
+      article.copy(
+        content = Seq(ArticleContent("<section> Valid Content </section>", "nb"))
+      )
+
+    when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+    service.updateArticle(1, updatedArticle, List(), List(), TestData.userWIthAdminAccess, None, None, None)
+
+    val argCap: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+    verify(contentValidator, times(1)).validateArticle(argCap.capture(), any[Boolean])
+    val captured = argCap.getValue
+    captured.content should equal(nbArticle.content)
+  }
+
 }

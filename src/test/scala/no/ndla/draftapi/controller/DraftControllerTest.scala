@@ -184,14 +184,16 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("That PATCH /:id returns 403 if access denied") {
     when(user.getUser).thenReturn(TestData.userWithNoRoles)
     when(
-      writeService.updateArticle(any[Long],
-                                 any[api.UpdatedArticle],
-                                 any[List[String]],
-                                 any[Seq[String]],
-                                 any[UserInfo],
-                                 any[Option[Date]],
-                                 any[Option[Date]],
-                                 any[Option[String]]))
+      writeService.updateArticle(
+        any[Long],
+        any[api.UpdatedArticle],
+        any[List[String]],
+        any[Seq[String]],
+        any[UserInfo],
+        any[Option[Date]],
+        any[Option[Date]],
+        any[Option[String]]
+      ))
       .thenReturn(Failure(new AccessDeniedException("Not today")))
 
     patch("/test/123", body = write(TestData.sampleApiUpdateArticle)) {
