@@ -403,7 +403,6 @@ trait DraftController {
         val importId = paramOrNone("importId")
         val id = long(this.articleId.paramName)
         val updateArticle = extract[UpdatedArticle](request.body)
-        val validateCurrentLanguage = booleanOrDefault("validateCurrentLanguage", false)
 
         updateArticle.flatMap(
           writeService.updateArticle(id,
@@ -413,8 +412,7 @@ trait DraftController {
                                      userInfo,
                                      oldNdlaCreateddDate,
                                      oldNdlaUpdatedDate,
-                                     importId,
-                                     validateCurrentLanguage)) match {
+                                     importId, validateCurrentLanguage = true)) match {
           case Success(article)   => Ok(body = article)
           case Failure(exception) => errorHandler(exception)
         }
