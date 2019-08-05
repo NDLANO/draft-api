@@ -412,7 +412,7 @@ trait DraftController {
                                      userInfo,
                                      oldNdlaCreateddDate,
                                      oldNdlaUpdatedDate,
-                                     importId, validateCurrentLanguage = true)) match {
+                                     importId)) match {
           case Success(article)   => Ok(body = article)
           case Failure(exception) => errorHandler(exception)
         }

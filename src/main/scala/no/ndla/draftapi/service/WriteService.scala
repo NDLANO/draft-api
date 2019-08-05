@@ -182,8 +182,7 @@ trait WriteService {
                       user: UserInfo,
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date],
-                      importId: Option[String],
-                      validateCurrentLanguage: Boolean): Try[api.Article] = {
+                      importId: Option[String]): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) =>
           val oldStatus = existing.status.current
@@ -211,7 +210,7 @@ trait WriteService {
               externalIds,
               externalSubjectIds,
               isImported = externalIds.nonEmpty,
-              shouldValidateLanguage = if (validateCurrentLanguage) updatedApiArticle.language else None
+              shouldValidateLanguage = updatedApiArticle.language
             )
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
@@ -235,8 +234,7 @@ trait WriteService {
                                             importId,
                                             externalIds,
                                             externalSubjectIds,
-                                            shouldValidateLanguage =
-                                              if (validateCurrentLanguage) updatedApiArticle.language else None)
+                                            shouldValidateLanguage = updatedApiArticle.language)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
