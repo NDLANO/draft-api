@@ -61,7 +61,8 @@ trait DraftController {
     private val filter = Param[Option[String]]("filter", "A filter to include a specific entry")
     private val filterNot = Param[Option[String]]("filterNot", "A filter to remove a specific entry")
     private val statuss = Param[String]("STATUS", "An article status")
-    private val validateCurrentLanguage = Param[Option[Boolean]]("validationLanguage", "If one wishes to only validate current language")
+    private val validateCurrentLanguage =
+      Param[Option[Boolean]]("validationLanguage", "If one wishes to only validate current language")
 
     /**
       * Does a scroll with [[ArticleSearchService]]

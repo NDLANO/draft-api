@@ -141,7 +141,7 @@ trait WriteService {
                               externalIds: List[String] = List.empty,
                               externalSubjectIds: Seq[String] = Seq.empty,
                               shouldValidateLanguage: Option[String],
-                              isImported: Boolean = false ): Try[domain.Article] = {
+                              isImported: Boolean = false): Try[domain.Article] = {
       val updateFunc = externalIds match {
         case Nil =>
           (a: domain.Article) =>
@@ -153,7 +153,7 @@ trait WriteService {
 
       val articleToValidate = shouldValidateLanguage match {
         case Some(language) => getArticleOnLanguage(toUpdate, language)
-        case None => toUpdate
+        case None           => toUpdate
       }
       for {
         _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
@@ -183,7 +183,7 @@ trait WriteService {
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date],
                       importId: Option[String],
-                      validateCurrentLanguage: Boolean = false): Try[api.Article] = {
+                      validateCurrentLanguage: Boolean): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case Some(existing) =>
           val oldStatus = existing.status.current
@@ -205,12 +205,14 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             withStatus <- withStatusT
-            updatedArticle <- updateArticle(withStatus,
-                                            importId = importId,
-                                            externalIds,
-                                            externalSubjectIds,
-                                            isImported = externalIds.nonEmpty,
-                                            shouldValidateLanguage = if (validateCurrentLanguage) updatedApiArticle.language else None )
+            updatedArticle <- updateArticle(
+              withStatus,
+              importId = importId,
+              externalIds,
+              externalSubjectIds,
+              isImported = externalIds.nonEmpty,
+              shouldValidateLanguage = if (validateCurrentLanguage) updatedApiArticle.language else None
+            )
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle
@@ -229,7 +231,12 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             withStatus <- withStatusT
-            updatedArticle <- updateArticle(withStatus, importId, externalIds, externalSubjectIds, shouldValidateLanguage = if (validateCurrentLanguage) updatedApiArticle.language else None)
+            updatedArticle <- updateArticle(withStatus,
+                                            importId,
+                                            externalIds,
+                                            externalSubjectIds,
+                                            shouldValidateLanguage =
+                                              if (validateCurrentLanguage) updatedApiArticle.language else None)
             apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                         updatedApiArticle.language.getOrElse(UnknownLanguage))
           } yield apiArticle

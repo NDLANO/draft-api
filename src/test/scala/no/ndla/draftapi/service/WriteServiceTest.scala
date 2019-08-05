@@ -43,7 +43,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   val agreement: Agreement = TestData.sampleDomainAgreement.copy(id = Some(agreementId))
 
   override def beforeEach(): Unit = {
-    Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository)
+    Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository, contentValidator)
 
     when(draftRepository.withId(articleId)).thenReturn(Option(article))
     when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
@@ -186,7 +186,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                           TestData.userWithWriteAccess,
                           None,
                           None,
-                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
+                          None,
+                          false) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates only title properly") {
@@ -219,7 +220,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                           TestData.userWithWriteAccess,
                           None,
                           None,
-                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
+                          None,
+                          false) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("That updateArticle updates multiple fields properly") {
@@ -286,7 +288,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                           TestData.userWithWriteAccess,
                           None,
                           None,
-                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
+                          None,
+                          false) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("updateArticle should use user-defined status if defined") {
@@ -300,7 +303,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None,
-                                                None)
+                                                None,
+                                                false)
     result.status should equal(api.Status("PROPOSAL", Seq.empty))
   }
 
@@ -317,7 +321,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None,
-                                                None)
+                                                None,
+                                                false)
     result.status should equal(api.Status("PROPOSAL", Seq("PUBLISHED")))
   }
 
@@ -334,7 +339,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   TestData.userWithWriteAccess,
                                                   None,
                                                   None,
-                                                  None)
+                                                  None,
+                                                  false)
       result.status should equal(api.Status("PROPOSAL", Seq.empty))
     }
 
@@ -348,7 +354,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   TestData.userWithWriteAccess,
                                                   None,
                                                   None,
-                                                  None)
+                                                  None,
+                                                  false)
       result.status should equal(api.Status("USER_TEST", Seq.empty))
     }
 
@@ -362,7 +369,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   TestData.userWithWriteAccess,
                                                   None,
                                                   None,
-                                                  None)
+                                                  None,
+                                                  false)
       result.status should equal(api.Status("AWAITING_QUALITY_ASSURANCE", Seq.empty))
     }
 
@@ -377,7 +385,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                                   TestData.userWithWriteAccess,
                                                   None,
                                                   None,
-                                                  None)
+                                                  None,
+                                                  false)
       result.status should equal(api.Status("QUEUED_FOR_PUBLISHING", Seq.empty))
     }
   }
@@ -484,5 +493,59 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val captured2 = argCap2.getValue
     captured2.copy(updated = today, notes = captured2.notes.map(_.copy(timestamp = today))) should be(
       updatedAndInserted)
+  }
+  test("That we only validate the given language when validateCurrentLanguage is true") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language = Some("nb"))
+    val article =
+      TestData.sampleDomainArticle.copy(
+        id = Some(5),
+        content =
+          Seq(ArticleContent("<section> Valid Content </section>", "nb"), ArticleContent("<div> content <div", "nn"))
+      )
+    val nbArticle =
+      article.copy(
+        content = Seq(ArticleContent("<section> Valid Content </section>", "nb"))
+      )
+
+    when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+    service.updateArticle(1,
+                          updatedArticle,
+                          List(),
+                          List(),
+                          TestData.userWIthAdminAccess,
+                          None,
+                          None,
+                          None,
+                          validateCurrentLanguage = true)
+
+    val argCap: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+    verify(contentValidator, times(1)).validateArticle(argCap.capture(), any[Boolean])
+    val captured = argCap.getValue
+    captured.content should equal(nbArticle.content)
+  }
+
+  test("That we validate all languages when validateCurrentLanguage is false") {
+    val updatedArticle = TestData.sampleApiUpdateArticle.copy(language = Some("nb"))
+    val article =
+      TestData.sampleDomainArticle.copy(
+        id = Some(5),
+        content =
+          Seq(ArticleContent("<section> Valid Content </section>", "nb"), ArticleContent("<div> content <div", "nn"))
+      )
+    when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+    service.updateArticle(1,
+                          updatedArticle,
+                          List(),
+                          List(),
+                          TestData.userWIthAdminAccess,
+                          None,
+                          None,
+                          None,
+                          validateCurrentLanguage = false)
+
+    val argCap: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+    verify(contentValidator, times(1)).validateArticle(argCap.capture(), any[Boolean])
+    val captured = argCap.getValue
+    captured.content should equal(article.content)
   }
 }
