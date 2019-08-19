@@ -499,7 +499,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       )
 
     when(draftRepository.withId(anyLong())).thenReturn(Some(article))
-    service.updateArticle(1, updatedArticle, List(), List(), TestData.userWIthAdminAccess, None, None, None)
+    service.updateArticle(1, updatedArticle, List(), List(), TestData.userWithPublishAccess, None, None, None)
 
     val argCap: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
     verify(contentValidator, times(1)).validateArticle(argCap.capture(), any[Boolean])

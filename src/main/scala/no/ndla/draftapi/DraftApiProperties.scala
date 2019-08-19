@@ -23,7 +23,7 @@ object DraftApiProperties extends LazyLogging {
   val ApplicationName = "draft-api"
   val Auth0LoginEndpoint = s"https://${AuthUser.getAuth0HostForEnv(Environment)}/authorize"
   val DraftRoleWithWriteAccess = "drafts:write"
-  val DraftRoleWithPublishAccess = "drafts:set_to_publish"
+  val DraftRoleWithPublishAccess = "drafts:publish"
   val ArticleRoleWithPublishAccess = "articles:publish"
 
   val ApplicationPort = propOrElse("APPLICATION_PORT", "80").toInt

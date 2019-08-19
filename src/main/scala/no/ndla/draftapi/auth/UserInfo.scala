@@ -10,8 +10,7 @@ package no.ndla.draftapi.auth
 import no.ndla.network.AuthUser
 
 case class UserInfo(id: String, roles: Set[Role.Value]) {
-  def isAdmin: Boolean = hasRoles(UserInfo.AdminRoles)
-  def canSetPublish: Boolean = hasRoles(UserInfo.SetPublishRoles)
+  def canPublish: Boolean = hasRoles(UserInfo.PublishRoles)
   def canWrite: Boolean = hasRoles(UserInfo.WriteRoles)
   def canRead: Boolean = hasRoles(UserInfo.ReadRoles)
 
@@ -21,8 +20,7 @@ case class UserInfo(id: String, roles: Set[Role.Value]) {
 object UserInfo {
   val UnauthorizedUser = UserInfo("unauthorized", Set.empty)
 
-  val AdminRoles = Set(Role.ADMIN)
-  val SetPublishRoles = Set(Role.WRITE, Role.SET_TO_PUBLISH)
+  val PublishRoles = Set(Role.WRITE, Role.PUBLISH)
   val WriteRoles = Set(Role.WRITE)
   val ReadRoles = Set(Role.WRITE)
 

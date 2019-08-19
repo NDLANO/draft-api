@@ -154,22 +154,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(UNPUBLISHED.toString).length should be(2)
   }
 
-  test("stateTransitionsToApi should return only certain entries if user only has set_to_publish") {
-    val res = service.stateTransitionsToApi(TestData.userWithPublishAccess)
-    res(IMPORTED.toString).length should be(1)
-    res(DRAFT.toString).length should be(2)
-    res(PROPOSAL.toString).length should be(6)
-    res(USER_TEST.toString).length should be(4)
-    res(AWAITING_QUALITY_ASSURANCE.toString).length should be(5)
-    res(QUALITY_ASSURED.toString).length should be(3)
-    res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
-    res(PUBLISHED.toString).length should be(3)
-    res(AWAITING_UNPUBLISHING.toString).length should be(2)
-    res(UNPUBLISHED.toString).length should be(2)
-  }
-
   test("stateTransitionsToApi should return all entries if user is admin") {
-    val res = service.stateTransitionsToApi(TestData.userWIthAdminAccess)
+    val res = service.stateTransitionsToApi(TestData.userWithPublishAccess)
     res(IMPORTED.toString).length should be(1)
     res(DRAFT.toString).length should be(4)
     res(PROPOSAL.toString).length should be(8)
@@ -419,7 +405,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val status = Status(ArticleStatus.DRAFT, other = Set(ArticleStatus.PUBLISHED))
     val article = TestData.sampleDomainArticle.copy(status = status)
     val Failure(res: IllegalStatusStateTransition) =
-      service.updateStatus(ARCHIVED, article, TestData.userWIthAdminAccess, isImported = false).unsafeRunSync()
+      service.updateStatus(ARCHIVED, article, TestData.userWithPublishAccess, isImported = false).unsafeRunSync()
 
     res.getMessage should equal(s"Cannot go to ARCHIVED when article contains ${status.other}")
   }

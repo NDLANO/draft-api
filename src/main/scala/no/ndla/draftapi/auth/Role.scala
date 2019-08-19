@@ -8,7 +8,7 @@
 package no.ndla.draftapi.auth
 
 object Role extends Enumeration {
-  val WRITE, SET_TO_PUBLISH, ADMIN = Value
+  val WRITE, PUBLISH = Value
 
   def valueOf(s: String): Option[Role.Value] = {
     val role = s.split("drafts:")
