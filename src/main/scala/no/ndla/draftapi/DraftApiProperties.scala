@@ -79,7 +79,7 @@ object DraftApiProperties extends LazyLogging {
   val AgreementSearchDocument = "agreement-drafts"
   val ConceptSearchDocument = "concept-drafts"
   val DefaultPageSize = 10
-  val MaxPageSize = 100
+  val MaxPageSize = 10000
   val IndexBulkSize = 200
   val ElasticSearchIndexMaxResultWindow = 10000
   val ElasticSearchScrollKeepAlive = "10s"
