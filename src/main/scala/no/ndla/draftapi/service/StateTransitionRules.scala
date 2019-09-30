@@ -63,7 +63,7 @@ trait StateTransitionRules {
        AWAITING_QUALITY_ASSURANCE -> DRAFT,
        AWAITING_QUALITY_ASSURANCE -> QUEUED_FOR_LANGUAGE,
       (AWAITING_QUALITY_ASSURANCE -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
-      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED),
+      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED) withSideEffect validateArticle,
       (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
        QUALITY_ASSURED            -> QUALITY_ASSURED,
        QUALITY_ASSURED            -> DRAFT,
