@@ -410,4 +410,44 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res.getMessage should equal(s"Cannot go to ARCHIVED when article contains ${status.other}")
   }
 
+  test("Adding new language to article will add note") {
+    val updatedArticleWithoutNotes =
+      TestData.sampleApiUpdateArticle.copy(title = Some("kakemonster"))
+    val updatedArticleWithNotes =
+      TestData.sampleApiUpdateArticle.copy(title = Some("kakemonster"), notes = Some(Seq("fleibede")))
+    val existingNotes = Seq(EditorNote("swoop", "", domain.Status(DRAFT, Set()), TestData.today))
+    val Success(res1) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = existingNotes),
+        updatedArticleWithNotes.copy(language = Some("sna")),
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+    val Success(res2) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = existingNotes),
+        updatedArticleWithNotes.copy(language = Some("nb")),
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+    val Success(res3) =
+      service.toDomainArticle(
+        TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set()), notes = existingNotes),
+        updatedArticleWithoutNotes.copy(language = Some("sna")),
+        isImported = false,
+        TestData.userWithWriteAccess,
+        None,
+        None
+      )
+
+    res1.notes.map(_.note) should be(Seq("swoop", "fleibede", s"Ny språkvariant 'sna' ble lagt til."))
+    res2.notes.map(_.note) should be(Seq("swoop", "fleibede"))
+    res3.notes.map(_.note) should be(Seq("swoop", s"Ny språkvariant 'sna' ble lagt til."))
+
+  }
+
 }

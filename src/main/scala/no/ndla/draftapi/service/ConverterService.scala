@@ -204,18 +204,9 @@ trait ConverterService {
       StateTransitionRules.doTransition(article, status, user, isImported)
 
     def toApiArticle(article: domain.Article, language: String, fallback: Boolean = false): Try[api.Article] = {
-      val supportedLanguages = getSupportedLanguages(
-        Seq(article.title,
-            article.visualElement,
-            article.introduction,
-            article.metaDescription,
-            article.tags,
-            article.content,
-            article.metaImage)
-      )
-      val isLanguageNeutral = supportedLanguages.contains(UnknownLanguage) && supportedLanguages.length == 1
+      val isLanguageNeutral = article.supportedLanguages.contains(UnknownLanguage) && article.supportedLanguages.length == 1
 
-      if (supportedLanguages.contains(language) || language == AllLanguages || isLanguageNeutral || fallback) {
+      if (article.supportedLanguages.contains(language) || language == AllLanguages || isLanguageNeutral || fallback) {
         val metaDescription =
           findByLanguageOrBestEffort(article.metaDescription, language).map(toApiArticleMetaDescription)
         val tags = findByLanguageOrBestEffort(article.tags, language).map(toApiArticleTag)
@@ -245,13 +236,13 @@ trait ConverterService {
             article.updatedBy,
             article.published,
             article.articleType.toString,
-            supportedLanguages,
+            article.supportedLanguages,
             article.notes.map(toApiEditorNote)
           ))
       } else {
         Failure(
           NotFoundException(s"The article with id ${article.id.get} and language $language was not found",
-                            supportedLanguages))
+                            article.supportedLanguages))
       }
     }
 
@@ -451,15 +442,17 @@ trait ConverterService {
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val publishedDate = article.published.getOrElse(toMergeInto.published)
 
-      val newEditorialNotes = article.notes.map(n => newNotes(n, user, toMergeInto.status))
+      val isNewLanguage = article.language.map(l => !toMergeInto.supportedLanguages.contains(l)).getOrElse(false)
+      val newLanguageEditorNote =
+        if (isNewLanguage) Seq(s"Ny språkvariant '${article.language.getOrElse("unknown")}' ble lagt til.")
+        else Seq.empty
 
-      val mergedNotes = newEditorialNotes match {
-        case Some(Failure(ex))    => Failure(ex)
-        case Some(Success(notes)) => Success(toMergeInto.notes ++ notes)
-        case None                 => Success(toMergeInto.notes)
+      val newEditorialNotes = article.notes match {
+        case Some(n) => newNotes(n ++ newLanguageEditorNote, user, toMergeInto.status)
+        case None    => newNotes(newLanguageEditorNote, user, toMergeInto.status)
       }
 
-      mergedNotes match {
+      newEditorialNotes.map(notes => toMergeInto.notes ++ notes) match {
         case Failure(ex) => Failure(ex)
         case Success(allNotes) =>
           val partiallyConverted = toMergeInto.copy(

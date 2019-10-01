@@ -10,6 +10,7 @@ package no.ndla.draftapi.model.domain
 import java.util.Date
 
 import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.model.domain.Language.getSupportedLanguages
 import org.joda.time.DateTime
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.FieldSerializer
@@ -42,7 +43,11 @@ case class Article(id: Option[Long],
                    published: Date,
                    articleType: ArticleType.Value,
                    notes: Seq[EditorNote])
-    extends Content
+    extends Content {
+
+  def supportedLanguages =
+    getSupportedLanguages(Seq(title, visualElement, introduction, metaDescription, tags, content, metaImage))
+}
 
 object Article extends SQLSyntaxSupport[Article] {
   implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
