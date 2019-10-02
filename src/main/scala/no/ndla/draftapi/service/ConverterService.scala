@@ -370,6 +370,31 @@ trait ConverterService {
       )
     }
 
+    def deleteLanguage(article: domain.Article, language: String, userInfo: UserInfo) = {
+      val title = article.title.filter(_.language != language)
+      val content = article.content.filter(_.language != language)
+      val articleIntroduction = article.introduction.filter(_.language != language)
+      val metaDescription = article.metaDescription.filter(_.language != language)
+      val tags = article.tags.filter(_.language != language)
+      val metaImage = article.metaImage.filter(_.language != language)
+      val visualElement = article.visualElement.filter(_.language != language)
+      newNotes(Seq(s"Slettet språkvariant '$language'."), userInfo, article.status) match {
+        case Failure(ex) => Failure(ex)
+        case Success(newEditorNotes) =>
+          Success(
+            article.copy(
+              title = title,
+              content = content,
+              introduction = articleIntroduction,
+              metaDescription = metaDescription,
+              tags = tags,
+              metaImage = metaImage,
+              visualElement = visualElement,
+              notes = article.notes ++ newEditorNotes
+            ))
+      }
+    }
+
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
         revision = article.revision,
