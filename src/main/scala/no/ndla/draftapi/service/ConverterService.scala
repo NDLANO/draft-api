@@ -87,7 +87,7 @@ trait ConverterService {
     private[service] def newNotes(notes: Seq[String], user: UserInfo, status: Status): Try[Seq[EditorNote]] = {
       notes match {
         case Nil                  => Success(Seq.empty)
-        case l if !l.contains("") => Success(l.map(domain.EditorNote(_, user.id, status, new Date())))
+        case l if !l.contains("") => Success(l.map(domain.EditorNote(_, user.id, status, new DateTime().toDate)))
         case _ =>
           Failure(
             new ValidationException(errors = Seq(ValidationMessage("notes", "A note can not be an empty string"))))
