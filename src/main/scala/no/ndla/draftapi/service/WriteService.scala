@@ -72,7 +72,8 @@ trait WriteService {
               notes = article.notes ++ newNotes
             )
             inserted = draftRepository.insert(articleToInsert)
-            index <- articleIndexService.indexDocument(inserted)
+            _ <- articleIndexService.indexDocument(inserted)
+            _ <- Try(searchApiClient.indexDraft(inserted))
             converted <- converterService.toApiArticle(inserted, language, fallback)
           } yield converted
           x
