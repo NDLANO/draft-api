@@ -15,7 +15,7 @@ import no.ndla.draftapi.model.api
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationMessage
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, DateTimeUtils}
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -505,6 +505,55 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     verify(contentValidator, times(1)).validateArticle(argCap.capture(), any[Boolean])
     val captured = argCap.getValue
     captured.content should equal(nbArticle.content)
+  }
+
+  test("That articles are cloned with reasonable values") {
+    val yesterday = new DateTime().minusDays(1)
+    val today = new DateTime()
+
+    when(clock.now()).thenReturn(today.toDate)
+
+    withFrozenTime(today) {
+      val article =
+        TestData.sampleDomainArticle.copy(
+          id = Some(5),
+          status = Status(ArticleStatus.PUBLISHED, Set(ArticleStatus.IMPORTED)),
+          updated = yesterday.toDate,
+          created = yesterday.minusDays(1).toDate,
+          published = yesterday.toDate
+        )
+
+      val userinfo = UserInfo("somecoolid", Set.empty)
+
+      val newId = 1231.toLong
+      doReturn(Success(newId), Success(newId)).when(draftRepository).newArticleId()(any[DBSession])
+
+      val expectedInsertedArticle = article.copy(
+        id = Some(newId),
+        revision = Some(1),
+        updated = today.toDate,
+        created = today.toDate,
+        published = today.toDate,
+        updatedBy = userinfo.id,
+        status = Status(ArticleStatus.DRAFT, Set.empty),
+        notes = article.notes ++
+          converterService
+            .newNotes(Seq("Opprettet artikkel, som kopi av artikkel med id: '5'."),
+                      userinfo,
+                      Status(ArticleStatus.DRAFT, Set.empty))
+            .get
+      )
+      when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+      when(draftRepository.insert(any[Article])(any[DBSession])).thenAnswer((i: InvocationOnMock) =>
+        i.getArgument[Article](0))
+
+      service.copyArticleFromId(5, userinfo, "all", true)
+
+      val cap: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
+      verify(draftRepository, times(1)).insert(cap.capture())(any[DBSession])
+      val insertedArticle = cap.getValue
+      insertedArticle should be(expectedInsertedArticle)
+    }
   }
 
 }

@@ -45,6 +45,41 @@ trait WriteService {
 
   class WriteService {
 
+    def copyArticleFromId(
+        articleId: Long,
+        userInfo: UserInfo,
+        language: String,
+        fallback: Boolean
+    ): Try[api.Article] = {
+      draftRepository.withId(articleId) match {
+        case None => Failure(NotFoundException(s"Article with id '$articleId' was not found in database."))
+        case Some(article) =>
+          val x = for {
+            newId <- draftRepository.newArticleId()
+            status = domain.Status(DRAFT, Set.empty)
+            newNotes <- converterService.newNotes(
+              Seq(s"Opprettet artikkel, som kopi av artikkel med id: '$articleId'."),
+              userInfo,
+              status)
+            articleToInsert = article.copy(
+              id = Some(newId.toLong),
+              revision = Some(1),
+              updated = clock.now(),
+              created = clock.now(),
+              published = clock.now(),
+              updatedBy = userInfo.id,
+              status = status,
+              notes = article.notes ++ newNotes
+            )
+            inserted = draftRepository.insert(articleToInsert)
+            _ <- articleIndexService.indexDocument(inserted)
+            _ <- Try(searchApiClient.indexDraft(inserted))
+            converted <- converterService.toApiArticle(inserted, language, fallback)
+          } yield converted
+          x
+      }
+    }
+
     def updateAgreement(agreementId: Long,
                         updatedAgreement: api.UpdatedAgreement,
                         user: UserInfo): Try[api.Agreement] = {

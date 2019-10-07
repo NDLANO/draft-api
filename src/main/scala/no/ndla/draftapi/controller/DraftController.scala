@@ -517,5 +517,34 @@ trait DraftController {
         converterService.stateTransitionsToApi(user.getUser)
       }
     }
+
+    post(
+      "/clone/:article_id",
+      operation(
+        apiOperation[Article]("cloneArticle")
+          summary "Create a new article with the content of the article with the specified id"
+          description "Create a new article with the content of the article with the specified id"
+          parameters (
+            asHeaderParam(correlationId),
+            asPathParam(articleId),
+            asQueryParam(language),
+            asQueryParam(fallback)
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500))
+    ) {
+      val userInfo = user.getUser
+      val articleId = long(this.articleId.paramName)
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+
+      doOrAccessDenied(userInfo.canWrite) {
+        writeService.copyArticleFromId(articleId, userInfo, language, fallback) match {
+          case Success(article) => article
+          case Failure(ex)      => errorHandler(ex)
+        }
+      }
+    }
+
   }
 }

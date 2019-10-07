@@ -33,12 +33,14 @@ trait IndexService {
     def getMapping: MappingDefinition
     def createIndexRequest(domainModel: D, indexName: String): IndexRequest
 
+    private def createIndexIfNotExists() = getAliasTarget.map {
+      case Some(index) => Success(index)
+      case None        => createIndexWithGeneratedName.flatMap(newIndex => updateAliasTarget(None, newIndex))
+    }
+
     def indexDocument(imported: D): Try[D] = {
       for {
-        _ <- getAliasTarget.map {
-          case Some(index) => Success(index)
-          case None        => createIndexWithGeneratedName.map(newIndex => updateAliasTarget(None, newIndex))
-        }
+        _ <- createIndexIfNotExists()
         _ <- e4sClient.execute(createIndexRequest(imported, searchIndex))
       } yield imported
     }
@@ -113,10 +115,7 @@ trait IndexService {
 
     def deleteDocument(contentId: Long): Try[Long] = {
       for {
-        _ <- getAliasTarget.map {
-          case Some(index) => Success(index)
-          case None        => createIndexWithGeneratedName.map(newIndex => updateAliasTarget(None, newIndex))
-        }
+        _ <- createIndexIfNotExists()
         _ <- {
           e4sClient.execute(
             delete(s"$contentId").from(searchIndex / documentType)
