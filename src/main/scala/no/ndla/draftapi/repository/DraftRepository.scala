@@ -81,7 +81,7 @@ trait DraftRepository {
           val articleRevision = article.revision.getOrElse(0) + 1
 
           val copiedArticle = article.copy(
-            notes = Seq(),
+            notes = Seq.empty,
             previousVersionNotes = article.previousVersionNotes ++ article.notes
           )
 

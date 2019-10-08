@@ -12,6 +12,7 @@ import java.net.Socket
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi._
 import no.ndla.draftapi.model.domain
+import org.joda.time.DateTime
 import scalikejdbc._
 
 import scala.util.{Success, Try}
@@ -297,6 +298,54 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
     val count = repository.articlesWithId(article.id.get).size
     count should be(oldCount)
+
+  }
+
+  test("published article keeps old notes in hidden field and notes is emptied") {
+    assume(databaseIsAvailable, "Database is unavailable")
+    val timeToFreeze = new DateTime().withMillisOfSecond(0)
+    withFrozenTime(timeToFreeze) {
+      val status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)
+      val prevNotes1 = Seq(
+        domain.EditorNote("Note1", "SomeId", status, new DateTime().toDate),
+        domain.EditorNote("Note2", "SomeId", status, new DateTime().toDate),
+        domain.EditorNote("Note3", "SomeId", status, new DateTime().toDate),
+        domain.EditorNote("Note4", "SomeId", status, new DateTime().toDate)
+      )
+
+      val prevNotes2 = Seq(
+        domain.EditorNote("Note5", "SomeId", status, new DateTime().toDate),
+        domain.EditorNote("Note6", "SomeId", status, new DateTime().toDate),
+        domain.EditorNote("Note7", "SomeId", status, new DateTime().toDate),
+        domain.EditorNote("Note8", "SomeId", status, new DateTime().toDate)
+      )
+      val draftArticle1 = TestData.sampleDomainArticle.copy(
+        status = domain.Status(domain.ArticleStatus.UNPUBLISHED, Set.empty),
+        revision = Some(3),
+        notes = prevNotes1
+      )
+
+      val inserted = repository.insert(draftArticle1)
+      val fetched = repository.withId(inserted.id.get).get
+      fetched.notes should be(prevNotes1)
+      fetched.previousVersionNotes should be(Seq.empty)
+
+      val toPublish1 = inserted.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
+      val updatedArticle1 = repository.updateArticle(toPublish1).get
+      updatedArticle1.notes should be(Seq.empty)
+      updatedArticle1.previousVersionNotes should be(prevNotes1)
+
+      val draftArticle2 =
+        updatedArticle1.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty), notes = prevNotes2)
+      val updatedArticle2 = repository.updateArticle(draftArticle2).get
+      updatedArticle2.notes should be(prevNotes2)
+      updatedArticle2.previousVersionNotes should be(prevNotes1)
+
+      val publishedArticle2 = updatedArticle2.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
+      val updatedArticle3 = repository.updateArticle(publishedArticle2).get
+      updatedArticle3.notes should be(Seq.empty)
+      updatedArticle3.previousVersionNotes should be(prevNotes1 ++ prevNotes2)
+    }
 
   }
 }
