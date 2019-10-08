@@ -498,7 +498,7 @@ trait DraftController {
       doOrAccessDenied(userInfo.canWrite) {
         val id = long(this.articleId.paramName)
         val language = params(this.language.paramName)
-        writeService.deleteLanguage(id, language)
+        writeService.deleteLanguage(id, language, userInfo)
       }
     }
 

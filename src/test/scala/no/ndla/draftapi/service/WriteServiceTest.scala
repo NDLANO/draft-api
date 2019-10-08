@@ -383,7 +383,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("That delete article should fail when only one language") {
-    val Failure(result) = service.deleteLanguage(article.id.get, "nb")
+    val Failure(result) = service.deleteLanguage(article.id.get, "nb", UserInfo("asdf", Set()))
     result.getMessage should equal("Only one language left")
   }
 
@@ -394,7 +394,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val articleCaptor: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
 
     when(draftRepository.withId(anyLong())).thenReturn(Some(article))
-    service.deleteLanguage(article.id.get, "nn")
+    service.deleteLanguage(article.id.get, "nn", UserInfo("asdf", Set()))
     verify(draftRepository).updateArticle(articleCaptor.capture(), anyBoolean())
 
     articleCaptor.getValue.title.length should be(1)

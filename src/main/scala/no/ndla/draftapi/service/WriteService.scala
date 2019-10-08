@@ -281,33 +281,21 @@ trait WriteService {
       }
     }
 
-    def deleteLanguage(id: Long, language: String): Try[api.Article] = {
+    def deleteLanguage(id: Long, language: String, userInfo: UserInfo): Try[api.Article] = {
       draftRepository.withId(id) match {
         case Some(article) =>
           article.title.size match {
             case 1 => Failure(OperationNotAllowedException("Only one language left"))
             case _ =>
-              val title = article.title.filter(_.language != language)
-              val content = article.content.filter(_.language != language)
-              val articleIntroduction = article.introduction.filter(_.language != language)
-              val metaDescription = article.metaDescription.filter(_.language != language)
-              val tags = article.tags.filter(_.language != language)
-              val metaImage = article.metaImage.filter(_.language != language)
-              val visualElement = article.visualElement.filter(_.language != language)
-              val newArticle = article.copy(
-                title = title,
-                content = content,
-                introduction = articleIntroduction,
-                metaDescription = metaDescription,
-                tags = tags,
-                metaImage = metaImage,
-                visualElement = visualElement
-              )
-              draftRepository
-                .updateArticle(newArticle)
+              converterService
+                .deleteLanguage(article, language, userInfo)
                 .flatMap(
-                  converterService.toApiArticle(_, Language.AllLanguages)
-                )
+                  newArticle =>
+                    draftRepository
+                      .updateArticle(newArticle)
+                      .flatMap(
+                        converterService.toApiArticle(_, Language.AllLanguages)
+                    ))
           }
         case None => Failure(NotFoundException("Article does not exist"))
       }
