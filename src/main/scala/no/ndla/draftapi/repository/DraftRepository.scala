@@ -82,7 +82,7 @@ trait DraftRepository {
 
           val copiedArticle = article.copy(
             notes = Seq.empty,
-            previousVersionNotes = article.previousVersionNotes ++ article.notes
+            previousVersionsNotes = article.previousVersionsNotes ++ article.notes
           )
 
           val dataObject = new PGobject()

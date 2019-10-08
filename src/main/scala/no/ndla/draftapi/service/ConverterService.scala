@@ -80,7 +80,7 @@ trait ConverterService {
                 published = oldUpdatedDate.getOrElse(newArticle.published.getOrElse(clock.now())), // If import use old updated. Else use new published or now
                 articleType = ArticleType.valueOfOrError(newArticle.articleType),
                 notes = notes,
-                previousVersionNotes = Seq.empty
+                previousVersionsNotes = Seq.empty
             ))
       }
     }
@@ -573,7 +573,7 @@ trait ConverterService {
                 updatedBy = user.id,
                 articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
                 notes = notes,
-                previousVersionNotes = Seq.empty
+                previousVersionsNotes = Seq.empty
             ))
       }
     }

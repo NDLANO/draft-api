@@ -328,23 +328,23 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
       val inserted = repository.insert(draftArticle1)
       val fetched = repository.withId(inserted.id.get).get
       fetched.notes should be(prevNotes1)
-      fetched.previousVersionNotes should be(Seq.empty)
+      fetched.previousVersionsNotes should be(Seq.empty)
 
       val toPublish1 = inserted.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
       val updatedArticle1 = repository.updateArticle(toPublish1).get
       updatedArticle1.notes should be(Seq.empty)
-      updatedArticle1.previousVersionNotes should be(prevNotes1)
+      updatedArticle1.previousVersionsNotes should be(prevNotes1)
 
       val draftArticle2 =
         updatedArticle1.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty), notes = prevNotes2)
       val updatedArticle2 = repository.updateArticle(draftArticle2).get
       updatedArticle2.notes should be(prevNotes2)
-      updatedArticle2.previousVersionNotes should be(prevNotes1)
+      updatedArticle2.previousVersionsNotes should be(prevNotes1)
 
       val publishedArticle2 = updatedArticle2.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
       val updatedArticle3 = repository.updateArticle(publishedArticle2).get
       updatedArticle3.notes should be(Seq.empty)
-      updatedArticle3.previousVersionNotes should be(prevNotes1 ++ prevNotes2)
+      updatedArticle3.previousVersionsNotes should be(prevNotes1 ++ prevNotes2)
     }
 
   }

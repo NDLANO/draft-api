@@ -43,7 +43,7 @@ case class Article(id: Option[Long],
                    published: Date,
                    articleType: ArticleType.Value,
                    notes: Seq[EditorNote],
-                   previousVersionNotes: Seq[EditorNote])
+                   previousVersionsNotes: Seq[EditorNote])
     extends Content {
 
   def supportedLanguages =
@@ -79,7 +79,7 @@ object Article extends SQLSyntaxSupport[Article] {
       meta.published,
       meta.articleType,
       meta.notes,
-      meta.previousVersionNotes
+      meta.previousVersionsNotes
     )
   }
 

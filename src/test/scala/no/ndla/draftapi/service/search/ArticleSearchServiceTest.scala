@@ -111,6 +111,9 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     updated = today.minusDays(35).toDate,
     notes = Seq(
       EditorNote("kakemonster", TestData.userWithWriteAccess.id, Status(ArticleStatus.DRAFT, Set.empty), new Date())
+    ),
+    previousVersionsNotes = Seq(
+      EditorNote("kyllingkanon", TestData.userWithWriteAccess.id, Status(ArticleStatus.DRAFT, Set.empty), new Date())
     )
   )
 
@@ -727,6 +730,22 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     scroll.results.head.id should be(11)
     scroll.results.head.title.language should be("en")
     scroll.results.head.title.title should be("Cats")
+  }
+
+  test("searching for previousnotes should return relevant results") {
+    val Success(search) = articleSearchService.matchingQuery(
+      "kyllingkanon",
+      List(),
+      "nb",
+      None,
+      1,
+      10,
+      Sort.ByRelevanceDesc,
+      Seq.empty,
+      fallback = false
+    )
+    search.totalCount should be(1)
+    search.results.head.id should be(5)
   }
 
   def blockUntil(predicate: () => Boolean): Unit = {

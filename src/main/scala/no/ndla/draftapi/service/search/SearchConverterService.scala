@@ -59,7 +59,8 @@ trait SearchConverterService {
         articleType = ai.articleType.toString,
         notes = ai.notes.map(_.note),
         defaultTitle = defaultTitle.map(_.title),
-        users = ai.updatedBy +: ai.notes.map(_.user)
+        users = ai.updatedBy +: ai.notes.map(_.user),
+        previousNotes = ai.previousVersionsNotes.map(_.note)
       )
     }
 

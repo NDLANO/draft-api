@@ -64,6 +64,7 @@ trait ArticleSearchService {
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
       val tagSearch = simpleStringQuery(query).field(s"tags.$language", 2)
       val notesSearch = simpleStringQuery(query).field("notes", 1)
+      val previousNotesSearch = simpleStringQuery(query).field("previousNotes", 1)
 
       val fullQuery = boolQuery()
         .must(
@@ -73,7 +74,8 @@ trait ArticleSearchService {
               introSearch,
               contentSearch,
               tagSearch,
-              notesSearch
+              notesSearch,
+              previousNotesSearch
             )
         )
 

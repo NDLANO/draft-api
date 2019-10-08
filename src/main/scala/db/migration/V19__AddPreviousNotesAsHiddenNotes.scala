@@ -88,7 +88,7 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
 
     Try(oldArticle.extract[V18__Article]) match {
       case Success(art) =>
-        val previousNotes = JObject(JField("previousVersionNotes", Extraction.decompose(allPreviousNotes)))
+        val previousNotes = JObject(JField("previousVersionsNotes", Extraction.decompose(allPreviousNotes)))
         val newArticle = oldArticle.merge(previousNotes)
         compact(render(newArticle))
       case _ => compact(render(oldArticle))
