@@ -61,8 +61,10 @@ trait WriteService {
               Seq(s"Opprettet artikkel, som kopi av artikkel med id: '$articleId'."),
               userInfo,
               status)
+            newTitles = article.title.map(t => t.copy(title = t.title + " (Kopi)"))
             articleToInsert = article.copy(
               id = Some(newId.toLong),
+              title = newTitles,
               revision = Some(1),
               updated = clock.now(),
               created = clock.now(),
