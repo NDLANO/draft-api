@@ -227,6 +227,7 @@ object TestData {
     userWithWriteAccess.id,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.TopicArticle,
+    Seq.empty,
     Seq.empty
   )
 
@@ -248,6 +249,7 @@ object TestData {
     userWithWriteAccess.id,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty
   )
 
@@ -269,6 +271,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty
   )
 
@@ -290,6 +293,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty
   )
 
@@ -346,6 +350,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty
   )
 

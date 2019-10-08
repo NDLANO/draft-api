@@ -59,11 +59,10 @@ trait SearchConverterService {
         articleType = ai.articleType.toString,
         notes = ai.notes.map(_.note),
         defaultTitle = defaultTitle.map(_.title),
-        users = ai.updatedBy +: ai.notes.map(_.user)
+        users = ai.updatedBy +: ai.notes.map(_.user),
+        previousNotes = ai.previousVersionsNotes.map(_.note)
       )
     }
-
-    private def createUrlToArticle(id: Long): String = s"${ApplicationUrl.get}$id"
 
     def asSearchableConcept(c: Concept): SearchableConcept = {
       val defaultTitle = c.title

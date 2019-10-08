@@ -42,7 +42,8 @@ trait ArticleIndexService {
           keywordField("defaultTitle"),
           textField("authors") fielddata true,
           textField("articleType") analyzer "keyword",
-          textField("notes") fielddata true,
+          textField("notes"),
+          textField("previousNotes"),
           keywordField("users"),
         ) ++
           generateLanguageSupportedFieldList("title", keepRaw = true) ++
