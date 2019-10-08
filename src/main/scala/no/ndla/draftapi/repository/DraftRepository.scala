@@ -80,8 +80,10 @@ trait DraftRepository {
           val importId: Option[String] = getImportIdFromId(articleId)
           val articleRevision = article.revision.getOrElse(0) + 1
 
-          val copiedArticle =
-            article.copy(notes = Seq())
+          val copiedArticle = article.copy(
+            notes = Seq(),
+            previousVersionNotes = article.previousVersionNotes ++ article.notes
+          )
 
           val dataObject = new PGobject()
           dataObject.setType("jsonb")

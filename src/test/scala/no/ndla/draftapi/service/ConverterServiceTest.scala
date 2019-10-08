@@ -194,7 +194,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       updatedBy = "theuserthatchangeditid",
       published = TestData.today,
       articleType = ArticleType.Standard,
-      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
+      previousVersionNotes = Seq.empty
     )
 
     val updatedNothing = api.UpdatedArticle(
@@ -238,7 +239,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       updatedBy = "theuserthatchangeditid",
       published = TestData.today,
       articleType = ArticleType.Standard,
-      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
+      previousVersionNotes = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -259,7 +261,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       updatedBy = "theuserthatchangeditid",
       published = TestData.today,
       articleType = ArticleType.Standard,
-      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
+      previousVersionNotes = Seq.empty
     )
 
     val updatedEverything = api.UpdatedArticle(
@@ -304,7 +307,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       updatedBy = "theuserthatchangeditid",
       published = TestData.today,
       articleType = ArticleType.Standard,
-      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
+      previousVersionNotes = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -325,7 +329,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       updatedBy = "theuserthatchangeditid",
       published = TestData.today,
       articleType = ArticleType.Standard,
-      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today))
+      notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
+      previousVersionNotes = Seq.empty
     )
 
     val updatedEverything = api.UpdatedArticle(

@@ -63,8 +63,6 @@ trait SearchConverterService {
       )
     }
 
-    private def createUrlToArticle(id: Long): String = s"${ApplicationUrl.get}$id"
-
     def asSearchableConcept(c: Concept): SearchableConcept = {
       val defaultTitle = c.title
         .sortBy(title => {

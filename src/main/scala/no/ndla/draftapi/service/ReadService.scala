@@ -50,6 +50,10 @@ trait ReadService {
         .reverse
     }
 
+    def getPreviousVersionNotes(id: Long) = {
+      draftRepository.articlesWithId(id).sortBy(_.revision).flatMap(_.notes)
+    }
+
     private[service] def addUrlsOnEmbedResources(article: domain.Article): domain.Article = {
       val articleWithUrls = article.content.map(content => content.copy(content = addUrlOnResource(content.content)))
       val visualElementWithUrls =
