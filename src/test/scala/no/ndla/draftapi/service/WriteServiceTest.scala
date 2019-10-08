@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 
 import no.ndla.draftapi.auth.{Role, UserInfo}
-import no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationMessage
@@ -517,6 +517,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val article =
         TestData.sampleDomainArticle.copy(
           id = Some(5),
+          title = Seq(domain.ArticleTitle("Tittel", "nb"), domain.ArticleTitle("Title", "en")),
           status = Status(ArticleStatus.PUBLISHED, Set(ArticleStatus.IMPORTED)),
           updated = yesterday.toDate,
           created = yesterday.minusDays(1).toDate,
@@ -530,6 +531,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
       val expectedInsertedArticle = article.copy(
         id = Some(newId),
+        title = Seq(domain.ArticleTitle("Tittel (Kopi)", "nb"), domain.ArticleTitle("Title (Kopi)", "en")),
         revision = Some(1),
         updated = today.toDate,
         created = today.toDate,
