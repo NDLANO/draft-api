@@ -44,6 +44,7 @@ trait ReadService {
     def getArticles(id: Long, language: String, fallback: Boolean): Seq[api.Article] = {
       draftRepository
         .articlesWithId(id)
+        .map(addUrlsOnEmbedResources)
         .map(article => converterService.toApiArticle(article, language, fallback))
         .collect { case Success(article) => article }
         .sortBy(_.revision)
