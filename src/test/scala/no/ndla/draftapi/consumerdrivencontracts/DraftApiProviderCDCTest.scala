@@ -80,7 +80,13 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
   private def setupArticles() =
     (1 to 10)
       .map(id => {
-        ComponentRegistry.draftRepository.insert(TestData.sampleDomainArticle.copy(id = Some(id)))
+        ComponentRegistry.draftRepository.insert(
+          TestData.sampleDomainArticle.copy(
+            id = Some(id),
+            updated = new DateTime(0).toDate,
+            created = new DateTime(0).toDate,
+            published = new DateTime(0).toDate
+          ))
       })
 
   private def setupConcepts() =
