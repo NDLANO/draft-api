@@ -76,7 +76,8 @@ trait WriteService {
             inserted = draftRepository.insert(articleToInsert)
             _ <- articleIndexService.indexDocument(inserted)
             _ <- Try(searchApiClient.indexDraft(inserted))
-            converted <- converterService.toApiArticle(inserted, language, fallback)
+            enriched = readService.addUrlsOnEmbedResources(inserted)
+            converted <- converterService.toApiArticle(enriched, language, fallback)
           } yield converted
           x
       }
