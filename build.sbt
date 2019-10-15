@@ -26,7 +26,7 @@ appProperties := {
 }
 
 import com.itv.scalapact.plugin._
-val pactVersion = "2.3.4"
+val pactVersion = "2.3.9"
 
 val pactTestFramework = Seq(
   "com.itv" %% "scalapact-argonaut-6-2" % pactVersion % "test",
@@ -94,6 +94,7 @@ lazy val draft_api = (project in file("."))
   )
   .enablePlugins(DockerPlugin)
   .enablePlugins(JettyPlugin)
+  .enablePlugins(ScalaPactPlugin)
 
 val checkfmt = taskKey[Boolean]("Check for code style errors")
 checkfmt := {
