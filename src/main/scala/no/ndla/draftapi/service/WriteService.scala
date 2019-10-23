@@ -57,10 +57,9 @@ trait WriteService {
           val x = for {
             newId <- draftRepository.newArticleId()
             status = domain.Status(DRAFT, Set.empty)
-            newNotes <- converterService.newNotes(
-              Seq(s"Opprettet artikkel, som kopi av artikkel med id: '$articleId'."),
-              userInfo,
-              status)
+            notes <- converterService.newNotes(Seq(s"Opprettet artikkel, som kopi av artikkel med id: '$articleId'."),
+                                               userInfo,
+                                               status)
             newTitles = article.title.map(t => t.copy(title = t.title + " (Kopi)"))
             articleToInsert = article.copy(
               id = Some(newId.toLong),
@@ -71,7 +70,7 @@ trait WriteService {
               published = clock.now(),
               updatedBy = userInfo.id,
               status = status,
-              notes = article.notes ++ newNotes
+              notes = notes
             )
             inserted = draftRepository.insert(articleToInsert)
             _ <- articleIndexService.indexDocument(inserted)
