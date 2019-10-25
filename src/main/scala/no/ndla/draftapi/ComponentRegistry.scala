@@ -106,7 +106,7 @@ object ComponentRegistry
       .withRegion(currentRegion.getOrElse(Regions.EU_CENTRAL_1))
       .build()
 
-  lazy val e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()
+  var e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()
 
   lazy val clock = new SystemClock
 

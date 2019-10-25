@@ -91,7 +91,7 @@ trait TestEnvironment
 
   val ndlaClient = mock[NdlaClient]
   val searchConverterService = mock[SearchConverterService]
-  val e4sClient = mock[NdlaE4sClient]
+  var e4sClient = mock[NdlaE4sClient]
   override val learningpathApiClient: LearningpathApiClient = mock[LearningpathApiClient]
 
   val clock = mock[SystemClock]
