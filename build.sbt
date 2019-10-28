@@ -92,7 +92,7 @@ lazy val draft_api = (project in file("."))
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
       "org.mockito" % "mockito-core" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % FlywayVersion,
-      "io.lemonlabs" %% "scala-uri" % "1.3.1",
+      "io.lemonlabs" %% "scala-uri" % "1.5.1",
       "org.typelevel" %% "cats-effect" % CatsEffectVersion,
       "org.testcontainers" % "elasticsearch" % TestContainersVersion % "test",
       "org.testcontainers" % "testcontainers" % TestContainersVersion % "test"
