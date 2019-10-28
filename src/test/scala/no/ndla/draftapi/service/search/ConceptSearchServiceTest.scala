@@ -12,17 +12,23 @@ import java.nio.file.{Files, Path}
 import com.sksamuel.elastic4s.embedded.{InternalLocalNode, LocalNode}
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi._
-import no.ndla.draftapi.integration.NdlaE4sClient
+import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
 import org.joda.time.DateTime
+import org.scalatest.Outcome
+import org.testcontainers.elasticsearch.ElasticsearchContainer
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
-class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
-  val tmpDir: Path = Files.createTempDirectory(this.getClass.getName)
-  val localNodeSettings: Map[String, String] = LocalNode.requiredSettings(this.getClass.getName, tmpDir.toString)
-  val localNode: InternalLocalNode = LocalNode(localNodeSettings)
-  override val e4sClient: NdlaE4sClient = NdlaE4sClient(localNode.client(true))
+class ConceptSearchServiceTest extends IntegrationSuite with TestEnvironment {
+
+  e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
+
+  // Skip tests if no docker environment available
+  override def withFixture(test: NoArgTest): Outcome = {
+    assume(elasticSearchContainer.isSuccess)
+    super.withFixture(test)
+  }
 
   override val conceptSearchService = new ConceptSearchService
   override val conceptIndexService = new ConceptIndexService
@@ -126,7 +132,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
                                                        title = List(ConceptTitle("englando", "en")),
                                                        content = List(ConceptContent("englandocontent", "en")))
 
-  override def beforeAll: Unit = {
+  override def beforeAll: Unit = if (elasticSearchContainer.isSuccess) {
     conceptIndexService.createIndexWithName(DraftApiProperties.DraftSearchIndex)
 
     conceptIndexService.indexDocument(concept1)
@@ -146,7 +152,7 @@ class ConceptSearchServiceTest extends UnitSuite with TestEnvironment {
     })
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
     conceptIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftSearchIndex))
   }
 

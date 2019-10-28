@@ -7,22 +7,24 @@
 
 package no.ndla.draftapi.service.search
 
-import java.nio.file.{Files, Path}
-
-import com.sksamuel.elastic4s.embedded.{InternalLocalNode, LocalNode}
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi._
-import no.ndla.draftapi.integration.NdlaE4sClient
+import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
 import org.joda.time.DateTime
+import org.scalatest.Outcome
 
 import scala.util.Success
 
-class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
-  val tmpDir: Path = Files.createTempDirectory(this.getClass.getName)
-  val localNodeSettings: Map[String, String] = LocalNode.requiredSettings(this.getClass.getName, tmpDir.toString)
-  val localNode: InternalLocalNode = LocalNode(localNodeSettings)
-  override val e4sClient: NdlaE4sClient = NdlaE4sClient(localNode.client(true))
+class AgreementSearchServiceTest extends IntegrationSuite with TestEnvironment {
+
+  e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
+
+  // Skip tests if no docker environment available
+  override def withFixture(test: NoArgTest): Outcome = {
+    assume(elasticSearchContainer.isSuccess)
+    super.withFixture(test)
+  }
 
   override val agreementSearchService = new AgreementSearchService
   override val agreementIndexService = new AgreementIndexService
@@ -100,7 +102,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
   val agreement10: Agreement =
     sampleAgreement.copy(id = Some(11), title = "Woopie", content = "This agreement is not copyrighted")
 
-  override def beforeAll: Unit = {
+  override def beforeAll: Unit = if (elasticSearchContainer.isSuccess) {
     agreementIndexService.createIndexWithName(DraftApiProperties.AgreementSearchIndex)
 
     agreementIndexService.indexDocument(agreement1)
@@ -119,7 +121,7 @@ class AgreementSearchServiceTest extends UnitSuite with TestEnvironment {
     })
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
     agreementIndexService.deleteIndexWithName(Some(DraftApiProperties.AgreementSearchIndex))
   }
 

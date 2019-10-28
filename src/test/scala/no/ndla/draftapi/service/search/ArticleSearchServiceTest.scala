@@ -13,17 +13,23 @@ import java.util.Date
 import com.sksamuel.elastic4s.embedded.LocalNode
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi._
-import no.ndla.draftapi.integration.NdlaE4sClient
+import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
 import org.joda.time.DateTime
+import org.scalatest.Outcome
+import org.testcontainers.elasticsearch.ElasticsearchContainer
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
-class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
-  val tmpDir: Path = Files.createTempDirectory(this.getClass.getName)
-  val localNodeSettings: Map[String, String] = LocalNode.requiredSettings(this.getClass.getName, tmpDir.toString)
-  val localNode = LocalNode(localNodeSettings)
-  override val e4sClient = NdlaE4sClient(localNode.client(true))
+class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
+
+  e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
+
+  // Skip tests if no docker environment available
+  override def withFixture(test: NoArgTest): Outcome = {
+    assume(elasticSearchContainer.isSuccess)
+    super.withFixture(test)
+  }
 
   override val articleSearchService = new ArticleSearchService
   override val articleIndexService = new ArticleIndexService
@@ -183,7 +189,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     articleType = ArticleType.TopicArticle
   )
 
-  override def beforeAll: Unit = {
+  override def beforeAll: Unit = if (elasticSearchContainer.isSuccess) {
     articleIndexService.createIndexWithName(DraftApiProperties.DraftSearchIndex)
 
     articleIndexService.indexDocument(article1)
@@ -201,7 +207,7 @@ class ArticleSearchServiceTest extends UnitSuite with TestEnvironment {
     blockUntil(() => articleSearchService.countDocuments == 11)
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
     articleIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftSearchIndex))
   }
 
