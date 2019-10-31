@@ -151,7 +151,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
     res(PUBLISHED.toString).length should be(3)
     res(AWAITING_UNPUBLISHING.toString).length should be(2)
-    res(UNPUBLISHED.toString).length should be(2)
+    res(UNPUBLISHED.toString).length should be(3)
   }
 
   test("stateTransitionsToApi should return all entries if user is admin") {
@@ -165,7 +165,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(QUEUED_FOR_PUBLISHING.toString).length should be(3)
     res(PUBLISHED.toString).length should be(4)
     res(AWAITING_UNPUBLISHING.toString).length should be(4)
-    res(UNPUBLISHED.toString).length should be(4)
+    res(UNPUBLISHED.toString).length should be(5)
   }
 
   test("newNotes should fail if empty strings are recieved") {

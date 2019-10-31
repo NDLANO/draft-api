@@ -83,6 +83,7 @@ trait StateTransitionRules {
       (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
        UNPUBLISHED                -> PROPOSAL,
        UNPUBLISHED                -> DRAFT,
+       UNPUBLISHED                -> UNPUBLISHED,
        UNPUBLISHED                -> ARCHIVED                    require PublishRoles withSideEffect removeFromSearch,
        QUEUED_FOR_LANGUAGE        -> QUEUED_FOR_LANGUAGE,
        QUEUED_FOR_LANGUAGE        -> PROPOSAL,
