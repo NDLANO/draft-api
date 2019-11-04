@@ -9,7 +9,6 @@ package no.ndla.draftapi
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.network.secrets.PropertyKeys
-import no.ndla.network.secrets.Secrets.readSecrets
 import no.ndla.network.{AuthUser, Domains}
 import no.ndla.validation.ResourceType
 
@@ -17,7 +16,6 @@ import scala.util.Properties._
 import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
-  val IsKubernetes: Boolean = envOrNone("NDLA_IS_KUBERNETES").isDefined
 
   val Environment = propOrElse("NDLA_ENVIRONMENT", "local")
   val ApplicationName = "draft-api"
@@ -92,15 +90,6 @@ object DraftApiProperties extends LazyLogging {
 
   lazy val Domain = Domains.get(Environment)
 
-  lazy val secrets = {
-    val SecretsFile = "draft-api.secrets"
-    readSecrets(SecretsFile) match {
-      case Success(values) => values
-      case Failure(exception) =>
-        throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
-    }
-  }
-
   lazy val supportedUploadExtensions = Set(
     ".csv",
     ".doc",
@@ -129,13 +118,11 @@ object DraftApiProperties extends LazyLogging {
     propOrElse(key, throw new RuntimeException(s"Unable to load property $key"))
   }
 
-  def propOpt(key: String): Option[String] = {
+  def propOpt(key: String): Option[String] =
     envOrNone(key) match {
-      case Some(prop)            => Some(prop)
-      case None if !IsKubernetes => secrets.get(key).flatten
-      case _                     => None
+      case Some(prop) => Some(prop)
+      case _          => None
     }
-  }
 
   def propOrElse(key: String, default: => String): String = propOpt(key).getOrElse(default)
 }
