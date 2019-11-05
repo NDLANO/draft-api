@@ -75,7 +75,7 @@ trait StateTransitionRules {
       (PUBLISHED                  -> DRAFT)                      keepCurrentOnTransition,
       (PUBLISHED                  -> PROPOSAL)                   keepCurrentOnTransition,
       (PUBLISHED                  -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
-      (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED) require PublishRoles withSideEffect unpublishArticle,
+      (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED) require PublishRoles withSideEffect checkIfArticleIsUsedInLearningStep withSideEffect unpublishArticle,
       (AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
        AWAITING_UNPUBLISHING      -> DRAFT,
       (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
