@@ -14,7 +14,7 @@ import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
-import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
@@ -28,15 +28,11 @@ object ComponentRegistry
     with StateTransitionRules
     with LearningpathApiClient
     with TaxonomyApiClient
-    with ConceptController
-    with ConceptSearchService
-    with ConceptIndexService
     with DraftController
     with AgreementController
     with HealthController
     with DraftRepository
     with AgreementRepository
-    with ConceptRepository
     with Elastic4sClient
     with ReindexClient
     with ArticleSearchService
@@ -71,21 +67,17 @@ object ComponentRegistry
   lazy val draftController = new DraftController
   lazy val fileController = new FileController
   lazy val agreementController = new AgreementController
-  lazy val conceptController = new ConceptController
   lazy val ruleController = new RuleController
   lazy val resourcesApp = new ResourcesApp
   lazy val healthController = new HealthController
 
   lazy val draftRepository = new ArticleRepository
-  lazy val conceptRepository = new ConceptRepository
   lazy val agreementRepository = new AgreementRepository
 
   lazy val articleSearchService = new ArticleSearchService
   lazy val articleIndexService = new ArticleIndexService
   lazy val agreementSearchService = new AgreementSearchService
   lazy val agreementIndexService = new AgreementIndexService
-  lazy val conceptSearchService = new ConceptSearchService
-  lazy val conceptIndexService = new ConceptIndexService
 
   lazy val converterService = new ConverterService
   lazy val contentValidator = new ContentValidator(allowEmptyLanguageField = false)

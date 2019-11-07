@@ -9,7 +9,7 @@ package no.ndla.draftapi.service.search
 
 import com.sksamuel.elastic4s.http.search.SearchHit
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.model.api.{AgreementSearchResult, ArticleSearchResult, ConceptSearchResult}
+import no.ndla.draftapi.model.api.{AgreementSearchResult, ArticleSearchResult}
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.search._
@@ -64,22 +64,6 @@ trait SearchConverterService {
       )
     }
 
-    def asSearchableConcept(c: Concept): SearchableConcept = {
-      val defaultTitle = c.title
-        .sortBy(title => {
-          val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
-          languagePriority.indexOf(title.language)
-        })
-        .lastOption
-
-      SearchableConcept(
-        id = c.id.get,
-        title = SearchableLanguageValues(c.title.map(title => LanguageValue(title.language, title.title))),
-        content = SearchableLanguageValues(c.content.map(content => LanguageValue(content.language, content.content))),
-        defaultTitle = defaultTitle.map(_.title)
-      )
-    }
-
     def hitAsArticleSummary(hitString: String, language: String): api.ArticleSummary = {
       val searchableArticle = read[SearchableArticle](hitString)
 
@@ -111,31 +95,6 @@ trait SearchConverterService {
         supportedLanguages,
         notes,
         users
-      )
-    }
-
-    def hitAsConceptSummary(hitString: String, language: String): api.ConceptSummary = {
-
-      val searchableConcept = read[SearchableConcept](hitString)
-      val titles = searchableConcept.title.languageValues.map(lv => domain.ConceptTitle(lv.value, lv.language))
-      val contents = searchableConcept.content.languageValues.map(lv => domain.ConceptContent(lv.value, lv.language))
-
-      val supportedLanguages = getSupportedLanguages(Seq(titles, contents))
-
-      val title = Language
-        .findByLanguageOrBestEffort(titles, language)
-        .map(converterService.toApiConceptTitle)
-        .getOrElse(api.ConceptTitle("", Language.UnknownLanguage))
-      val concept = Language
-        .findByLanguageOrBestEffort(contents, language)
-        .map(converterService.toApiConceptContent)
-        .getOrElse(api.ConceptContent("", Language.UnknownLanguage))
-
-      api.ConceptSummary(
-        searchableConcept.id,
-        title,
-        concept,
-        supportedLanguages
       )
     }
 
@@ -203,13 +162,6 @@ trait SearchConverterService {
                                 searchResult.pageSize,
                                 searchResult.language,
                                 searchResult.results)
-
-    def asApiConceptSearchResult(searchResult: SearchResult[api.ConceptSummary]): ConceptSearchResult =
-      api.ConceptSearchResult(searchResult.totalCount,
-                              searchResult.page,
-                              searchResult.pageSize,
-                              searchResult.language,
-                              searchResult.results)
 
   }
 }

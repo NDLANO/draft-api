@@ -16,7 +16,7 @@ import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
-import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, ConceptIndexService, IndexService}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, IndexService}
 import org.json4s.Formats
 import org.json4s.ext.EnumNameSerializer
 import org.scalatra.swagger.Swagger
@@ -34,7 +34,6 @@ trait InternController {
     with DraftRepository
     with IndexService
     with ArticleIndexService
-    with ConceptIndexService
     with AgreementIndexService
     with User
     with ArticleApiClient =>
@@ -51,24 +50,20 @@ trait InternController {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val indexResults = for {
         articleIndex <- Future { articleIndexService.indexDocuments }
-        conceptIndex <- Future { conceptIndexService.indexDocuments }
         agreementIndex <- Future { agreementIndexService.indexDocuments }
-      } yield (articleIndex, conceptIndex, agreementIndex)
+      } yield (articleIndex, agreementIndex)
 
       Await.result(indexResults, Duration(10, TimeUnit.MINUTES)) match {
-        case (Success(articleResult), Success(conceptResult), Success(agreementIndex)) =>
-          val indexTime = math.max(articleResult.millisUsed, conceptResult.millisUsed)
+        case (Success(articleResult), Success(agreementResult)) =>
+          val indexTime = math.max(articleResult.millisUsed, agreementResult.millisUsed)
           val result =
-            s"Completed indexing of ${articleResult.totalIndexed} articles, ${conceptResult.totalIndexed} concepts and ${agreementIndex.totalIndexed} agreements in $indexTime ms."
+            s"Completed indexing of ${articleResult.totalIndexed} articles, and ${agreementResult.totalIndexed} agreements in $indexTime ms."
           logger.info(result)
           Ok(result)
-        case (Failure(articleFail), _, _) =>
+        case (Failure(articleFail), _) =>
           logger.warn(articleFail.getMessage, articleFail)
           InternalServerError(articleFail.getMessage)
-        case (_, Failure(conceptFail), _) =>
-          logger.warn(conceptFail.getMessage, conceptFail)
-          InternalServerError(conceptFail.getMessage)
-        case (_, _, Failure(agreementFail)) =>
+        case (_, Failure(agreementFail)) =>
           logger.warn(agreementFail.getMessage, agreementFail)
           InternalServerError(agreementFail.getMessage)
       }
@@ -80,28 +75,22 @@ trait InternController {
 
       val indexes = for {
         articleIndex <- Future { articleIndexService.findAllIndexes(DraftApiProperties.DraftSearchIndex) }
-        conceptIndex <- Future { conceptIndexService.findAllIndexes(DraftApiProperties.ConceptSearchIndex) }
         agreementIndex <- Future { agreementIndexService.findAllIndexes(DraftApiProperties.AgreementSearchIndex) }
-      } yield (articleIndex, conceptIndex, agreementIndex)
+      } yield (articleIndex, agreementIndex)
 
       val deleteResults: Seq[Try[_]] = Await.result(indexes, Duration(10, TimeUnit.MINUTES)) match {
-        case (Failure(articleFail), _, _)   => halt(status = 500, body = articleFail.getMessage)
-        case (_, Failure(conceptFail), _)   => halt(status = 500, body = conceptFail.getMessage)
-        case (_, _, Failure(agreementFail)) => halt(status = 500, body = agreementFail.getMessage)
-        case (Success(articleIndexes), Success(conceptIndexes), Success(agreementIndexes)) => {
+        case (Failure(articleFail), _)   => halt(status = 500, body = articleFail.getMessage)
+        case (_, Failure(agreementFail)) => halt(status = 500, body = agreementFail.getMessage)
+        case (Success(articleIndexes), Success(agreementIndexes)) => {
           val articleDeleteResults = articleIndexes.map(index => {
             logger.info(s"Deleting article index $index")
             articleIndexService.deleteIndexWithName(Option(index))
           })
-          val conceptDeleteResults = conceptIndexes.map(index => {
-            logger.info(s"Deleting concept index $index")
-            conceptIndexService.deleteIndexWithName(Option(index))
-          })
           val agreementDeleteResults = agreementIndexes.map(index => {
-            logger.info(s"Deleting concept index $index")
+            logger.info(s"Deleting agreement index $index")
             agreementIndexService.deleteIndexWithName(Option(index))
           })
-          articleDeleteResults ++ conceptDeleteResults ++ agreementDeleteResults
+          articleDeleteResults ++ agreementDeleteResults
         }
       }
 
@@ -169,40 +158,12 @@ trait InternController {
       }
     }
 
-    post("/concept/:id/publish/") {
-      doOrAccessDenied(user.getUser.canWrite) {
-        writeService.publishConcept(long("id")) match {
-          case Success(s)  => s.id.map(ContentId)
-          case Failure(ex) => errorHandler(ex)
-        }
-      }
-    }
-
-    delete("/concept/:id/") {
-      doOrAccessDenied(user.getUser.canWrite) {
-        articleApiClient.deleteConcept(long("id")).flatMap(id => writeService.deleteConcept(id.id)) match {
-          case Success(c)  => c
-          case Failure(ex) => errorHandler(ex)
-        }
-      }
-    }
-
     post("/empty_article/") {
       doOrAccessDenied(user.getUser.canWrite) {
         val externalId = paramAsListOfString("externalId")
         val externalSubjectIds = paramAsListOfString("externalSubjectId")
         writeService.newEmptyArticle(externalId, externalSubjectIds) match {
           case Success(id) => ContentId(id)
-          case Failure(ex) => errorHandler(ex)
-        }
-      }
-    }
-
-    post("/empty_concept/") {
-      doOrAccessDenied(user.getUser.canWrite) {
-        val externalId = paramAsListOfString("externalId")
-        writeService.newEmptyConcept(externalId) match {
-          case Success(id) => id
           case Failure(ex) => errorHandler(ex)
         }
       }

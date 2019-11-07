@@ -41,7 +41,6 @@ trait ContentValidator {
 
     def validate(content: Content, allowUnknownLanguage: Boolean = false): Try[Content] = {
       content match {
-        case concept: Concept     => validateConcept(concept, allowUnknownLanguage)
         case article: Article     => validateArticle(article, allowUnknownLanguage)
         case agreement: Agreement => validateAgreement(agreement)
       }
@@ -119,17 +118,6 @@ trait ContentValidator {
       }
     }
 
-    private def validateConcept(concept: Concept, allowUnknownLanguage: Boolean): Try[Concept] = {
-      val validationErrors = concept.content.flatMap(c => validateConceptContent(c, allowUnknownLanguage)) ++
-        concept.title.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
-
-      if (validationErrors.isEmpty) {
-        Success(concept)
-      } else {
-        Failure(new ValidationException(errors = validationErrors))
-      }
-    }
-
     private def validateArticleContent(content: ArticleContent,
                                        allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       HtmlValidator.validate("content", content.content).toList ++
@@ -150,12 +138,6 @@ trait ContentValidator {
               field,
               s"An article must consist of one or more <section> blocks. Illegal tag(s) are $illegalTags "))
       }
-    }
-
-    private def validateConceptContent(content: ConceptContent,
-                                       allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
-      NoHtmlValidator.validate("content", content.content).toList ++
-        validateLanguage("language", content.language, allowUnknownLanguage)
     }
 
     private def validateVisualElement(content: VisualElement, allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {

@@ -400,33 +400,6 @@ object TestData {
     s"""<$resourceHtmlEmbedTag  data-align="" data-alt="" data-caption="" data-resource="image" data-resource_id="1" data-size="" />""",
     "nb")
 
-  val sampleConcept = Concept(
-    Some(1),
-    Seq(ConceptTitle("Tittel for begrep", "nb")),
-    Seq(ConceptContent("Innhold for begrep", "nb")),
-    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
-    DateTime.now().minusDays(4).toDate,
-    DateTime.now().minusDays(2).toDate
-  )
-
-  val sampleApiConcept = api.Concept(
-    1,
-    Some(api.ConceptTitle("Tittel for begrep", "nb")),
-    Some(api.ConceptContent("Innhold for begrep", "nb")),
-    Some(
-      api.Copyright(Some(api.License("publicdomain", None, None)),
-                    Some(""),
-                    Seq.empty,
-                    Seq.empty,
-                    Seq.empty,
-                    None,
-                    None,
-                    None)),
-    DateTime.now().minusDays(4).toDate,
-    DateTime.now().minusDays(2).toDate,
-    Set("nb")
-  )
-
   val sampleApiAgreement = api.Agreement(
     1,
     "title",

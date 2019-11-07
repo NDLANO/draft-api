@@ -25,10 +25,3 @@ case class SearchableArticle(
     users: Seq[String],
     previousNotes: Seq[String]
 )
-
-case class SearchableConcept(
-    id: Long,
-    title: SearchableLanguageValues,
-    content: SearchableLanguageValues,
-    defaultTitle: Option[String]
-)
