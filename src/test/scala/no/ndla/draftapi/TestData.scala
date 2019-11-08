@@ -55,8 +55,6 @@ object TestData {
                                       None)
   val today = new DateTime().toDate
 
-  private val embedUrl = "http://www.example.org"
-
   val (articleId, externalId) = (1, "751234")
 
   val sampleArticleV2 = api.Article(
@@ -87,6 +85,7 @@ object TestData {
     published = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     articleType = "standard",
     supportedLanguages = Seq("nb"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -94,6 +93,7 @@ object TestData {
     1,
     Some("nb"),
     Some("tittel"),
+    None,
     None,
     None,
     None,
@@ -170,6 +170,7 @@ object TestData {
     today,
     "standard",
     Seq("nb"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -206,6 +207,7 @@ object TestData {
     today,
     "standard",
     Seq("nb"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -227,6 +229,7 @@ object TestData {
     userWithWriteAccess.id,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.TopicArticle,
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -250,6 +253,7 @@ object TestData {
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.Standard,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -272,6 +276,7 @@ object TestData {
     today,
     ArticleType.Standard,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -293,6 +298,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -318,6 +324,7 @@ object TestData {
                     None)),
     Seq.empty,
     "standard",
+    Seq.empty,
     Seq.empty
   )
 
@@ -350,6 +357,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -390,6 +398,7 @@ object TestData {
     DateTime.now().minusDays(2).toDate,
     "standard",
     Seq("en"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -399,33 +408,6 @@ object TestData {
   val visualElement = VisualElement(
     s"""<$resourceHtmlEmbedTag  data-align="" data-alt="" data-caption="" data-resource="image" data-resource_id="1" data-size="" />""",
     "nb")
-
-  val sampleConcept = Concept(
-    Some(1),
-    Seq(ConceptTitle("Tittel for begrep", "nb")),
-    Seq(ConceptContent("Innhold for begrep", "nb")),
-    Some(Copyright(Some("publicdomain"), Some(""), Seq.empty, Seq.empty, Seq.empty, None, None, None)),
-    DateTime.now().minusDays(4).toDate,
-    DateTime.now().minusDays(2).toDate
-  )
-
-  val sampleApiConcept = api.Concept(
-    1,
-    Some(api.ConceptTitle("Tittel for begrep", "nb")),
-    Some(api.ConceptContent("Innhold for begrep", "nb")),
-    Some(
-      api.Copyright(Some(api.License("publicdomain", None, None)),
-                    Some(""),
-                    Seq.empty,
-                    Seq.empty,
-                    Seq.empty,
-                    None,
-                    None,
-                    None)),
-    DateTime.now().minusDays(4).toDate,
-    DateTime.now().minusDays(2).toDate,
-    Set("nb")
-  )
 
   val sampleApiAgreement = api.Agreement(
     1,

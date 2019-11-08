@@ -11,7 +11,6 @@ import java.util.Date
 
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Language.getSupportedLanguages
-import org.joda.time.DateTime
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
@@ -25,34 +24,43 @@ sealed trait Content {
   def id: Option[Long]
 }
 
-case class Article(id: Option[Long],
-                   revision: Option[Int],
-                   status: Status,
-                   title: Seq[ArticleTitle],
-                   content: Seq[ArticleContent],
-                   copyright: Option[Copyright],
-                   tags: Seq[ArticleTag],
-                   requiredLibraries: Seq[RequiredLibrary],
-                   visualElement: Seq[VisualElement],
-                   introduction: Seq[ArticleIntroduction],
-                   metaDescription: Seq[ArticleMetaDescription],
-                   metaImage: Seq[ArticleMetaImage],
-                   created: Date,
-                   updated: Date,
-                   updatedBy: String,
-                   published: Date,
-                   articleType: ArticleType.Value,
-                   notes: Seq[EditorNote],
-                   previousVersionsNotes: Seq[EditorNote])
-    extends Content {
+case class Article(
+    id: Option[Long],
+    revision: Option[Int],
+    status: Status,
+    title: Seq[ArticleTitle],
+    content: Seq[ArticleContent],
+    copyright: Option[Copyright],
+    tags: Seq[ArticleTag],
+    requiredLibraries: Seq[RequiredLibrary],
+    visualElement: Seq[VisualElement],
+    introduction: Seq[ArticleIntroduction],
+    metaDescription: Seq[ArticleMetaDescription],
+    metaImage: Seq[ArticleMetaImage],
+    created: Date,
+    updated: Date,
+    updatedBy: String,
+    published: Date,
+    articleType: ArticleType.Value,
+    notes: Seq[EditorNote],
+    previousVersionsNotes: Seq[EditorNote],
+    editorLabels: Seq[String]
+) extends Content {
 
   def supportedLanguages =
     getSupportedLanguages(Seq(title, visualElement, introduction, metaDescription, tags, content, metaImage))
 }
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
-    ArticleType)
+  implicit val formats = org.json4s.DefaultFormats +
+    new EnumNameSerializer(ArticleStatus) +
+    new EnumNameSerializer(ArticleType)
+
+  val JSonSerializer = FieldSerializer[Article](
+    ignore("id") orElse
+      ignore("revision")
+  )
+
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
@@ -60,33 +68,11 @@ object Article extends SQLSyntaxSupport[Article] {
 
   def apply(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
     val meta = read[Article](rs.string(lp.c("document")))
-    Article(
-      Some(rs.long(lp.c("article_id"))),
-      Some(rs.int(lp.c("revision"))),
-      meta.status,
-      meta.title,
-      meta.content,
-      meta.copyright,
-      meta.tags,
-      meta.requiredLibraries,
-      meta.visualElement,
-      meta.introduction,
-      meta.metaDescription,
-      meta.metaImage,
-      meta.created,
-      meta.updated,
-      meta.updatedBy,
-      meta.published,
-      meta.articleType,
-      meta.notes,
-      meta.previousVersionsNotes
+    meta.copy(
+      id = Some(rs.long(lp.c("article_id"))),
+      revision = Some(rs.int(lp.c("revision"))),
     )
   }
-
-  val JSonSerializer = FieldSerializer[Article](
-    ignore("id") orElse
-      ignore("revision")
-  )
 }
 
 object ArticleStatusAction extends Enumeration {
@@ -124,49 +110,15 @@ object ArticleType extends Enumeration {
       ValidationMessage("articleType", s"'$s' is not a valid article type. Valid options are ${all.mkString(",")}."))))
 }
 
-case class Concept(id: Option[Long],
-                   title: Seq[ConceptTitle],
-                   content: Seq[ConceptContent],
-                   copyright: Option[Copyright],
-                   created: Date,
-                   updated: Date)
-    extends Content {
-  lazy val supportedLanguages: Set[String] = (content union title).map(_.language).toSet
-}
-
-object Concept extends SQLSyntaxSupport[Concept] {
-  implicit val formats = org.json4s.DefaultFormats
-  override val tableName = "conceptdata"
-  override val schemaName = Some(DraftApiProperties.MetaSchema)
-
-  def apply(lp: SyntaxProvider[Concept])(rs: WrappedResultSet): Concept = apply(lp.resultName)(rs)
-
-  def apply(lp: ResultName[Concept])(rs: WrappedResultSet): Concept = {
-    val meta = read[Concept](rs.string(lp.c("document")))
-    Concept(
-      Some(rs.long(lp.c("id"))),
-      meta.title,
-      meta.content,
-      meta.copyright,
-      meta.created,
-      meta.updated
-    )
-  }
-
-  val JSonSerializer = FieldSerializer[Concept](
-    ignore("id") orElse
-      ignore("revision")
-  )
-}
-
-case class Agreement(id: Option[Long],
-                     title: String,
-                     content: String,
-                     copyright: Copyright,
-                     created: Date,
-                     updated: Date,
-                     updatedBy: String)
-    extends Content
+case class Agreement(
+    id: Option[Long],
+    title: String,
+    content: String,
+    copyright: Copyright,
+    created: Date,
+    updated: Date,
+    updatedBy: String
+) extends Content
 
 object Agreement extends SQLSyntaxSupport[Agreement] {
   implicit val formats = org.json4s.DefaultFormats

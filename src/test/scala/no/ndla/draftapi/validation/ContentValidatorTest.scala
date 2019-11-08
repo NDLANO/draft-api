@@ -192,22 +192,6 @@ class ContentValidatorTest extends UnitSuite with TestEnvironment {
     contentValidator.validateArticle(article, false).isFailure should be(true)
   }
 
-  test("Validation should fail if concept content contains html") {
-    val concept = TestData.sampleConcept.copy(content = Seq(ConceptContent("<h1>lolol</h1>", "nb")))
-    contentValidator.validate(concept).isFailure should be(true)
-  }
-
-  test("Validation should fail if concept title contains html") {
-    val concept = TestData.sampleConcept.copy(title = Seq(ConceptTitle("<h1>lolol</h1>", "nb")))
-    contentValidator.validate(concept).isFailure should be(true)
-  }
-
-  test("Validation should succeed if concept contains no html") {
-    val concept = TestData.sampleConcept.copy(title = Seq(ConceptTitle("lolol", "nb")),
-                                              content = Seq(ConceptContent("lolol", "nb")))
-    contentValidator.validate(concept).isSuccess should be(true)
-  }
-
   test("Validation should not fail with language=unknown if allowUnknownLanguage is set") {
     val article = TestData.sampleArticleWithByNcSa.copy(title = Seq(ArticleTitle("tittele", "unknown")))
     contentValidator.validateArticle(article, true).isSuccess should be(true)

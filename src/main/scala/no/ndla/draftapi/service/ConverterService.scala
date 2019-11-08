@@ -80,7 +80,8 @@ trait ConverterService {
                 published = oldUpdatedDate.getOrElse(newArticle.published.getOrElse(clock.now())), // If import use old updated. Else use new published or now
                 articleType = ArticleType.valueOfOrError(newArticle.articleType),
                 notes = notes,
-                previousVersionsNotes = Seq.empty
+                previousVersionsNotes = Seq.empty,
+                editorLabels = newArticle.editorLabels
             ))
       }
     }
@@ -238,7 +239,8 @@ trait ConverterService {
             article.published,
             article.articleType.toString,
             article.supportedLanguages,
-            article.notes.map(toApiEditorNote)
+            article.notes.map(toApiEditorNote),
+            article.editorLabels
           ))
       } else {
         Failure(
@@ -332,30 +334,6 @@ trait ConverterService {
 
     def createLinkToOldNdla(nodeId: String): String = s"//red.ndla.no/node/$nodeId"
 
-    def toApiConcept(concept: domain.Concept, language: String): api.Concept = {
-      val title = findByLanguageOrBestEffort(concept.title, language)
-        .map(toApiConceptTitle)
-        .getOrElse(api.ConceptTitle("", DefaultLanguage))
-      val content = findByLanguageOrBestEffort(concept.content, language)
-        .map(toApiConceptContent)
-        .getOrElse(api.ConceptContent("", DefaultLanguage))
-
-      api.Concept(
-        concept.id.get,
-        Some(title),
-        Some(content),
-        concept.copyright.map(toApiCopyright),
-        concept.created,
-        concept.updated,
-        concept.supportedLanguages
-      )
-    }
-
-    def toApiConceptTitle(title: domain.ConceptTitle): api.ConceptTitle = api.ConceptTitle(title.title, title.language)
-
-    def toApiConceptContent(title: domain.ConceptContent): api.ConceptContent =
-      api.ConceptContent(title.content, title.language)
-
     def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
       def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor =
         api.ArticleApiAuthor(author.`type`, author.name)
@@ -417,34 +395,6 @@ trait ConverterService {
       )
     }
 
-    def toArticleApiConcept(article: domain.Concept): api.ArticleApiConcept = {
-      api.ArticleApiConcept(
-        title = article.title.map(t => api.ArticleApiConceptTitle(t.title, t.language)),
-        content = article.content.map(c => api.ArticleApiConceptContent(c.content, c.language)),
-        copyright = article.copyright.map(toArticleApiCopyright),
-        created = article.created,
-        updated = article.updated
-      )
-    }
-
-    def toDomainConcept(concept: api.NewConcept): Try[domain.Concept] = {
-      articleApiClient.allocateConceptId(List.empty) match {
-        case Failure(ex) => Failure(ex)
-        case Success(id) =>
-          Success(
-            domain.Concept(
-              Some(id),
-              Seq(domain.ConceptTitle(concept.title, concept.language)),
-              concept.content
-                .map(content => Seq(domain.ConceptContent(content, concept.language)))
-                .getOrElse(Seq.empty),
-              concept.copyright.map(toDomainCopyright),
-              clock.now(),
-              clock.now()
-            ))
-      }
-    }
-
     private def languageFieldIsDefined(article: api.UpdatedArticle): Boolean = {
       val langFields: Seq[Option[_]] = Seq(article.title,
                                            article.content,
@@ -491,7 +441,8 @@ trait ConverterService {
             published = publishedDate,
             updatedBy = user.id,
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
-            notes = allNotes
+            notes = allNotes,
+            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels)
           )
 
           article.language match {
@@ -573,35 +524,10 @@ trait ConverterService {
                 updatedBy = user.id,
                 articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
                 notes = notes,
-                previousVersionsNotes = Seq.empty
+                previousVersionsNotes = Seq.empty,
+                editorLabels = article.editorLabels.getOrElse(Seq.empty)
             ))
       }
-    }
-
-    def toDomainConcept(toMergeInto: domain.Concept, updateConcept: api.UpdatedConcept): domain.Concept = {
-      val domainTitle = updateConcept.title.map(t => domain.ConceptTitle(t, updateConcept.language)).toSeq
-      val domainContent = updateConcept.content.map(c => domain.ConceptContent(c, updateConcept.language)).toSeq
-
-      toMergeInto.copy(
-        title = mergeLanguageFields(toMergeInto.title, domainTitle),
-        content = mergeLanguageFields(toMergeInto.content, domainContent),
-        copyright = updateConcept.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
-        created = toMergeInto.created,
-        updated = clock.now()
-      )
-    }
-
-    def toDomainConcept(id: Long, article: api.UpdatedConcept): domain.Concept = {
-      val lang = article.language
-
-      domain.Concept(
-        id = Some(id),
-        title = article.title.map(t => domain.ConceptTitle(t, lang)).toSeq,
-        content = article.content.map(c => domain.ConceptContent(c, lang)).toSeq,
-        copyright = article.copyright.map(toDomainCopyright),
-        created = clock.now(),
-        updated = clock.now()
-      )
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField](existing: Seq[A], updated: Seq[A]): Seq[A] = {

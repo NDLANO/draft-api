@@ -14,7 +14,7 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.api.NotFoundException
 import no.ndla.draftapi.model.domain.{ArticleIds, ImportId}
 import no.ndla.draftapi.model.domain.Language._
-import no.ndla.draftapi.repository.{AgreementRepository, ConceptRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
 
@@ -23,16 +23,13 @@ import scala.math.max
 import scala.util.{Failure, Success, Try}
 
 trait ReadService {
-  this: DraftRepository with ConceptRepository with AgreementRepository with ConverterService =>
+  this: DraftRepository with AgreementRepository with ConverterService =>
   val readService: ReadService
 
   class ReadService {
 
     def getInternalArticleIdByExternalId(externalId: Long): Option[api.ContentId] =
       draftRepository.getIdFromExternalId(externalId.toString).map(api.ContentId)
-
-    def getInternalConceptIdByExternalId(externalId: Long): Option[api.ContentId] =
-      conceptRepository.getIdFromExternalId(externalId.toString).map(api.ContentId)
 
     def withId(id: Long, language: String, fallback: Boolean = false): Try[api.Article] = {
       draftRepository.withId(id).map(addUrlsOnEmbedResources) match {
@@ -97,19 +94,6 @@ trait ReadService {
       HtmlTagRules.jsoupDocumentToString(doc)
     }
 
-    private def convertFileEmbedToAnchor(embedTag: Element): Unit = {
-      val url = s"$Domain/${embedTag.attr(TagAttributes.DataPath.toString)}"
-      val title = embedTag.attr(TagAttributes.DataTitle.toString)
-      val text = embedTag.attr(TagAttributes.DataAlt.toString)
-
-      val anchor = new Element("a")
-      anchor.attr(TagAttributes.Href.toString, url)
-      anchor.attr(TagAttributes.Title.toString, title)
-      anchor.text(text)
-
-      embedTag.replaceWith(anchor)
-    }
-
     private def addUrlOnEmbedTag(embedTag: Element): Unit = {
       val typeAndPathOption = embedTag.attr(TagAttributes.DataResource.toString) match {
         case resourceType
@@ -143,9 +127,6 @@ trait ReadService {
 
       def getNMostFrequent(n: Int): Seq[String] = mostFrequentOccorencesDec.slice(0, n)
     }
-
-    def conceptWithId(id: Long, language: String): Option[api.Concept] =
-      conceptRepository.withId(id).map(concept => converterService.toApiConcept(concept, language))
 
     def agreementWithId(id: Long): Option[api.Agreement] =
       agreementRepository.withId(id).map(agreement => converterService.toApiAgreement(agreement))

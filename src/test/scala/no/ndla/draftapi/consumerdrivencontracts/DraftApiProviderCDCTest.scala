@@ -89,12 +89,6 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
           ))
       })
 
-  private def setupConcepts() =
-    (1 to 10)
-      .map(id => {
-        ComponentRegistry.conceptRepository.insertWithExternalId(TestData.sampleConcept.copy(id = Some(id)), s"4444$id")
-      })
-
   private def setupAgreements() =
     (1 to 10)
       .map(id => {
@@ -142,7 +136,6 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
             .withPactSource(b)
             .setupProviderState("given") {
               case "articles"   => deleteSchema(); ProviderStateResult(setupArticles().nonEmpty)
-              case "concepts"   => deleteSchema(); ProviderStateResult(setupConcepts().nonEmpty)
               case "agreements" => deleteSchema(); ProviderStateResult(setupAgreements().nonEmpty)
               case "empty"      => deleteSchema(); ProviderStateResult(true)
             }

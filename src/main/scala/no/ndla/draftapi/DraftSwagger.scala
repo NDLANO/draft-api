@@ -20,7 +20,7 @@ object DraftApiInfo {
 
   val apiInfo = ApiInfo(
     "Draft API",
-    "Services for accessing draft articles, draft concepts and agreements",
+    "Services for accessing draft articles, draft and agreements",
     "http://ndla.no",
     DraftApiProperties.ContactEmail,
     "GPL v3.0",
