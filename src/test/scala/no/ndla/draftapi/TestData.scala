@@ -55,8 +55,6 @@ object TestData {
                                       None)
   val today = new DateTime().toDate
 
-  private val embedUrl = "http://www.example.org"
-
   val (articleId, externalId) = (1, "751234")
 
   val sampleArticleV2 = api.Article(
