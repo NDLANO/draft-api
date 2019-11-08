@@ -159,21 +159,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
     val updatedApiArticle =
-      api.UpdatedArticle(1,
-                         Some("en"),
-                         None,
-                         None,
-                         None,
-                         Some(newContent),
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None)
+      api.UpdatedArticle(
+        1,
+        Some("en"),
+        None,
+        None,
+        None,
+        Some(newContent),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None
+      )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
                    content = Seq(ArticleContent(newContent, "en")),
@@ -192,21 +195,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("That updateArticle updates only title properly") {
     val newTitle = "NyTittelTest"
     val updatedApiArticle =
-      api.UpdatedArticle(1,
-                         Some("en"),
-                         Some(newTitle),
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None,
-                         None)
+      api.UpdatedArticle(
+        1,
+        Some("en"),
+        Some(newTitle),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None
+      )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
                    title = Seq(ArticleTitle(newTitle, "en")),
@@ -259,6 +265,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some(updatedCopyright),
       Some(Seq(updatedRequiredLib)),
       Some(updatedArticleType),
+      None,
       None
     )
 

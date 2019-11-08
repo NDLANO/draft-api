@@ -195,12 +195,14 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
-      previousVersionsNotes = Seq.empty
+      previousVersionsNotes = Seq.empty,
+      editorLabels = Seq.empty
     )
 
     val updatedNothing = api.UpdatedArticle(
       4,
       Some("nb"),
+      None,
       None,
       None,
       None,
@@ -240,7 +242,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
-      previousVersionsNotes = Seq.empty
+      previousVersionsNotes = Seq.empty,
+      editorLabels = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -262,7 +265,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
-      previousVersionsNotes = Seq.empty
+      previousVersionsNotes = Seq.empty,
+      editorLabels = Seq.empty
     )
 
     val updatedEverything = api.UpdatedArticle(
@@ -280,7 +284,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       copyright = None,
       requiredLibraries = None,
       articleType = None,
-      notes = None
+      notes = None,
+      editorLabels = None
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "nb") should be(expectedArticle)
@@ -308,7 +313,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
-      previousVersionsNotes = Seq.empty
+      previousVersionsNotes = Seq.empty,
+      editorLabels = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -330,7 +336,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       published = TestData.today,
       articleType = ArticleType.Standard,
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
-      previousVersionsNotes = Seq.empty
+      previousVersionsNotes = Seq.empty,
+      editorLabels = Seq.empty
     )
 
     val updatedEverything = api.UpdatedArticle(
@@ -348,7 +355,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       copyright = None,
       requiredLibraries = None,
       articleType = None,
-      notes = None
+      notes = None,
+      editorLabels = None
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "en") should be(expectedArticle)

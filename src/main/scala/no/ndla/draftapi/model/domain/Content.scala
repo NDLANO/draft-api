@@ -43,7 +43,8 @@ case class Article(
     published: Date,
     articleType: ArticleType.Value,
     notes: Seq[EditorNote],
-    previousVersionsNotes: Seq[EditorNote]
+    previousVersionsNotes: Seq[EditorNote],
+    editorLabels: Seq[String]
 ) extends Content {
 
   def supportedLanguages =
@@ -51,8 +52,15 @@ case class Article(
 }
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
-    ArticleType)
+  implicit val formats = org.json4s.DefaultFormats +
+    new EnumNameSerializer(ArticleStatus) +
+    new EnumNameSerializer(ArticleType)
+
+  val JSonSerializer = FieldSerializer[Article](
+    ignore("id") orElse
+      ignore("revision")
+  )
+
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
@@ -60,33 +68,11 @@ object Article extends SQLSyntaxSupport[Article] {
 
   def apply(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
     val meta = read[Article](rs.string(lp.c("document")))
-    Article(
-      Some(rs.long(lp.c("article_id"))),
-      Some(rs.int(lp.c("revision"))),
-      meta.status,
-      meta.title,
-      meta.content,
-      meta.copyright,
-      meta.tags,
-      meta.requiredLibraries,
-      meta.visualElement,
-      meta.introduction,
-      meta.metaDescription,
-      meta.metaImage,
-      meta.created,
-      meta.updated,
-      meta.updatedBy,
-      meta.published,
-      meta.articleType,
-      meta.notes,
-      meta.previousVersionsNotes
+    meta.copy(
+      id = Some(rs.long(lp.c("article_id"))),
+      revision = Some(rs.int(lp.c("revision"))),
     )
   }
-
-  val JSonSerializer = FieldSerializer[Article](
-    ignore("id") orElse
-      ignore("revision")
-  )
 }
 
 object ArticleStatusAction extends Enumeration {

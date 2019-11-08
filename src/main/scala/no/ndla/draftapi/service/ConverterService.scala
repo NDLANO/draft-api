@@ -80,7 +80,8 @@ trait ConverterService {
                 published = oldUpdatedDate.getOrElse(newArticle.published.getOrElse(clock.now())), // If import use old updated. Else use new published or now
                 articleType = ArticleType.valueOfOrError(newArticle.articleType),
                 notes = notes,
-                previousVersionsNotes = Seq.empty
+                previousVersionsNotes = Seq.empty,
+                editorLabels = newArticle.editorLabels
             ))
       }
     }
@@ -238,7 +239,8 @@ trait ConverterService {
             article.published,
             article.articleType.toString,
             article.supportedLanguages,
-            article.notes.map(toApiEditorNote)
+            article.notes.map(toApiEditorNote),
+            article.editorLabels
           ))
       } else {
         Failure(
@@ -439,7 +441,8 @@ trait ConverterService {
             published = publishedDate,
             updatedBy = user.id,
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
-            notes = allNotes
+            notes = allNotes,
+            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels)
           )
 
           article.language match {
@@ -521,7 +524,8 @@ trait ConverterService {
                 updatedBy = user.id,
                 articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
                 notes = notes,
-                previousVersionsNotes = Seq.empty
+                previousVersionsNotes = Seq.empty,
+                editorLabels = article.editorLabels.getOrElse(Seq.empty)
             ))
       }
     }

@@ -87,6 +87,7 @@ object TestData {
     published = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate,
     articleType = "standard",
     supportedLanguages = Seq("nb"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -94,6 +95,7 @@ object TestData {
     1,
     Some("nb"),
     Some("tittel"),
+    None,
     None,
     None,
     None,
@@ -170,6 +172,7 @@ object TestData {
     today,
     "standard",
     Seq("nb"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -206,6 +209,7 @@ object TestData {
     today,
     "standard",
     Seq("nb"),
+    Seq.empty,
     Seq.empty
   )
 
@@ -227,6 +231,7 @@ object TestData {
     userWithWriteAccess.id,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.TopicArticle,
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -250,6 +255,7 @@ object TestData {
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.Standard,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -272,6 +278,7 @@ object TestData {
     today,
     ArticleType.Standard,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -293,6 +300,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -318,6 +326,7 @@ object TestData {
                     None)),
     Seq.empty,
     "standard",
+    Seq.empty,
     Seq.empty
   )
 
@@ -350,6 +359,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -390,6 +400,7 @@ object TestData {
     DateTime.now().minusDays(2).toDate,
     "standard",
     Seq("en"),
+    Seq.empty,
     Seq.empty
   )
 
