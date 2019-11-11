@@ -214,9 +214,46 @@ trait WriteService {
       )
     }
 
-    private def newStatusForUpdatedArticle(oldStatus: ArticleStatus.Value, updatedApiArticle: api.UpdatedArticle) = {
-      val newStatusIfUndefined = if (oldStatus == PUBLISHED) PROPOSAL else oldStatus
-      updatedApiArticle.status.map(ArticleStatus.valueOfOrError).getOrElse(Success(newStatusIfUndefined))
+    /** Article status should not be updated if notes and/or editorLabels are the only changes */
+    private def shouldUpdateStatus(changedArticle: domain.Article, existingArticle: domain.Article): Boolean = {
+      // Function that sets values we don't want to include when comparing articles to check if we should update status
+      val withComparableValues =
+        (article: domain.Article) =>
+          article.copy(
+            revision = None,
+            notes = Seq.empty,
+            editorLabels = Seq.empty,
+            created = new Date(0),
+            updated = new Date(0),
+            updatedBy = ""
+        )
+
+      withComparableValues(changedArticle) != withComparableValues(existingArticle)
+    }
+
+    private def updateStatusIfNeeded(convertedArticle: domain.Article,
+                                     existingArticle: domain.Article,
+                                     updatedApiArticle: api.UpdatedArticle,
+                                     user: UserInfo): Try[domain.Article] = {
+      if (!shouldUpdateStatus(convertedArticle, existingArticle)) {
+        Success(convertedArticle)
+      } else {
+        val oldStatus = existingArticle.status.current
+        val newStatusIfUndefined = if (oldStatus == PUBLISHED) PROPOSAL else oldStatus
+
+        updatedApiArticle.status
+          .map(ArticleStatus.valueOfOrError)
+          .getOrElse(Success(newStatusIfUndefined))
+          .flatMap(
+            newStatus =>
+              converterService
+                .updateStatus(newStatus, convertedArticle, user, false)
+                .attempt
+                .unsafeRunSync()
+                .toTry
+          )
+          .flatten
+      }
     }
 
     def updateArticle(articleId: Long,
@@ -226,7 +263,7 @@ trait WriteService {
                       user: UserInfo,
                       oldNdlaCreatedDate: Option[Date],
                       oldNdlaUpdatedDate: Option[Date],
-                      importId: Option[String]): Try[api.Article] = {
+                      importId: Option[String]): Try[api.Article] =
       draftRepository.withId(articleId) match {
         case Some(existing) =>
           updateExistingArticle(
@@ -250,9 +287,9 @@ trait WriteService {
             oldNdlaUpdatedDate,
             importId
           )
-        case None => Failure(NotFoundException(s"Article with id $articleId does not exist"))
+        case None =>
+          Failure(NotFoundException(s"Article with id $articleId does not exist"))
       }
-    }
 
     private def updateExistingArticle(existing: domain.Article,
                                       updatedApiArticle: api.UpdatedArticle,
@@ -272,13 +309,7 @@ trait WriteService {
           oldNdlaCreatedDate,
           oldNdlaUpdatedDate
         )
-        newStatus <- newStatusForUpdatedArticle(existing.status.current, updatedApiArticle)
-        articleWithStatusT <- converterService
-          .updateStatus(newStatus, convertedArticle, user, false)
-          .attempt
-          .unsafeRunSync()
-          .toTry
-        articleWithStatus <- articleWithStatusT
+        articleWithStatus <- updateStatusIfNeeded(convertedArticle, existing, updatedApiArticle, user)
         updatedArticle <- updateArticle(
           articleWithStatus,
           importId,
