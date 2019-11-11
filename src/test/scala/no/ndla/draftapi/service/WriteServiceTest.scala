@@ -568,7 +568,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("article status should not be updated if only notes are changed") {
     val updatedArticle = api.UpdatedArticle(
       1,
-      Some("nb"), // TODO: Kan vi gjøre denne unødvendig når vi oppdaterer språkløse ting?
+      None,
       None,
       None,
       None,

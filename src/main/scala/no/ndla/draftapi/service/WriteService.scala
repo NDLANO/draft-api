@@ -319,7 +319,8 @@ trait WriteService {
           shouldValidateLanguage = updatedApiArticle.language
         )
         apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-                                                    updatedApiArticle.language.getOrElse(UnknownLanguage))
+                                                    updatedApiArticle.language.getOrElse(UnknownLanguage),
+                                                    updatedApiArticle.language.isEmpty)
       } yield apiArticle
     }
 
