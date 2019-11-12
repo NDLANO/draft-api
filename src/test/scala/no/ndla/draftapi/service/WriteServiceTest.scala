@@ -565,4 +565,74 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     }
   }
 
+  test("article status should not be updated if only notes are changed") {
+    val updatedArticle = api.UpdatedArticle(
+      1,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      Some(Seq("note1", "note2")),
+      Some(Seq("note3", "note4"))
+    )
+
+    val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithPublished)
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    val Success(result1) = service.updateArticle(existing.id.get,
+                                                 updatedArticle,
+                                                 List.empty,
+                                                 Seq.empty,
+                                                 TestData.userWithWriteAccess,
+                                                 None,
+                                                 None,
+                                                 None)
+    result1.status.current should be(existing.status.current.toString)
+    result1.status.other.sorted should be(existing.status.other.map(_.toString).toSeq.sorted)
+  }
+
+  test("article status should not be updated if changes only affect notes") {
+    val existingTitle = "apekatter"
+    val updatedArticle = api.UpdatedArticle(
+      1,
+      Some("nb"),
+      Some(existingTitle),
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      Some(Seq("note1", "note2")),
+      Some(Seq("note3", "note4"))
+    )
+
+    val existing = TestData.sampleDomainArticle.copy(title = Seq(ArticleTitle(existingTitle, "nb")),
+                                                     status = TestData.statusWithPublished)
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    val Success(result1) = service.updateArticle(existing.id.get,
+                                                 updatedArticle,
+                                                 List.empty,
+                                                 Seq.empty,
+                                                 TestData.userWithWriteAccess,
+                                                 None,
+                                                 None,
+                                                 None)
+    result1.status.current should be(existing.status.current.toString)
+    result1.status.other.sorted should be(existing.status.other.map(_.toString).toSeq.sorted)
+  }
+
 }
