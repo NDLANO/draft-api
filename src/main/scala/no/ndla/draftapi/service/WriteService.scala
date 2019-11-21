@@ -47,18 +47,19 @@ trait WriteService {
         articleId: Long,
         userInfo: UserInfo,
         language: String,
-        fallback: Boolean
+        fallback: Boolean,
+        usePostFix: Boolean
     ): Try[api.Article] = {
       draftRepository.withId(articleId) match {
         case None => Failure(NotFoundException(s"Article with id '$articleId' was not found in database."))
         case Some(article) =>
-          val x = for {
+          for {
             newId <- draftRepository.newArticleId()
             status = domain.Status(DRAFT, Set.empty)
             notes <- converterService.newNotes(Seq(s"Opprettet artikkel, som kopi av artikkel med id: '$articleId'."),
                                                userInfo,
                                                status)
-            newTitles = article.title.map(t => t.copy(title = t.title + " (Kopi)"))
+            newTitles = if (usePostFix) article.title.map(t => t.copy(title = t.title + " (Kopi)")) else article.title
             articleToInsert = article.copy(
               id = Some(newId.toLong),
               title = newTitles,
@@ -76,7 +77,6 @@ trait WriteService {
             enriched = readService.addUrlsOnEmbedResources(inserted)
             converted <- converterService.toApiArticle(enriched, language, fallback)
           } yield converted
-          x
       }
     }
 
