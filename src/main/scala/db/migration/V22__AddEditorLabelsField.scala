@@ -21,10 +21,8 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
     val db = DB(context.getConnection)
     db.autoClose(false)
 
-    if (DraftApiProperties.Environment == "ff") {
-      db.withinTx { implicit session =>
-        migrateArticles
-      }
+    db.withinTx { implicit session =>
+      migrateArticles
     }
   }
 
