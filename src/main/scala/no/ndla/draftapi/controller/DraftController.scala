@@ -62,7 +62,8 @@ trait DraftController {
     private val filterNot = Param[Option[String]]("filterNot", "A filter to remove a specific entry")
     private val statuss = Param[String]("STATUS", "An article status")
     private val copiedTitleFlag =
-      Param[Option[String]]("copied-title-postfix", "Add a string to the title marking this article as a copy.")
+      Param[Option[String]]("copied-title-postfix",
+                            "Add a string to the title marking this article as a copy, defaults to 'true'.")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
