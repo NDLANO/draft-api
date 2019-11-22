@@ -61,6 +61,9 @@ trait DraftController {
     private val filter = Param[Option[String]]("filter", "A filter to include a specific entry")
     private val filterNot = Param[Option[String]]("filterNot", "A filter to remove a specific entry")
     private val statuss = Param[String]("STATUS", "An article status")
+    private val copiedTitleFlag =
+      Param[Option[String]]("copied-title-postfix",
+                            "Add a string to the title marking this article as a copy, defaults to 'true'.")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
@@ -528,6 +531,7 @@ trait DraftController {
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asQueryParam(language),
+            asQueryParam(copiedTitleFlag),
             asQueryParam(fallback)
         )
           authorizations "oauth2"
@@ -537,9 +541,10 @@ trait DraftController {
       val articleId = long(this.articleId.paramName)
       val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
       val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+      val copiedTitlePostfix = booleanOrDefault(this.copiedTitleFlag.paramName, default = true)
 
       doOrAccessDenied(userInfo.canWrite) {
-        writeService.copyArticleFromId(articleId, userInfo, language, fallback) match {
+        writeService.copyArticleFromId(articleId, userInfo, language, fallback, copiedTitlePostfix) match {
           case Success(article) => article
           case Failure(ex)      => errorHandler(ex)
         }
