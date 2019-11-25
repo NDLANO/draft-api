@@ -190,7 +190,7 @@ trait StateTransitionRules {
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
     private def validateArticle(article: domain.Article): Try[domain.Article] =
-      contentValidator.validateArticle(article, false)
+      contentValidator.validateArticle(article, true)
 
   }
 }
