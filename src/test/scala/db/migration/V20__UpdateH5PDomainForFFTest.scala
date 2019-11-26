@@ -9,7 +9,7 @@ import no.ndla.draftapi.{TestEnvironment, UnitSuite}
   * See LICENSE
   */
 class V20__UpdateH5PDomainForFFTest extends UnitSuite with TestEnvironment {
-  val migration = new V23__UpdateH5PDomainForFFVisualElement
+  val migration = new V20__UpdateH5PDomainForFF
 
   test("article should get new h5p domains, and only that") {
 
