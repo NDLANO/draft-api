@@ -38,6 +38,31 @@ trait StateTransitionRules {
 
   object StateTransitionRules {
 
+    private[service] val checkIfArticleIsUsedInLearningStep: SideEffect = (article, _) =>
+      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
+        Success(article)
+    }
+
+    private[service] val unpublishArticle: SideEffect = (article, _) =>
+      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
+        articleApiClient.unpublishArticle(article)
+    }
+
+    private val removeFromSearch: SideEffect = (article, _) =>
+      articleIndexService.deleteDocument(article.id.get).map(_ => article)
+
+    private val validateArticle: SideEffect = (article, _) =>
+      contentValidator.validateArticle(article, allowUnknownLanguage = true)
+
+    private val publishArticle: SideEffect = (article, isImported) =>
+      article.id match {
+        case Some(id) =>
+          val externalIds = draftRepository.getExternalIdsFromId(id)
+          taxonomyApiClient.updateTaxonomyIfExists(id, article)
+          articleApiClient.updateArticle(id, article, externalIds, isImported)
+        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
+    }
+
     import StateTransition._
 
     // format: off
@@ -142,16 +167,6 @@ trait StateTransitionRules {
       IO { convertedArticle.flatMap(article => sideEffect(article, isImported)) }
     }
 
-    private val publishArticle: SideEffect = (article, isImported) => {
-      article.id match {
-        case Some(id) =>
-          val externalIds = draftRepository.getExternalIdsFromId(id)
-          taxonomyApiClient.updateTaxonomyIfExists(id, article)
-          articleApiClient.updateArticle(id, article, externalIds, isImported)
-        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
-      }
-    }
-
     private[this] def learningPathsUsingArticle(articleId: Long): Seq[LearningPath] = {
       val resources = taxonomyApiClient.queryResource(articleId).getOrElse(List.empty).flatMap(_.paths)
       val topics = taxonomyApiClient.queryTopic(articleId).getOrElse(List.empty).flatMap(_.paths)
@@ -173,22 +188,6 @@ trait StateTransitionRules {
           "status.current",
           s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article"))))
     }
-
-    private[service] val checkIfArticleIsUsedInLearningStep: SideEffect = (article, _) =>
-      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
-        Success(article)
-    }
-
-    private[service] val unpublishArticle: SideEffect = (article, _) =>
-      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
-        articleApiClient.unpublishArticle(article)
-    }
-
-    private val removeFromSearch: SideEffect = (article, _) =>
-      articleIndexService.deleteDocument(article.id.get).map(_ => article)
-
-    private val validateArticle: SideEffect = (article, _) =>
-      contentValidator.validateArticle(article, allowUnknownLanguage = true)
 
   }
 }
