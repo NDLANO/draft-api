@@ -32,13 +32,18 @@ trait ArticleApiClient {
     private val InternalEndpoint = s"$ArticleBaseUrl/intern"
     private val deleteTimeout = 1000 * 10 // 10 seconds
 
-    def updateArticle(id: Long, article: domain.Article, externalIds: List[String]): Try[domain.Article] = {
+    def updateArticle(id: Long,
+                      article: domain.Article,
+                      externalIds: List[String],
+                      useImportValidation: Boolean): Try[domain.Article] = {
       implicit val format: DefaultFormats.type = org.json4s.DefaultFormats
 
       val articleApiArticle = converterService.toArticleApiArticle(article)
-      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/article/$id",
-                                                                 articleApiArticle,
-                                                                 "external-id" -> externalIds.mkString(","))
+      postWithData[api.ArticleApiArticle, api.ArticleApiArticle](
+        s"$InternalEndpoint/article/$id",
+        articleApiArticle,
+        "external-id" -> externalIds.mkString(","),
+        "use-import-validation" -> useImportValidation.toString)
         .map(_ => article)
     }
 

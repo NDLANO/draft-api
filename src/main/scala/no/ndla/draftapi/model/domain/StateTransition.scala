@@ -8,22 +8,22 @@
 package no.ndla.draftapi.model.domain
 
 import no.ndla.draftapi.auth.{Role, UserInfo}
-import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.service.SideEffect
+import no.ndla.draftapi.service.SideEffect.SideEffect
 
-import scala.util.{Success, Try}
 import scala.language.implicitConversions
 
 case class StateTransition(from: ArticleStatus.Value,
                            to: ArticleStatus.Value,
                            otherStatesToKeepOnTransition: Set[ArticleStatus.Value],
-                           sideEffect: domain.Article => Try[domain.Article],
+                           sideEffect: SideEffect,
                            addCurrentStateToOthersOnTransition: Boolean,
                            requiredRoles: Set[Role.Value],
                            illegalStatuses: Set[ArticleStatus.Value]) {
 
   def keepCurrentOnTransition: StateTransition = copy(addCurrentStateToOthersOnTransition = true)
   def keepStates(toKeep: Set[ArticleStatus.Value]): StateTransition = copy(otherStatesToKeepOnTransition = toKeep)
-  def withSideEffect(sideEffect: domain.Article => Try[domain.Article]): StateTransition = copy(sideEffect = sideEffect)
+  def withSideEffect(sideEffect: SideEffect): StateTransition = copy(sideEffect = sideEffect)
   def require(roles: Set[Role.Value]): StateTransition = copy(requiredRoles = roles)
 
   def illegalStatuses(illegalStatuses: Set[ArticleStatus.Value]): StateTransition =
@@ -36,7 +36,7 @@ object StateTransition {
     StateTransition(from,
                     to,
                     Set(ArticleStatus.IMPORTED, ArticleStatus.PUBLISHED),
-                    Success.apply,
+                    SideEffect.none,
                     addCurrentStateToOthersOnTransition = false,
                     UserInfo.WriteRoles,
                     Set())

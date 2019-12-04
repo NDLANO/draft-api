@@ -13,11 +13,12 @@ import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.auth.UserInfo.{PublishRoles}
+import no.ndla.draftapi.auth.UserInfo.PublishRoles
 import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningpathApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
+import no.ndla.draftapi.service.SideEffect.SideEffect
 import no.ndla.draftapi.service.search.ArticleIndexService
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -36,6 +37,31 @@ trait StateTransitionRules {
     with ArticleIndexService =>
 
   object StateTransitionRules {
+
+    private[service] val checkIfArticleIsUsedInLearningStep: SideEffect = (article, _) =>
+      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
+        Success(article)
+    }
+
+    private[service] val unpublishArticle: SideEffect = (article, _) =>
+      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
+        articleApiClient.unpublishArticle(article)
+    }
+
+    private val removeFromSearch: SideEffect = (article, _) =>
+      articleIndexService.deleteDocument(article.id.get).map(_ => article)
+
+    private val validateArticle: SideEffect = (article, _) =>
+      contentValidator.validateArticle(article, allowUnknownLanguage = true)
+
+    private val publishArticle: SideEffect = (article, isImported) =>
+      article.id match {
+        case Some(id) =>
+          val externalIds = draftRepository.getExternalIdsFromId(id)
+          taxonomyApiClient.updateTaxonomyIfExists(id, article)
+          articleApiClient.updateArticle(id, article, externalIds, isImported)
+        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
+    }
 
     import StateTransition._
 
@@ -102,11 +128,10 @@ trait StateTransitionRules {
         .filter(t => user.hasRoles(t.requiredRoles))
     }
 
-    private[service] def doTransitionWithoutSideEffect(
-        current: domain.Article,
-        to: ArticleStatus.Value,
-        user: UserInfo,
-        isImported: Boolean): (Try[domain.Article], domain.Article => Try[domain.Article]) = {
+    private[service] def doTransitionWithoutSideEffect(current: domain.Article,
+                                                       to: ArticleStatus.Value,
+                                                       user: UserInfo,
+                                                       isImported: Boolean): (Try[domain.Article], SideEffect) = {
       getTransition(current.status.current, to, user) match {
         case Some(t) =>
           val currentToOther = if (t.addCurrentStateToOthersOnTransition) Set(current.status.current) else Set()
@@ -114,7 +139,7 @@ trait StateTransitionRules {
           if (containsIllegalStatuses.nonEmpty) {
             val illegalStateTransition = IllegalStatusStateTransition(
               s"Cannot go to $to when article contains $containsIllegalStatuses")
-            return (Failure(illegalStateTransition), _ => Failure(illegalStateTransition))
+            return (Failure(illegalStateTransition), SideEffect.fromOutput(Failure(illegalStateTransition)))
           }
           val other = current.status.other.intersect(t.otherStatesToKeepOnTransition) ++ currentToOther
           val newStatus = domain.Status(to, other)
@@ -130,7 +155,7 @@ trait StateTransitionRules {
         case None =>
           val illegalStateTransition = IllegalStatusStateTransition(
             s"Cannot go to $to when article is ${current.status.current}")
-          (Failure(illegalStateTransition), _ => Failure(illegalStateTransition))
+          (Failure(illegalStateTransition), SideEffect.fromOutput(Failure(illegalStateTransition)))
       }
     }
 
@@ -139,17 +164,7 @@ trait StateTransitionRules {
                      user: UserInfo,
                      isImported: Boolean): IO[Try[domain.Article]] = {
       val (convertedArticle, sideEffect) = doTransitionWithoutSideEffect(current, to, user, isImported)
-      IO { convertedArticle.flatMap(sideEffect) }
-    }
-
-    private def publishArticle(article: domain.Article): Try[Article] = {
-      article.id match {
-        case Some(id) =>
-          val externalIds = draftRepository.getExternalIdsFromId(id)
-          taxonomyApiClient.updateTaxonomyIfExists(id, article)
-          articleApiClient.updateArticle(id, article, externalIds)
-        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
-      }
+      IO { convertedArticle.flatMap(article => sideEffect(article, isImported)) }
     }
 
     private[this] def learningPathsUsingArticle(articleId: Long): Seq[LearningPath] = {
@@ -173,24 +188,6 @@ trait StateTransitionRules {
           "status.current",
           s"Learningpath(s) with id(s) ${pathsUsingArticle.mkString(",")} contains a learning step that uses this article"))))
     }
-
-    private[service] def checkIfArticleIsUsedInLearningStep(article: domain.Article): Try[domain.Article] = {
-      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
-        Success(article)
-      }
-    }
-
-    private[service] def unpublishArticle(article: domain.Article): Try[domain.Article] = {
-      doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
-        articleApiClient.unpublishArticle(article)
-      }
-    }
-
-    private def removeFromSearch(article: domain.Article): Try[domain.Article] =
-      articleIndexService.deleteDocument(article.id.get).map(_ => article)
-
-    private def validateArticle(article: domain.Article): Try[domain.Article] =
-      contentValidator.validateArticle(article, true)
 
   }
 }
