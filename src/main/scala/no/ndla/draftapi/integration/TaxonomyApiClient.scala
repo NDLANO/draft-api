@@ -65,14 +65,25 @@ trait TaxonomyApiClient {
         defaultTitle: ArticleTitle,
         titles: Seq[ArticleTitle],
         updateFunc: T => Try[T],
-        updateTranslationsFunc: Seq[ArticleTitle] => Try[List[Translation]]) = {
+        updateTranslationsFunc: Seq[ArticleTitle] => Try[List[Translation]],
+        getTranslationsFunc: String => Try[List[Translation]],
+        deleteTranslationFunc: Translation => Try[Unit]) = {
       val resourceResult = updateFunc(res.withName(defaultTitle.title))
       val translationResult = updateTranslationsFunc(titles)
 
-      (resourceResult, translationResult) match {
-        case (Success(s1), Success(_)) => Success(s1)
-        case (Failure(ex), _)          => Failure(ex)
-        case (_, Failure(ex))          => Failure(ex)
+      val deleteResult = getTranslationsFunc(res.id).flatMap(translations => {
+        val translationsToDelete = translations.filterNot(trans => {
+          titles.exists(title => trans.language.contains(title.language))
+        })
+
+        translationsToDelete.traverse(deleteTranslationFunc)
+      })
+
+      (resourceResult, translationResult, deleteResult) match {
+        case (Success(s1), Success(_), Success(_)) => Success(s1)
+        case (Failure(ex), _, _)                   => Failure(ex)
+        case (_, Failure(ex), _)                   => Failure(ex)
+        case (_, _, Failure(ex))                   => Failure(ex)
       }
     }
 
@@ -87,12 +98,28 @@ trait TaxonomyApiClient {
                                                    defaultTitle: ArticleTitle,
                                                    titles: Seq[ArticleTitle]) = {
       val updateTranslationsFunc = updateTranslations(res.id, _: Seq[ArticleTitle], updateResourceTranslation)
-      updateTitleAndTranslations(res, defaultTitle, titles, updateResource, updateTranslationsFunc)
+      updateTitleAndTranslations(
+        res,
+        defaultTitle,
+        titles,
+        updateResource,
+        updateTranslationsFunc,
+        getResourceTranslations,
+        (t: Translation) => deleteResourceTranslation(res.id, t)
+      )
     }
 
     private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, titles: Seq[ArticleTitle]) = {
       val updateTranslationsFunc = updateTranslations(top.id, _: Seq[ArticleTitle], updateTopicTranslation)
-      updateTitleAndTranslations(top, defaultTitle, titles, updateTopic, updateTranslationsFunc)
+      updateTitleAndTranslations(
+        top,
+        defaultTitle,
+        titles,
+        updateTopic,
+        updateTranslationsFunc,
+        getTopicTranslations,
+        (t: Translation) => deleteTopicTranslation(top.id, t)
+      )
     }
 
     private[integration] def updateResourceTranslation(resourceId: String, lang: String, name: String) =
@@ -107,6 +134,34 @@ trait TaxonomyApiClient {
     private[integration] def updateTopic(topic: Topic)(implicit formats: Formats) =
       putRaw[Topic](s"$TaxonomyApiEndpoint/topics/${topic.id}", topic)
 
+    private[integration] def getTopicTranslations(topicId: String) =
+      get[List[Translation]](s"$TaxonomyApiEndpoint/topics/$topicId/translations")
+
+    private def deleteTopicTranslation(topicId: String, translation: Translation) = {
+      translation.language
+        .map(language => {
+          delete(s"$TaxonomyApiEndpoint/topics/$topicId/translations/$language")
+        })
+        .getOrElse({
+          logger.info(s"Cannot delete translation without language for $topicId")
+          Success(())
+        })
+    }
+
+    private[integration] def getResourceTranslations(resourceId: String) =
+      get[List[Translation]](s"$TaxonomyApiEndpoint/resources/$resourceId/translations")
+
+    private[integration] def deleteResourceTranslation(resourceId: String, translation: Translation) = {
+      translation.language
+        .map(language => {
+          delete(s"$TaxonomyApiEndpoint/resources/$resourceId/translations/$language")
+        })
+        .getOrElse({
+          logger.info(s"Cannot delete translation without language for $resourceId")
+          Success(())
+        })
+    }
+
     private def get[A](url: String, params: (String, String)*)(implicit mf: Manifest[A]): Try[A] =
       ndlaClient.fetchWithForwardedAuth[A](Http(url).timeout(taxonomyTimeout, taxonomyTimeout).params(params))
 
@@ -115,6 +170,13 @@ trait TaxonomyApiClient {
 
     def queryTopic(articleId: Long): Try[List[Topic]] =
       get[List[Topic]](s"$TaxonomyApiEndpoint/queries/topics", "contentURI" -> s"urn:article:$articleId")
+
+    private[integration] def delete(url: String, params: (String, String)*): Try[Unit] =
+      ndlaClient.fetchRawWithForwardedAuth(
+        Http(url).method("DELETE").timeout(taxonomyTimeout, taxonomyTimeout).params(params)) match {
+        case Failure(ex) => Failure(ex)
+        case Success(_)  => Success(())
+      }
 
     private[integration] def putRaw[B <: AnyRef](url: String, data: B, params: (String, String)*)(
         implicit formats: org.json4s.Formats): Try[B] = {
@@ -145,4 +207,4 @@ case class Resource(id: String, name: String, contentUri: Option[String], paths:
 case class Topic(id: String, name: String, contentUri: Option[String], paths: List[String]) extends Taxonomy[Topic] {
   def withName(name: String): Topic = this.copy(name = name)
 }
-case class Translation(name: String)
+case class Translation(name: String, language: Option[String] = None)
