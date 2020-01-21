@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient}
+import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.api.{Article, _}
 import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
@@ -38,7 +38,8 @@ trait WriteService {
     with ReadService
     with ArticleApiClient
     with SearchApiClient
-    with FileStorageService =>
+    with FileStorageService
+    with TaxonomyApiClient =>
   val writeService: WriteService
 
   class WriteService {
@@ -199,7 +200,16 @@ trait WriteService {
         domainArticle <- updateFunc(toUpdate)
         _ <- articleIndexService.indexDocument(domainArticle)
         _ <- Try(searchApiClient.indexDraft(domainArticle))
+        _ <- updateTaxonomyForArticle(domainArticle)
       } yield domainArticle
+    }
+
+    private def updateTaxonomyForArticle(article: domain.Article) = {
+      article.id match {
+        case Some(id) => taxonomyApiClient.updateTaxonomyIfExists(id, article).map(_ => article)
+        case None =>
+          Failure(ArticleVersioningException("Article supplied to taxonomy update did not have an id. This is a bug."))
+      }
     }
 
     def getArticleOnLanguage(article: domain.Article, language: String): domain.Article = {

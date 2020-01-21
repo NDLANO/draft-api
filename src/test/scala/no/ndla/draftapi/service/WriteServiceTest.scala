@@ -66,6 +66,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val arg = invocation.getArgument[Agreement](0)
       Try(arg)
     })
+    when(taxonomyApiClient.updateTaxonomyIfExists(any[Long], any[domain.Article])).thenAnswer((i: InvocationOnMock) => {
+      Success(i.getArgument[Long](0))
+    })
   }
 
   test("newArticle should insert a given article") {
