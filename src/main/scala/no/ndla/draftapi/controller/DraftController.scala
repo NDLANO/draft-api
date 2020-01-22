@@ -229,7 +229,7 @@ trait DraftController {
               val page = searchParams.page.getOrElse(1)
               val idList = searchParams.idList
               val articleTypesFilter = searchParams.articleTypes
-              val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+              val fallback = searchParams.fallback.getOrElse(false)
 
               search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
             }
