@@ -754,6 +754,22 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
     search.results.head.id should be(5)
   }
 
+  test("That fallback searches for title in other languages as well") {
+    val Success(search) = articleSearchService.matchingQuery(
+      "\"in english\"",
+      List(),
+      "nb",
+      None,
+      1,
+      10,
+      Sort.ByRelevanceDesc,
+      Seq.empty,
+      fallback = true
+    )
+
+    search.results.map(_.id) should be(Seq(10))
+  }
+
   def blockUntil(predicate: () => Boolean): Unit = {
     var backoff = 0
     var done = false
