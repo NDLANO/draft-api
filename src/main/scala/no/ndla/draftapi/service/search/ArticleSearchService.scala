@@ -58,7 +58,7 @@ trait ArticleSearchService {
                       articleTypes: Seq[String],
                       fallback: Boolean): Try[SearchResult[api.ArticleSummary]] = {
 
-      val language = if (searchLanguage == Language.AllLanguages) "*" else searchLanguage
+      val language = if (searchLanguage == Language.AllLanguages || fallback) "*" else searchLanguage
       val titleSearch = simpleStringQuery(query).field(s"title.$language", 3)
       val introSearch = simpleStringQuery(query).field(s"introduction.$language", 2)
       val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
