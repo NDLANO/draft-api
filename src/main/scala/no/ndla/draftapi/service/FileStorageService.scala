@@ -39,11 +39,15 @@ trait FileStorageService {
       ).map(_ => uploadPath)
     }
 
-    def resourceExists(storageKey: String): Boolean =
-      Try(amazonClient.doesObjectExist(AttachmentStorageName, s"$resourceDirectory/$storageKey")).getOrElse(false)
+    def resourceExists(storageKey: String): Boolean = resourceWithPathExists(s"$resourceDirectory/$storageKey")
 
-    def deleteResource(storageKey: String): Try[_] =
-      Try(amazonClient.deleteObject(AttachmentStorageName, s"$resourceDirectory/$storageKey"))
+    def resourceWithPathExists(filePath: String): Boolean =
+      Try(amazonClient.doesObjectExist(AttachmentStorageName, filePath)).getOrElse(false)
+
+    def deleteResource(storageKey: String): Try[_] = deleteResourceWithPath(s"$resourceDirectory/$storageKey")
+
+    def deleteResourceWithPath(filePath: String): Try[_] =
+      Try(amazonClient.deleteObject(AttachmentStorageName, filePath))
   }
 
 }

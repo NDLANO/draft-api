@@ -23,6 +23,7 @@ import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.scalatra.servlet.FileItem
+import io.lemonlabs.uri.dsl._
 
 import math.max
 import scala.util.{Failure, Random, Success, Try}
@@ -423,6 +424,21 @@ trait WriteService {
           }
         case _ => Failure(badExtensionError)
 
+      }
+    }
+
+    private[service] def getFilePathFromUrl(filePath: String) = {
+      filePath.path.parts
+        .dropWhile(_ == "files")
+        .mkString("/")
+    }
+
+    def deleteFile(fileUrlOrPath: String): Try[_] = {
+      val filePath = getFilePathFromUrl(fileUrlOrPath)
+      if (fileStorage.resourceWithPathExists(filePath)) {
+        fileStorage.deleteResourceWithPath(filePath)
+      } else {
+        Failure(NotFoundException(s"Could not find file with file path '$filePath' in storage."))
       }
     }
 

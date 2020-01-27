@@ -688,4 +688,13 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.status.other.sorted should be(existing.status.other.map(_.toString).toSeq.sorted)
   }
 
+  test("Deleting storage should be called with correct path") {
+    val imported = "https://api.ndla.no/files/194277/Temahefte%20egg%20og%20meieriprodukterNN.pdf"
+    val notImported = "https://api.ndla.no/files/resources/01f6TKKF1wpAsc1Z.pdf"
+    val onlyPath = "resources/01f6TKKF1wpAsc1Z.pdf"
+    service.getFilePathFromUrl(imported) should be("194277/Temahefte egg og meieriprodukterNN.pdf")
+    service.getFilePathFromUrl(notImported) should be("resources/01f6TKKF1wpAsc1Z.pdf")
+    service.getFilePathFromUrl(onlyPath) should be("resources/01f6TKKF1wpAsc1Z.pdf")
+  }
+
 }
