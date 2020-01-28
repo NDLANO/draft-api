@@ -692,9 +692,13 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val imported = "https://api.ndla.no/files/194277/Temahefte%20egg%20og%20meieriprodukterNN.pdf"
     val notImported = "https://api.ndla.no/files/resources/01f6TKKF1wpAsc1Z.pdf"
     val onlyPath = "resources/01f6TKKF1wpAsc1Z.pdf"
+    val pathWithSlash = "/resources/01f6TKKF1wpAsc1Z.pdf"
+    val pathWithFiles = "/files/resources/01f6TKKF1wpAsc1Z.pdf"
     service.getFilePathFromUrl(imported) should be("194277/Temahefte egg og meieriprodukterNN.pdf")
     service.getFilePathFromUrl(notImported) should be("resources/01f6TKKF1wpAsc1Z.pdf")
     service.getFilePathFromUrl(onlyPath) should be("resources/01f6TKKF1wpAsc1Z.pdf")
+    service.getFilePathFromUrl(pathWithSlash) should be("resources/01f6TKKF1wpAsc1Z.pdf")
+    service.getFilePathFromUrl(pathWithFiles) should be("resources/01f6TKKF1wpAsc1Z.pdf")
   }
 
 }
