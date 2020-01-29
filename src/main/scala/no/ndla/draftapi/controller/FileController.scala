@@ -13,6 +13,7 @@ import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.service.WriteService
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.NoContent
 import org.scalatra.servlet.FileUploadSupport
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 
@@ -36,6 +37,7 @@ trait FileController {
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
 
     private val file = Param("file", "File to upload")
+    private val filePath = Param[String]("path", "Path to file. Eg: resources/awdW2CaX.png")
 
     post(
       "/",
@@ -62,6 +64,33 @@ trait FileController {
           case None =>
             errorHandler(
               new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain a file"))))
+        }
+      }
+    }
+
+    delete(
+      "/",
+      operation(
+        apiOperation[Unit]("Delete")
+          summary "Deletes provided file"
+          description "Deletes provided file"
+          authorizations "oauth2"
+          parameters (
+            asHeaderParam(correlationId),
+          )
+          responseMessages (response400, response403, response500))
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        paramOrNone(this.filePath.paramName) match {
+          case Some(filePath) =>
+            writeService.deleteFile(filePath) match {
+              case Failure(ex) => errorHandler(ex)
+              case Success(_)  => NoContent()
+            }
+          case None =>
+            errorHandler(new ValidationException(errors =
+              Seq(ValidationMessage(this.filePath.paramName, "The request must contain a file path query parameter"))))
         }
       }
     }
