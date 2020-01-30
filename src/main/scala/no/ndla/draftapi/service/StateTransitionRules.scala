@@ -13,9 +13,9 @@ import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.auth.UserInfo.PublishRoles
+import no.ndla.draftapi.auth.UserInfo.{PublishRoles, DirectPublishRoles}
 import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningpathApiClient, TaxonomyApiClient}
-import no.ndla.draftapi.model.domain.{Article, ArticleStatus, StateTransition}
+import no.ndla.draftapi.model.domain.{ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.SideEffect.SideEffect
@@ -38,30 +38,34 @@ trait StateTransitionRules {
 
   object StateTransitionRules {
 
-    private[service] val checkIfArticleIsUsedInLearningStep: SideEffect = (article, _) =>
+    // Import implicits to clean up SideEffect creation where we don't need all parameters
+    import SideEffect.implicits._
+
+    private[service] val checkIfArticleIsUsedInLearningStep: SideEffect = (article: domain.Article) =>
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
         Success(article)
     }
 
-    private[service] val unpublishArticle: SideEffect = (article, _) =>
+    private[service] val unpublishArticle: SideEffect = (article: domain.Article) =>
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
         articleApiClient.unpublishArticle(article)
     }
 
-    private val removeFromSearch: SideEffect = (article, _) =>
+    private val removeFromSearch: SideEffect = (article: domain.Article) =>
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
-    private val validateArticle: SideEffect = (article, _) =>
+    private val validateArticle: SideEffect = article =>
       contentValidator.validateArticle(article, allowUnknownLanguage = true)
 
-    private val publishArticle: SideEffect = (article, isImported) =>
-      article.id match {
-        case Some(id) =>
-          val externalIds = draftRepository.getExternalIdsFromId(id)
-          taxonomyApiClient.updateTaxonomyIfExists(id, article)
-          articleApiClient.updateArticle(id, article, externalIds, isImported)
-        case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
-    }
+    private def publishArticleSideEffect(useSoftValidation: Boolean = false): SideEffect =
+      (article, isImported) =>
+        article.id match {
+          case Some(id) =>
+            val externalIds = draftRepository.getExternalIdsFromId(id)
+            taxonomyApiClient.updateTaxonomyIfExists(id, article)
+            articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
+          case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
+      }
 
     import StateTransition._
 
@@ -71,42 +75,42 @@ trait StateTransitionRules {
        DRAFT                      -> DRAFT,
        DRAFT                      -> PROPOSAL,
        DRAFT                      -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
-      (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(true),
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
        PROPOSAL                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
        PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
       (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
       (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticle require PublishRoles,
-      (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(true),
       (PROPOSAL                   -> AWAITING_QUALITY_ASSURANCE) keepCurrentOnTransition,
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
        USER_TEST                  -> PROPOSAL,
        USER_TEST                  -> DRAFT,
       (USER_TEST                  -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL, PUBLISHED) keepCurrentOnTransition,
-      (USER_TEST                  -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (USER_TEST                  -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(true),
       (AWAITING_QUALITY_ASSURANCE -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL, USER_TEST, PUBLISHED),
        AWAITING_QUALITY_ASSURANCE -> DRAFT,
        AWAITING_QUALITY_ASSURANCE -> QUEUED_FOR_LANGUAGE,
       (AWAITING_QUALITY_ASSURANCE -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
       (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED) withSideEffect validateArticle,
-      (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(true),
        QUALITY_ASSURED            -> QUALITY_ASSURED,
        QUALITY_ASSURED            -> DRAFT,
       (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, PUBLISHED) require PublishRoles withSideEffect validateArticle keepCurrentOnTransition,
-      (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(true),
        QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING       withSideEffect validateArticle,
-      (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(false),
        QUEUED_FOR_PUBLISHING      -> DRAFT,
       (PUBLISHED                  -> DRAFT)                      keepCurrentOnTransition,
       (PUBLISHED                  -> PROPOSAL)                   keepCurrentOnTransition,
-      (PUBLISHED                  -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
-      (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED) require PublishRoles withSideEffect checkIfArticleIsUsedInLearningStep withSideEffect unpublishArticle,
+      (PUBLISHED                  -> AWAITING_UNPUBLISHING)      require PublishRoles withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
+      (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect checkIfArticleIsUsedInLearningStep withSideEffect unpublishArticle,
       (AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
        AWAITING_UNPUBLISHING      -> DRAFT,
-      (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
-      (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED) require PublishRoles withSideEffect unpublishArticle,
-      (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticleSideEffect(false),
+      (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect unpublishArticle,
+      (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticleSideEffect(true),
        UNPUBLISHED                -> PROPOSAL,
        UNPUBLISHED                -> DRAFT,
        UNPUBLISHED                -> UNPUBLISHED,

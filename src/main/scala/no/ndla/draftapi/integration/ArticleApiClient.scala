@@ -35,7 +35,8 @@ trait ArticleApiClient {
     def updateArticle(id: Long,
                       article: domain.Article,
                       externalIds: List[String],
-                      useImportValidation: Boolean): Try[domain.Article] = {
+                      useImportValidation: Boolean,
+                      useSoftValidation: Boolean): Try[domain.Article] = {
       implicit val format: DefaultFormats.type = org.json4s.DefaultFormats
 
       val articleApiArticle = converterService.toArticleApiArticle(article)
@@ -43,8 +44,9 @@ trait ArticleApiClient {
         s"$InternalEndpoint/article/$id",
         articleApiArticle,
         "external-id" -> externalIds.mkString(","),
-        "use-import-validation" -> useImportValidation.toString)
-        .map(_ => article)
+        "use-import-validation" -> useImportValidation.toString,
+        "use-soft-validation" -> useSoftValidation.toString
+      ).map(_ => article)
     }
 
     def unpublishArticle(article: domain.Article): Try[domain.Article] = {

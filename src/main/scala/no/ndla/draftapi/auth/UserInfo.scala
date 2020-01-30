@@ -21,6 +21,7 @@ object UserInfo {
   val UnauthorizedUser = UserInfo("unauthorized", Set.empty)
 
   val PublishRoles = Set(Role.WRITE, Role.PUBLISH)
+  val DirectPublishRoles = PublishRoles + Role.ADMIN
   val WriteRoles = Set(Role.WRITE)
   val ReadRoles = Set(Role.WRITE)
 
