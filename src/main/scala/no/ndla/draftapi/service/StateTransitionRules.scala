@@ -54,7 +54,7 @@ trait StateTransitionRules {
     private val removeFromSearch: SideEffect = (article: domain.Article) =>
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
-    private val validateArticle: SideEffect = article =>
+    private val validateArticle: SideEffect = (article: domain.Article) =>
       contentValidator.validateArticle(article, allowUnknownLanguage = true)
 
     private def publishArticleSideEffect(useSoftValidation: Boolean = false): SideEffect =
