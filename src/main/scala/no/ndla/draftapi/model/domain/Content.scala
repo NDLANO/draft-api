@@ -44,7 +44,8 @@ case class Article(
     articleType: ArticleType.Value,
     notes: Seq[EditorNote],
     previousVersionsNotes: Seq[EditorNote],
-    editorLabels: Seq[String]
+    editorLabels: Seq[String],
+    competences: Seq[String]
 ) extends Content {
 
   def supportedLanguages =

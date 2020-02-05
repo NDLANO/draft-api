@@ -178,7 +178,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         None,
         None,
         None,
-        None
+        None,
+        Seq.empty
       )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
@@ -214,7 +215,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         None,
         None,
         None,
-        None
+        None,
+        Seq.empty
       )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
@@ -269,7 +271,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some(Seq(updatedRequiredLib)),
       Some(updatedArticleType),
       None,
-      None
+      None,
+      Seq.empty
     )
 
     val expectedArticle = article.copy(
@@ -635,7 +638,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       None,
       None,
       Some(Seq("note1", "note2")),
-      Some(Seq("note3", "note4"))
+      Some(Seq("note3", "note4")),
+      Seq.empty
     )
 
     val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithPublished)
@@ -670,7 +674,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       None,
       None,
       Some(Seq("note1", "note2")),
-      Some(Seq("note3", "note4"))
+      Some(Seq("note3", "note4")),
+      Seq.empty
     )
 
     val existing = TestData.sampleDomainArticle.copy(title = Seq(ArticleTitle(existingTitle, "nb")),

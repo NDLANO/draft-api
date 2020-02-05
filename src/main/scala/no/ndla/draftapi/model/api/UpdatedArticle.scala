@@ -29,5 +29,6 @@ case class UpdatedArticle(
     @(ApiModelProperty @field)(description = "Required libraries in order to render the article") requiredLibraries: Option[Seq[RequiredLibrary]],
     @(ApiModelProperty @field)(description = "The type of article this is. Possible values are topic-article,standard") articleType: Option[String],
     @(ApiModelProperty @field)(description = "The notes for this article draft") notes: Option[Seq[String]],
-    @(ApiModelProperty @field)(description = "The labels attached to this article; meant for editors.") editorLabels: Option[Seq[String]]
+    @(ApiModelProperty @field)(description = "The labels attached to this article; meant for editors.") editorLabels: Option[Seq[String]],
+    @(ApiModelProperty @field)(description = "A competence goal connected to the article") competences: Seq[String]
 )
