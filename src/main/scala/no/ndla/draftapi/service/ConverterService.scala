@@ -444,7 +444,8 @@ trait ConverterService {
             updatedBy = user.id,
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
             notes = allNotes,
-            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels)
+            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels),
+            competences = article.competences
           )
 
           article.language match {
