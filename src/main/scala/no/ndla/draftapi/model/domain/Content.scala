@@ -65,9 +65,9 @@ object Article extends SQLSyntaxSupport[Article] {
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
-  def apply(lp: SyntaxProvider[Article])(rs: WrappedResultSet): Article = apply(lp.resultName)(rs)
+  def fromResultSet(lp: SyntaxProvider[Article])(rs: WrappedResultSet): Article = fromResultSet(lp.resultName)(rs)
 
-  def apply(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
+  def fromResultSet(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
     val meta = read[Article](rs.string(lp.c("document")))
     meta.copy(
       id = Some(rs.long(lp.c("article_id"))),
@@ -126,9 +126,9 @@ object Agreement extends SQLSyntaxSupport[Agreement] {
   override val tableName = "agreementdata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
 
-  def apply(lp: SyntaxProvider[Agreement])(rs: WrappedResultSet): Agreement = apply(lp.resultName)(rs)
+  def fromResultSet(lp: SyntaxProvider[Agreement])(rs: WrappedResultSet): Agreement = fromResultSet(lp.resultName)(rs)
 
-  def apply(lp: ResultName[Agreement])(rs: WrappedResultSet): Agreement = {
+  def fromResultSet(lp: ResultName[Agreement])(rs: WrappedResultSet): Agreement = {
     val meta = read[Agreement](rs.string(lp.c("document")))
     Agreement(
       Some(rs.long(lp.c("id"))),

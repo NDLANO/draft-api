@@ -72,13 +72,19 @@ trait AgreementRepository {
     private def agreementWhere(whereClause: SQLSyntax)(
         implicit session: DBSession = ReadOnlyAutoSession): Option[Agreement] = {
       val agr = Agreement.syntax("agr")
-      sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause".map(Agreement(agr)).single.apply()
+      sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause"
+        .map(Agreement.fromResultSet(agr))
+        .single
+        .apply()
     }
 
     private def agreementsWhere(whereClause: SQLSyntax)(
         implicit session: DBSession = ReadOnlyAutoSession): List[Agreement] = {
       val agr = Agreement.syntax("agr")
-      sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause".map(Agreement(agr)).list.apply()
+      sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause"
+        .map(Agreement.fromResultSet(agr))
+        .list
+        .apply()
     }
 
   }

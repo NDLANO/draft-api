@@ -331,7 +331,7 @@ trait DraftRepository {
            offset $offset
            limit $pageSize
       """
-        .map(Article(ar))
+        .map(Article.fromResultSet(ar))
         .list
         .apply()
     }
@@ -372,7 +372,7 @@ trait DraftRepository {
         implicit session: DBSession = ReadOnlyAutoSession): Option[Article] = {
       val ar = Article.syntax("ar")
       sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause"
-        .map(Article(ar))
+        .map(Article.fromResultSet(ar))
         .single
         .apply()
     }
@@ -384,7 +384,7 @@ trait DraftRepository {
         implicit session: DBSession = ReadOnlyAutoSession): Seq[Article] = {
       val ar = Article.syntax("ar")
       sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause"
-        .map(Article(ar))
+        .map(Article.fromResultSet(ar))
         .list
         .apply()
     }

@@ -44,7 +44,7 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
   def allArticles(offset: Long)(implicit session: DBSession): Seq[Article] = {
     val ar = Article.syntax("ar")
     sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL order by ar.id limit 1000 offset $offset"
-      .map(Article(ar))
+      .map(Article.fromResultSet(ar))
       .list
       .apply()
   }
