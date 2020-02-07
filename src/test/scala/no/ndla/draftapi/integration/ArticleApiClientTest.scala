@@ -89,7 +89,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
       .runConsumerTest { mockConfig =>
         AuthUser.setHeader(s"Bearer $exampleToken")
         val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
-        articleApiClient.updateArticle(1, testArticle, List("1234"), false)
+        articleApiClient.updateArticle(1, testArticle, List("1234"), false, false)
       }
   }
 
