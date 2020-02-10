@@ -162,16 +162,16 @@ trait DraftController {
     get(
       "/competences/",
       operation(
-        apiOperation[Seq[String]]("getCompetences")
-          summary "Retrieves a list of all competences"
-          description "Retrieves a list of all competences"
+        apiOperation[CompetencesSearchResult]("getCompetences")
+          summary "Retrieves a list of all previously used competences in articles"
+          description "Retrieves a list of all previously used competences in articles"
           parameters (
             asHeaderParam(correlationId),
             asQueryParam(query),
             asQueryParam(pageSize),
             asQueryParam(pageNo)
         )
-          responseMessages response500
+          responseMessages (response403, response404, response500)
           authorizations "oauth2")
     ) {
 

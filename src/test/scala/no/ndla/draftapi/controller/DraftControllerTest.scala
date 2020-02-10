@@ -330,4 +330,23 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                          any[Boolean])
     verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
+
+  test("competences should return 200 OK if the result was not empty") {
+    when(readService.getAllCompetences(anyString, anyInt, anyInt))
+      .thenReturn(TestData.sampleApiCompetencesSearchResult)
+
+    get("/test/competences/") {
+      status should equal(200)
+    }
+  }
+
+  test("competences should return 404 if the results are empty") {
+    when(readService.getAllCompetences(anyString, anyInt, anyInt))
+      .thenReturn(TestData.sampleApiCompetencesSearchResult.copy(results = Seq.empty))
+
+    get("/test/competences/") {
+      status should equal(404)
+    }
+  }
+
 }

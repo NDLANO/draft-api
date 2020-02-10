@@ -469,4 +469,6 @@ object TestData {
   val statusWithQueuedForPublishing = domain.Status(ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty)
 
   val sampleLearningPath = LearningPath(Some(1))
+
+  val sampleApiCompetencesSearchResult = api.CompetencesSearchResult(10, 1, 1, Seq("a", "b"))
 }

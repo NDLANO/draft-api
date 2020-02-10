@@ -358,8 +358,9 @@ trait DraftRepository {
             (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
             from ${Article.table}) as dummy
             where competences like ${input + '%'}
-            offset $offset
-            limit $pageSize
+            order by competences
+            offset ${offset}
+            limit ${pageSize}
             """.map(rs => rs.string(1)).toList.apply
 
       val competences_count = sql"""select distinct count(*) from
