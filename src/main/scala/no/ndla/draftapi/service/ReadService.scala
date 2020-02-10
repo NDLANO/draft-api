@@ -81,7 +81,7 @@ trait ReadService {
     }
 
     def getAllCompetences(input: String, pageSize: Int, offset: Int): api.CompetencesSearchResult = {
-      val (competences, competenceCount) = draftRepository.getCompetences(input, pageSize, offset)
+      val (competences, competenceCount) = draftRepository.getCompetences(input, pageSize, (offset - 1) * pageSize)
       converterService.toApiArticleCompetences(competences, competenceCount, pageSize, offset)
     }
 

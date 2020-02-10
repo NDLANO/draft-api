@@ -178,10 +178,16 @@ trait DraftController {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val query = paramOrDefault(this.query.paramName, "")
-        val limit = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
-        val offset = intOrDefault(this.pageNo.paramName, 0)
+        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize) match {
+          case tooSmall if tooSmall < 1 => DraftApiProperties.DefaultPageSize
+          case x                        => x
+        }
+        val offset = intOrDefault(this.pageNo.paramName, 1) match {
+          case tooSmall if tooSmall < 1 => 1
+          case x                        => x
+        }
 
-        val result = readService.getAllCompetences(query, limit, offset)
+        val result = readService.getAllCompetences(query, pageSize, offset)
         if (result.results.isEmpty) {
           NotFound(body = Error(Error.NOT_FOUND, s"No competences were found"))
         } else {
