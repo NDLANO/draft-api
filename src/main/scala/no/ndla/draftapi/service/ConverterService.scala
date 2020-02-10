@@ -549,5 +549,12 @@ trait ConverterService {
       }
     }
 
+    def toApiArticleCompetences(competences: Seq[String],
+                                competenceCount: Int,
+                                pageSize: Int,
+                                offset: Int): api.CompetencesSearchResult = {
+      api.CompetencesSearchResult(competenceCount, offset, pageSize, competences)
+    }
+
   }
 }

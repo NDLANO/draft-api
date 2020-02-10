@@ -352,6 +352,25 @@ trait DraftRepository {
         .toList
     }
 
+    def getCompetences(input: String, pageSize: Int, offset: Int)(
+        implicit session: DBSession = AutoSession): (Seq[String], Int) = {
+      val competences = sql"""select distinct competences from
+            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
+            from ${Article.table}) as dummy
+            where competences like ${input + '%'}
+            offset $offset
+            limit $pageSize
+            """.map(rs => rs.string(1)).toList.apply
+
+      val competences_count = sql"""select distinct count(*) from
+            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
+            from ${Article.table}) as dummy
+            where competences like ${input + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
+
+      (competences, competences_count)
+
+    }
+
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
       sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Article.table}"
         .map(rs => {
