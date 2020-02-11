@@ -54,8 +54,10 @@ trait StateTransitionRules {
     private val removeFromSearch: SideEffect = (article: domain.Article) =>
       articleIndexService.deleteDocument(article.id.get).map(_ => article)
 
-    private val validateArticle: SideEffect = (article: domain.Article) =>
-      contentValidator.validateArticle(article, allowUnknownLanguage = true)
+    private val validateArticleApiArticle: SideEffect = (article: domain.Article, isImported: Boolean) => {
+      val articleApiArticle = converterService.toArticleApiArticle(article)
+      articleApiClient.validateArticle(articleApiArticle, isImported).map(_ => article)
+    }
 
     private def publishArticleSideEffect(useSoftValidation: Boolean = false): SideEffect =
       (article, isImported) =>
@@ -84,7 +86,7 @@ trait StateTransitionRules {
        PROPOSAL                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
        PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
       (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
-      (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticle require PublishRoles,
+      (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticleApiArticle require PublishRoles,
       (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
       (PROPOSAL                   -> AWAITING_QUALITY_ASSURANCE) keepCurrentOnTransition,
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
@@ -96,13 +98,13 @@ trait StateTransitionRules {
        AWAITING_QUALITY_ASSURANCE -> DRAFT,
        AWAITING_QUALITY_ASSURANCE -> QUEUED_FOR_LANGUAGE,
       (AWAITING_QUALITY_ASSURANCE -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
-      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED) withSideEffect validateArticle,
+      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED) withSideEffect validateArticleApiArticle,
       (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        QUALITY_ASSURED            -> QUALITY_ASSURED,
        QUALITY_ASSURED            -> DRAFT,
-      (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, PUBLISHED) require PublishRoles withSideEffect validateArticle keepCurrentOnTransition,
-      (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
-       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING       withSideEffect validateArticle,
+      (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, PUBLISHED) require PublishRoles withSideEffect validateArticleApiArticle keepCurrentOnTransition,
+      (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticle,
+       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING,
       (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticle,
        QUEUED_FOR_PUBLISHING      -> DRAFT,
       (PUBLISHED                  -> DRAFT)                      keepCurrentOnTransition,
