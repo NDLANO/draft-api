@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 
 import no.ndla.draftapi.auth.{Role, UserInfo}
+import no.ndla.draftapi.model.api.ArticleApiArticle
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
@@ -383,6 +384,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithQueuedForPublishing)
       when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
       when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(existing))
+      when(articleApiClient.validateArticle(any[ArticleApiArticle], any[Boolean])).thenAnswer((i: InvocationOnMock) => {
+        Success(i.getArgument[ArticleApiArticle](0))
+      })
       val Success(result) = service.updateArticle(existing.id.get,
                                                   updatedArticle,
                                                   List.empty,

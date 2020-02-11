@@ -9,7 +9,7 @@ package no.ndla.draftapi.service
 
 import java.util.Date
 
-import no.ndla.draftapi.model.api.IllegalStatusStateTransition
+import no.ndla.draftapi.model.api.{ArticleApiArticle, IllegalStatusStateTransition}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.{Article, EditorNote, Status}
@@ -245,7 +245,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
                         TestData.userWithPublishAccess,
                         false)
           .unsafeRunSync())
-    verify(contentValidator, times(transitionsToTest.size)).validateArticle(any[domain.Article], any[Boolean])
+    verify(articleApiClient, times(transitionsToTest.size)).validateArticle(any[ArticleApiArticle], any[Boolean])
   }
 
 }

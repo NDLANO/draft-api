@@ -104,7 +104,7 @@ trait StateTransitionRules {
        QUALITY_ASSURED            -> DRAFT,
       (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, PUBLISHED) require PublishRoles withSideEffect validateArticleApiArticle keepCurrentOnTransition,
       (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticle,
-       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING,
+       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING       withSideEffect validateArticleApiArticle,
       (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticle,
        QUEUED_FOR_PUBLISHING      -> DRAFT,
       (PUBLISHED                  -> DRAFT)                      keepCurrentOnTransition,
