@@ -160,6 +160,43 @@ trait DraftController {
     }
 
     get(
+      "/competences/",
+      operation(
+        apiOperation[CompetencesSearchResult]("getCompetences")
+          summary "Retrieves a list of all previously used competences in articles"
+          description "Retrieves a list of all previously used competences in articles"
+          parameters (
+            asHeaderParam(correlationId),
+            asQueryParam(query),
+            asQueryParam(pageSize),
+            asQueryParam(pageNo)
+        )
+          responseMessages (response403, response404, response500)
+          authorizations "oauth2")
+    ) {
+
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val query = paramOrDefault(this.query.paramName, "")
+        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize) match {
+          case tooSmall if tooSmall < 1 => DraftApiProperties.DefaultPageSize
+          case x                        => x
+        }
+        val pageNo = intOrDefault(this.pageNo.paramName, 1) match {
+          case tooSmall if tooSmall < 1 => 1
+          case x                        => x
+        }
+
+        val result = readService.getAllCompetences(query, pageSize, pageNo)
+        if (result.results.isEmpty) {
+          NotFound(body = Error(Error.NOT_FOUND, s"No competences were found"))
+        } else {
+          result
+        }
+      }
+    }
+
+    get(
       "/",
       operation(
         apiOperation[List[SearchResult]]("getAllArticles")

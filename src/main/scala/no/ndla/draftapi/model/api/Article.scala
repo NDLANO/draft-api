@@ -36,5 +36,6 @@ case class Article(
     @(ApiModelProperty @field)(description = "The type of article this is. Possible values are topic-article,standard") articleType: String,
     @(ApiModelProperty @field)(description = "The languages this article supports") supportedLanguages: Seq[String],
     @(ApiModelProperty @field)(description = "The notes for this article draft") notes: Seq[EditorNote],
-    @(ApiModelProperty @field)(description = "The labels attached to this article; meant for editors.") editorLabels: Seq[String]
+    @(ApiModelProperty @field)(description = "The labels attached to this article; meant for editors.") editorLabels: Seq[String],
+    @(ApiModelProperty @field)(description = "A list of competence goals connected to the article") competences: Seq[String]
 )

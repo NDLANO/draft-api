@@ -348,4 +348,48 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     }
 
   }
+
+  test("getCompetences returns non-duplicate competences and correct number of them") {
+    assume(databaseIsAvailable, "Database is unavailable")
+    val sampleArticle1 = TestData.sampleTopicArticle.copy(competences = Seq("abc", "bcd"))
+    val sampleArticle2 = TestData.sampleTopicArticle.copy(competences = Seq("bcd", "cde"))
+    val sampleArticle3 = TestData.sampleTopicArticle.copy(competences = Seq("def"))
+    val sampleArticle4 = TestData.sampleTopicArticle.copy(competences = Seq.empty)
+
+    repository.insert(sampleArticle1)
+    repository.insert(sampleArticle2)
+    repository.insert(sampleArticle3)
+    repository.insert(sampleArticle4)
+
+    val (competences1, competencesCount1) = repository.getCompetences("", 5, 0)
+    competences1 should equal(Seq("abc", "bcd", "cde", "def"))
+    competences1.length should be(4)
+    competencesCount1 should be(4)
+
+    val (competences2, competencesCount2) = repository.getCompetences("", 2, 0)
+    competences2 should equal(Seq("abc", "bcd"))
+    competences2.length should be(2)
+    competencesCount2 should be(4)
+
+    val (competences3, competencesCount3) = repository.getCompetences("", 2, 2)
+    competences3 should equal(Seq("cde", "def"))
+    competences3.length should be(2)
+    competencesCount3 should be(4)
+
+    val (competences4, competencesCount4) = repository.getCompetences("", 1, 3)
+    competences4 should equal(Seq("def"))
+    competences4.length should be(1)
+    competencesCount4 should be(4)
+
+    val (competences5, competencesCount5) = repository.getCompetences("b", 5, 0)
+    competences5 should equal(Seq("bcd"))
+    competences5.length should be(1)
+    competencesCount5 should be(1)
+
+    val (competences6, competencesCount6) = repository.getCompetences("%b", 5, 0)
+    competences6 should equal(Seq("bcd"))
+    competences6.length should be(1)
+    competencesCount6 should be(1)
+  }
+
 }

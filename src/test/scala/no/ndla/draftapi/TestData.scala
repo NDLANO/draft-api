@@ -87,6 +87,7 @@ object TestData {
     articleType = "standard",
     supportedLanguages = Seq("nb"),
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -106,7 +107,8 @@ object TestData {
     None,
     None,
     None,
-    None
+    None,
+    Seq.empty
   )
 
   val articleHit1 = """
@@ -172,6 +174,7 @@ object TestData {
     "standard",
     Seq("nb"),
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -209,6 +212,7 @@ object TestData {
     "standard",
     Seq("nb"),
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -230,6 +234,7 @@ object TestData {
     userWithWriteAccess.id,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.TopicArticle,
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty
@@ -255,6 +260,7 @@ object TestData {
     ArticleType.Standard,
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -278,6 +284,7 @@ object TestData {
     ArticleType.Standard,
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -299,6 +306,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty
@@ -325,6 +333,7 @@ object TestData {
                     None)),
     Seq.empty,
     "standard",
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -358,6 +367,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty
@@ -399,6 +409,7 @@ object TestData {
     DateTime.now().minusDays(2).toDate,
     "standard",
     Seq("en"),
+    Seq.empty,
     Seq.empty,
     Seq.empty
   )
@@ -459,4 +470,6 @@ object TestData {
   val statusWithQueuedForPublishing = domain.Status(ArticleStatus.QUEUED_FOR_PUBLISHING, Set.empty)
 
   val sampleLearningPath = LearningPath(Some(1))
+
+  val sampleApiCompetencesSearchResult = api.CompetencesSearchResult(10, 1, 1, Seq("a", "b"))
 }

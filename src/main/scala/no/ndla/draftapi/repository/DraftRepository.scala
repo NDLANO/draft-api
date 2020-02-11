@@ -331,7 +331,7 @@ trait DraftRepository {
            offset $offset
            limit $pageSize
       """
-        .map(Article(ar))
+        .map(Article.fromResultSet(ar))
         .list
         .apply()
     }
@@ -350,6 +350,30 @@ trait DraftRepository {
             ArticleTag(tags.flatMap(_.tags), language)
         }
         .toList
+    }
+
+    def getCompetences(input: String, pageSize: Int, offset: Int)(
+        implicit session: DBSession = AutoSession): (Seq[String], Int) = {
+      val sanitizedInput = input.replaceAll("%", "")
+      val competences = sql"""select distinct competences from
+            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
+            from ${Article.table}) as dummy
+            where competences like ${sanitizedInput + '%'}
+            order by competences
+            offset ${offset}
+            limit ${pageSize}
+            """
+        .map(rs => rs.string(1))
+        .toList
+        .apply
+
+      val competences_count = sql"""select distinct count(*) from
+            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
+            from ${Article.table}) as dummy
+            where competences like ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
+
+      (competences, competences_count)
+
     }
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
@@ -372,7 +396,7 @@ trait DraftRepository {
         implicit session: DBSession = ReadOnlyAutoSession): Option[Article] = {
       val ar = Article.syntax("ar")
       sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause"
-        .map(Article(ar))
+        .map(Article.fromResultSet(ar))
         .single
         .apply()
     }
@@ -384,7 +408,7 @@ trait DraftRepository {
         implicit session: DBSession = ReadOnlyAutoSession): Seq[Article] = {
       val ar = Article.syntax("ar")
       sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause"
-        .map(Article(ar))
+        .map(Article.fromResultSet(ar))
         .list
         .apply()
     }

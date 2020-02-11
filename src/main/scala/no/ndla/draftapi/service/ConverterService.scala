@@ -81,7 +81,8 @@ trait ConverterService {
                 articleType = ArticleType.valueOfOrError(newArticle.articleType),
                 notes = notes,
                 previousVersionsNotes = Seq.empty,
-                editorLabels = newArticle.editorLabels
+                editorLabels = newArticle.editorLabels,
+                competences = newArticle.competences
             ))
       }
     }
@@ -240,7 +241,8 @@ trait ConverterService {
             article.articleType.toString,
             article.supportedLanguages,
             article.notes.map(toApiEditorNote),
-            article.editorLabels
+            article.editorLabels,
+            article.competences
           ))
       } else {
         Failure(
@@ -442,7 +444,8 @@ trait ConverterService {
             updatedBy = user.id,
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
             notes = allNotes,
-            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels)
+            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels),
+            competences = article.competences
           )
 
           article.language match {
@@ -525,7 +528,8 @@ trait ConverterService {
                 articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(ArticleType.Standard),
                 notes = notes,
                 previousVersionsNotes = Seq.empty,
-                editorLabels = article.editorLabels.getOrElse(Seq.empty)
+                editorLabels = article.editorLabels.getOrElse(Seq.empty),
+                competences = article.competences
             ))
       }
     }
@@ -543,6 +547,13 @@ trait ConverterService {
             .map(_.to.toString)
             .toSeq
       }
+    }
+
+    def toApiArticleCompetences(competences: Seq[String],
+                                competenceCount: Int,
+                                pageSize: Int,
+                                offset: Int): api.CompetencesSearchResult = {
+      api.CompetencesSearchResult(competenceCount, offset, pageSize, competences)
     }
 
   }

@@ -61,7 +61,8 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
     articleType = domain.ArticleType.Standard,
     notes = Seq.empty,
     previousVersionsNotes = Seq.empty,
-    editorLabels = Seq.empty
+    editorLabels = Seq.empty,
+    competences = Seq.empty
   )
 
   val exampleToken =
