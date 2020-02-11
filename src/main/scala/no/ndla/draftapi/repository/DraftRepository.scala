@@ -354,19 +354,23 @@ trait DraftRepository {
 
     def getCompetences(input: String, pageSize: Int, offset: Int)(
         implicit session: DBSession = AutoSession): (Seq[String], Int) = {
+      val sanitizedInput = input.replaceAll("%", "")
       val competences = sql"""select distinct competences from
             (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
             from ${Article.table}) as dummy
-            where competences like ${input + '%'}
+            where competences like ${sanitizedInput + '%'}
             order by competences
             offset ${offset}
             limit ${pageSize}
-            """.map(rs => rs.string(1)).toList.apply
+            """
+        .map(rs => rs.string(1))
+        .toList
+        .apply
 
       val competences_count = sql"""select distinct count(*) from
             (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
             from ${Article.table}) as dummy
-            where competences like ${input + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
+            where competences like ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
 
       (competences, competences_count)
 

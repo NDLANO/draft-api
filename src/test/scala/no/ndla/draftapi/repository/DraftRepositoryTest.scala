@@ -380,6 +380,16 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     competences4 should equal(Seq("def"))
     competences4.length should be(1)
     competencesCount4 should be(4)
+
+    val (competences5, competencesCount5) = repository.getCompetences("b", 5, 0)
+    competences5 should equal(Seq("bcd"))
+    competences5.length should be(1)
+    competencesCount5 should be(1)
+
+    val (competences6, competencesCount6) = repository.getCompetences("%b", 5, 0)
+    competences6 should equal(Seq("bcd"))
+    competences6.length should be(1)
+    competencesCount6 should be(1)
   }
 
 }

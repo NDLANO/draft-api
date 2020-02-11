@@ -182,12 +182,12 @@ trait DraftController {
           case tooSmall if tooSmall < 1 => DraftApiProperties.DefaultPageSize
           case x                        => x
         }
-        val offset = intOrDefault(this.pageNo.paramName, 1) match {
+        val pageNo = intOrDefault(this.pageNo.paramName, 1) match {
           case tooSmall if tooSmall < 1 => 1
           case x                        => x
         }
 
-        val result = readService.getAllCompetences(query, pageSize, offset)
+        val result = readService.getAllCompetences(query, pageSize, pageNo)
         if (result.results.isEmpty) {
           NotFound(body = Error(Error.NOT_FOUND, s"No competences were found"))
         } else {
