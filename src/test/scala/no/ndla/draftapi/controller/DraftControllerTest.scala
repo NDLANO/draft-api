@@ -340,12 +340,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("competences should return 404 if the results are empty") {
+  test("competences should return 200 OK if the results are empty") {
     when(readService.getAllCompetences(anyString, anyInt, anyInt))
       .thenReturn(TestData.sampleApiCompetencesSearchResult.copy(results = Seq.empty))
 
     get("/test/competences/") {
-      status should equal(404)
+      status should equal(200)
     }
   }
 

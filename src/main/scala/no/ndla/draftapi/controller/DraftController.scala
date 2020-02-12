@@ -171,7 +171,7 @@ trait DraftController {
             asQueryParam(pageSize),
             asQueryParam(pageNo)
         )
-          responseMessages (response403, response404, response500)
+          responseMessages (response403, response500)
           authorizations "oauth2")
     ) {
 
@@ -187,12 +187,7 @@ trait DraftController {
           case x                        => x
         }
 
-        val result = readService.getAllCompetences(query, pageSize, pageNo)
-        if (result.results.isEmpty) {
-          NotFound(body = Error(Error.NOT_FOUND, s"No competences were found"))
-        } else {
-          result
-        }
+        readService.getAllCompetences(query, pageSize, pageNo)
       }
     }
 
