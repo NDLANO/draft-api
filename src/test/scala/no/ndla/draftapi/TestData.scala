@@ -108,7 +108,7 @@ object TestData {
     None,
     None,
     None,
-    Seq.empty
+    None
   )
 
   val articleHit1 = """

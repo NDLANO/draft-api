@@ -445,7 +445,7 @@ trait ConverterService {
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
             notes = allNotes,
             editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels),
-            competences = article.competences
+            competences = article.competences.getOrElse(toMergeInto.competences)
           )
 
           article.language match {
@@ -529,7 +529,7 @@ trait ConverterService {
                 notes = notes,
                 previousVersionsNotes = Seq.empty,
                 editorLabels = article.editorLabels.getOrElse(Seq.empty),
-                competences = article.competences
+                competences = article.competences.getOrElse(Seq.empty)
             ))
       }
     }
