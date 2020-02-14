@@ -217,7 +217,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       None,
       None,
       None,
-      Seq.empty
+      None
     )
 
     service.mergeArticleLanguageFields(art, updatedNothing, "nb") should be(art)
@@ -290,7 +290,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       articleType = None,
       notes = None,
       editorLabels = None,
-      competences = Seq.empty
+      competences = None
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "nb") should be(expectedArticle)
@@ -364,7 +364,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       articleType = None,
       notes = None,
       editorLabels = None,
-      competences = Seq.empty
+      competences = None
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "en") should be(expectedArticle)
@@ -469,6 +469,87 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res2.notes.map(_.note) should be(Seq("swoop", "fleibede"))
     res3.notes.map(_.note) should be(Seq("swoop", s"Ny språkvariant 'sna' ble lagt til."))
 
+  }
+
+  test("toDomainArticle(NewArticle) should convert competences correctly") {
+
+    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
+
+    val Success(res1) = service.toDomainArticle(TestData.newArticle.copy(competences = Seq("a", "b")),
+                                                List(TestData.externalId),
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    val Success(res2) = service.toDomainArticle(TestData.newArticle.copy(competences = Seq.empty),
+                                                List(TestData.externalId),
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    res1.competences should be(Seq("a", "b"))
+    res2.competences should be(Seq.empty)
+  }
+
+  test("toDomainArticle(UpdateArticle) should convert competences correctly") {
+    val Success(res1) = service.toDomainArticle(
+      TestData.sampleDomainArticle.copy(competences = Seq("a", "b", "c")),
+      TestData.sampleApiUpdateArticle.copy(competences = Some(Seq("x", "y"))),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res2) = service.toDomainArticle(
+      TestData.sampleDomainArticle.copy(competences = Seq("a", "b", "c")),
+      TestData.sampleApiUpdateArticle.copy(competences = Some(Seq.empty)),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res3) = service.toDomainArticle(
+      TestData.sampleDomainArticle.copy(competences = Seq("a", "b", "c")),
+      TestData.sampleApiUpdateArticle.copy(competences = None),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    res1.competences should be(Seq("x", "y"))
+    res2.competences should be(Seq.empty)
+    res3.competences should be(Seq("a", "b", "c"))
+  }
+
+  test("toDomainArticle(updateNullDocumentArticle) should convert competences correctly") {
+
+    val Success(res1) = service.toDomainArticle(1,
+                                                TestData.sampleApiUpdateArticle.copy(competences = Some(Seq("a", "b"))),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    val Success(res2) = service.toDomainArticle(2,
+                                                TestData.sampleApiUpdateArticle.copy(competences = Some(Seq.empty)),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    val Success(res3) = service.toDomainArticle(3,
+                                                TestData.sampleApiUpdateArticle.copy(competences = None),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    res1.competences should be(Seq("a", "b"))
+    res2.competences should be(Seq.empty)
+    res3.competences should be(Seq.empty)
   }
 
 }
