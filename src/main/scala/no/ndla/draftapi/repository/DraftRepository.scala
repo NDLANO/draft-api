@@ -158,7 +158,9 @@ trait DraftRepository {
         val updatedArticle = article.copy(revision = Some(newRevision))
         if (article.status.current == ArticleStatus.PUBLISHED && !isImported) {
           copyPublishedArticle(updatedArticle)
-        } else { Success(updatedArticle) }
+        } else {
+          Success(updatedArticle)
+        }
       }
     }
 
@@ -216,7 +218,9 @@ trait DraftRepository {
         val updatedArticle = article.copy(revision = Some(newRevision))
         if (article.status.current == ArticleStatus.PUBLISHED) {
           copyPublishedArticle(updatedArticle)
-        } else { Success(updatedArticle) }
+        } else {
+          Success(updatedArticle)
+        }
       }
     }
 
@@ -374,6 +378,14 @@ trait DraftRepository {
 
       (competences, competences_count)
 
+    }
+
+    def getTags(input: String, pageSize: Int, offset: Int, language: String)(
+        implicit session: DBSession = AutoSession): List[ArticleTag] = {
+      val tags = sql"""select distinct JSONB_ARRAY_ELEMENTS_TEXT(tags->'tags') from
+                      (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') as tags from ${Article.table}) as dummy
+                      where tags->>'language' = ${language}
+                      """
     }
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {

@@ -116,6 +116,39 @@ trait DraftController {
       }
     }
 
+    get(
+      "/tags-paginated/",
+      operation(
+        apiOperation[TagsSearchResult]("getTags-paginated")
+          summary "Retrieves a list of all previously used tags in articles"
+          description "Retrieves a list of all previously used tags in articles"
+          parameters (
+          asHeaderParam(correlationId),
+          asQueryParam(query),
+          asQueryParam(pageSize),
+          asQueryParam(pageNo),
+          asQueryParam(language)
+        )
+          responseMessages (response403,response500)
+          authorizations "oauth2")
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        val query = paramOrDefault(this.query.paramName, "")
+        val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize) match {
+          case tooSmall if tooSmall < 1 => DraftApiProperties.DefaultPageSize
+          case x                        => x
+        }
+        val pageNo = intOrDefault(this.pageNo.paramName, 1) match {
+          case tooSmall if tooSmall < 1 => 1
+          case x                        => x
+        }
+        val language = paramOrDefault("language", Language.AllLanguages)
+
+        readService.getAllTags(query, pageSize, pageNo, language)
+      }
+    }
+
     private def search(query: Option[String],
                        sort: Option[Sort.Value],
                        language: String,
