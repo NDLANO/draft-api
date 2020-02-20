@@ -123,13 +123,13 @@ trait DraftController {
           summary "Retrieves a list of all previously used tags in articles"
           description "Retrieves a list of all previously used tags in articles"
           parameters (
-          asHeaderParam(correlationId),
-          asQueryParam(query),
-          asQueryParam(pageSize),
-          asQueryParam(pageNo),
-          asQueryParam(language)
+            asHeaderParam(correlationId),
+            asQueryParam(query),
+            asQueryParam(pageSize),
+            asQueryParam(pageNo),
+            asQueryParam(language)
         )
-          responseMessages (response403,response500)
+          responseMessages (response403, response500)
           authorizations "oauth2")
     ) {
       val userInfo = user.getUser

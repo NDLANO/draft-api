@@ -381,11 +381,36 @@ trait DraftRepository {
     }
 
     def getTags(input: String, pageSize: Int, offset: Int, language: String)(
-        implicit session: DBSession = AutoSession): List[ArticleTag] = {
-      val tags = sql"""select distinct JSONB_ARRAY_ELEMENTS_TEXT(tags->'tags') from
-                      (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') as tags from ${Article.table}) as dummy
-                      where tags->>'language' = ${language}
+        implicit session: DBSession = AutoSession): (Seq[String], Int) = {
+      val sanitizedInput = input.replaceAll("%", "")
+      val tags = sql"""select tags from 
+              (select distinct JSONB_ARRAY_ELEMENTS_TEXT(foo->'tags') tags from
+              (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') foo from draft_api.articledata) bar
+              where foo->>'language' = ${language}
+              order by tags) sorted_tags
+              where sorted_tags.tags like ${sanitizedInput + '%'}
+              offset ${offset}
+              limit ${pageSize}
                       """
+        .map(rs => rs.string("tags"))
+        .toList()
+        .apply
+
+      val tags_count =
+        sql"""
+              select count(*) from 
+              (select distinct JSONB_ARRAY_ELEMENTS_TEXT(foo->'tags') tags from
+              (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') foo from draft_api.articledata) bar
+              where foo->>'language' = ${language}) sorted_tags
+              where sorted_tags.tags like ${sanitizedInput + '%'};
+           """
+          .map(rs => rs.int("count"))
+          .single()
+          .apply()
+          .getOrElse(0)
+
+      (tags, tags_count)
+
     }
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
