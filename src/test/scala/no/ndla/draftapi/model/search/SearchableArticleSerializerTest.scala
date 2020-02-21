@@ -24,7 +24,8 @@ class SearchableArticleSerializerTest extends UnitSuite with TestEnvironment {
     articleType = "standard",
     defaultTitle = Some("tjuppidu"),
     users = Seq("ndalId54321"),
-    previousNotes = Seq("Søte", "Jordbær")
+    previousNotes = Seq("Søte", "Jordbær"),
+    competences = Seq("KM1337", "KM5432")
   )
 
   test("That deserialization and serialization of SearchableArticle works as expected") {

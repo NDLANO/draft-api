@@ -45,6 +45,7 @@ trait ArticleIndexService {
           textField("notes"),
           textField("previousNotes"),
           keywordField("users"),
+          keywordField("competences"),
         ) ++
           generateLanguageSupportedFieldList("title", keepRaw = true) ++
           generateLanguageSupportedFieldList("content") ++

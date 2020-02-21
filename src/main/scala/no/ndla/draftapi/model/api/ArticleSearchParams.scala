@@ -22,5 +22,6 @@ case class ArticleSearchParams(
     @(ApiModelProperty @field)(description = "Return only articles of specific type(s)") articleTypes: List[String],
     @(ApiModelProperty @field)(description = "The sorting used on results. Default is by -relevance.") sort: Option[String],
     @(ApiModelProperty @field)(description = "A search context retrieved from the response header of a previous search.") scrollId: Option[String],
-    @(ApiModelProperty @field)(description = "Fallback to some existing language if language is specified.") fallback: Option[Boolean]
+    @(ApiModelProperty @field)(description = "Fallback to some existing language if language is specified.") fallback: Option[Boolean],
+    @(ApiModelProperty @field)(description = "Return only articles containing competences") competences: List[String]
 )
