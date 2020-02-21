@@ -117,7 +117,7 @@ trait DraftController {
     }
 
     get(
-      "/tags-paginated/",
+      "/tag-search/",
       operation(
         apiOperation[TagsSearchResult]("getTags-paginated")
           summary "Retrieves a list of all previously used tags in articles"
@@ -143,7 +143,7 @@ trait DraftController {
           case tooSmall if tooSmall < 1 => 1
           case x                        => x
         }
-        val language = paramOrDefault("language", Language.AllLanguages)
+        val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
 
         readService.getAllTags(query, pageSize, pageNo, language)
       }
