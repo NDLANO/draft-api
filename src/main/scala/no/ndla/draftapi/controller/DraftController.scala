@@ -64,6 +64,9 @@ trait DraftController {
     private val copiedTitleFlag =
       Param[Option[String]]("copied-title-postfix",
                             "Add a string to the title marking this article as a copy, defaults to 'true'.")
+    private val competences = Param[Option[String]](
+      "competences",
+      "Return only articles with one of the specified competence goals. Separate by comma to use specify multiple values (,).")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
@@ -124,7 +127,8 @@ trait DraftController {
                        pageSize: Int,
                        idList: List[Long],
                        articleTypesFilter: Seq[String],
-                       fallback: Boolean) = {
+                       fallback: Boolean,
+                       competences: Seq[String]) = {
       val result = query match {
         case Some(q) =>
           articleSearchService.matchingQuery(
@@ -136,7 +140,8 @@ trait DraftController {
             pageSize = if (idList.isEmpty) pageSize else idList.size,
             sort = sort.getOrElse(Sort.ByRelevanceDesc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
-            fallback = fallback
+            fallback = fallback,
+            competences = competences
           )
         case None =>
           articleSearchService.all(
@@ -147,7 +152,8 @@ trait DraftController {
             pageSize = if (idList.isEmpty) pageSize else idList.size,
             sort = sort.getOrElse(Sort.ByTitleAsc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
-            fallback = fallback
+            fallback = fallback,
+            competences = competences
           )
       }
 
@@ -207,7 +213,8 @@ trait DraftController {
             asQueryParam(pageNo),
             asQueryParam(pageSize),
             asQueryParam(sort),
-            asQueryParam(scrollId)
+            asQueryParam(scrollId),
+            asQueryParam(competences)
         )
           authorizations "oauth2"
           responseMessages response500)
@@ -227,8 +234,9 @@ trait DraftController {
           val idList = paramAsListOfLong(this.articleIds.paramName)
           val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
           val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+          val competences = paramAsListOfString(this.competences.paramName)
 
-          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, competences)
         }
       }
     }
@@ -262,8 +270,9 @@ trait DraftController {
               val idList = searchParams.idList
               val articleTypesFilter = searchParams.articleTypes
               val fallback = searchParams.fallback.getOrElse(false)
+              val competences = searchParams.competences
 
-              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback)
+              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, competences)
             }
           case Failure(ex) => errorHandler(ex)
         }

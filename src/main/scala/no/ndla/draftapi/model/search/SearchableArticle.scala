@@ -23,5 +23,6 @@ case class SearchableArticle(
     notes: Seq[String],
     defaultTitle: Option[String],
     users: Seq[String],
-    previousNotes: Seq[String]
+    previousNotes: Seq[String],
+    competences: Seq[String]
 )

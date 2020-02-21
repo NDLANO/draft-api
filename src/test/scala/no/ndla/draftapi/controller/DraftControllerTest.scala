@@ -98,7 +98,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                any[Int],
                                any[Sort.Value],
                                any[Seq[String]],
-                               any[Boolean]))
+                               any[Boolean],
+                               any[Seq[String]]))
       .thenReturn(Success(searchMock))
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
@@ -110,7 +111,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                  4,
                                                  Sort.ByTitleAsc,
                                                  ArticleType.all,
-                                                 fallback = false)
+                                                 fallback = false,
+                                                 competences = Seq.empty)
     }
   }
 
@@ -243,7 +245,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                any[Int],
                                any[Sort.Value],
                                any[Seq[String]],
-                               any[Boolean]))
+                               any[Boolean],
+                               any[Seq[String]]))
       .thenReturn(Success(searchResponse))
 
     get(s"/test/") {
@@ -279,7 +282,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                any[Int],
                                                any[Sort.Value],
                                                any[Seq[String]],
-                                               any[Boolean])
+                                               any[Boolean],
+                                               any[Seq[String]])
     verify(articleSearchService, times(0)).matchingQuery(any[String],
                                                          any[List[Long]],
                                                          any[String],
@@ -288,7 +292,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                          any[Int],
                                                          any[Sort.Value],
                                                          any[Seq[String]],
-                                                         any[Boolean])
+                                                         any[Boolean],
+                                                         any[Seq[String]])
     verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 
@@ -318,7 +323,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                any[Int],
                                                any[Sort.Value],
                                                any[Seq[String]],
-                                               any[Boolean])
+                                               any[Boolean],
+                                               any[Seq[String]])
     verify(articleSearchService, times(0)).matchingQuery(any[String],
                                                          any[List[Long]],
                                                          any[String],
@@ -327,7 +333,8 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                          any[Int],
                                                          any[Sort.Value],
                                                          any[Seq[String]],
-                                                         any[Boolean])
+                                                         any[Boolean],
+                                                         any[Seq[String]])
     verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 
