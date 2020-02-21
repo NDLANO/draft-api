@@ -557,5 +557,13 @@ trait ConverterService {
       api.CompetencesSearchResult(competenceCount, offset, pageSize, competences)
     }
 
+    def toApiArticleTags(tags: Seq[String],
+                         tagsCount: Int,
+                         pageSize: Int,
+                         offset: Int,
+                         language: String): api.TagsSearchResult = {
+      api.TagsSearchResult(tagsCount, offset, pageSize, language, tags)
+    }
+
   }
 }

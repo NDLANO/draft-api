@@ -158,7 +158,9 @@ trait DraftRepository {
         val updatedArticle = article.copy(revision = Some(newRevision))
         if (article.status.current == ArticleStatus.PUBLISHED && !isImported) {
           copyPublishedArticle(updatedArticle)
-        } else { Success(updatedArticle) }
+        } else {
+          Success(updatedArticle)
+        }
       }
     }
 
@@ -216,7 +218,9 @@ trait DraftRepository {
         val updatedArticle = article.copy(revision = Some(newRevision))
         if (article.status.current == ArticleStatus.PUBLISHED) {
           copyPublishedArticle(updatedArticle)
-        } else { Success(updatedArticle) }
+        } else {
+          Success(updatedArticle)
+        }
       }
     }
 
@@ -373,6 +377,42 @@ trait DraftRepository {
             where competences like ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
 
       (competences, competences_count)
+
+    }
+
+    def getTags(input: String, pageSize: Int, offset: Int, language: String)(
+        implicit session: DBSession = AutoSession): (Seq[String], Int) = {
+      val sanitizedInput = input.replaceAll("%", "")
+      val sanitizedLanguage = language.replaceAll("%", "")
+      val langOrAll = if (sanitizedLanguage == "all" || sanitizedLanguage == "") "%" else sanitizedLanguage
+
+      val tags = sql"""select tags from 
+              (select distinct JSONB_ARRAY_ELEMENTS_TEXT(tagObj->'tags') tags from
+              (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') tagObj from ${Article.table}) _
+              where tagObj->>'language' like ${langOrAll}
+              order by tags) sorted_tags
+              where sorted_tags.tags like ${sanitizedInput + '%'}
+              offset ${offset}
+              limit ${pageSize}
+                      """
+        .map(rs => rs.string("tags"))
+        .toList()
+        .apply
+
+      val tagsCount =
+        sql"""
+              select count(*) from 
+              (select distinct JSONB_ARRAY_ELEMENTS_TEXT(tagObj->'tags') tags from
+              (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') tagObj from ${Article.table}) _
+              where tagObj->>'language' like  ${langOrAll}) all_tags
+              where all_tags.tags like ${sanitizedInput + '%'};
+           """
+          .map(rs => rs.int("count"))
+          .single()
+          .apply()
+          .getOrElse(0)
+
+      (tags, tagsCount)
 
     }
 

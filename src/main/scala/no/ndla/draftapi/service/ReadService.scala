@@ -86,6 +86,11 @@ trait ReadService {
       converterService.toApiArticleCompetences(competences, competenceCount, pageSize, offset)
     }
 
+    def getAllTags(input: String, pageSize: Int, offset: Int, language: String): api.TagsSearchResult = {
+      val (tags, tagsCount) = draftRepository.getTags(input, pageSize, (offset - 1) * pageSize, language)
+      converterService.toApiArticleTags(tags, tagsCount, pageSize, offset, language)
+    }
+
     val getTagUsageMap = MemoizeAutoRenew(() => {
       draftRepository.allTags
         .map(languageTags => languageTags.language -> new MostFrequentOccurencesList(languageTags.tags))
