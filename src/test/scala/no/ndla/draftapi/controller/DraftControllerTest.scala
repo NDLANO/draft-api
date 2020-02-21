@@ -358,7 +358,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("tags should return 200 OK if the results are empty") {
+  test("tags should return 403 Forbidden if user has no access role") {
     when(user.getUser).thenReturn(TestData.userWithNoRoles)
     when(readService.getAllTags(anyString, anyInt, anyInt, anyString))
       .thenReturn(TestData.sampleApiTagsSearchResult.copy(results = Seq.empty))
