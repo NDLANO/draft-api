@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi.service
 
+import io.lemonlabs.uri.{Path, Url}
 import no.ndla.draftapi.DraftApiProperties.{Domain, externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.caching.MemoizeAutoRenew
 import no.ndla.draftapi.model.api.NotFoundException
@@ -120,7 +121,13 @@ trait ReadService {
 
       typeAndPathOption match {
         case Some((resourceType, path)) =>
-          embedTag.attr(s"${TagAttributes.DataUrl}", s"${externalApiUrls(resourceType)}/$path")
+          val baseUrl = Url.parse(externalApiUrls(resourceType))
+          val pathParts = Path.parse(path).parts
+
+          embedTag.attr(
+            s"${TagAttributes.DataUrl}",
+            baseUrl.addPathParts(pathParts).toString
+          )
         case _ =>
       }
     }
