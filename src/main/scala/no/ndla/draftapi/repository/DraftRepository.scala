@@ -391,7 +391,7 @@ trait DraftRepository {
               (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') tagObj from ${Article.table}) _
               where tagObj->>'language' like ${langOrAll}
               order by tags) sorted_tags
-              where sorted_tags.tags like ${sanitizedInput + '%'}
+              where sorted_tags.tags ilike ${sanitizedInput + '%'}
               offset ${offset}
               limit ${pageSize}
                       """
@@ -405,7 +405,7 @@ trait DraftRepository {
               (select distinct JSONB_ARRAY_ELEMENTS_TEXT(tagObj->'tags') tags from
               (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') tagObj from ${Article.table}) _
               where tagObj->>'language' like  ${langOrAll}) all_tags
-              where all_tags.tags like ${sanitizedInput + '%'};
+              where all_tags.tags ilike ${sanitizedInput + '%'};
            """
           .map(rs => rs.int("count"))
           .single()
