@@ -390,6 +390,16 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     competences6 should equal(Seq("bcd"))
     competences6.length should be(1)
     competencesCount6 should be(1)
+
+    val (competences7, competencesCount7) = repository.getCompetences("abC", 10, 0)
+    competences7 should equal(Seq("abc"))
+    competences7.length should be(1)
+    competencesCount7 should be(1)
+
+    val (competences8, competencesCount8) = repository.getCompetences("AbC", 10, 0)
+    competences8 should equal(Seq("abc"))
+    competences8.length should be(1)
+    competencesCount8 should be(1)
   }
 
   test("getTags returns non-duplicate tags and correct number of them") {

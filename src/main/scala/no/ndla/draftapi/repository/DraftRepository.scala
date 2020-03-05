@@ -362,7 +362,7 @@ trait DraftRepository {
       val competences = sql"""select distinct competences from
             (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
             from ${Article.table}) as dummy
-            where competences like ${sanitizedInput + '%'}
+            where competences ilike ${sanitizedInput + '%'}
             order by competences
             offset ${offset}
             limit ${pageSize}
@@ -374,7 +374,7 @@ trait DraftRepository {
       val competences_count = sql"""select distinct count(*) from
             (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
             from ${Article.table}) as dummy
-            where competences like ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
+            where competences ilike ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
 
       (competences, competences_count)
 
