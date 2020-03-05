@@ -445,7 +445,7 @@ trait WriteService {
     private[service] def uploadFile(file: FileItem): Try[domain.UploadedFile] = {
       getFileExtension(file.name).flatMap(fileExtension => {
         val contentType = file.getContentType.getOrElse("")
-        val fileName = Stream
+        val fileName = LazyList
           .continually(randomFilename(fileExtension))
           .dropWhile(fileStorage.resourceExists)
           .head

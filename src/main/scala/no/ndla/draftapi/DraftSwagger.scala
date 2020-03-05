@@ -18,13 +18,23 @@ class ResourcesApp(implicit val swagger: Swagger) extends ScalatraServlet with N
 
 object DraftApiInfo {
 
+  val contactInfo = ContactInfo(
+    "NDLA",
+    "ndla.no",
+    DraftApiProperties.ContactEmail
+  )
+
+  val licenseInfo = LicenseInfo(
+    "GPL v3.0",
+    "http://www.gnu.org/licenses/gpl-3.0.en.html"
+  )
+
   val apiInfo = ApiInfo(
     "Draft API",
     "Services for accessing draft articles, draft and agreements",
     "http://ndla.no",
-    DraftApiProperties.ContactEmail,
-    "GPL v3.0",
-    "http://www.gnu.org/licenses/gpl-3.0.en.html"
+    contactInfo,
+    licenseInfo
   )
 }
 

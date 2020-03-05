@@ -410,9 +410,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                                         title = Seq(ArticleTitle("title", "nb"), ArticleTitle("title", "nn")))
     val articleCaptor: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
 
-    when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+    when(draftRepository.withId(anyLong)).thenReturn(Some(article))
     service.deleteLanguage(article.id.get, "nn", UserInfo("asdf", Set()))
-    verify(draftRepository).updateArticle(articleCaptor.capture(), anyBoolean())
+    verify(draftRepository).updateArticle(articleCaptor.capture(), anyBoolean)
 
     articleCaptor.getValue.title.length should be(1)
   }
@@ -515,7 +515,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         content = Seq(ArticleContent("<section> Valid Content </section>", "nb"))
       )
 
-    when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+    when(draftRepository.withId(anyLong)).thenReturn(Some(article))
     service.updateArticle(1, updatedArticle, List(), List(), TestData.userWithPublishAccess, None, None, None)
 
     val argCap: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
@@ -562,7 +562,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                       Status(ArticleStatus.DRAFT, Set.empty))
             .get
       )
-      when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+      when(draftRepository.withId(anyLong)).thenReturn(Some(article))
       when(draftRepository.insert(any[Article])(any[DBSession])).thenAnswer((i: InvocationOnMock) =>
         i.getArgument[Article](0))
 
@@ -612,7 +612,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                       Status(ArticleStatus.DRAFT, Set.empty))
             .get
       )
-      when(draftRepository.withId(anyLong())).thenReturn(Some(article))
+      when(draftRepository.withId(anyLong)).thenReturn(Some(article))
       when(draftRepository.insert(any[Article])(any[DBSession])).thenAnswer((i: InvocationOnMock) =>
         i.getArgument[Article](0))
 

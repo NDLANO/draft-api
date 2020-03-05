@@ -22,7 +22,7 @@ class ScalatraBootstrap extends LifeCycle {
 
   implicit val swagger = new DraftSwagger
 
-  override def init(context: ServletContext) {
+  override def init(context: ServletContext): Unit = {
     context.mount(draftController, "/draft-api/v1/drafts", "drafts")
     context.mount(fileController, "/draft-api/v1/files", "files")
     context.mount(agreementController, "/draft-api/v1/agreements/", "agreements")

@@ -18,7 +18,7 @@ import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class V4__MoveRelatedContentEmbedsToDivs extends BaseJavaMigration {
 

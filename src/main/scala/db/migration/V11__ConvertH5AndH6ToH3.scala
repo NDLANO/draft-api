@@ -16,7 +16,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class V11__ConvertH5AndH6ToH3 extends BaseJavaMigration {
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
