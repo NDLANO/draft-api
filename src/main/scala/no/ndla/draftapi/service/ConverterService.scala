@@ -25,7 +25,7 @@ import no.ndla.validation._
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.control.Exception.allCatch
 import scala.util.{Failure, Success, Try}
 

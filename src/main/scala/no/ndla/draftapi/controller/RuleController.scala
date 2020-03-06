@@ -21,7 +21,7 @@ trait RuleController {
     get(
       "/html/",
       operation(
-        apiOperation[Map[String, Any]](nickname = "getHtmlRules")
+        apiOperation[Map[String, Any]]("getHtmlRules")
           summary "Show all HTML validation rules"
           description "Shows all the HTML validation rules."
           parameters asHeaderParam(correlationId)
@@ -38,7 +38,7 @@ trait RuleController {
     get(
       "/embed-tag/",
       operation(
-        apiOperation[Map[String, Any]](nickname = "getEmbedTagRules")
+        apiOperation[Map[String, Any]]("getEmbedTagRules")
           summary "Show all embed tag validation rules"
           description "Shows all the embed tag  validation rules."
           parameters asHeaderParam(correlationId)
@@ -55,7 +55,7 @@ trait RuleController {
     get(
       "/mathml/",
       operation(
-        apiOperation[Map[String, Any]](nickname = "getMathMLRules")
+        apiOperation[Map[String, Any]]("getMathMLRules")
           summary "Show all MathML validation rules"
           description "Shows all the MathML validation rules."
           parameters asHeaderParam(correlationId)

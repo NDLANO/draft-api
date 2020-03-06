@@ -1,16 +1,16 @@
 import java.util.Properties
 
-val Scalaversion = "2.12.10"
-val Scalatraversion = "2.6.5"
-val ScalaLoggingVersion = "3.9.0"
-val ScalaTestVersion = "3.0.5"
+val Scalaversion = "2.13.1"
+val Scalatraversion = "2.7.0"
+val ScalaLoggingVersion = "3.9.2"
+val ScalaTestVersion = "3.1.1"
 val Log4JVersion = "2.11.1"
-val Jettyversion = "9.4.18.v20190429"
+val Jettyversion = "9.4.27.v20200227"
 val AwsSdkversion = "1.11.658"
-val MockitoVersion = "2.23.0"
+val MockitoVersion = "1.11.4"
 val Elastic4sVersion = "6.7.4"
 val JacksonVersion = "2.10.2"
-val CatsEffectVersion = "1.0.0"
+val CatsEffectVersion = "2.1.2"
 val ElasticsearchVersion = "6.8.6"
 val Json4SVersion = "3.6.7"
 val FlywayVersion = "5.2.0"
@@ -27,11 +27,11 @@ appProperties := {
 }
 
 import com.itv.scalapact.plugin._
-val pactVersion = "2.3.9"
+val pactVersion = "2.3.16"
 
 val pactTestFramework = Seq(
-  "com.itv" %% "scalapact-argonaut-6-2" % pactVersion % "test",
-  "com.itv" %% "scalapact-http4s-0-16a" % pactVersion % "test",
+  "com.itv" %% "scalapact-circe-0-13" % pactVersion % "test",
+  "com.itv" %% "scalapact-http4s-0-21" % pactVersion % "test",
   "com.itv" %% "scalapact-scalatest" % pactVersion % "test"
 )
 
@@ -53,9 +53,9 @@ lazy val draft_api = (project in file("."))
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= pactTestFramework ++ Seq(
-      "ndla" %% "network" % "0.42",
-      "ndla" %% "mapping" % "0.11",
-      "ndla" %% "validation" % "0.35",
+      "ndla" %% "network" % "0.43",
+      "ndla" %% "mapping" % "0.13",
+      "ndla" %% "validation" % "0.36",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",
@@ -72,11 +72,11 @@ lazy val draft_api = (project in file("."))
       "vc.inreach.aws" % "aws-signing-request-interceptor" % "0.0.22",
       "org.apache.httpcomponents" % "httpclient" % "4.5.10", // Overridden because vulnerability in request interceptor
       "com.google.guava" % "guava" % "28.1-jre", // Overridden because vulnerability in request interceptor
-      "org.scalikejdbc" %% "scalikejdbc" % "3.3.1",
+      "org.scalikejdbc" %% "scalikejdbc" % "3.4.0",
       "com.zaxxer" % "HikariCP" % HikariConnectionPoolVersion,
       "org.postgresql" % "postgresql" % PostgresVersion,
       "com.amazonaws" % "aws-java-sdk-s3" % AwsSdkversion,
-      "org.scalaj" %% "scalaj-http" % "2.4.1",
+      "org.scalaj" %% "scalaj-http" % "2.4.2",
       "org.elasticsearch" % "elasticsearch" % ElasticsearchVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-core" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
@@ -90,7 +90,8 @@ lazy val draft_api = (project in file("."))
       "net.bull.javamelody" % "javamelody-core" % "1.74.0",
       "org.jrobin" % "jrobin" % "1.5.9",
       "com.amazonaws" % "aws-java-sdk-cloudwatch" % AwsSdkversion,
-      "org.mockito" % "mockito-core" % MockitoVersion % "test",
+      "org.mockito" %% "mockito-scala" % MockitoVersion % "test",
+      "org.mockito" %% "mockito-scala-scalatest" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % FlywayVersion,
       "io.lemonlabs" %% "scala-uri" % "1.5.1",
       "org.typelevel" %% "cats-effect" % CatsEffectVersion,

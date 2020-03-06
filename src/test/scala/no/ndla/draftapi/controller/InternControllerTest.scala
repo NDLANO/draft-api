@@ -99,8 +99,8 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
       body should equal("Failed to find indexes")
     }
 
-    verify(articleIndexService, never()).deleteIndexWithName(any[Option[String]])
-    verify(agreementIndexService, never()).deleteIndexWithName(any[Option[String]])
+    verify(articleIndexService, never).deleteIndexWithName(any[Option[String]])
+    verify(agreementIndexService, never).deleteIndexWithName(any[Option[String]])
   }
 
   test(

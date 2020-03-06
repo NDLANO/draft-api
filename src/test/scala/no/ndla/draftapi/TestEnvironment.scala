@@ -18,7 +18,7 @@ import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.network.NdlaClient
-import org.scalatest.mockito.MockitoSugar
+import org.mockito.scalatest.MockitoSugar
 
 trait TestEnvironment
     extends Elastic4sClient

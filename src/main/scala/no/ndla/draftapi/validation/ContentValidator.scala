@@ -27,7 +27,7 @@ import no.ndla.network.AuthUser
 import org.joda.time.format.ISODateTimeFormat
 import no.ndla.validation._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 trait ContentValidator {

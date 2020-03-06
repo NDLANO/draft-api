@@ -19,7 +19,7 @@ import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.math.max
 import scala.util.{Failure, Success, Try}
 
@@ -134,10 +134,10 @@ trait ReadService {
 
     class MostFrequentOccurencesList(list: Seq[String]) {
       // Create a map where the key is a list entry, and the value is the number of occurrences of this entry in the list
-      private[this] val listToNumOccurrencesMap: Map[String, Int] = list.groupBy(identity).mapValues(_.size)
+      private[this] val listToNumOccurrencesMap: Map[String, Int] = list.groupBy(identity).view.mapValues(_.size).toMap
       // Create an inverse of the map 'listToNumOccurrencesMap': the key is number of occurrences, and the value is a list of all entries that occurred that many times
       private[this] val numOccurrencesToListMap: Map[Int, Set[String]] =
-        listToNumOccurrencesMap.groupBy(x => x._2).mapValues(_.keySet)
+        listToNumOccurrencesMap.groupBy(x => x._2).view.mapValues(_.keySet).toMap
       // Build a list sorted by the most frequent words to the least frequent words
       private[this] val mostFrequentOccorencesDec = numOccurrencesToListMap.keys.toSeq.sorted
         .foldRight(Seq[String]())((current, result) => result ++ numOccurrencesToListMap(current))

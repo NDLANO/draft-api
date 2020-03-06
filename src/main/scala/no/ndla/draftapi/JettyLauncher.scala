@@ -63,7 +63,7 @@ object JettyLauncher extends LazyLogging {
     ComponentRegistry.readService.getTagUsageMap()
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val server = startServer(DraftApiProperties.ApplicationPort)
     server.join()
   }
