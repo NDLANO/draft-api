@@ -91,10 +91,10 @@ object TestData {
     Seq.empty
   )
 
-  val sampleApiUpdateArticle = api.UpdatedArticle(
+  val blankUpdatedArticle = api.UpdatedArticle(
     1,
-    Some("nb"),
-    Some("tittel"),
+    None,
+    None,
     None,
     None,
     None,
@@ -109,6 +109,12 @@ object TestData {
     None,
     None,
     None
+  )
+
+  val sampleApiUpdateArticle = blankUpdatedArticle.copy(
+    revision = 1,
+    language = Some("nb"),
+    title = Some("tittel"),
   )
 
   val articleHit1 = """

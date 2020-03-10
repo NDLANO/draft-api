@@ -200,24 +200,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       competences = Seq.empty
     )
 
-    val updatedNothing = api.UpdatedArticle(
-      4,
-      Some("nb"),
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None
+    val updatedNothing = TestData.blankUpdatedArticle.copy(
+      revision = 4,
+      language = Some("nb")
     )
 
     service.mergeArticleLanguageFields(art, updatedNothing, "nb") should be(art)
@@ -273,7 +258,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       competences = Seq.empty
     )
 
-    val updatedEverything = api.UpdatedArticle(
+    val updatedEverything = TestData.blankUpdatedArticle.copy(
       revision = 4,
       language = Some("nb"),
       title = Some("NyTittel"),
@@ -290,7 +275,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       articleType = None,
       notes = None,
       editorLabels = None,
-      competences = None
+      competences = None,
+      createNewVersion = None
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "nb") should be(expectedArticle)
@@ -347,7 +333,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       competences = Seq.empty
     )
 
-    val updatedEverything = api.UpdatedArticle(
+    val updatedEverything = TestData.blankUpdatedArticle.copy(
       revision = 4,
       language = Some("en"),
       title = Some("NyTittel"),
@@ -364,7 +350,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       articleType = None,
       notes = None,
       editorLabels = None,
-      competences = None
+      competences = None,
+      createNewVersion = None
     )
 
     service.mergeArticleLanguageFields(art, updatedEverything, "en") should be(expectedArticle)

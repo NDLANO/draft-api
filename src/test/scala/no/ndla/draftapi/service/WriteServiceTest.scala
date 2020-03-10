@@ -168,26 +168,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("That updateArticle updates only content properly") {
     val newContent = "NyContentTest"
-    val updatedApiArticle =
-      api.UpdatedArticle(
-        1,
-        Some("en"),
-        None,
-        None,
-        None,
-        Some(newContent),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None
-      )
+    val updatedApiArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("en"),
+      content = Some(newContent)
+    )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
                    content = Seq(ArticleContent(newContent, "en")),
@@ -205,26 +190,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("That updateArticle updates only title properly") {
     val newTitle = "NyTittelTest"
-    val updatedApiArticle =
-      api.UpdatedArticle(
-        1,
-        Some("en"),
-        Some(newTitle),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None
-      )
+    val updatedApiArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("en"),
+      title = Some(newTitle)
+    )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
                    title = Seq(ArticleTitle(newTitle, "en")),
@@ -262,24 +232,21 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val updatedRequiredLib = api.RequiredLibrary("tjup", "tjap", "tjim")
     val updatedArticleType = "topic-article"
 
-    val updatedApiArticle = api.UpdatedArticle(
-      1,
-      Some("en"),
-      Some(updatedTitle),
-      Some("DRAFT"),
-      Some(updatedPublishedDate),
-      Some(updatedContent),
-      Some(updatedTags),
-      Some(updatedIntro),
-      Some(updatedMetaDescription),
-      Some(newImageMeta),
-      Some(updatedVisualElement),
-      Some(updatedCopyright),
-      Some(Seq(updatedRequiredLib)),
-      Some(updatedArticleType),
-      None,
-      None,
-      None
+    val updatedApiArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("en"),
+      title = Some(updatedTitle),
+      status = Some("DRAFT"),
+      published = Some(updatedPublishedDate),
+      content = Some(updatedContent),
+      tags = Some(updatedTags),
+      introduction = Some(updatedIntro),
+      metaDescription = Some(updatedMetaDescription),
+      metaImage = Some(newImageMeta),
+      visualElement = Some(updatedVisualElement),
+      copyright = Some(updatedCopyright),
+      requiredLibraries = Some(Seq(updatedRequiredLib)),
+      articleType = Some(updatedArticleType)
     )
 
     val expectedArticle = article.copy(
@@ -632,24 +599,10 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("article status should not be updated if only notes are changed") {
-    val updatedArticle = api.UpdatedArticle(
-      1,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      Some(Seq("note1", "note2")),
-      Some(Seq("note3", "note4")),
-      None
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      notes = Some(Seq("note1", "note2")),
+      editorLabels = Some(Seq("note3", "note4"))
     )
 
     val existing = TestData.sampleDomainArticle.copy(status = TestData.statusWithPublished)
@@ -668,24 +621,12 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("article status should not be updated if changes only affect notes") {
     val existingTitle = "apekatter"
-    val updatedArticle = api.UpdatedArticle(
-      1,
-      Some("nb"),
-      Some(existingTitle),
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      Some(Seq("note1", "note2")),
-      Some(Seq("note3", "note4")),
-      None
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("nb"),
+      title = Some(existingTitle),
+      notes = Some(Seq("note1", "note2")),
+      editorLabels = Some(Seq("note3", "note4"))
     )
 
     val existing = TestData.sampleDomainArticle.copy(title = Seq(ArticleTitle(existingTitle, "nb")),
