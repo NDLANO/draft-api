@@ -273,7 +273,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     val oldCount = repository.articlesWithId(article.id.get).size
     val publishedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
     val updatedArticle = repository.updateArticle(publishedArticle).get
-    val updatedAndCopiedArticle = repository.copyPublishedArticle(updatedArticle).get
+    val updatedAndCopiedArticle = repository.storeArticleAsNewVersion(updatedArticle).get
 
     updatedAndCopiedArticle.revision should be(Some(5))
 
@@ -338,7 +338,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
       updatedArticle1.notes should be(prevNotes1)
       updatedArticle1.previousVersionsNotes should be(Seq.empty)
 
-      val copiedArticle1 = repository.copyPublishedArticle(updatedArticle1).get
+      val copiedArticle1 = repository.storeArticleAsNewVersion(updatedArticle1).get
       copiedArticle1.notes should be(Seq.empty)
       copiedArticle1.previousVersionsNotes should be(prevNotes1)
 
@@ -350,7 +350,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
       updatedArticle2.notes should be(prevNotes2)
       updatedArticle2.previousVersionsNotes should be(prevNotes1)
 
-      val copiedArticle2 = repository.copyPublishedArticle(updatedArticle2).get
+      val copiedArticle2 = repository.storeArticleAsNewVersion(updatedArticle2).get
       copiedArticle2.notes should be(Seq.empty)
       copiedArticle2.previousVersionsNotes should be(prevNotes1 ++ prevNotes2)
     }

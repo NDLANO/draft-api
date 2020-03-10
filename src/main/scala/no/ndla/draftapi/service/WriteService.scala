@@ -169,7 +169,7 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             convertedArticle <- convertedArticleT
-            updatedArticle <- updateArticleAndStoreCopy(convertedArticle, isImported)
+            updatedArticle <- updateArticleAndStoreAsNewIfPublished(convertedArticle, isImported)
             _ <- articleIndexService.indexDocument(updatedArticle)
             _ <- Try(searchApiClient.indexDraft(updatedArticle))
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
@@ -177,19 +177,19 @@ trait WriteService {
       }
     }
 
-    private def updateArticleAndStoreCopy(
+    private def updateArticleAndStoreAsNewIfPublished(
         article: domain.Article,
         isImported: Boolean
     ) = {
       draftRepository.updateArticle(article, isImported) match {
         case Success(updated) if updated.status.current == PUBLISHED && !isImported =>
-          draftRepository.copyPublishedArticle(updated)
+          draftRepository.storeArticleAsNewVersion(updated)
         case Success(updated) => Success(updated)
         case Failure(ex)      => Failure(ex)
       }
     }
 
-    private def updateArticleWithExternalAndStoreCopy(
+    private def updateArticleWithExternalAndStoreAsNewIfPublished(
         article: domain.Article,
         externalIds: List[String],
         externalSubjectIds: Seq[String],
@@ -197,32 +197,29 @@ trait WriteService {
     ) = {
       draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
         case Success(updated) if updated.status.current == PUBLISHED =>
-          draftRepository.copyPublishedArticle(updated)
+          draftRepository.storeArticleAsNewVersion(updated)
         case Success(updated) => Success(updated)
         case Failure(ex)      => Failure(ex)
       }
     }
 
-    private def getUpdateFunction(
+    /** Determines which repository function(s) should be called and calls them */
+    private def performArticleUpdate(
+        article: domain.Article,
         externalIds: List[String],
         externalSubjectIds: Seq[String],
         isImported: Boolean,
         importId: Option[String],
         shouldOnlyCopy: Boolean
-    ) = {
+    ) =
       if (shouldOnlyCopy) {
-        draftRepository.copyPublishedArticle _
+        draftRepository.storeArticleAsNewVersion(article)
       } else {
         externalIds match {
-          case Nil =>
-            (a: domain.Article) =>
-              updateArticleAndStoreCopy(a, isImported)
-          case nids =>
-            (a: domain.Article) =>
-              updateArticleWithExternalAndStoreCopy(a, nids, externalSubjectIds, importId)
+          case Nil  => updateArticleAndStoreAsNewIfPublished(article, isImported)
+          case nids => updateArticleWithExternalAndStoreAsNewIfPublished(article, nids, externalSubjectIds, importId)
         }
       }
-    }
 
     private def updateArticle(toUpdate: domain.Article,
                               importId: Option[String],
@@ -231,15 +228,18 @@ trait WriteService {
                               shouldValidateLanguage: Option[String],
                               isImported: Boolean,
                               shouldAlwaysCopy: Boolean): Try[domain.Article] = {
-      val updateFunc = getUpdateFunction(externalIds, externalSubjectIds, isImported, importId, shouldAlwaysCopy)
-
       val articleToValidate = shouldValidateLanguage match {
         case Some(language) => getArticleOnLanguage(toUpdate, language)
         case None           => toUpdate
       }
       for {
         _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
-        domainArticle <- updateFunc(toUpdate)
+        domainArticle <- performArticleUpdate(toUpdate,
+                                              externalIds,
+                                              externalSubjectIds,
+                                              isImported,
+                                              importId,
+                                              shouldAlwaysCopy)
         _ <- articleIndexService.indexDocument(domainArticle)
         _ <- Try(searchApiClient.indexDraft(domainArticle))
         _ <- updateTaxonomyForArticle(domainArticle)
@@ -423,7 +423,7 @@ trait WriteService {
                 .deleteLanguage(article, language, userInfo)
                 .flatMap(
                   newArticle =>
-                    updateArticleAndStoreCopy(newArticle, isImported = false)
+                    updateArticleAndStoreAsNewIfPublished(newArticle, isImported = false)
                       .flatMap(
                         converterService.toApiArticle(_, Language.AllLanguages)
                     ))

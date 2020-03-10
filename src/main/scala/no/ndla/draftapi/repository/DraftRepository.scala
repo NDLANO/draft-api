@@ -71,7 +71,7 @@ trait DraftRepository {
       article.copy(revision = Some(startRevision))
     }
 
-    def copyPublishedArticle(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
+    def storeArticleAsNewVersion(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
       article.id match {
         case None => Failure(ArticleVersioningException("Duplication of article failed."))
         case Some(articleId) =>

@@ -63,7 +63,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         val arg = invocation.getArgument[Article](0)
         Try(arg.copy(revision = Some(arg.revision.get + 1)))
       })
-    when(draftRepository.copyPublishedArticle(any[Article])(any[DBSession]))
+    when(draftRepository.storeArticleAsNewVersion(any[Article])(any[DBSession]))
       .thenAnswer((invocation: InvocationOnMock) => {
         val arg = invocation.getArgument[Article](0)
         Try(arg.copy(revision = Some(arg.revision.get + 1)))
@@ -674,7 +674,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                           None)
 
     verify(draftRepository, never).updateArticle(any[Article], anyBoolean)(any[DBSession])
-    verify(draftRepository, times(1)).copyPublishedArticle(any[Article])(any[DBSession])
+    verify(draftRepository, times(1)).storeArticleAsNewVersion(any[Article])(any[DBSession])
   }
 
 }
