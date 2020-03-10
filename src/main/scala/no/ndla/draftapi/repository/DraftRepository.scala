@@ -75,23 +75,29 @@ trait DraftRepository {
       article.id match {
         case None => Failure(ArticleVersioningException("Duplication of article failed."))
         case Some(articleId) =>
-          val externalIds: List[String] = getExternalIdsFromId(articleId)
-          val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(articleId)
-          val importId: Option[String] = getImportIdFromId(articleId)
-          val articleRevision = article.revision.getOrElse(0) + 1
+          val correctRevision = withId(articleId).exists(_.revision.getOrElse(0) == article.revision.getOrElse(0))
+          if (!correctRevision) {
+            val message = s"Found revision mismatch when attempting to copy article ${article.id}"
+            logger.info(message)
+            Failure(new OptimisticLockException)
+          } else {
+            val externalIds: List[String] = getExternalIdsFromId(articleId)
+            val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(articleId)
+            val importId: Option[String] = getImportIdFromId(articleId)
+            val articleRevision = article.revision.getOrElse(0) + 1
 
-          val copiedArticle = article.copy(
-            notes = Seq.empty,
-            previousVersionsNotes = article.previousVersionsNotes ++ article.notes
-          )
+            val copiedArticle = article.copy(
+              notes = Seq.empty,
+              previousVersionsNotes = article.previousVersionsNotes ++ article.notes
+            )
 
-          val dataObject = new PGobject()
-          dataObject.setType("jsonb")
-          dataObject.setValue(write(copiedArticle))
-          val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
+            val dataObject = new PGobject()
+            dataObject.setType("jsonb")
+            dataObject.setValue(write(copiedArticle))
+            val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
 
-          val dbId: Long =
-            sql"""
+            val dbId: Long =
+              sql"""
                  insert into ${Article.table} (external_id, external_subject_id, document, revision, import_id, article_id)
                  values (ARRAY[${externalIds}]::text[],
                          ARRAY[${externalSubjectIds}]::text[],
@@ -101,8 +107,9 @@ trait DraftRepository {
                          ${articleId})
               """.updateAndReturnGeneratedKey().apply()
 
-          logger.info(s"Inserted new article: ${articleId} (with db id $dbId)")
-          Success(copiedArticle.copy(revision = Some(articleRevision)))
+            logger.info(s"Inserted new article: ${articleId} (with db id $dbId)")
+            Success(copiedArticle.copy(revision = Some(articleRevision)))
+          }
       }
     }
 

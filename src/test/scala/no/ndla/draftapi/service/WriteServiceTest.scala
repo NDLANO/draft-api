@@ -657,4 +657,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     service.getFilePathFromUrl(pathWithFiles) should be("resources/01f6TKKF1wpAsc1Z.pdf")
   }
 
+  test("Article should not be saved, but only copied if createNewVersion is specified") {
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      language = Some("nb"),
+      title = Some("detteErEnNyTittel"),
+      createNewVersion = Some(true)
+    )
+
+    service.updateArticle(articleId,
+                          updatedArticle,
+                          List.empty,
+                          Seq.empty,
+                          TestData.userWithAdminAccess,
+                          None,
+                          None,
+                          None)
+
+    verify(draftRepository, never).updateArticle(any[Article], anyBoolean)(any[DBSession])
+    verify(draftRepository, times(1)).copyPublishedArticle(any[Article])(any[DBSession])
+  }
+
 }
