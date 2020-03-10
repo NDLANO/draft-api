@@ -169,11 +169,37 @@ trait WriteService {
               .unsafeRunSync()
               .toTry
             convertedArticle <- convertedArticleT
-            updatedArticle <- draftRepository.updateArticle(convertedArticle, isImported)
+            updatedArticle <- updateArticleAndStoreCopy(convertedArticle, isImported)
             _ <- articleIndexService.indexDocument(updatedArticle)
             _ <- Try(searchApiClient.indexDraft(updatedArticle))
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
+      }
+    }
+
+    private def updateArticleAndStoreCopy(
+        article: domain.Article,
+        isImported: Boolean = false
+    ) = {
+      draftRepository.updateArticle(article, isImported) match {
+        case Success(updated) if updated.status.current == PUBLISHED && !isImported =>
+          draftRepository.copyPublishedArticle(updated)
+        case Success(updated) => Success(updated)
+        case Failure(ex)      => Failure(ex)
+      }
+    }
+
+    private def updateArticleWithExternalAndStoreCopy(
+        article: domain.Article,
+        externalIds: List[String],
+        externalSubjectIds: Seq[String],
+        importId: Option[String]
+    ) = {
+      draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
+        case Success(updated) if updated.status.current == PUBLISHED =>
+          draftRepository.copyPublishedArticle(updated)
+        case Success(updated) => Success(updated)
+        case Failure(ex)      => Failure(ex)
       }
     }
 
@@ -186,10 +212,10 @@ trait WriteService {
       val updateFunc = externalIds match {
         case Nil =>
           (a: domain.Article) =>
-            draftRepository.updateArticle(a, isImported = isImported)
+            updateArticleAndStoreCopy(a, isImported = isImported)
         case nids =>
           (a: domain.Article) =>
-            draftRepository.updateWithExternalIds(a, nids, externalSubjectIds, importId)
+            updateArticleWithExternalAndStoreCopy(a, nids, externalSubjectIds, importId)
       }
 
       val articleToValidate = shouldValidateLanguage match {
@@ -379,8 +405,7 @@ trait WriteService {
                 .deleteLanguage(article, language, userInfo)
                 .flatMap(
                   newArticle =>
-                    draftRepository
-                      .updateArticle(newArticle)
+                    updateArticleAndStoreCopy(newArticle)
                       .flatMap(
                         converterService.toApiArticle(_, Language.AllLanguages)
                     ))

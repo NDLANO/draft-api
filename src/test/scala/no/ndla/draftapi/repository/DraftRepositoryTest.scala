@@ -265,7 +265,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
       ))
   }
 
-  test("published article creates new db version and bumps revision by two") {
+  test("published, then copied article creates new db version and bumps revision by two") {
     assume(databaseIsAvailable, "Database is unavailable")
     val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.UNPUBLISHED, Set.empty),
                                                     revision = Some(3))
@@ -273,10 +273,12 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     val oldCount = repository.articlesWithId(article.id.get).size
     val publishedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
     val updatedArticle = repository.updateArticle(publishedArticle).get
-    updatedArticle.revision should be(Some(5))
+    val updatedAndCopiedArticle = repository.copyPublishedArticle(updatedArticle).get
 
-    updatedArticle.notes.length should be(0)
-    updatedArticle should equal(publishedArticle.copy(notes = Seq(), revision = Some(5)))
+    updatedAndCopiedArticle.revision should be(Some(5))
+
+    updatedAndCopiedArticle.notes.length should be(0)
+    updatedAndCopiedArticle should equal(publishedArticle.copy(notes = Seq(), revision = Some(5)))
 
     val count = repository.articlesWithId(article.id.get).size
     count should be(oldCount + 1)
@@ -301,7 +303,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
   }
 
-  test("published article keeps old notes in hidden field and notes is emptied") {
+  test("published, then copied article keeps old notes in hidden field and notes is emptied") {
     assume(databaseIsAvailable, "Database is unavailable")
     val timeToFreeze = new DateTime().withMillisOfSecond(0)
     withFrozenTime(timeToFreeze) {
@@ -332,19 +334,25 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
       val toPublish1 = inserted.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
       val updatedArticle1 = repository.updateArticle(toPublish1).get
-      updatedArticle1.notes should be(Seq.empty)
-      updatedArticle1.previousVersionsNotes should be(prevNotes1)
 
-      val draftArticle2 =
-        updatedArticle1.copy(status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty), notes = prevNotes2)
+      updatedArticle1.notes should be(prevNotes1)
+      updatedArticle1.previousVersionsNotes should be(Seq.empty)
+
+      val copiedArticle1 = repository.copyPublishedArticle(updatedArticle1).get
+      copiedArticle1.notes should be(Seq.empty)
+      copiedArticle1.previousVersionsNotes should be(prevNotes1)
+
+      val draftArticle2 = copiedArticle1.copy(
+        status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty),
+        notes = prevNotes2
+      )
       val updatedArticle2 = repository.updateArticle(draftArticle2).get
       updatedArticle2.notes should be(prevNotes2)
       updatedArticle2.previousVersionsNotes should be(prevNotes1)
 
-      val publishedArticle2 = updatedArticle2.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
-      val updatedArticle3 = repository.updateArticle(publishedArticle2).get
-      updatedArticle3.notes should be(Seq.empty)
-      updatedArticle3.previousVersionsNotes should be(prevNotes1 ++ prevNotes2)
+      val copiedArticle2 = repository.copyPublishedArticle(updatedArticle2).get
+      copiedArticle2.notes should be(Seq.empty)
+      copiedArticle2.previousVersionsNotes should be(prevNotes1 ++ prevNotes2)
     }
 
   }

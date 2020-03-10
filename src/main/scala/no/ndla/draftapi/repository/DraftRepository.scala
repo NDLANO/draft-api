@@ -9,7 +9,7 @@ package no.ndla.draftapi.repository
 
 import java.util.UUID
 
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.{LazyLogging, Logger}
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.integration.DataSource
 import no.ndla.draftapi.model.api.{ArticleVersioningException, NotFoundException, OptimisticLockException}
@@ -132,8 +132,21 @@ trait DraftRepository {
       }
     }
 
-    def updateArticle(article: Article, isImported: Boolean = false)(
-        implicit session: DBSession = AutoSession): Try[Article] = {
+    private def failIfRevisionMismatch(count: Int, article: Article, newRevision: Int): Try[Article] =
+      if (count != 1) {
+        val message = s"Found revision mismatch when attempting to update article ${article.id}"
+        logger.info(message)
+        Failure(new OptimisticLockException)
+      } else {
+        logger.info(s"Updated article ${article.id}")
+        val updatedArticle = article.copy(revision = Some(newRevision))
+        Success(updatedArticle)
+      }
+
+    def updateArticle(
+        article: Article,
+        isImported: Boolean = false
+    )(implicit session: DBSession = AutoSession): Try[Article] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
@@ -149,35 +162,12 @@ trait DraftRepository {
               and revision=(select max(revision) from ${Article.table} where article_id=${article.id})
            """.update.apply
 
-      if (count != 1) {
-        val message = s"Found revision mismatch when attempting to update article ${article.id}"
-        logger.info(message)
-        Failure(new OptimisticLockException)
-      } else {
-        logger.info(s"Updated article ${article.id}")
-        val updatedArticle = article.copy(revision = Some(newRevision))
-        if (article.status.current == ArticleStatus.PUBLISHED && !isImported) {
-          copyPublishedArticle(updatedArticle)
-        } else {
-          Success(updatedArticle)
-        }
-      }
+      failIfRevisionMismatch(count, article, newRevision)
     }
 
-    def updateWithExternalIds(article: Article,
-                              externalIds: List[String],
-                              externalSubjectIds: Seq[String],
-                              importId: Option[String])(implicit session: DBSession = AutoSession): Try[Article] = {
-      val dataObject = new PGobject()
-      dataObject.setType("jsonb")
-      dataObject.setValue(write(article))
-
-      val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
-      val newRevision = article.revision.getOrElse(0) + 1
-
+    private def deletePreviousRevisions(article: Article)(implicit session: DBSession = AutoSession): Int = {
       val a = Article.syntax("ar")
-
-      val deletedCount = withSQL {
+      withSQL {
         delete
           .from(Article as a)
           .where
@@ -192,8 +182,25 @@ trait DraftRepository {
                    .desc
                    .limit(1))
       }.update.apply
-      logger.info(s"Deleted $deletedCount revisions of article with id '${article.id}' before import update.")
+    }
 
+    def updateWithExternalIds(
+        article: Article,
+        externalIds: List[String],
+        externalSubjectIds: Seq[String],
+        importId: Option[String]
+    )(implicit session: DBSession = AutoSession): Try[Article] = {
+      val dataObject = new PGobject()
+      dataObject.setType("jsonb")
+      dataObject.setValue(write(article))
+
+      val uuid = Try(importId.map(UUID.fromString)).toOption.flatten
+      val newRevision = article.revision.getOrElse(0) + 1
+
+      val deleteCount = deletePreviousRevisions(article)
+      logger.info(s"Deleted $deleteCount revisions of article with id '${article.id}' before import update.")
+
+      val a = Article.syntax("ar")
       val count = withSQL {
         update(Article as a)
           .set(
@@ -209,24 +216,18 @@ trait DraftRepository {
           .eq(a.c("article_id"), article.id)
       }.update.apply
 
-      if (count != 1) {
-        val message = s"Found revision mismatch when attempting to update article ${article.id}"
-        logger.info(message)
-        Failure(new OptimisticLockException)
-      } else {
-        logger.info(s"Updated article ${article.id}")
-        val updatedArticle = article.copy(revision = Some(newRevision))
-        if (article.status.current == ArticleStatus.PUBLISHED) {
-          copyPublishedArticle(updatedArticle)
-        } else {
-          Success(updatedArticle)
-        }
-      }
+      failIfRevisionMismatch(count, article, newRevision)
     }
 
     def withId(articleId: Long): Option[Article] =
       articleWhere(
-        sqls"ar.article_id=${articleId.toInt} AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIVED.toString} ORDER BY revision DESC LIMIT 1")
+        sqls"""
+              ar.article_id=${articleId.toInt} 
+              AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIVED.toString} 
+              ORDER BY revision 
+              DESC LIMIT 1
+              """
+      )
 
     def idsWithStatus(status: ArticleStatus.Value)(implicit session: DBSession = AutoSession): Try[List[ArticleIds]] = {
       val ar = Article.syntax("ar")

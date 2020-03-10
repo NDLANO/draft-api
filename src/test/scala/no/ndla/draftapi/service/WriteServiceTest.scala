@@ -63,6 +63,12 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         val arg = invocation.getArgument[Article](0)
         Try(arg.copy(revision = Some(arg.revision.get + 1)))
       })
+    when(draftRepository.copyPublishedArticle(any[Article])(any[DBSession]))
+      .thenAnswer((invocation: InvocationOnMock) => {
+        val arg = invocation.getArgument[Article](0)
+        Try(arg.copy(revision = Some(arg.revision.get + 1)))
+      })
+
     when(agreementRepository.update(any[Agreement])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
       val arg = invocation.getArgument[Agreement](0)
       Try(arg)
