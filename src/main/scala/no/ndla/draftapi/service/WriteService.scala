@@ -180,13 +180,11 @@ trait WriteService {
     private def updateArticleAndStoreAsNewIfPublished(
         article: domain.Article,
         isImported: Boolean
-    ) = {
-      draftRepository.updateArticle(article, isImported) match {
-        case Success(updated) if updated.status.current == PUBLISHED && !isImported =>
-          draftRepository.storeArticleAsNewVersion(updated)
-        case Success(updated) => Success(updated)
-        case Failure(ex)      => Failure(ex)
-      }
+    ) = draftRepository.updateArticle(article, isImported) match {
+      case Success(updated) if updated.status.current == PUBLISHED && !isImported =>
+        draftRepository.storeArticleAsNewVersion(updated)
+      case Success(updated) => Success(updated)
+      case Failure(ex)      => Failure(ex)
     }
 
     private def updateArticleWithExternalAndStoreAsNewIfPublished(
@@ -194,13 +192,11 @@ trait WriteService {
         externalIds: List[String],
         externalSubjectIds: Seq[String],
         importId: Option[String]
-    ) = {
-      draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
-        case Success(updated) if updated.status.current == PUBLISHED =>
-          draftRepository.storeArticleAsNewVersion(updated)
-        case Success(updated) => Success(updated)
-        case Failure(ex)      => Failure(ex)
-      }
+    ) = draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
+      case Success(updated) if updated.status.current == PUBLISHED =>
+        draftRepository.storeArticleAsNewVersion(updated)
+      case Success(updated) => Success(updated)
+      case Failure(ex)      => Failure(ex)
     }
 
     /** Determines which repository function(s) should be called and calls them */
@@ -223,8 +219,8 @@ trait WriteService {
 
     private def updateArticle(toUpdate: domain.Article,
                               importId: Option[String],
-                              externalIds: List[String] = List.empty,
-                              externalSubjectIds: Seq[String] = Seq.empty,
+                              externalIds: List[String],
+                              externalSubjectIds: Seq[String],
                               shouldValidateLanguage: Option[String],
                               isImported: Boolean,
                               shouldAlwaysCopy: Boolean): Try[domain.Article] = {
