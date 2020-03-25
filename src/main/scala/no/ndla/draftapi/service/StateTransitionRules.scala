@@ -77,6 +77,8 @@ trait StateTransitionRules {
        DRAFT                      -> DRAFT,
        DRAFT                      -> PROPOSAL,
        DRAFT                      -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
+       ARCHIVED                   -> ARCHIVED,
+       ARCHIVED                   -> DRAFT,
       (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
