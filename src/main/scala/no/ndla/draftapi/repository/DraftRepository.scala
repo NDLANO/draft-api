@@ -230,7 +230,6 @@ trait DraftRepository {
       articleWhere(
         sqls"""
               ar.article_id=${articleId.toInt} 
-              AND ar.document#>>'{status,current}' <> ${ArticleStatus.ARCHIVED.toString} 
               ORDER BY revision 
               DESC LIMIT 1
               """
