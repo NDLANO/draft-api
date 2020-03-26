@@ -69,14 +69,14 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     result2 should be(List.empty)
   }
 
-  test("withId only returns non-archieved articles") {
+  test("withId also returns archieved articles") {
     assume(databaseIsAvailable, "Database is unavailable")
     repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
     repository.insert(
       sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.ARCHIVED, Set.empty)))
 
     repository.withId(1).isDefined should be(true)
-    repository.withId(2).isDefined should be(false)
+    repository.withId(2).isDefined should be(true)
   }
 
   test("that importIdOfArticle works correctly") {

@@ -51,9 +51,6 @@ trait StateTransitionRules {
         articleApiClient.unpublishArticle(article)
     }
 
-    private val removeFromSearch: SideEffect = (article: domain.Article) =>
-      articleIndexService.deleteDocument(article.id.get).map(_ => article)
-
     private val validateArticleApiArticle: SideEffect = (article: domain.Article, isImported: Boolean) => {
       val articleApiArticle = converterService.toArticleApiArticle(article)
       articleApiClient.validateArticle(articleApiArticle, isImported).map(_ => article)
@@ -79,11 +76,13 @@ trait StateTransitionRules {
       (IMPORTED                   -> DRAFT)                      keepCurrentOnTransition,
        DRAFT                      -> DRAFT,
        DRAFT                      -> PROPOSAL,
-       DRAFT                      -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
+       DRAFT                      -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
+       ARCHIVED                   -> ARCHIVED,
+       ARCHIVED                   -> DRAFT,
       (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
-       PROPOSAL                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect removeFromSearch,
+       PROPOSAL                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
        PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
       (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
       (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticleApiArticle require PublishRoles,
@@ -119,7 +118,7 @@ trait StateTransitionRules {
        UNPUBLISHED                -> PROPOSAL,
        UNPUBLISHED                -> DRAFT,
        UNPUBLISHED                -> UNPUBLISHED,
-       UNPUBLISHED                -> ARCHIVED                    require PublishRoles withSideEffect removeFromSearch,
+       UNPUBLISHED                -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
        QUEUED_FOR_LANGUAGE        -> QUEUED_FOR_LANGUAGE,
        QUEUED_FOR_LANGUAGE        -> PROPOSAL,
        QUEUED_FOR_LANGUAGE        -> TRANSLATED,
