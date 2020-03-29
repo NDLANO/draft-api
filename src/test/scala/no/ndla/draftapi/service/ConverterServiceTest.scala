@@ -268,7 +268,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       tags = Some(Seq("1", "2", "3")),
       introduction = Some("NyIntro"),
       metaDescription = Some("NyMeta"),
-      metaImage = Some(NewArticleMetaImage("321", "NyAlt")),
+      metaImage = Right(Some(NewArticleMetaImage("321", "NyAlt"))),
       visualElement = Some("NyVisualElement"),
       copyright = None,
       requiredLibraries = None,
@@ -343,7 +343,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       tags = Some(Seq("1", "2", "3")),
       introduction = Some("NyIntro"),
       metaDescription = Some("NyMeta"),
-      metaImage = Some(NewArticleMetaImage("321", "NyAlt")),
+      metaImage = Right(Some(NewArticleMetaImage("321", "NyAlt"))),
       visualElement = Some("NyVisualElement"),
       copyright = None,
       requiredLibraries = None,
@@ -539,4 +539,71 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res3.competences should be(Seq.empty)
   }
 
+  test("toDomainArticle(UpdateArticle) should update metaImage correctly") {
+
+    val beforeUpdate = TestData.sampleDomainArticle.copy(
+      metaImage = Seq(domain.ArticleMetaImage("1", "Hei", "nb"), domain.ArticleMetaImage("2", "Hej", "nn")))
+
+    val Success(res1) = service.toDomainArticle(
+      beforeUpdate,
+      TestData.sampleApiUpdateArticle.copy(language = Some("nb"), metaImage = Left(null)),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res2) = service.toDomainArticle(
+      beforeUpdate,
+      TestData.sampleApiUpdateArticle.copy(language = Some("nb"),
+                                           metaImage = Right(Some(api.NewArticleMetaImage("1", "Hola")))),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res3) = service.toDomainArticle(
+      beforeUpdate,
+      TestData.sampleApiUpdateArticle.copy(language = Some("nb"), metaImage = Right(None)),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    res1.metaImage should be(Seq(domain.ArticleMetaImage("2", "Hej", "nn")))
+    res2.metaImage should be(Seq(domain.ArticleMetaImage("2", "Hej", "nn"), domain.ArticleMetaImage("1", "Hola", "nb")))
+    res3.metaImage should be(beforeUpdate.metaImage)
+  }
+
+  test("toDomainArticle(updateNullDocumentArticle) should update metaImage correctly") {
+
+    val Success(res1) = service.toDomainArticle(1,
+                                                TestData.sampleApiUpdateArticle.copy(metaImage = Left(null)),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    val Success(res2) = service.toDomainArticle(
+      2,
+      TestData.sampleApiUpdateArticle.copy(metaImage = Right(Some(api.NewArticleMetaImage("1", "Hola")))),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res3) = service.toDomainArticle(3,
+                                                TestData.sampleApiUpdateArticle.copy(metaImage = Right(None)),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    res1.metaImage should be(Seq.empty)
+    res2.metaImage should be(Seq(domain.ArticleMetaImage("1", "Hola", "nb")))
+    res3.metaImage should be(Seq.empty)
+  }
 }

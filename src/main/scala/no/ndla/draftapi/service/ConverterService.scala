@@ -404,7 +404,7 @@ trait ConverterService {
                                            article.tags,
                                            article.introduction,
                                            article.metaDescription,
-                                           article.metaImage,
+                                           article.metaImage.getOrElse(None),
                                            article.visualElement)
 
       langFields.foldRight(false)((curr, res) => res || curr.isDefined)
@@ -421,7 +421,7 @@ trait ConverterService {
       val updatedDate = if (isImported) oldNdlaUpdatedDate.getOrElse(clock.now()) else clock.now()
       val publishedDate = article.published.getOrElse(toMergeInto.published)
 
-      val isNewLanguage = article.language.map(l => !toMergeInto.supportedLanguages.contains(l)).getOrElse(false)
+      val isNewLanguage = article.language.exists(l => !toMergeInto.supportedLanguages.contains(l))
       val newLanguageEditorNote =
         if (isNewLanguage) Seq(s"Ny språkvariant '${article.language.getOrElse("unknown")}' ble lagt til.")
         else Seq.empty
@@ -470,7 +470,15 @@ trait ConverterService {
       val updatedVisualElement = updatedArticle.visualElement.map(c => toDomainVisualElement(c, lang)).toSeq
       val updatedIntroductions = updatedArticle.introduction.map(i => toDomainIntroduction(i, lang)).toSeq
       val updatedMetaDescriptions = updatedArticle.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq
-      val updatedMetaImage = updatedArticle.metaImage.map(toDomainMetaImage(_, lang)).toSeq
+
+      val updatedMetaImage = updatedArticle.metaImage match {
+        case Left(_) => toMergeInto.metaImage.filterNot(_.language == lang)
+        case Right(meta) =>
+          val domainMetaImage = meta
+            .map(m => domain.ArticleMetaImage(m.id, m.alt, lang))
+            .toSeq
+          mergeLanguageFields(toMergeInto.metaImage, domainMetaImage)
+      }
 
       toMergeInto.copy(
         title = mergeLanguageFields(toMergeInto.title, updatedTitles),
@@ -479,7 +487,7 @@ trait ConverterService {
         visualElement = mergeLanguageFields(toMergeInto.visualElement, updatedVisualElement),
         introduction = mergeLanguageFields(toMergeInto.introduction, updatedIntroductions),
         metaDescription = mergeLanguageFields(toMergeInto.metaDescription, updatedMetaDescriptions),
-        metaImage = mergeLanguageFields(toMergeInto.metaImage, updatedMetaImage)
+        metaImage = updatedMetaImage,
       )
     }
 
@@ -507,6 +515,11 @@ trait ConverterService {
             case None                 => Success(Seq.empty)
           }
 
+          val newMetaImage = article.metaImage match {
+            case Right(meta) => meta.map(m => domain.ArticleMetaImage(m.id, m.alt, lang)).toSeq
+            case Left(_)     => Seq.empty
+          }
+
           mergedNotes.map(
             notes =>
               domain.Article(
@@ -521,7 +534,7 @@ trait ConverterService {
                 visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
                 introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
                 metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-                metaImage = article.metaImage.map(m => toDomainMetaImage(m, lang)).toSeq,
+                metaImage = newMetaImage,
                 created = createdDate,
                 updated = updatedDate,
                 published = article.published.getOrElse(clock.now()),
