@@ -101,7 +101,7 @@ object TestData {
     None,
     None,
     None,
-    None,
+    Right(None),
     None,
     None,
     None,

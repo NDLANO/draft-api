@@ -242,7 +242,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       tags = Some(updatedTags),
       introduction = Some(updatedIntro),
       metaDescription = Some(updatedMetaDescription),
-      metaImage = Some(newImageMeta),
+      metaImage = Right(Some(newImageMeta)),
       visualElement = Some(updatedVisualElement),
       copyright = Some(updatedCopyright),
       requiredLibraries = Some(Seq(updatedRequiredLib)),
