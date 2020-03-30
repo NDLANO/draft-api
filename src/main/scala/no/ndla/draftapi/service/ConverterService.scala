@@ -399,15 +399,15 @@ trait ConverterService {
     }
 
     private def languageFieldIsDefined(article: api.UpdatedArticle): Boolean = {
+      val metaImageExists = article.metaImage.map(_.isDefined).getOrElse(true)
       val langFields: Seq[Option[_]] = Seq(article.title,
                                            article.content,
                                            article.tags,
                                            article.introduction,
                                            article.metaDescription,
-                                           article.metaImage.getOrElse(None),
                                            article.visualElement)
 
-      langFields.foldRight(false)((curr, res) => res || curr.isDefined)
+      langFields.foldRight(false)((curr, res) => res || curr.isDefined || metaImageExists)
     }
 
     def toDomainArticle(toMergeInto: domain.Article,
