@@ -54,7 +54,7 @@ lazy val draft_api = (project in file("."))
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.43",
-      "ndla" %% "mapping" % "0.13",
+      "ndla" %% "mapping" % "0.14",
       "ndla" %% "validation" % "0.36",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
