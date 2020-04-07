@@ -25,4 +25,4 @@ case class ArticleSummary(
     @(ApiModelProperty @field)(description = "A list of available languages for this audio") supportedLanguages: Seq[String],
     @(ApiModelProperty @field)(description = "The notes for this draft article") notes: Seq[String],
     @(ApiModelProperty @field)(description = "The users saved for this draft article") users: Seq[String],
-    @(ApiModelProperty @field)(description = "The competences registered for this draft article") competences: Seq[String])
+    @(ApiModelProperty @field)(description = "The grepCodes registered for this draft article") grepCodes: Seq[String])

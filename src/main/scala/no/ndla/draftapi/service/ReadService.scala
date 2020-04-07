@@ -81,9 +81,9 @@ trait ReadService {
       api.ArticleDomainDump(draftRepository.articleCount, pageNo, pageSize, results)
     }
 
-    def getAllCompetences(input: String, pageSize: Int, offset: Int): api.CompetencesSearchResult = {
-      val (competences, competenceCount) = draftRepository.getCompetences(input, pageSize, (offset - 1) * pageSize)
-      converterService.toApiArticleCompetences(competences, competenceCount, pageSize, offset)
+    def getAllGrepCodes(input: String, pageSize: Int, offset: Int): api.GrepCodesSearchResult = {
+      val (grepCodes, grepCodesCount) = draftRepository.getGrepCodes(input, pageSize, (offset - 1) * pageSize)
+      converterService.toApiArticleGrepCodes(grepCodes, grepCodesCount, pageSize, offset)
     }
 
     def getAllTags(input: String, pageSize: Int, offset: Int, language: String): api.TagsSearchResult = {

@@ -62,7 +62,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
     notes = Seq.empty,
     previousVersionsNotes = Seq.empty,
     editorLabels = Seq.empty,
-    competences = Seq.empty
+    grepCodes = Seq.empty
   )
 
   val exampleToken =

@@ -61,7 +61,7 @@ trait SearchConverterService {
         defaultTitle = defaultTitle.map(_.title),
         users = ai.updatedBy +: ai.notes.map(_.user),
         previousNotes = ai.previousVersionsNotes.map(_.note),
-        competences = ai.competences
+        grepCodes = ai.grepCodes
       )
     }
 
@@ -84,7 +84,7 @@ trait SearchConverterService {
       val visualElement = findByLanguageOrBestEffort(visualElements, language).map(converterService.toApiVisualElement)
       val introduction =
         findByLanguageOrBestEffort(introductions, language).map(converterService.toApiArticleIntroduction)
-      val competences = searchableArticle.competences
+      val grepCodes = searchableArticle.grepCodes
 
       api.ArticleSummary(
         searchableArticle.id,
@@ -97,7 +97,7 @@ trait SearchConverterService {
         supportedLanguages,
         notes,
         users,
-        competences
+        grepCodes
       )
     }
 

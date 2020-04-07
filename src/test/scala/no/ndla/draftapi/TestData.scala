@@ -478,6 +478,6 @@ object TestData {
 
   val sampleLearningPath = LearningPath(Some(1))
 
-  val sampleApiCompetencesSearchResult = api.CompetencesSearchResult(10, 1, 1, Seq("a", "b"))
+  val sampleApiGrepCodesSearchResult = api.GrepCodesSearchResult(10, 1, 1, Seq("a", "b"))
   val sampleApiTagsSearchResult = api.TagsSearchResult(10, 1, 1, "nb", Seq("a", "b"))
 }

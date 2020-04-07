@@ -112,7 +112,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
                                                  Sort.ByTitleAsc,
                                                  ArticleType.all,
                                                  fallback = false,
-                                                 competences = Seq.empty)
+                                                 grepCodes = Seq.empty)
     }
   }
 
@@ -338,20 +338,20 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 
-  test("competences should return 200 OK if the result was not empty") {
-    when(readService.getAllCompetences(anyString, anyInt, anyInt))
-      .thenReturn(TestData.sampleApiCompetencesSearchResult)
+  test("grepCodes should return 200 OK if the result was not empty") {
+    when(readService.getAllGrepCodes(anyString, anyInt, anyInt))
+      .thenReturn(TestData.sampleApiGrepCodesSearchResult)
 
-    get("/test/competences/") {
+    get("/test/grep-codes/") {
       status should equal(200)
     }
   }
 
-  test("competences should return 200 OK if the results are empty") {
-    when(readService.getAllCompetences(anyString, anyInt, anyInt))
-      .thenReturn(TestData.sampleApiCompetencesSearchResult.copy(results = Seq.empty))
+  test("grepCodes should return 200 OK if the results are empty") {
+    when(readService.getAllGrepCodes(anyString, anyInt, anyInt))
+      .thenReturn(TestData.sampleApiGrepCodesSearchResult.copy(results = Seq.empty))
 
-    get("/test/competences/") {
+    get("/test/grep-codes/") {
       status should equal(200)
     }
   }
