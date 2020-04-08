@@ -64,9 +64,9 @@ trait DraftController {
     private val copiedTitleFlag =
       Param[Option[String]]("copied-title-postfix",
                             "Add a string to the title marking this article as a copy, defaults to 'true'.")
-    private val grepCodes = Param[Option[String]](
-      "grepCodes",
-      "Return only articles with one of the specified grepCodes. Separate by comma to use specify multiple values (,).")
+    private val grepCodes = Param[Option[Seq[String]]](
+      "grep-codes",
+      "Return only articles with one of the specified codes from GREP API. Separate by comma to use specify multiple values (,).")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
