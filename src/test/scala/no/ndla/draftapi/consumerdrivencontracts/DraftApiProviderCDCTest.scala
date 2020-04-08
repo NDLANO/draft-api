@@ -115,7 +115,7 @@ class DraftApiProviderCDCTest extends IntegrationSuite with TestEnvironment {
 
     val consumersToVerify = List(
       TaggedConsumer("article-api", List("master")),
-      TaggedConsumer("search-api", List("2039-Endre-competences-til-grepCodes"))
+      TaggedConsumer("search-api", List("master"))
     )
 
     val broker = for {
