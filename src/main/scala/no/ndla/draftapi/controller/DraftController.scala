@@ -66,7 +66,7 @@ trait DraftController {
                             "Add a string to the title marking this article as a copy, defaults to 'true'.")
     private val grepCodes = Param[Option[Seq[String]]](
       "grep-codes",
-      "Return only articles with one of the specified codes from GREP API. Separate by comma to use specify multiple values (,).")
+      "A comma separated list of codes from GREP API the resources should be filtered by.")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
