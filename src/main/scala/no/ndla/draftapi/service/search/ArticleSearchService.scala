@@ -46,8 +46,8 @@ trait ArticleSearchService {
             sort: Sort.Value,
             articleTypes: Seq[String],
             fallback: Boolean,
-            competences: Seq[String]): Try[SearchResult[api.ArticleSummary]] =
-      executeSearch(withIdIn, language, license, sort, page, pageSize, boolQuery(), articleTypes, fallback, competences)
+            grepCodes: Seq[String]): Try[SearchResult[api.ArticleSummary]] =
+      executeSearch(withIdIn, language, license, sort, page, pageSize, boolQuery(), articleTypes, fallback, grepCodes)
 
     def matchingQuery(query: String,
                       withIdIn: List[Long],
@@ -58,7 +58,7 @@ trait ArticleSearchService {
                       sort: Sort.Value,
                       articleTypes: Seq[String],
                       fallback: Boolean,
-                      competences: Seq[String]): Try[SearchResult[api.ArticleSummary]] = {
+                      grepCodes: Seq[String]): Try[SearchResult[api.ArticleSummary]] = {
 
       val language = if (searchLanguage == Language.AllLanguages || fallback) "*" else searchLanguage
       val titleSearch = simpleStringQuery(query).field(s"title.$language", 3)
@@ -81,7 +81,7 @@ trait ArticleSearchService {
             )
         )
 
-      executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery, articleTypes, fallback, competences)
+      executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery, articleTypes, fallback, grepCodes)
     }
 
     def executeSearch(withIdIn: List[Long],
@@ -93,7 +93,7 @@ trait ArticleSearchService {
                       queryBuilder: BoolQuery,
                       articleTypes: Seq[String],
                       fallback: Boolean,
-                      competences: Seq[String]): Try[SearchResult[api.ArticleSummary]] = {
+                      grepCodes: Seq[String]): Try[SearchResult[api.ArticleSummary]] = {
 
       val articleTypesFilter =
         if (articleTypes.nonEmpty) Some(constantScoreQuery(termsQuery("articleType", articleTypes))) else None
@@ -115,10 +115,10 @@ trait ArticleSearchService {
             (Some(existsQuery(s"title.$lang")), lang)
       }
 
-      val competencesFilter =
-        if (competences.nonEmpty) Some(constantScoreQuery(termsQuery("competences", competences))) else None
+      val grepCodesFilter =
+        if (grepCodes.nonEmpty) Some(constantScoreQuery(termsQuery("grepCodes", grepCodes))) else None
 
-      val filters = List(licenseFilter, idFilter, languageFilter, articleTypesFilter, competencesFilter)
+      val filters = List(licenseFilter, idFilter, languageFilter, articleTypesFilter, grepCodesFilter)
       val filteredSearch = queryBuilder.filter(filters.flatten)
 
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)

@@ -121,7 +121,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
     previousVersionsNotes = Seq(
       EditorNote("kyllingkanon", TestData.userWithWriteAccess.id, Status(ArticleStatus.DRAFT, Set.empty), new Date())
     ),
-    competences = Seq("KM1234")
+    grepCodes = Seq("KM1234")
   )
 
   val article6: Article = TestData.sampleArticleWithPublicDomain.copy(
@@ -238,7 +238,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByIdAsc,
                                                     Seq(ArticleType.TopicArticle.toString),
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     results.totalCount should be(3)
     results.results.map(_.id) should be(Seq(8, 9, 11))
 
@@ -250,7 +250,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                      Sort.ByIdAsc,
                                                      ArticleType.all,
                                                      fallback = false,
-                                                     competences = Seq.empty)
+                                                     grepCodes = Seq.empty)
     results2.totalCount should be(9)
   }
 
@@ -264,7 +264,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                Sort.ByIdAsc,
                                Seq.empty,
                                fallback = false,
-                               competences = Seq.empty)
+                               grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(9)
     hits.head.id should be(1)
@@ -287,7 +287,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByIdDesc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(9)
     hits.head.id should be(11)
@@ -303,7 +303,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByTitleAsc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(9)
     hits.head.id should be(8)
@@ -326,7 +326,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByTitleDesc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(9)
     hits.head.id should be(7)
@@ -349,7 +349,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByLastUpdatedDesc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(9)
     hits.head.id should be(3)
@@ -365,7 +365,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByLastUpdatedAsc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(9)
     hits.head.id should be(5)
@@ -388,7 +388,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByTitleAsc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(8)
     hits.head.id should be(8)
@@ -410,7 +410,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                     Sort.ByIdAsc,
                                                     Seq.empty,
                                                     fallback = false,
-                                                    competences = Seq.empty)
+                                                    grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(2)
     hits.head.id should be(1)
@@ -426,7 +426,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                   Sort.ByTitleAsc,
                                                   Seq.empty,
                                                   fallback = false,
-                                                  competences = Seq.empty)
+                                                  grepCodes = Seq.empty)
     val hits1 = page1.results
     page1.totalCount should be(9)
     page1.page.get should be(1)
@@ -442,7 +442,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                   Sort.ByTitleAsc,
                                                   Seq.empty,
                                                   fallback = false,
-                                                  competences = Seq.empty)
+                                                  grepCodes = Seq.empty)
     val hits2 = page2.results
     page2.totalCount should be(9)
     page2.page.get should be(2)
@@ -461,7 +461,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByRelevanceDesc,
                                                               Seq(ArticleType.TopicArticle.toString),
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     results.totalCount should be(0)
 
     val Success(results2) = articleSearchService.matchingQuery("bil",
@@ -473,7 +473,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                                Sort.ByRelevanceDesc,
                                                                Seq(ArticleType.Standard.toString),
                                                                fallback = false,
-                                                               competences = Seq.empty)
+                                                               grepCodes = Seq.empty)
     results2.totalCount should be(3)
   }
 
@@ -487,7 +487,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByRelevanceDesc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(3)
     hits.head.id should be(5)
@@ -505,7 +505,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByRelevanceDesc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(1)
     hits.head.id should be(3)
@@ -521,7 +521,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(1)
     hits.head.id should be(2)
@@ -538,7 +538,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                          Sort.ByTitleAsc,
                                          Seq.empty,
                                          fallback = false,
-                                         competences = Seq.empty)
+                                         grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(1)
     hits.head.id should be(3)
@@ -554,7 +554,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     results.totalCount should be(0)
   }
 
@@ -568,7 +568,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits = results.results
     results.totalCount should be(1)
     hits.head.id should be(4)
@@ -584,7 +584,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits1 = search1.results
     hits1.map(_.id) should equal(Seq(1, 3, 5))
 
@@ -597,7 +597,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits2 = search2.results
     hits2.map(_.id) should equal(Seq(1))
 
@@ -610,7 +610,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits3 = search3.results
     hits3.map(_.id) should equal(Seq(1, 3, 5))
 
@@ -623,7 +623,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                               Sort.ByTitleAsc,
                                                               Seq.empty,
                                                               fallback = false,
-                                                              competences = Seq.empty)
+                                                              grepCodes = Seq.empty)
     val hits4 = search4.results
     hits4.map(_.id) should equal(Seq(1, 3, 5))
   }
@@ -638,7 +638,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                              Sort.ByRelevanceDesc,
                                                              Seq.empty,
                                                              fallback = false,
-                                                             competences = Seq.empty)
+                                                             grepCodes = Seq.empty)
     val hits = search.results
     hits.map(_.id) should equal(Seq(9, 8))
   }
@@ -653,7 +653,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                              Sort.ByRelevanceDesc,
                                                              Seq.empty,
                                                              fallback = false,
-                                                             competences = Seq.empty)
+                                                             grepCodes = Seq.empty)
     search.totalCount should be(1)
     search.results.head.id should be(5)
   }
@@ -668,7 +668,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                Sort.ByIdAsc,
                                Seq.empty,
                                fallback = false,
-                               competences = Seq.empty)
+                               grepCodes = Seq.empty)
     val hits = search.results
 
     search.totalCount should equal(10)
@@ -695,7 +695,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                    Sort.ByTitleAsc,
                                                    Seq.empty,
                                                    fallback = false,
-                                                   competences = Seq.empty)
+                                                   grepCodes = Seq.empty)
     val hits = search.results
 
     search.totalCount should equal(1)
@@ -712,7 +712,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                                Sort.ByRelevanceDesc,
                                                                Seq.empty,
                                                                fallback = false,
-                                                               competences = Seq.empty)
+                                                               grepCodes = Seq.empty)
     val Success(searchNb) = articleSearchService.matchingQuery("Store",
                                                                List(),
                                                                "all",
@@ -722,7 +722,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                                                Sort.ByRelevanceDesc,
                                                                Seq.empty,
                                                                fallback = false,
-                                                               competences = Seq.empty)
+                                                               grepCodes = Seq.empty)
 
     searchEn.totalCount should equal(1)
     searchEn.results.head.id should equal(11)
@@ -745,7 +745,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                Sort.ByIdAsc,
                                Seq.empty,
                                fallback = true,
-                               competences = Seq.empty)
+                               grepCodes = Seq.empty)
 
     search.totalCount should equal(3)
     search.results.head.id should equal(9)
@@ -769,7 +769,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                Sort.ByIdAsc,
                                Seq.empty,
                                fallback = true,
-                               competences = Seq.empty)
+                               grepCodes = Seq.empty)
 
     val Success(scroll1) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
     val Success(scroll2) = articleSearchService.scroll(scroll1.scrollId.get, "all")
@@ -796,7 +796,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
                                          Sort.ByIdAsc,
                                          Seq.empty,
                                          fallback = true,
-                                         competences = Seq.empty)
+                                         grepCodes = Seq.empty)
     val Success(scroll) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
 
     initialSearch.results.size should be(1)
@@ -819,7 +819,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
       Sort.ByRelevanceDesc,
       Seq.empty,
       fallback = false,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
     search.totalCount should be(1)
     search.results.head.id should be(5)
@@ -836,13 +836,13 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
       Sort.ByRelevanceDesc,
       Seq.empty,
       fallback = true,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
 
     search.results.map(_.id) should be(Seq(10))
   }
 
-  test("searching for competences should return relevant results") {
+  test("searching for grepCodes should return relevant results") {
     val Success(search) = articleSearchService.all(
       List(),
       "nb",
@@ -852,7 +852,7 @@ class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
       Sort.ByRelevanceDesc,
       Seq.empty,
       fallback = true,
-      competences = Seq("KM1234")
+      grepCodes = Seq("KM1234")
     )
     search.totalCount should be(1)
     search.results.head.id should be(5)
