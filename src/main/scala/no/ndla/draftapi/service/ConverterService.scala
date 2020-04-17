@@ -82,7 +82,7 @@ trait ConverterService {
                 notes = notes,
                 previousVersionsNotes = Seq.empty,
                 editorLabels = newArticle.editorLabels,
-                competences = newArticle.competences
+                grepCodes = newArticle.grepCodes
             ))
       }
     }
@@ -242,7 +242,7 @@ trait ConverterService {
             article.supportedLanguages,
             article.notes.map(toApiEditorNote),
             article.editorLabels,
-            article.competences
+            article.grepCodes
           ))
       } else {
         Failure(
@@ -394,7 +394,7 @@ trait ConverterService {
         updatedBy = article.updatedBy,
         published = article.published,
         articleType = article.articleType.toString,
-        competences = article.competences
+        grepCodes = article.grepCodes
       )
     }
 
@@ -446,7 +446,7 @@ trait ConverterService {
             articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
             notes = allNotes,
             editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels),
-            competences = article.competences.getOrElse(toMergeInto.competences)
+            grepCodes = article.grepCodes.getOrElse(toMergeInto.grepCodes)
           )
 
           article.language match {
@@ -543,7 +543,7 @@ trait ConverterService {
                 notes = notes,
                 previousVersionsNotes = Seq.empty,
                 editorLabels = article.editorLabels.getOrElse(Seq.empty),
-                competences = article.competences.getOrElse(Seq.empty)
+                grepCodes = article.grepCodes.getOrElse(Seq.empty)
             ))
       }
     }
@@ -563,11 +563,11 @@ trait ConverterService {
       }
     }
 
-    def toApiArticleCompetences(competences: Seq[String],
-                                competenceCount: Int,
-                                pageSize: Int,
-                                offset: Int): api.CompetencesSearchResult = {
-      api.CompetencesSearchResult(competenceCount, offset, pageSize, competences)
+    def toApiArticleGrepCodes(grepCodes: Seq[String],
+                              grepCodesCount: Int,
+                              pageSize: Int,
+                              offset: Int): api.GrepCodesSearchResult = {
+      api.GrepCodesSearchResult(grepCodesCount, offset, pageSize, grepCodes)
     }
 
     def toApiArticleTags(tags: Seq[String],

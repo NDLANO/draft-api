@@ -64,9 +64,9 @@ trait DraftController {
     private val copiedTitleFlag =
       Param[Option[String]]("copied-title-postfix",
                             "Add a string to the title marking this article as a copy, defaults to 'true'.")
-    private val competences = Param[Option[String]](
-      "competences",
-      "Return only articles with one of the specified competence goals. Separate by comma to use specify multiple values (,).")
+    private val grepCodes = Param[Option[Seq[String]]](
+      "grep-codes",
+      "A comma separated list of codes from GREP API the resources should be filtered by.")
 
     /**
       * Does a scroll with [[ArticleSearchService]]
@@ -161,7 +161,7 @@ trait DraftController {
                        idList: List[Long],
                        articleTypesFilter: Seq[String],
                        fallback: Boolean,
-                       competences: Seq[String]) = {
+                       grepCodes: Seq[String]) = {
       val result = query match {
         case Some(q) =>
           articleSearchService.matchingQuery(
@@ -174,7 +174,7 @@ trait DraftController {
             sort = sort.getOrElse(Sort.ByRelevanceDesc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
             fallback = fallback,
-            competences = competences
+            grepCodes = grepCodes
           )
         case None =>
           articleSearchService.all(
@@ -186,7 +186,7 @@ trait DraftController {
             sort = sort.getOrElse(Sort.ByTitleAsc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
             fallback = fallback,
-            competences = competences
+            grepCodes = grepCodes
           )
       }
 
@@ -199,11 +199,11 @@ trait DraftController {
     }
 
     get(
-      "/competences/",
+      "/grep-codes/",
       operation(
-        apiOperation[CompetencesSearchResult]("getCompetences")
-          summary "Retrieves a list of all previously used competences in articles"
-          description "Retrieves a list of all previously used competences in articles"
+        apiOperation[GrepCodesSearchResult]("getGrepCodes")
+          summary "Retrieves a list of all previously used grepCodes in articles"
+          description "Retrieves a list of all previously used grepCodes in articles"
           parameters (
             asHeaderParam(correlationId),
             asQueryParam(query),
@@ -226,7 +226,7 @@ trait DraftController {
           case x                        => x
         }
 
-        readService.getAllCompetences(query, pageSize, pageNo)
+        readService.getAllGrepCodes(query, pageSize, pageNo)
       }
     }
 
@@ -247,7 +247,7 @@ trait DraftController {
             asQueryParam(pageSize),
             asQueryParam(sort),
             asQueryParam(scrollId),
-            asQueryParam(competences)
+            asQueryParam(grepCodes)
         )
           authorizations "oauth2"
           responseMessages response500)
@@ -267,9 +267,9 @@ trait DraftController {
           val idList = paramAsListOfLong(this.articleIds.paramName)
           val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
           val fallback = booleanOrDefault(this.fallback.paramName, default = false)
-          val competences = paramAsListOfString(this.competences.paramName)
+          val grepCodes = paramAsListOfString(this.grepCodes.paramName)
 
-          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, competences)
+          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, grepCodes)
         }
       }
     }
@@ -303,9 +303,9 @@ trait DraftController {
               val idList = searchParams.idList
               val articleTypesFilter = searchParams.articleTypes
               val fallback = searchParams.fallback.getOrElse(false)
-              val competences = searchParams.competences
+              val grepCodes = searchParams.grepCodes
 
-              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, competences)
+              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, grepCodes)
             }
           case Failure(ex) => errorHandler(ex)
         }

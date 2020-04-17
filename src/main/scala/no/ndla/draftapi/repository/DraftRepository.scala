@@ -363,14 +363,14 @@ trait DraftRepository {
         .toList
     }
 
-    def getCompetences(input: String, pageSize: Int, offset: Int)(
+    def getGrepCodes(input: String, pageSize: Int, offset: Int)(
         implicit session: DBSession = AutoSession): (Seq[String], Int) = {
       val sanitizedInput = input.replaceAll("%", "")
-      val competences = sql"""select distinct competences from
-            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
+      val grepCodes = sql"""select distinct grepCodes from
+            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{grepCodes}') as grepCodes
             from ${Article.table}) as dummy
-            where competences ilike ${sanitizedInput + '%'}
-            order by competences
+            where grepCodes ilike ${sanitizedInput + '%'}
+            order by grepCodes
             offset ${offset}
             limit ${pageSize}
             """
@@ -378,12 +378,12 @@ trait DraftRepository {
         .toList
         .apply
 
-      val competences_count = sql"""select distinct count(*) from
-            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{competences}') as competences 
+      val grepCodesCount = sql"""select distinct count(*) from
+            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{grepCodes}') as grepCodes
             from ${Article.table}) as dummy
-            where competences ilike ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
+            where grepCodes ilike ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
 
-      (competences, competences_count)
+      (grepCodes, grepCodesCount)
 
     }
 

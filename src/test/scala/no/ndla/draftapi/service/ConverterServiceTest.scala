@@ -197,7 +197,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
 
     val updatedNothing = TestData.blankUpdatedArticle.copy(
@@ -231,7 +231,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -255,7 +255,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -275,7 +275,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       articleType = None,
       notes = None,
       editorLabels = None,
-      competences = None,
+      grepCodes = None,
       createNewVersion = None
     )
 
@@ -306,7 +306,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -330,7 +330,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      competences = Seq.empty
+      grepCodes = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -350,7 +350,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       articleType = None,
       notes = None,
       editorLabels = None,
-      competences = None,
+      grepCodes = None,
       createNewVersion = None
     )
 
@@ -458,30 +458,30 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   }
 
-  test("toDomainArticle(NewArticle) should convert competences correctly") {
+  test("toDomainArticle(NewArticle) should convert grepCodes correctly") {
 
     when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
 
-    val Success(res1) = service.toDomainArticle(TestData.newArticle.copy(competences = Seq("a", "b")),
+    val Success(res1) = service.toDomainArticle(TestData.newArticle.copy(grepCodes = Seq("a", "b")),
                                                 List(TestData.externalId),
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None)
 
-    val Success(res2) = service.toDomainArticle(TestData.newArticle.copy(competences = Seq.empty),
+    val Success(res2) = service.toDomainArticle(TestData.newArticle.copy(grepCodes = Seq.empty),
                                                 List(TestData.externalId),
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None)
 
-    res1.competences should be(Seq("a", "b"))
-    res2.competences should be(Seq.empty)
+    res1.grepCodes should be(Seq("a", "b"))
+    res2.grepCodes should be(Seq.empty)
   }
 
-  test("toDomainArticle(UpdateArticle) should convert competences correctly") {
+  test("toDomainArticle(UpdateArticle) should convert grepCodes correctly") {
     val Success(res1) = service.toDomainArticle(
-      TestData.sampleDomainArticle.copy(competences = Seq("a", "b", "c")),
-      TestData.sampleApiUpdateArticle.copy(competences = Some(Seq("x", "y"))),
+      TestData.sampleDomainArticle.copy(grepCodes = Seq("a", "b", "c")),
+      TestData.sampleApiUpdateArticle.copy(grepCodes = Some(Seq("x", "y"))),
       isImported = false,
       TestData.userWithWriteAccess,
       None,
@@ -489,8 +489,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     )
 
     val Success(res2) = service.toDomainArticle(
-      TestData.sampleDomainArticle.copy(competences = Seq("a", "b", "c")),
-      TestData.sampleApiUpdateArticle.copy(competences = Some(Seq.empty)),
+      TestData.sampleDomainArticle.copy(grepCodes = Seq("a", "b", "c")),
+      TestData.sampleApiUpdateArticle.copy(grepCodes = Some(Seq.empty)),
       isImported = false,
       TestData.userWithWriteAccess,
       None,
@@ -498,45 +498,45 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     )
 
     val Success(res3) = service.toDomainArticle(
-      TestData.sampleDomainArticle.copy(competences = Seq("a", "b", "c")),
-      TestData.sampleApiUpdateArticle.copy(competences = None),
+      TestData.sampleDomainArticle.copy(grepCodes = Seq("a", "b", "c")),
+      TestData.sampleApiUpdateArticle.copy(grepCodes = None),
       isImported = false,
       TestData.userWithWriteAccess,
       None,
       None
     )
 
-    res1.competences should be(Seq("x", "y"))
-    res2.competences should be(Seq.empty)
-    res3.competences should be(Seq("a", "b", "c"))
+    res1.grepCodes should be(Seq("x", "y"))
+    res2.grepCodes should be(Seq.empty)
+    res3.grepCodes should be(Seq("a", "b", "c"))
   }
 
-  test("toDomainArticle(updateNullDocumentArticle) should convert competences correctly") {
+  test("toDomainArticle(updateNullDocumentArticle) should convert grepCodes correctly") {
 
     val Success(res1) = service.toDomainArticle(1,
-                                                TestData.sampleApiUpdateArticle.copy(competences = Some(Seq("a", "b"))),
+                                                TestData.sampleApiUpdateArticle.copy(grepCodes = Some(Seq("a", "b"))),
                                                 isImported = false,
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None)
 
     val Success(res2) = service.toDomainArticle(2,
-                                                TestData.sampleApiUpdateArticle.copy(competences = Some(Seq.empty)),
+                                                TestData.sampleApiUpdateArticle.copy(grepCodes = Some(Seq.empty)),
                                                 isImported = false,
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None)
 
     val Success(res3) = service.toDomainArticle(3,
-                                                TestData.sampleApiUpdateArticle.copy(competences = None),
+                                                TestData.sampleApiUpdateArticle.copy(grepCodes = None),
                                                 isImported = false,
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None)
 
-    res1.competences should be(Seq("a", "b"))
-    res2.competences should be(Seq.empty)
-    res3.competences should be(Seq.empty)
+    res1.grepCodes should be(Seq("a", "b"))
+    res2.grepCodes should be(Seq.empty)
+    res3.grepCodes should be(Seq.empty)
   }
 
   test("toDomainArticle(UpdateArticle) should update metaImage correctly") {
