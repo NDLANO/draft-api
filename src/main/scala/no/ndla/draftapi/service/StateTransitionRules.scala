@@ -48,7 +48,12 @@ trait StateTransitionRules {
 
     private[service] val unpublishArticle: SideEffect = (article: domain.Article) =>
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
-        articleApiClient.unpublishArticle(article)
+        article.id match {
+          case Some(id) =>
+            taxonomyApiClient.updateTaxonomyMetadataIfExists(id, article.grepCodes, false)
+            articleApiClient.unpublishArticle(article)
+          case _ => Failure(NotFoundException("This is a bug, article to unpublish has no id."))
+        }
     }
 
     private val validateArticleApiArticle: SideEffect = (article: domain.Article, isImported: Boolean) => {
@@ -62,6 +67,7 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
             taxonomyApiClient.updateTaxonomyIfExists(id, article)
+            taxonomyApiClient.updateTaxonomyMetadataIfExists(id, article.grepCodes, true)
             articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
