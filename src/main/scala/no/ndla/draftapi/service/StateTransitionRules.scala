@@ -10,10 +10,11 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.auth.UserInfo.{PublishRoles, DirectPublishRoles}
+import no.ndla.draftapi.auth.UserInfo.{DirectPublishRoles, PublishRoles}
 import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningpathApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.domain.{ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -36,7 +37,7 @@ trait StateTransitionRules {
     with ContentValidator
     with ArticleIndexService =>
 
-  object StateTransitionRules {
+  object StateTransitionRules extends LazyLogging {
 
     // Import implicits to clean up SideEffect creation where we don't need all parameters
     import SideEffect.implicits._
@@ -46,12 +47,29 @@ trait StateTransitionRules {
         Success(article)
     }
 
+    private def logFailures[T](t: Try[_]*)(ret: Try[T]): Try[T] = {
+      val failures :+ ret = t.collect { case Failure(ex) => Failure(ex) }
+      failures.headOption.getOrElse(ret)
+    }
+
     private[service] val unpublishArticle: SideEffect = (article: domain.Article) =>
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
         article.id match {
           case Some(id) =>
-            taxonomyApiClient.updateTaxonomyMetadataIfExists(id, article.grepCodes, false)
-            articleApiClient.unpublishArticle(article)
+            val updatedTaxonomyMetadata = taxonomyApiClient
+              .updateTaxonomyMetadataIfExists(id, article.grepCodes, false)
+              .recoverWith(ex => {
+                logger.error(s"Could not update metadata for unpublishing article with id '$id'", ex); Failure(ex)
+              })
+
+            val updatedArticle = articleApiClient
+              .unpublishArticle(article)
+              .recoverWith(ex => {
+                logger.error(s"Could not unpublish article with id '$id' from article-api", ex); Failure(ex)
+              })
+
+            logFailures(updatedTaxonomyMetadata)(updatedArticle)
+
           case _ => Failure(NotFoundException("This is a bug, article to unpublish has no id."))
         }
     }
@@ -66,9 +84,32 @@ trait StateTransitionRules {
         article.id match {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
-            taxonomyApiClient.updateTaxonomyIfExists(id, article)
-            taxonomyApiClient.updateTaxonomyMetadataIfExists(id, article.grepCodes, true)
-            articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
+
+            val updatedTaxonomy = taxonomyApiClient
+              .updateTaxonomyIfExists(id, article)
+              .recoverWith(ex => {
+                logger.error(s"Could not update taxonomy for publishing article with id '$id': ${ex.getMessage}", ex);
+                Failure(ex)
+              })
+
+            val updatedTaxonomyMetadata = taxonomyApiClient
+              .updateTaxonomyMetadataIfExists(id, article.grepCodes, true)
+              .recoverWith(ex => {
+                logger.error(
+                  s"Could not update taxonomy metadata for publishing article with id '$id': ${ex.getMessage}",
+                  ex);
+                Failure(ex)
+              })
+
+            val updatedArticle = articleApiClient
+              .updateArticle(id, article, externalIds, isImported, useSoftValidation)
+              .recoverWith(ex => {
+                logger.error(s"Could not publish article with id '$id' to article-api: ${ex.getMessage}", ex);
+                Failure(ex)
+              })
+
+            logFailures(updatedTaxonomy, updatedTaxonomyMetadata)(updatedArticle)
+
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
 
