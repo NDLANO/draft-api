@@ -47,22 +47,14 @@ trait StateTransitionRules {
         Success(article)
     }
 
-    /** Returns first encountered failure if any of the [[Try]]'s fail, otherwise return @ret. */
-    private def returnFailureIfAny[T](t: Try[_]*)(ret: Try[T]): Try[T] = {
-      val failures = (t :+ ret).collect { case Failure(ex) => Failure(ex) }
-      failures.headOption.getOrElse(ret)
-    }
-
     private[service] val unpublishArticle: SideEffect = (article: domain.Article) =>
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
         article.id match {
           case Some(id) =>
-            returnFailureIfAny(
-              taxonomyApiClient.updateTaxonomyMetadataIfExists(id, false)
-            )(
-              articleApiClient.unpublishArticle(article)
-            )
-
+            val taxMetadataT = taxonomyApiClient.updateTaxonomyMetadataIfExists(id, false)
+            val articleUpdT = articleApiClient.unpublishArticle(article)
+            val failures = Seq(taxMetadataT, articleUpdT).collect { case Failure(ex) => Failure(ex) }
+            failures.headOption.getOrElse(articleUpdT)
           case _ => Failure(NotFoundException("This is a bug, article to unpublish has no id."))
         }
     }
@@ -78,12 +70,13 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
-            returnFailureIfAny(
+            val taxonomyTries = Seq(
               taxonomyApiClient.updateTaxonomyIfExists(id, article),
               taxonomyApiClient.updateTaxonomyMetadataIfExists(id, true)
-            )(
-              articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
             )
+            val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
+            val failures = (taxonomyTries :+ articleUdpT).collect { case Failure(ex) => Failure(ex) }
+            failures.headOption.getOrElse(articleUdpT)
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
 
