@@ -47,8 +47,9 @@ trait StateTransitionRules {
         Success(article)
     }
 
-    private def logFailures[T](t: Try[_]*)(ret: Try[T]): Try[T] = {
-      val failures :+ ret = t.collect { case Failure(ex) => Failure(ex) }
+    /** Returns first encountered failure if any of the [[Try]]'s fail, otherwise return @ret. */
+    private def returnFailureIfAny[T](t: Try[_]*)(ret: Try[T]): Try[T] = {
+      val failures = (t :+ ret).collect { case Failure(ex) => Failure(ex) }
       failures.headOption.getOrElse(ret)
     }
 
@@ -56,19 +57,11 @@ trait StateTransitionRules {
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
         article.id match {
           case Some(id) =>
-            val updatedTaxonomyMetadata = taxonomyApiClient
-              .updateTaxonomyMetadataIfExists(id, article.grepCodes, false)
-              .recoverWith(ex => {
-                logger.error(s"Could not update metadata for unpublishing article with id '$id'", ex); Failure(ex)
-              })
-
-            val updatedArticle = articleApiClient
-              .unpublishArticle(article)
-              .recoverWith(ex => {
-                logger.error(s"Could not unpublish article with id '$id' from article-api", ex); Failure(ex)
-              })
-
-            logFailures(updatedTaxonomyMetadata)(updatedArticle)
+            returnFailureIfAny(
+              taxonomyApiClient.updateTaxonomyMetadataIfExists(id, false)
+            )(
+              articleApiClient.unpublishArticle(article)
+            )
 
           case _ => Failure(NotFoundException("This is a bug, article to unpublish has no id."))
         }
@@ -85,31 +78,12 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
-            val updatedTaxonomy = taxonomyApiClient
-              .updateTaxonomyIfExists(id, article)
-              .recoverWith(ex => {
-                logger.error(s"Could not update taxonomy for publishing article with id '$id': ${ex.getMessage}", ex);
-                Failure(ex)
-              })
-
-            val updatedTaxonomyMetadata = taxonomyApiClient
-              .updateTaxonomyMetadataIfExists(id, article.grepCodes, true)
-              .recoverWith(ex => {
-                logger.error(
-                  s"Could not update taxonomy metadata for publishing article with id '$id': ${ex.getMessage}",
-                  ex);
-                Failure(ex)
-              })
-
-            val updatedArticle = articleApiClient
-              .updateArticle(id, article, externalIds, isImported, useSoftValidation)
-              .recoverWith(ex => {
-                logger.error(s"Could not publish article with id '$id' to article-api: ${ex.getMessage}", ex);
-                Failure(ex)
-              })
-
-            logFailures(updatedTaxonomy, updatedTaxonomyMetadata)(updatedArticle)
-
+            returnFailureIfAny(
+              taxonomyApiClient.updateTaxonomyIfExists(id, article),
+              taxonomyApiClient.updateTaxonomyMetadataIfExists(id, true)
+            )(
+              articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
+            )
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
 

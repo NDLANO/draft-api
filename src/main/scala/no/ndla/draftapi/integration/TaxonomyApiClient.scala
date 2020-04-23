@@ -162,15 +162,28 @@ trait TaxonomyApiClient {
         })
     }
 
-    def updateTaxonomyMetadataIfExists(articleId: Long, grepCodes: Seq[String], visible: Boolean) = {
-      val metadata = TaxonomyMetadata(grepCodes, visible)
-
+    def updateTaxonomyMetadataIfExists(articleId: Long, visible: Boolean) = {
       for {
         resources <- queryResource(articleId)
-        _ <- resources.traverse(res => updateResourceMetadata(res.id, metadata))
+        existingResourceMetadataWithId <- resources.traverse(res => getResourceMetadata(res.id).map((res.id, _)))
+        _ <- existingResourceMetadataWithId.traverse {
+          case (resId, existingMeta) => updateResourceMetadata(resId, existingMeta.copy(visible = visible))
+        }
+
         topics <- queryTopic(articleId)
-        _ <- topics.traverse(top => updateTopicMetadata(top.id, metadata))
+        existingTopicMetadataWithId <- topics.traverse(top => getTopicMetadata(top.id).map((top.id, _)))
+        _ <- existingTopicMetadataWithId.traverse {
+          case (topId, existingMeta) => updateTopicMetadata(topId, existingMeta.copy(visible = visible))
+        }
       } yield articleId
+    }
+
+    private def getResourceMetadata(resourceId: String): Try[TaxonomyMetadata] = {
+      get[TaxonomyMetadata](s"$TaxonomyApiEndpoint/resources/$resourceId/metadata")
+    }
+
+    private def getTopicMetadata(resourceId: String): Try[TaxonomyMetadata] = {
+      get[TaxonomyMetadata](s"$TaxonomyApiEndpoint/topics/$resourceId/metadata")
     }
 
     private def updateResourceMetadata(resourceId: String, body: TaxonomyMetadata): Try[TaxonomyMetadata] = {
