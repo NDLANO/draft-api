@@ -37,7 +37,7 @@ trait StateTransitionRules {
     with ContentValidator
     with ArticleIndexService =>
 
-  object StateTransitionRules extends LazyLogging {
+  object StateTransitionRules {
 
     // Import implicits to clean up SideEffect creation where we don't need all parameters
     import SideEffect.implicits._
