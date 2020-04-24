@@ -53,8 +53,8 @@ trait StateTransitionRules {
           case Some(id) =>
             val taxMetadataT = taxonomyApiClient.updateTaxonomyMetadataIfExists(id, false)
             val articleUpdT = articleApiClient.unpublishArticle(article)
-            val failures = Seq(taxMetadataT, articleUpdT).collect { case Failure(ex) => Failure(ex) }
-            failures.headOption.getOrElse(articleUpdT)
+            val failures = Seq(taxMetadataT, articleUpdT).collectFirst { case Failure(ex) => Failure(ex) }
+            failures.getOrElse(articleUpdT)
           case _ => Failure(NotFoundException("This is a bug, article to unpublish has no id."))
         }
     }
@@ -70,13 +70,10 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
-            val taxonomyTries = Seq(
-              taxonomyApiClient.updateTaxonomyIfExists(id, article),
-              taxonomyApiClient.updateTaxonomyMetadataIfExists(id, true)
-            )
+            val taxonomyT = taxonomyApiClient.updateTaxonomyIfExists(id, article)
             val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
-            val failures = (taxonomyTries :+ articleUdpT).collect { case Failure(ex) => Failure(ex) }
-            failures.headOption.getOrElse(articleUdpT)
+            val failures = Seq(taxonomyT, articleUdpT).collectFirst { case Failure(ex) => Failure(ex) }
+            failures.getOrElse(articleUdpT)
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
 
