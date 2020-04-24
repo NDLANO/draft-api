@@ -10,10 +10,11 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.auth.UserInfo.{PublishRoles, DirectPublishRoles}
+import no.ndla.draftapi.auth.UserInfo.{DirectPublishRoles, PublishRoles}
 import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningpathApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.domain.{ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -48,7 +49,14 @@ trait StateTransitionRules {
 
     private[service] val unpublishArticle: SideEffect = (article: domain.Article) =>
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
-        articleApiClient.unpublishArticle(article)
+        article.id match {
+          case Some(id) =>
+            val taxMetadataT = taxonomyApiClient.updateTaxonomyMetadataIfExists(id, false)
+            val articleUpdT = articleApiClient.unpublishArticle(article)
+            val failures = Seq(taxMetadataT, articleUpdT).collectFirst { case Failure(ex) => Failure(ex) }
+            failures.getOrElse(articleUpdT)
+          case _ => Failure(NotFoundException("This is a bug, article to unpublish has no id."))
+        }
     }
 
     private val validateArticleApiArticle: SideEffect = (article: domain.Article, isImported: Boolean) => {
@@ -61,8 +69,11 @@ trait StateTransitionRules {
         article.id match {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
-            taxonomyApiClient.updateTaxonomyIfExists(id, article)
-            articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
+
+            val taxonomyT = taxonomyApiClient.updateTaxonomyIfExists(id, article)
+            val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
+            val failures = Seq(taxonomyT, articleUdpT).collectFirst { case Failure(ex) => Failure(ex) }
+            failures.getOrElse(articleUdpT)
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
 

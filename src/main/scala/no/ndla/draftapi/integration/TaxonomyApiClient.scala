@@ -162,6 +162,38 @@ trait TaxonomyApiClient {
         })
     }
 
+    def updateTaxonomyMetadataIfExists(articleId: Long, visible: Boolean) = {
+      for {
+        resources <- queryResource(articleId)
+        existingResourceMetadataWithId <- resources.traverse(res => getResourceMetadata(res.id).map((res.id, _)))
+        _ <- existingResourceMetadataWithId.traverse {
+          case (resId, existingMeta) => updateResourceMetadata(resId, existingMeta.copy(visible = visible))
+        }
+
+        topics <- queryTopic(articleId)
+        existingTopicMetadataWithId <- topics.traverse(top => getTopicMetadata(top.id).map((top.id, _)))
+        _ <- existingTopicMetadataWithId.traverse {
+          case (topId, existingMeta) => updateTopicMetadata(topId, existingMeta.copy(visible = visible))
+        }
+      } yield articleId
+    }
+
+    private def getResourceMetadata(resourceId: String): Try[TaxonomyMetadata] = {
+      get[TaxonomyMetadata](s"$TaxonomyApiEndpoint/resources/$resourceId/metadata")
+    }
+
+    private def getTopicMetadata(resourceId: String): Try[TaxonomyMetadata] = {
+      get[TaxonomyMetadata](s"$TaxonomyApiEndpoint/topics/$resourceId/metadata")
+    }
+
+    private def updateResourceMetadata(resourceId: String, body: TaxonomyMetadata): Try[TaxonomyMetadata] = {
+      putRaw[TaxonomyMetadata](s"$TaxonomyApiEndpoint/resources/$resourceId/metadata", body)
+    }
+
+    private def updateTopicMetadata(resourceId: String, body: TaxonomyMetadata): Try[TaxonomyMetadata] = {
+      putRaw[TaxonomyMetadata](s"$TaxonomyApiEndpoint/topics/$resourceId/metadata", body)
+    }
+
     private def get[A](url: String, params: (String, String)*)(implicit mf: Manifest[A]): Try[A] =
       ndlaClient.fetchWithForwardedAuth[A](Http(url).timeout(taxonomyTimeout, taxonomyTimeout).params(params))
 
@@ -207,4 +239,6 @@ case class Resource(id: String, name: String, contentUri: Option[String], paths:
 case class Topic(id: String, name: String, contentUri: Option[String], paths: List[String]) extends Taxonomy[Topic] {
   def withName(name: String): Topic = this.copy(name = name)
 }
+
+case class TaxonomyMetadata(grepCodes: Seq[String], visible: Boolean)
 case class Translation(name: String, language: Option[String] = None)
