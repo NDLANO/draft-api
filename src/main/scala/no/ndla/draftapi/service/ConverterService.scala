@@ -185,7 +185,7 @@ trait ConverterService {
       })
 
       val conceptIds = conceptEmbeds.flatMap(embed => {
-        Try(embed.attr(TagAttributes.DataResource_Id.toString).toLong) match {
+        Try(embed.attr(TagAttributes.DataContentId.toString).toLong) match {
           case Failure(ex) =>
             logger.error(s"Could not derive concept id from embed: '${embed.toString}'", ex)
             None
