@@ -46,6 +46,7 @@ object DraftApiProperties extends LazyLogging {
   )
 
   val ArticleApiHost: String = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
+  val ConceptApiHost: String = propOrElse("CONCEPT_API_HOST", "concept-api.ndla-local")
   val LearningpathApiHost: String = propOrElse("LEARNINGPATH_API_HOST", "learningpath-api.ndla-local")
   val AudioApiHost: String = propOrElse("AUDIO_API_HOST", "audio-api.ndla-local")
   val DraftApiHost: String = propOrElse("DRAFT_API_HOST", "draft-api.ndla-local")

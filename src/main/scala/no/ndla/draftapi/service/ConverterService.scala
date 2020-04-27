@@ -24,6 +24,7 @@ import no.ndla.mapping.License.getLicense
 import no.ndla.validation._
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
+import no.ndla.draftapi.DraftApiProperties.{Domain, externalApiUrls, resourceHtmlEmbedTag}
 
 import scala.jdk.CollectionConverters._
 import scala.util.control.Exception.allCatch
@@ -174,6 +175,24 @@ trait ConverterService {
         copyright.validFrom,
         copyright.validTo
       )
+    }
+
+    def getEmbeddedConceptIds(article: domain.Article): Seq[Long] = {
+      val htmlElements = article.content.map(content => HtmlTagRules.stringToJsoupDocument(content.content))
+      val conceptEmbeds = htmlElements.flatMap(elem => {
+        val conceptSelector = s"$resourceHtmlEmbedTag[${TagAttributes.DataResource}=${ResourceType.ConceptLink}]"
+        elem.select(conceptSelector).asScala.toSeq
+      })
+
+      val conceptIds = conceptEmbeds.flatMap(embed => {
+        Try(embed.attr(TagAttributes.DataResource_Id.toString).toLong) match {
+          case Failure(ex) =>
+            logger.error(s"Could not derive concept id from embed: '${embed.toString}'", ex)
+            None
+          case Success(id) => Some(id)
+        }
+      })
+      conceptIds
     }
 
     def toDomainAuthor(author: api.Author): domain.Author = domain.Author(author.`type`, author.name)

@@ -15,7 +15,13 @@ import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.auth.UserInfo.{DirectPublishRoles, PublishRoles}
-import no.ndla.draftapi.integration.{ArticleApiClient, LearningPath, LearningpathApiClient, TaxonomyApiClient}
+import no.ndla.draftapi.integration.{
+  ArticleApiClient,
+  ConceptApiClient,
+  LearningPath,
+  LearningpathApiClient,
+  TaxonomyApiClient
+}
 import no.ndla.draftapi.model.domain.{ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.repository.DraftRepository
@@ -33,6 +39,7 @@ trait StateTransitionRules {
     with ArticleApiClient
     with TaxonomyApiClient
     with LearningpathApiClient
+    with ConceptApiClient
     with ConverterService
     with ContentValidator
     with ArticleIndexService =>
@@ -70,9 +77,14 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
+            val conceptIds = converterService.getEmbeddedConceptIds(article)
+            val conceptTries = conceptApiClient.publishConceptsIfToPublishing(conceptIds)
+
             val taxonomyT = taxonomyApiClient.updateTaxonomyIfExists(id, article)
             val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
-            val failures = Seq(taxonomyT, articleUdpT).collectFirst { case Failure(ex) => Failure(ex) }
+            val failures = (conceptTries ++ Seq(taxonomyT, articleUdpT)).collectFirst {
+              case Failure(ex) => Failure(ex)
+            }
             failures.getOrElse(articleUdpT)
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
