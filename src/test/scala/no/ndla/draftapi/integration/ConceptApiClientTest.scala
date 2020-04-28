@@ -27,7 +27,7 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
     doReturn(Success(DraftConcept(200, ConceptStatus("DRAFT"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath2), any, any)(any)
-    doReturn(Success(DraftConcept(100, ConceptStatus("QUEUED_FOR_PUBLISHING"))))
+    doReturn(Success(DraftConcept(100, ConceptStatus("PUBLISHED"))))
       .when(conceptApiClient)
       .put[DraftConcept](eqTo(s"$idPath1/status/PUBLISHED"), any, any)(any)
 
