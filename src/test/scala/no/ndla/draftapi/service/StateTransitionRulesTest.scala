@@ -9,6 +9,7 @@ package no.ndla.draftapi.service
 
 import java.util.Date
 
+import no.ndla.draftapi.integration.{ConceptStatus, DraftConcept}
 import no.ndla.draftapi.model.api.{ArticleApiArticle, IllegalStatusStateTransition}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.ArticleStatus._
@@ -18,9 +19,10 @@ import no.ndla.validation.ValidationException
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
 import scalikejdbc.DBSession
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
@@ -80,6 +82,13 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val editorNotes = Seq(EditorNote("Status endret", "unit_test", expectedStatus, new Date()))
     val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
+    when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Seq.empty)
+    when(conceptApiClient.publishConceptsIfToPublishing(any[Seq[Long]]))
+      .thenAnswer((i: InvocationOnMock) => {
+        val ids = i.getArgument[Seq[Long]](0)
+        ids.map(id => Try(DraftConcept(id, ConceptStatus("DRAFT"))))
+      })
+
     when(
       articleApiClient
         .updateArticle(eqTo(DraftArticle.id.get), any[Article], eqTo(List("1234")), eqTo(false), eqTo(true)))

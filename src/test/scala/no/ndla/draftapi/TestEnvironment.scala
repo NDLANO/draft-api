@@ -41,6 +41,7 @@ trait TestEnvironment
     with MockitoSugar
     with ConverterService
     with StateTransitionRules
+    with ConceptApiClient
     with LearningpathApiClient
     with NdlaClient
     with SearchConverterService
@@ -91,5 +92,6 @@ trait TestEnvironment
   val articleApiClient = mock[ArticleApiClient]
   val searchApiClient = mock[SearchApiClient]
   val taxonomyApiClient = mock[TaxonomyApiClient]
+  val conceptApiClient = mock[ConceptApiClient]
   val user = mock[User]
 }

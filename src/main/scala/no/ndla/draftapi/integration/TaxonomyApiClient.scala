@@ -10,7 +10,7 @@ package no.ndla.draftapi.integration
 import cats.Traverse
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.network.{AuthUser, NdlaClient}
-import no.ndla.draftapi.DraftApiProperties.Domain
+import no.ndla.draftapi.DraftApiProperties.ApiGatewayHost
 import no.ndla.draftapi.model.domain.{Article, ArticleTitle, Language}
 import org.json4s.{DefaultFormats, Formats}
 import scalaj.http.Http
@@ -24,7 +24,7 @@ trait TaxonomyApiClient {
   val taxonomyApiClient: TaxonomyApiClient
 
   class TaxonomyApiClient extends LazyLogging {
-    private val TaxonomyApiEndpoint = s"$Domain/taxonomy/v1"
+    private val TaxonomyApiEndpoint = s"http://$ApiGatewayHost/taxonomy/v1"
     private val taxonomyTimeout = 20 * 1000 // 20 Seconds
     implicit val formats: DefaultFormats.type = DefaultFormats
 
