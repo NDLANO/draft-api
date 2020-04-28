@@ -21,20 +21,13 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
     val idPath1 = s"$draftPath/100"
     val idPath2 = s"$draftPath/200"
 
-    val concept = DraftConcept(
-      id = 1,
-      status = ConceptStatus(
-        current = "QUEUED_FOR_PUBLISHING"
-      )
-    )
-
-    doReturn(Success(concept.copy(id = 100, status = ConceptStatus("QUEUED_FOR_PUBLISHING"))))
+    doReturn(Success(DraftConcept(100, ConceptStatus("QUEUED_FOR_PUBLISHING"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath1), any, any)(any)
-    doReturn(Success(concept.copy(id = 200, status = ConceptStatus("DRAFT"))))
+    doReturn(Success(DraftConcept(200, ConceptStatus("DRAFT"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath2), any, any)(any)
-    doReturn(Success(concept.copy(id = 100)))
+    doReturn(Success(DraftConcept(100, ConceptStatus("QUEUED_FOR_PUBLISHING"))))
       .when(conceptApiClient)
       .put[DraftConcept](eqTo(s"$idPath1/status/PUBLISHED"), any, any)(any)
 
