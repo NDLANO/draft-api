@@ -41,32 +41,26 @@ trait ConceptApiClient {
       val statusToPublish = "QUEUED_FOR_PUBLISHING"
       val shouldPublish = (c: DraftConcept) => c.status.current == statusToPublish
 
-      val futures = ids.map(id => {
-        getDraftConcept(id).map(res => {
-          res match {
-            case Success(concept) if shouldPublish(concept) => publishConcept(concept.id)
-            case Success(concept) =>
-              logger.info(
-                s"Not publishing concept with id '${concept.id}' since status was '${concept.status.current}' and not '$statusToPublish'")
-              Success(concept)
-            case Failure(ex) =>
-              logger.error(s"Something went wrong when fetching concept with id: '$id'", ex)
-              Failure(ex)
-          }
-        })
+      ids.map(id => {
+        getDraftConcept(id) match {
+          case Success(concept) if shouldPublish(concept) => publishConcept(concept.id)
+          case Success(concept) =>
+            logger.info(
+              s"Not publishing concept with id '${concept.id}' since status was '${concept.status.current}' and not '$statusToPublish'")
+            Success(concept)
+          case Failure(ex) =>
+            logger.error(s"Something went wrong when fetching concept with id: '$id'", ex)
+            Failure(ex)
+        }
       })
-
-      Await.result(Future.sequence(futures), 1 minute)
     }
 
     private def publishConcept(id: Long)(implicit ec: ExecutionContext): Try[DraftConcept] = {
       put[DraftConcept](s"$draftEndpoint/$id/status/PUBLISHED", conceptTimeout)
     }
 
-    private def getDraftConcept(id: Long)(implicit ec: ExecutionContext): Future[Try[DraftConcept]] =
-      Future(
-        get[DraftConcept](s"$draftEndpoint/$id", 10 * 1000, "fallback" -> "true")
-      )
+    private def getDraftConcept(id: Long)(implicit ec: ExecutionContext): Try[DraftConcept] =
+      get[DraftConcept](s"$draftEndpoint/$id", 10 * 1000, "fallback" -> "true")
 
     private[integration] def get[T](path: String, timeout: Int, params: (String, String)*)(
         implicit mf: Manifest[T]): Try[T] = {
