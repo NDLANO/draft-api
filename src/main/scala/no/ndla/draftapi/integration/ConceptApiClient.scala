@@ -7,8 +7,6 @@
 
 package no.ndla.draftapi.integration
 
-import java.util.concurrent.Executors
-
 import com.typesafe.scalalogging.LazyLogging
 import io.lemonlabs.uri.dsl._
 import no.ndla.draftapi.DraftApiProperties.ConceptApiHost
@@ -17,8 +15,6 @@ import no.ndla.network.NdlaClient
 import org.json4s.Formats
 import scalaj.http.Http
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -37,7 +33,6 @@ trait ConceptApiClient {
     private val conceptTimeout = 1000 * 10 // 10 seconds
 
     def publishConceptsIfToPublishing(ids: Seq[Long]): Seq[Try[DraftConcept]] = {
-      implicit val executionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(ids.size))
       val statusToPublish = "QUEUED_FOR_PUBLISHING"
       val shouldPublish = (c: DraftConcept) => c.status.current == statusToPublish
 
@@ -55,11 +50,11 @@ trait ConceptApiClient {
       })
     }
 
-    private def publishConcept(id: Long)(implicit ec: ExecutionContext): Try[DraftConcept] = {
+    private def publishConcept(id: Long): Try[DraftConcept] = {
       put[DraftConcept](s"$draftEndpoint/$id/status/PUBLISHED", conceptTimeout)
     }
 
-    private def getDraftConcept(id: Long)(implicit ec: ExecutionContext): Try[DraftConcept] =
+    private def getDraftConcept(id: Long): Try[DraftConcept] =
       get[DraftConcept](s"$draftEndpoint/$id", 10 * 1000, "fallback" -> "true")
 
     private[integration] def get[T](path: String, timeout: Int, params: (String, String)*)(
