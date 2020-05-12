@@ -62,17 +62,7 @@ trait WriteService {
                                                userInfo,
                                                status)
             newTitles = if (usePostFix) article.title.map(t => t.copy(title = t.title + " (Kopi)")) else article.title
-            articleToInsert = article.copy(
-              id = Some(newId.toLong),
-              title = newTitles,
-              revision = Some(1),
-              updated = clock.now(),
-              created = clock.now(),
-              published = clock.now(),
-              updatedBy = userInfo.id,
-              status = status,
-              notes = notes
-            )
+            articleToInsert <- articleWithClonedFiles(article, newId, newTitles, notes, status, userInfo)
             inserted = draftRepository.insert(articleToInsert)
             _ <- articleIndexService.indexDocument(inserted)
             _ <- Try(searchApiClient.indexDraft(inserted))
@@ -80,6 +70,33 @@ trait WriteService {
             converted <- converterService.toApiArticle(enriched, language, fallback)
           } yield converted
       }
+    }
+
+    private def articleWithClonedFiles(
+        article: domain.Article,
+        newId: Long,
+        newTitles: Seq[domain.ArticleTitle],
+        notes: Seq[domain.EditorNote],
+        status: domain.Status,
+        userInfo: UserInfo
+    ): Try[domain.Article] = {
+      val articleToInsert = article.copy(
+        id = Some(newId),
+        title = newTitles,
+        revision = Some(1),
+        updated = clock.now(),
+        created = clock.now(),
+        published = clock.now(),
+        updatedBy = userInfo.id,
+        status = status,
+        notes = notes
+      )
+
+      ??? // TODO: clone files and replace fileids or whatever
+    }
+
+    def cloneContentWithClonedFiles(content: domain.Content): Try[domain.Content] = {
+      ??? // TODO:
     }
 
     def updateAgreement(agreementId: Long,
