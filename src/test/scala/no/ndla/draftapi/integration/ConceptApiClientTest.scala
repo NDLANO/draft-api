@@ -17,11 +17,11 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
     reset(conceptApiClient)
   }
 
-  test("Test that publishConceptsIfToPublishing publishes concepts with QUEUED_FOR_PUBLISHING status") {
+  test("Test that publishConceptsIfToPublishing publishes concepts with QUALITY_ASSURED status") {
     val idPath1 = s"$draftPath/100"
     val idPath2 = s"$draftPath/200"
 
-    doReturn(Success(DraftConcept(100, ConceptStatus("QUEUED_FOR_PUBLISHING"))))
+    doReturn(Success(DraftConcept(100, ConceptStatus("QUALITY_ASSURED"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath1), any, any)(any)
     doReturn(Success(DraftConcept(200, ConceptStatus("DRAFT"))))
