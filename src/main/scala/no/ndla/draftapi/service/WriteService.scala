@@ -10,6 +10,10 @@ package no.ndla.draftapi.service
 import java.io.ByteArrayInputStream
 import java.util.Date
 
+import io.lemonlabs.uri.dsl._
+import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
+import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.api.{Article, _}
@@ -20,12 +24,12 @@ import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
-import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
-import no.ndla.validation.{ValidationException, ValidationMessage}
-import org.scalatra.servlet.FileItem
-import io.lemonlabs.uri.dsl._
+import no.ndla.validation._
 
-import math.max
+import scala.jdk.CollectionConverters._
+import org.scalatra.servlet.FileItem
+
+import scala.math.max
 import scala.util.{Failure, Random, Success, Try}
 
 trait WriteService {
@@ -43,7 +47,7 @@ trait WriteService {
     with TaxonomyApiClient =>
   val writeService: WriteService
 
-  class WriteService {
+  class WriteService extends LazyLogging {
 
     def copyArticleFromId(
         articleId: Long,
@@ -80,28 +84,87 @@ trait WriteService {
         status: domain.Status,
         userInfo: UserInfo
     ): Try[domain.Article] = {
-      val articleToInsert = article.copy(
-        id = Some(newId),
-        title = newTitles,
-        revision = Some(1),
-        updated = clock.now(),
-        created = clock.now(),
-        published = clock.now(),
-        updatedBy = userInfo.id,
-        status = status,
-        notes = notes
-      )
-
-      ??? // TODO: clone files and replace fileids or whatever
+      contentWithClonedFiles(article.content).map(newContents => {
+        article.copy(
+          id = Some(newId),
+          title = newTitles,
+          content = newContents,
+          revision = Some(1),
+          updated = clock.now(),
+          created = clock.now(),
+          published = clock.now(),
+          updatedBy = userInfo.id,
+          status = status,
+          notes = notes
+        )
+      })
     }
 
-    def cloneContentWithClonedFiles(content: domain.Content): Try[domain.Content] = {
-      ??? // TODO:
+    def contentWithClonedFiles(contents: Seq[domain.ArticleContent]): Try[Seq[domain.ArticleContent]] = {
+      val filePathsToClone = contents
+        .flatMap(content => {
+          val contentDoc = HtmlTagRules.stringToJsoupDocument(content.content)
+          contentDoc
+            .select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']")
+            .asScala
+            .flatMap(e => Option(e.attr(TagAttributes.DataPath.toString)))
+        })
+        .toSet
+
+      filePathsToClone.toList.traverse(path => {
+        val ext = getFileExtension(path).getOrElse("")
+        val newFileName = randomFilename(ext)
+        for {
+          _ <- fileStorage.copyResource(path, newFileName)
+          newPath <- cloneFileAndGetNewPath(path)
+        } yield (path -> newPath)
+      }) match {
+        case Failure(ex) => Failure(ex)
+        case Success(clonedPaths) =>
+          val clonedPathsMap = clonedPaths.toMap
+          val withNewFiles = contents
+            .map(content =>
+              replaceFileEmbedPaths(content.content, clonedPathsMap).map(newContent =>
+                content.copy(content = newContent)))
+            .toList
+            .sequence
+          withNewFiles
+      }
     }
 
-    def updateAgreement(agreementId: Long,
-                        updatedAgreement: api.UpdatedAgreement,
-                        user: UserInfo): Try[api.Agreement] = {
+    private def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
+      val ext = getFileExtension(oldPath).getOrElse("")
+      val newFileName = randomFilename(ext)
+      fileStorage.copyResource(oldPath, newFileName).map(_ => newFileName)
+    }
+
+    private[service] def replaceFileEmbedPaths(content: String, pathsToReplace: Map[String, String]): Try[String] = {
+      val doc = HtmlTagRules.stringToJsoupDocument(content)
+      val embeds = doc
+        .select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']")
+        .asScala
+
+      val results = embeds.toList.traverse(e => {
+        val curPath = e.attr(TagAttributes.DataPath.toString)
+        pathsToReplace.get(curPath) match {
+          case Some(newPath) =>
+            e.attr(TagAttributes.DataPath.toString, newPath)
+            Success(newPath)
+          case None => Failure(CloneFileException(s"Could not find cloned file for $curPath (This is probably a bug)"))
+        }
+      })
+
+      results match {
+        case Failure(ex) => Failure(ex)
+        case _           => Success(HtmlTagRules.jsoupDocumentToString(doc))
+      }
+    }
+
+    def updateAgreement(
+        agreementId: Long,
+        updatedAgreement: api.UpdatedAgreement,
+        user: UserInfo
+    ): Try[api.Agreement] = {
       agreementRepository.withId(agreementId) match {
         case None => Failure(NotFoundException(s"Agreement with id $agreementId does not exist"))
         case Some(existing) =>

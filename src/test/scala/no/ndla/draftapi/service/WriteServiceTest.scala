@@ -677,4 +677,30 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     verify(draftRepository, times(1)).storeArticleAsNewVersion(any[Article])(any[DBSession])
   }
 
+  test("replaceEmbedFilePaths converts filepaths in file-embeds") {
+    val replaceMap = Map(
+      "oldPath.pdf" -> "newRandomName1234.pdf",
+      "some/old/5678.pdf" -> "newRandomName5678.pdf",
+    )
+    val original =
+      """
+        |<section>
+        |<embed data-align="" data-alt="alt" data-caption="capt" data-resource="image" data-resource_id="1234" data-size="full">
+        |<div data-type="file"><embed data-alt="file1alt" data-path="oldPath.pdf" data-resource="file" data-title="file1title" data-type="pdf"><embed data-alt="file2alt" data-path="some/old/5678.pdf" data-resource="file" data-title="file2title" data-type="doc"></div>
+        |<p>Lets mention oldPath.pdf for the test to not be replaced</p>
+        |</section>
+        |""".stripMargin
+    val expected =
+      """
+        |<section>
+        |<embed data-align="" data-alt="alt" data-caption="capt" data-resource="image" data-resource_id="1234" data-size="full">
+        |<div data-type="file"><embed data-alt="file1alt" data-path="newRandomName1234.pdf" data-resource="file" data-title="file1title" data-type="pdf"><embed data-alt="file2alt" data-path="newRandomName5678.pdf" data-resource="file" data-title="file2title" data-type="doc"></div>
+        |<p>Lets mention oldPath.pdf for the test to not be replaced</p>
+        |</section>
+        |""".stripMargin
+    val result = service.replaceFileEmbedPaths(original, replaceMap)
+
+    result should be(Success(expected))
+  }
+
 }

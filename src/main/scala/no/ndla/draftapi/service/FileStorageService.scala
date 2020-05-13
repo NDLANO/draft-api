@@ -41,6 +41,15 @@ trait FileStorageService {
 
     def resourceExists(storageKey: String): Boolean = resourceWithPathExists(s"$resourceDirectory/$storageKey")
 
+    def copyResource(existingStorageKey: String, newStorageKey: String): Try[CopyObjectResult] =
+      Try(
+        amazonClient.copyObject(
+          AttachmentStorageName,
+          existingStorageKey,
+          AttachmentStorageName,
+          newStorageKey
+        ))
+
     def resourceWithPathExists(filePath: String): Boolean =
       Try(amazonClient.doesObjectExist(AttachmentStorageName, filePath)).getOrElse(false)
 
