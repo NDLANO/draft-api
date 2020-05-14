@@ -10,10 +10,10 @@ package no.ndla.draftapi.service
 import java.io.ByteArrayInputStream
 import java.util.Date
 
-import io.lemonlabs.uri.dsl._
-import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
+import io.lemonlabs.uri.dsl._
+import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.api.{Article, _}
@@ -25,10 +25,9 @@ import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation._
-
-import scala.jdk.CollectionConverters._
 import org.scalatra.servlet.FileItem
 
+import scala.jdk.CollectionConverters._
 import scala.math.max
 import scala.util.{Failure, Random, Success, Try}
 
@@ -66,7 +65,19 @@ trait WriteService {
                                                userInfo,
                                                status)
             newTitles = if (usePostFix) article.title.map(t => t.copy(title = t.title + " (Kopi)")) else article.title
-            articleToInsert <- articleWithClonedFiles(article, newId, newTitles, notes, status, userInfo)
+            newContents <- contentWithClonedFiles(article.content)
+            articleToInsert = article.copy(
+              id = Some(newId),
+              title = newTitles,
+              content = newContents,
+              revision = Some(1),
+              updated = clock.now(),
+              created = clock.now(),
+              published = clock.now(),
+              updatedBy = userInfo.id,
+              status = status,
+              notes = notes
+            )
             inserted = draftRepository.insert(articleToInsert)
             _ <- articleIndexService.indexDocument(inserted)
             _ <- Try(searchApiClient.indexDraft(inserted))
@@ -76,59 +87,26 @@ trait WriteService {
       }
     }
 
-    private def articleWithClonedFiles(
-        article: domain.Article,
-        newId: Long,
-        newTitles: Seq[domain.ArticleTitle],
-        notes: Seq[domain.EditorNote],
-        status: domain.Status,
-        userInfo: UserInfo
-    ): Try[domain.Article] = {
-      contentWithClonedFiles(article.content).map(newContents => {
-        article.copy(
-          id = Some(newId),
-          title = newTitles,
-          content = newContents,
-          revision = Some(1),
-          updated = clock.now(),
-          created = clock.now(),
-          published = clock.now(),
-          updatedBy = userInfo.id,
-          status = status,
-          notes = notes
-        )
-      })
-    }
+    /** Clones all file embeds with @oldPaths and returns a map with (oldPath -> clonedPath)
+      * Useful for replacing files used multiple times in one article */
+    private def cloneFilesAndReturnMap(oldPaths: Vector[String]): Try[Map[String, String]] =
+      oldPaths
+        .traverse(oldPath => {
+          cloneFileAndGetNewPath(oldPath).map(newPath => oldPath -> newPath)
+        })
+        .map(_.toMap)
 
     def contentWithClonedFiles(contents: Seq[domain.ArticleContent]): Try[Seq[domain.ArticleContent]] = {
-      val filePathsToClone = contents
-        .flatMap(content => {
-          val contentDoc = HtmlTagRules.stringToJsoupDocument(content.content)
-          contentDoc
-            .select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']")
-            .asScala
-            .flatMap(e => Option(e.attr(TagAttributes.DataPath.toString)))
-        })
-        .toSet
+      val existingFilePaths = converterService.getFilePathsInArticleContents(contents)
 
-      filePathsToClone.toList.traverse(path => {
-        val ext = getFileExtension(path).getOrElse("")
-        val newFileName = randomFilename(ext)
-        for {
-          _ <- fileStorage.copyResource(path, newFileName)
-          newPath <- cloneFileAndGetNewPath(path)
-        } yield (path -> newPath)
-      }) match {
+      cloneFilesAndReturnMap(existingFilePaths.toVector) match {
         case Failure(ex) => Failure(ex)
         case Success(clonedPaths) =>
           val clonedPathsMap = clonedPaths.toMap
-          val withNewFiles = contents
-            .map(content =>
-              replaceFileEmbedPaths(content.content, clonedPathsMap).map(newContent =>
-                content.copy(content = newContent)))
-            .toList
-            .sequence
-          withNewFiles
+          contents.toList.traverse(content => {
+            replaceFileEmbedPaths(content.content, clonedPathsMap)
+              .map(newContent => content.copy(content = newContent))
+          })
       }
     }
 
