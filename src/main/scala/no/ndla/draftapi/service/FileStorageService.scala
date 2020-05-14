@@ -49,8 +49,9 @@ trait FileStorageService {
           AttachmentStorageName,
           existingStorageKey,
           AttachmentStorageName,
-          newStorageKey
-        )).map(_ => uploadPath)
+          uploadPath
+        ))
+        .map(_ => uploadPath)
     }
 
     def resourceWithPathExists(filePath: String): Boolean =
