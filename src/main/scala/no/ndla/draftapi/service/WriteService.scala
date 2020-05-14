@@ -12,6 +12,7 @@ import java.util.Date
 
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
+import io.lemonlabs.uri.Path
 import io.lemonlabs.uri.dsl._
 import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import no.ndla.draftapi.auth.UserInfo
@@ -113,7 +114,8 @@ trait WriteService {
     private def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
       val ext = getFileExtension(oldPath).getOrElse("")
       val newFileName = randomFilename(ext)
-      fileStorage.copyResource(oldPath, newFileName).map(_ => newFileName)
+      val withoutPrefix = Path.parse(oldPath).parts.dropWhile(_ == "files").mkString("/")
+      fileStorage.copyResource(withoutPrefix, newFileName).map(f => s"/files/$f")
     }
 
     private[service] def replaceFileEmbedPaths(content: String, pathsToReplace: Map[String, String]): Try[String] = {
