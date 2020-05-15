@@ -597,5 +597,16 @@ trait ConverterService {
       api.TagsSearchResult(tagsCount, offset, pageSize, language, tags)
     }
 
+    def getFilePathsInArticleContents(contents: Seq[ArticleContent]): Set[String] =
+      contents
+        .flatMap(content => {
+          val contentDoc = HtmlTagRules.stringToJsoupDocument(content.content)
+          contentDoc
+            .select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']")
+            .asScala
+            .flatMap(e => Option(e.attr(TagAttributes.DataPath.toString)))
+        })
+        .toSet
+
   }
 }

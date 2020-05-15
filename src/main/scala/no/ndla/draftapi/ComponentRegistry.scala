@@ -96,7 +96,7 @@ object ComponentRegistry
   val amazonClient: AmazonS3 =
     AmazonS3ClientBuilder
       .standard()
-      .withRegion(currentRegion.getOrElse(Regions.EU_CENTRAL_1))
+      .withRegion(currentRegion.getOrElse(Regions.EU_WEST_1))
       .build()
 
   var e4sClient: NdlaE4sClient = Elastic4sClientFactory.getClient()

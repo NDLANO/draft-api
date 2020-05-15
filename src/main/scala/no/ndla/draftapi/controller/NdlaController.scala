@@ -7,14 +7,14 @@
 
 package no.ndla.draftapi.controller
 
-import javax.servlet.http.HttpServletRequest
 import com.typesafe.scalalogging.LazyLogging
+import javax.servlet.http.HttpServletRequest
 import no.ndla.draftapi.ComponentRegistry
 import no.ndla.draftapi.DraftApiProperties.{
   CorrelationIdHeader,
   CorrelationIdKey,
-  ElasticSearchScrollKeepAlive,
-  ElasticSearchIndexMaxResultWindow
+  ElasticSearchIndexMaxResultWindow,
+  ElasticSearchScrollKeepAlive
 }
 import no.ndla.draftapi.model.api.{
   AccessDeniedException,
@@ -27,8 +27,7 @@ import no.ndla.draftapi.model.api.{
   ResultWindowTooLargeException,
   ValidationError
 }
-import no.ndla.draftapi.model.domain.{Language, NdlaSearchException, emptySomeToNone}
-import no.ndla.draftapi.service.search.SearchService
+import no.ndla.draftapi.model.domain.{NdlaSearchException, emptySomeToNone}
 import no.ndla.network.model.HttpRequestException
 import no.ndla.network.{ApplicationUrl, AuthUser, CorrelationID}
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -37,8 +36,8 @@ import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
 import org.postgresql.util.PSQLException
-import org.scalatra.json.NativeJsonSupport
 import org.scalatra._
+import org.scalatra.json.NativeJsonSupport
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger.{ParamType, Parameter, SwaggerSupport}
 import org.scalatra.util.NotNothing
