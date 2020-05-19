@@ -36,7 +36,7 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
     doReturn(Success(DraftConcept(400, ConceptStatus("TRANSLATED"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath4), any, any)(any)
-    doReturn(Success(DraftConcept(500, ConceptStatus("ARCHIVED"))))
+    doReturn(Success(DraftConcept(500, ConceptStatus("PUBLISHED"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath5), any, any)(any)
 
