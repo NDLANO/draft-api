@@ -17,9 +17,14 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
     reset(conceptApiClient)
   }
 
-  test("Test that publishConceptsIfToPublishing publishes concepts with QUALITY_ASSURED status") {
+  test("Test that publishConceptsIfToPublishing publishes concepts with publishable status") {
     val idPath1 = s"$draftPath/100"
     val idPath2 = s"$draftPath/200"
+    val idPath3 = s"$draftPath/300"
+    val idPath4 = s"$draftPath/400"
+    val idPath5 = s"$draftPath/500"
+    val idPath6 = s"$draftPath/600"
+    val idPath7 = s"$draftPath/700"
 
     doReturn(Success(DraftConcept(100, ConceptStatus("QUALITY_ASSURED"))))
       .when(conceptApiClient)
@@ -27,14 +32,50 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
     doReturn(Success(DraftConcept(200, ConceptStatus("DRAFT"))))
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath2), any, any)(any)
+    doReturn(Success(DraftConcept(300, ConceptStatus("QUEUED_FOR_LANGUAGE"))))
+      .when(conceptApiClient)
+      .get[DraftConcept](eqTo(idPath3), any, any)(any)
+    doReturn(Success(DraftConcept(400, ConceptStatus("TRANSLATED"))))
+      .when(conceptApiClient)
+      .get[DraftConcept](eqTo(idPath4), any, any)(any)
+    doReturn(Success(DraftConcept(500, ConceptStatus("UNPUBLISHED"))))
+      .when(conceptApiClient)
+      .get[DraftConcept](eqTo(idPath5), any, any)(any)
+    doReturn(Success(DraftConcept(600, ConceptStatus("ARCHIVED"))))
+      .when(conceptApiClient)
+      .get[DraftConcept](eqTo(idPath6), any, any)(any)
+    doReturn(Success(DraftConcept(700, ConceptStatus("PUBLISHED"))))
+      .when(conceptApiClient)
+      .get[DraftConcept](eqTo(idPath7), any, any)(any)
+
     doReturn(Success(DraftConcept(100, ConceptStatus("PUBLISHED"))))
       .when(conceptApiClient)
       .put[DraftConcept](eqTo(s"$idPath1/status/PUBLISHED"), any, any)(any)
+    doReturn(Success(DraftConcept(200, ConceptStatus("PUBLISHED"))))
+      .when(conceptApiClient)
+      .put[DraftConcept](eqTo(s"$idPath2/status/PUBLISHED"), any, any)(any)
+    doReturn(Success(DraftConcept(300, ConceptStatus("PUBLISHED"))))
+      .when(conceptApiClient)
+      .put[DraftConcept](eqTo(s"$idPath3/status/PUBLISHED"), any, any)(any)
+    doReturn(Success(DraftConcept(400, ConceptStatus("PUBLISHED"))))
+      .when(conceptApiClient)
+      .put[DraftConcept](eqTo(s"$idPath4/status/PUBLISHED"), any, any)(any)
+    doReturn(Success(DraftConcept(500, ConceptStatus("PUBLISHED"))))
+      .when(conceptApiClient)
+      .put[DraftConcept](eqTo(s"$idPath5/status/PUBLISHED"), any, any)(any)
+    doReturn(Success(DraftConcept(600, ConceptStatus("PUBLISHED"))))
+      .when(conceptApiClient)
+      .put[DraftConcept](eqTo(s"$idPath6/status/PUBLISHED"), any, any)(any)
 
-    conceptApiClient.publishConceptsIfToPublishing(ids = Seq(100, 200))
+    conceptApiClient.publishConceptsIfToPublishing(ids = Seq(100, 200, 300, 400, 500, 600, 700))
 
     verify(conceptApiClient, times(1)).put[DraftConcept](eqTo(s"$idPath1/status/PUBLISHED"), any, any)(any)
-    verify(conceptApiClient, never).put[DraftConcept](eqTo(s"$idPath2/status/PUBLISHED"), any, any)(any)
-    verify(conceptApiClient, times(1)).put[DraftConcept](any, any, any)(any)
+    verify(conceptApiClient, times(1)).put[DraftConcept](eqTo(s"$idPath2/status/PUBLISHED"), any, any)(any)
+    verify(conceptApiClient, times(1)).put[DraftConcept](eqTo(s"$idPath3/status/PUBLISHED"), any, any)(any)
+    verify(conceptApiClient, times(1)).put[DraftConcept](eqTo(s"$idPath4/status/PUBLISHED"), any, any)(any)
+    verify(conceptApiClient, times(1)).put[DraftConcept](eqTo(s"$idPath5/status/PUBLISHED"), any, any)(any)
+    verify(conceptApiClient, times(1)).put[DraftConcept](eqTo(s"$idPath6/status/PUBLISHED"), any, any)(any)
+    verify(conceptApiClient, never).put[DraftConcept](eqTo(s"$idPath7/status/PUBLISHED"), any, any)(any)
+    verify(conceptApiClient, times(6)).put[DraftConcept](any, any, any)(any)
   }
 }
