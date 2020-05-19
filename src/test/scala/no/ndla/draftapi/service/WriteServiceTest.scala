@@ -15,7 +15,7 @@ import no.ndla.draftapi.model.api.ArticleApiArticle
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
-import no.ndla.validation.ValidationMessage
+import no.ndla.validation.{HtmlTagRules, ValidationMessage}
 import org.joda.time.{DateTime, DateTimeUtils}
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
@@ -710,6 +710,32 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     result should be(Success(List(expectedNb, expectedEn)))
 
+  }
+
+  test("cloneEmbedAndUpdateElement updates file embeds") {
+    import scala.jdk.CollectionConverters._
+    val embed1 =
+      """<embed data-alt="Kul alt1" data-path="/files/resources/abc123.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
+    val embed2 =
+      """<embed data-alt="Kul alt2" data-path="/files/resources/abc456.pdf" data-resource="file" data-title="Kul tittel2" data-type="pdf">"""
+
+    val doc = HtmlTagRules.stringToJsoupDocument(s"<section>$embed1</section><section>$embed2</section>")
+    val embeds = doc.select(s"embed[data-resource='file']").asScala
+    when(fileStorage.copyResource(anyString, anyString)).thenReturn(
+      Success("resources/new123.pdf"),
+      Success("resources/new456.pdf")
+    )
+
+    val results = embeds.map(service.cloneEmbedAndUpdateElement)
+    results.map(_.isSuccess should be(true))
+
+    val expectedEmbed1 =
+      """<embed data-alt="Kul alt1" data-path="/files/resources/new123.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
+    val expectedEmbed2 =
+      """<embed data-alt="Kul alt2" data-path="/files/resources/new456.pdf" data-resource="file" data-title="Kul tittel2" data-type="pdf">"""
+
+    HtmlTagRules.jsoupDocumentToString(doc) should be(
+      s"<section>$expectedEmbed1</section><section>$expectedEmbed2</section>")
   }
 
 }

@@ -16,11 +16,13 @@ import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ResourceType, TagAttributes, ValidationException}
 import no.ndla.mapping.License.CC_BY
 import org.joda.time.DateTime
+import org.jsoup.nodes.Element
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers._
+import org.mockito.invocation.InvocationOnMock
 import scalikejdbc.DBSession
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
@@ -605,5 +607,35 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res1.metaImage should be(Seq.empty)
     res2.metaImage should be(Seq(domain.ArticleMetaImage("1", "Hola", "nb")))
     res3.metaImage should be(Seq.empty)
+  }
+
+  test("toDomainArticle should clone files if existing files appear in new language") {
+    val embed1 =
+      """<embed data-alt="Kul alt1" data-path="/files/resources/abc123.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
+    val existingArticle = TestData.sampleDomainArticle.copy(
+      content = Seq(domain.ArticleContent(s"<section><h1>Hei</h1>$embed1</section>", "nb"))
+    )
+
+    val newContent = s"<section><h1>Hello</h1>$embed1</section>"
+    val apiArticle = TestData.blankUpdatedArticle.copy(
+      language = Some("en"),
+      title = Some("Eng title"),
+      content = Some(newContent)
+    )
+
+    when(writeService.cloneEmbedAndUpdateElement(any[Element])).thenAnswer((i: InvocationOnMock) => {
+      val element = i.getArgument[Element](0)
+      Success(element.attr("data-path", "/files/resources/new.pdf"))
+    })
+
+    val Success(res1) = service.toDomainArticle(
+      existingArticle,
+      apiArticle,
+      false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
   }
 }

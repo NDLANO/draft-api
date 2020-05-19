@@ -101,7 +101,8 @@ trait WriteService {
       })
     }
 
-    def cloneEmbedAndUpdateElement(fileEmbed: Element): Try[_] = {
+    /** MUTATES fileEmbed by cloning file and updating data-path */
+    def cloneEmbedAndUpdateElement(fileEmbed: Element): Try[Element] = {
       Option(fileEmbed.attr(TagAttributes.DataPath.toString)) match {
         case Some(existingPath) =>
           cloneFileAndGetNewPath(existingPath).map(newPath => {
