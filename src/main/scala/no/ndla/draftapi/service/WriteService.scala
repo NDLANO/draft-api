@@ -66,7 +66,7 @@ trait WriteService {
                                                userInfo,
                                                status)
             newTitles = if (usePostFix) article.title.map(t => t.copy(title = t.title + " (Kopi)")) else article.title
-            newContents <- contentWithClonedFiles(article.content)
+            newContents <- contentWithClonedFiles(article.content.toList)
             articleToInsert = article.copy(
               id = Some(newId),
               title = newTitles,
@@ -97,18 +97,17 @@ trait WriteService {
         })
         .map(_.toMap)
 
-    def contentWithClonedFiles(contents: Seq[domain.ArticleContent]): Try[Seq[domain.ArticleContent]] = {
-      val existingFilePaths = converterService.getFilePathsInArticleContents(contents)
+    def contentWithClonedFiles(contents: List[domain.ArticleContent]): Try[List[domain.ArticleContent]] = {
+      contents.toList.traverse(content => {
+        val existingFilePaths = converterService.getFilePathsInArticleContents(content)
 
-      cloneFilesAndReturnMap(existingFilePaths.toVector) match {
-        case Failure(ex) => Failure(ex)
-        case Success(clonedPaths) =>
-          val clonedPathsMap = clonedPaths.toMap
-          contents.toList.traverse(content => {
-            replaceFileEmbedPaths(content.content, clonedPathsMap)
-              .map(newContent => content.copy(content = newContent))
-          })
-      }
+        cloneFilesAndReturnMap(existingFilePaths.toVector) match {
+          case Failure(ex) => Failure(ex)
+          case Success(clonedPaths) =>
+            val clonedPathsMap = clonedPaths.toMap
+            replaceFileEmbedPaths(content.content, clonedPathsMap).map(newContent => content.copy(content = newContent))
+        }
+      })
     }
 
     private def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
