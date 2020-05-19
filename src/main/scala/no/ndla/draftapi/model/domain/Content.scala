@@ -12,7 +12,7 @@ import java.util.Date
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Language.getSupportedLanguages
 import no.ndla.validation.{ValidationException, ValidationMessage}
-import org.json4s.FieldSerializer
+import org.json4s.{DefaultFormats, FieldSerializer, Formats}
 import org.json4s.FieldSerializer._
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization._
@@ -53,14 +53,16 @@ case class Article(
 }
 
 object Article extends SQLSyntaxSupport[Article] {
-  implicit val formats = org.json4s.DefaultFormats +
+
+  val jsonEncoder: Formats = DefaultFormats +
     new EnumNameSerializer(ArticleStatus) +
     new EnumNameSerializer(ArticleType)
 
-  val JSonSerializer = FieldSerializer[Article](
-    ignore("id") orElse
-      ignore("revision")
-  )
+  val repositorySerializer = jsonEncoder +
+    FieldSerializer[Article](
+      ignore("id") orElse
+        ignore("revision")
+    )
 
   override val tableName = "articledata"
   override val schemaName = Some(DraftApiProperties.MetaSchema)
@@ -68,6 +70,7 @@ object Article extends SQLSyntaxSupport[Article] {
   def fromResultSet(lp: SyntaxProvider[Article])(rs: WrappedResultSet): Article = fromResultSet(lp.resultName)(rs)
 
   def fromResultSet(lp: ResultName[Article])(rs: WrappedResultSet): Article = {
+    implicit val formats = jsonEncoder
     val meta = read[Article](rs.string(lp.c("document")))
     meta.copy(
       id = Some(rs.long(lp.c("article_id"))),

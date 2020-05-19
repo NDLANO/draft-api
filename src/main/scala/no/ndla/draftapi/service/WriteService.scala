@@ -26,6 +26,7 @@ import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation._
+import org.jsoup.nodes.Element
 import org.scalatra.servlet.FileItem
 
 import scala.jdk.CollectionConverters._
@@ -90,30 +91,28 @@ trait WriteService {
 
     def contentWithClonedFiles(contents: List[domain.ArticleContent]): Try[List[domain.ArticleContent]] = {
       contents.toList.traverse(content => {
-
         val doc = HtmlTagRules.stringToJsoupDocument(content.content)
         val embeds = doc.select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']").asScala
 
-        val cloned = embeds.toList
-          .map(embed => {
-            val existingPath = Option(embed.attr(TagAttributes.DataPath.toString))
-            existingPath.map(p =>
-              cloneFileAndGetNewPath(p).map(newPath => {
-                // Jsoup is mutable and we use it here to update the embeds data-path with the cloned file
-                embed.attr(TagAttributes.DataPath.toString, newPath)
-              }))
-          })
-          .flatten
-          .sequence
-
-        cloned match {
+        embeds.toList.traverse(cloneEmbedAndUpdateElement) match {
           case Failure(ex) => Failure(ex)
           case Success(_)  => Success(content.copy(HtmlTagRules.jsoupDocumentToString(doc)))
         }
       })
     }
 
-    private def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
+    def cloneEmbedAndUpdateElement(fileEmbed: Element): Try[_] = {
+      Option(fileEmbed.attr(TagAttributes.DataPath.toString)) match {
+        case Some(existingPath) =>
+          cloneFileAndGetNewPath(existingPath).map(newPath => {
+            // Jsoup is mutable and we use it here to update the embeds data-path with the cloned file
+            fileEmbed.attr(TagAttributes.DataPath.toString, newPath)
+          })
+        case None => Failure(CloneFileException(s"Could not get ${TagAttributes.DataPath} of file embed '$fileEmbed'."))
+      }
+    }
+
+    def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
       val ext = getFileExtension(oldPath).getOrElse("")
       val newFileName = randomFilename(ext)
       val withoutPrefix = Path.parse(oldPath).parts.dropWhile(_ == "files").mkString("/")

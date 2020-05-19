@@ -10,8 +10,9 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import cats.effect.IO
+import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.DraftApiProperties.externalApiUrls
+import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
@@ -24,14 +25,13 @@ import no.ndla.mapping.License.getLicense
 import no.ndla.validation._
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
-import no.ndla.draftapi.DraftApiProperties.{Domain, externalApiUrls, resourceHtmlEmbedTag}
 
 import scala.jdk.CollectionConverters._
 import scala.util.control.Exception.allCatch
 import scala.util.{Failure, Success, Try}
 
 trait ConverterService {
-  this: Clock with DraftRepository with ArticleApiClient with StateTransitionRules =>
+  this: Clock with DraftRepository with ArticleApiClient with StateTransitionRules with WriteService =>
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
@@ -429,6 +429,32 @@ trait ConverterService {
       langFields.foldRight(false)((curr, res) => res || curr.isDefined || metaImageExists)
     }
 
+    private def getExistingPaths(content: String): Seq[String] = {
+      val doc = HtmlTagRules.stringToJsoupDocument(content)
+      val fileEmbeds = doc.select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']").asScala.toSeq
+      fileEmbeds.flatMap(e => Option(e.attr(TagAttributes.DataPath.toString)))
+    }
+
+    def cloneFilesIfExists(existingContent: Seq[String], newContent: String): Try[String] = {
+      val existingFiles = existingContent.flatMap(getExistingPaths)
+
+      val doc = HtmlTagRules.stringToJsoupDocument(newContent)
+      val fileEmbeds = doc.select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']").asScala
+
+      val embedsToCloneFile = fileEmbeds.filter(embed => {
+        Option(embed.attr(TagAttributes.DataPath.toString)).exists(dataPath => existingFiles.contains(dataPath))
+      })
+
+      val cloned = embedsToCloneFile.toList
+        .map(writeService.cloneEmbedAndUpdateElement)
+        .sequence
+
+      cloned match {
+        case Failure(ex) => Failure(ex)
+        case Success(_)  => Success(HtmlTagRules.jsoupDocumentToString(doc))
+      }
+    }
+
     def toDomainArticle(toMergeInto: domain.Article,
                         article: api.UpdatedArticle,
                         isImported: Boolean,
@@ -450,31 +476,47 @@ trait ConverterService {
         case None    => newNotes(newLanguageEditorNote, user, toMergeInto.status)
       }
 
-      newEditorialNotes.map(notes => toMergeInto.notes ++ notes) match {
-        case Failure(ex) => Failure(ex)
-        case Success(allNotes) =>
-          val partiallyConverted = toMergeInto.copy(
-            revision = Option(article.revision),
-            copyright = article.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
-            requiredLibraries =
-              article.requiredLibraries.map(y => y.map(x => toDomainRequiredLibraries(x))).toSeq.flatten,
-            created = createdDate,
-            updated = updatedDate,
-            published = publishedDate,
-            updatedBy = user.id,
-            articleType = article.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
-            notes = allNotes,
-            editorLabels = article.editorLabels.getOrElse(toMergeInto.editorLabels),
-            grepCodes = article.grepCodes.getOrElse(toMergeInto.grepCodes)
-          )
+      // Cloning files if they exist in other languages when adding new language
+      val contentWithClonedFiles = if (isNewLanguage) {
+        article.content.traverse(updContent => {
+          cloneFilesIfExists(toMergeInto.content.map(_.content), updContent)
+        })
+      } else Success(article.content)
 
-          article.language match {
-            case None if languageFieldIsDefined(article) =>
-              val error = ValidationMessage("language", "This field must be specified when updating language fields")
-              Failure(new ValidationException(errors = Seq(error)))
-            case None => Success(partiallyConverted)
-            case Some(lang) =>
-              Success(mergeArticleLanguageFields(partiallyConverted, article, lang))
+      contentWithClonedFiles match {
+        case Failure(ex) => Failure(ex)
+        case Success(newContent) =>
+          val updatedWithClonedFiles = article.copy(content = newContent)
+          newEditorialNotes.map(notes => toMergeInto.notes ++ notes) match {
+            case Failure(ex) => Failure(ex)
+            case Success(allNotes) =>
+              val partiallyConverted = toMergeInto.copy(
+                revision = Option(updatedWithClonedFiles.revision),
+                copyright = updatedWithClonedFiles.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
+                requiredLibraries = updatedWithClonedFiles.requiredLibraries
+                  .map(y => y.map(x => toDomainRequiredLibraries(x)))
+                  .toSeq
+                  .flatten,
+                created = createdDate,
+                updated = updatedDate,
+                published = publishedDate,
+                updatedBy = user.id,
+                articleType =
+                  updatedWithClonedFiles.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
+                notes = allNotes,
+                editorLabels = updatedWithClonedFiles.editorLabels.getOrElse(toMergeInto.editorLabels),
+                grepCodes = updatedWithClonedFiles.grepCodes.getOrElse(toMergeInto.grepCodes)
+              )
+
+              updatedWithClonedFiles.language match {
+                case None if languageFieldIsDefined(updatedWithClonedFiles) =>
+                  val error =
+                    ValidationMessage("language", "This field must be specified when updating language fields")
+                  Failure(new ValidationException(errors = Seq(error)))
+                case None => Success(partiallyConverted)
+                case Some(lang) =>
+                  Success(mergeArticleLanguageFields(partiallyConverted, updatedWithClonedFiles, lang))
+              }
           }
       }
 

@@ -70,7 +70,7 @@ class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
   val authHeaderMap = Map("Authorization" -> s"Bearer $exampleToken")
 
   test("that updating articles should work") {
-    implicit val formats: Formats = domain.Article.formats
+    implicit val formats: Formats = domain.Article.jsonEncoder
 
     forgePact
       .between("draft-api")
