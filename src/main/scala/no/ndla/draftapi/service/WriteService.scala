@@ -88,24 +88,27 @@ trait WriteService {
       }
     }
 
-    /** Clones all file embeds with @oldPaths and returns a map with (oldPath -> clonedPath)
-      * Useful for replacing files used multiple times in one article */
-    private def cloneFilesAndReturnMap(oldPaths: Vector[String]): Try[Map[String, String]] =
-      oldPaths
-        .traverse(oldPath => {
-          cloneFileAndGetNewPath(oldPath).map(newPath => oldPath -> newPath)
-        })
-        .map(_.toMap)
-
     def contentWithClonedFiles(contents: List[domain.ArticleContent]): Try[List[domain.ArticleContent]] = {
       contents.toList.traverse(content => {
-        val existingFilePaths = converterService.getFilePathsInArticleContents(content)
 
-        cloneFilesAndReturnMap(existingFilePaths.toVector) match {
+        val doc = HtmlTagRules.stringToJsoupDocument(content.content)
+        val embeds = doc.select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']").asScala
+
+        val cloned = embeds.toList
+          .map(embed => {
+            val existingPath = Option(embed.attr(TagAttributes.DataPath.toString))
+            existingPath.map(p =>
+              cloneFileAndGetNewPath(p).map(newPath => {
+                // Jsoup is mutable and we use it here to update the embeds data-path with the cloned file
+                embed.attr(TagAttributes.DataPath.toString, newPath)
+              }))
+          })
+          .flatten
+          .sequence
+
+        cloned match {
           case Failure(ex) => Failure(ex)
-          case Success(clonedPaths) =>
-            val clonedPathsMap = clonedPaths.toMap
-            replaceFileEmbedPaths(content.content, clonedPathsMap).map(newContent => content.copy(content = newContent))
+          case Success(_)  => Success(content.copy(HtmlTagRules.jsoupDocumentToString(doc)))
         }
       })
     }
@@ -115,28 +118,6 @@ trait WriteService {
       val newFileName = randomFilename(ext)
       val withoutPrefix = Path.parse(oldPath).parts.dropWhile(_ == "files").mkString("/")
       fileStorage.copyResource(withoutPrefix, newFileName).map(f => s"/files/$f")
-    }
-
-    private[service] def replaceFileEmbedPaths(content: String, pathsToReplace: Map[String, String]): Try[String] = {
-      val doc = HtmlTagRules.stringToJsoupDocument(content)
-      val embeds = doc
-        .select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']")
-        .asScala
-
-      val results = embeds.toList.traverse(e => {
-        val curPath = e.attr(TagAttributes.DataPath.toString)
-        pathsToReplace.get(curPath) match {
-          case Some(newPath) =>
-            e.attr(TagAttributes.DataPath.toString, newPath)
-            Success(newPath)
-          case None => Failure(CloneFileException(s"Could not find cloned file for $curPath (This is probably a bug)"))
-        }
-      })
-
-      results match {
-        case Failure(ex) => Failure(ex)
-        case _           => Success(HtmlTagRules.jsoupDocumentToString(doc))
-      }
     }
 
     def updateAgreement(

@@ -677,30 +677,39 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     verify(draftRepository, times(1)).storeArticleAsNewVersion(any[Article])(any[DBSession])
   }
 
-  test("replaceEmbedFilePaths converts filepaths in file-embeds") {
-    val replaceMap = Map(
-      "oldPath.pdf" -> "newRandomName1234.pdf",
-      "some/old/5678.pdf" -> "newRandomName5678.pdf",
-    )
-    val original =
-      """
-        |<section>
-        |<embed data-align="" data-alt="alt" data-caption="capt" data-resource="image" data-resource_id="1234" data-size="full">
-        |<div data-type="file"><embed data-alt="file1alt" data-path="oldPath.pdf" data-resource="file" data-title="file1title" data-type="pdf"><embed data-alt="file2alt" data-path="some/old/5678.pdf" data-resource="file" data-title="file2title" data-type="doc"></div>
-        |<p>Lets mention oldPath.pdf for the test to not be replaced</p>
-        |</section>
-        |""".stripMargin
-    val expected =
-      """
-        |<section>
-        |<embed data-align="" data-alt="alt" data-caption="capt" data-resource="image" data-resource_id="1234" data-size="full">
-        |<div data-type="file"><embed data-alt="file1alt" data-path="newRandomName1234.pdf" data-resource="file" data-title="file1title" data-type="pdf"><embed data-alt="file2alt" data-path="newRandomName5678.pdf" data-resource="file" data-title="file2title" data-type="doc"></div>
-        |<p>Lets mention oldPath.pdf for the test to not be replaced</p>
-        |</section>
-        |""".stripMargin
-    val result = service.replaceFileEmbedPaths(original, replaceMap)
+  test("contentWithClonedFiles clones files as expected") {
+    when(fileStorage.copyResource(anyString(), anyString()))
+      .thenReturn(
+        Success("resources/new123.pdf"),
+        Success("resources/new456.pdf"),
+        Success("resources/new789.pdf"),
+        Success("resources/new101112.pdf"),
+      )
+    val embed1 =
+      """<embed data-alt="Kul alt1" data-path="/files/resources/abc123.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
+    val embed2 =
+      """<embed data-alt="Kul alt2" data-path="/files/resources/abc456.pdf" data-resource="file" data-title="Kul tittel2" data-type="pdf">"""
+    val embed3 =
+      """<embed data-alt="Kul alt3" data-path="/files/resources/abc789.pdf" data-resource="file" data-title="Kul tittel3" data-type="pdf">"""
+    val contentNb = domain.ArticleContent(s"<section><h1>Hei</h1>$embed1$embed2</section>", "nb")
+    val contentEn = domain.ArticleContent(s"<section><h1>Hello</h1>$embed1$embed3</section>", "en")
 
-    result should be(Success(expected))
+    val expectedEmbed1 =
+      """<embed data-alt="Kul alt1" data-path="/files/resources/new123.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
+    val expectedEmbed2 =
+      """<embed data-alt="Kul alt2" data-path="/files/resources/new456.pdf" data-resource="file" data-title="Kul tittel2" data-type="pdf">"""
+    val expectedEmbed3 =
+      """<embed data-alt="Kul alt1" data-path="/files/resources/new789.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
+    val expectedEmbed4 =
+      """<embed data-alt="Kul alt3" data-path="/files/resources/new101112.pdf" data-resource="file" data-title="Kul tittel3" data-type="pdf">"""
+
+    val expectedNb = domain.ArticleContent(s"<section><h1>Hei</h1>$expectedEmbed1$expectedEmbed2</section>", "nb")
+    val expectedEn = domain.ArticleContent(s"<section><h1>Hello</h1>$expectedEmbed3$expectedEmbed4</section>", "en")
+
+    val result = service.contentWithClonedFiles(List(contentNb, contentEn))
+
+    result should be(Success(List(expectedNb, expectedEn)))
+
   }
 
 }
