@@ -27,8 +27,7 @@ trait DraftRepository {
   val draftRepository: ArticleRepository
 
   class ArticleRepository extends LazyLogging with Repository[Article] {
-    implicit val formats = org.json4s.DefaultFormats + Article.JSonSerializer + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(
-      ArticleType)
+    implicit val formats = Article.repositorySerializer
 
     def insert(article: Article)(implicit session: DBSession = AutoSession): Article = {
       val startRevision = article.revision.getOrElse(1)

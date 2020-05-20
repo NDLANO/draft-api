@@ -26,6 +26,7 @@ import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation._
+import org.jsoup.nodes.Element
 import org.scalatra.servlet.FileItem
 
 import scala.jdk.CollectionConverters._
@@ -66,7 +67,7 @@ trait WriteService {
                                                userInfo,
                                                status)
             newTitles = if (usePostFix) article.title.map(t => t.copy(title = t.title + " (Kopi)")) else article.title
-            newContents <- contentWithClonedFiles(article.content)
+            newContents <- contentWithClonedFiles(article.content.toList)
             articleToInsert = article.copy(
               id = Some(newId),
               title = newTitles,
@@ -88,56 +89,35 @@ trait WriteService {
       }
     }
 
-    /** Clones all file embeds with @oldPaths and returns a map with (oldPath -> clonedPath)
-      * Useful for replacing files used multiple times in one article */
-    private def cloneFilesAndReturnMap(oldPaths: Vector[String]): Try[Map[String, String]] =
-      oldPaths
-        .traverse(oldPath => {
-          cloneFileAndGetNewPath(oldPath).map(newPath => oldPath -> newPath)
-        })
-        .map(_.toMap)
+    def contentWithClonedFiles(contents: List[domain.ArticleContent]): Try[List[domain.ArticleContent]] = {
+      contents.toList.traverse(content => {
+        val doc = HtmlTagRules.stringToJsoupDocument(content.content)
+        val embeds = doc.select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']").asScala
 
-    def contentWithClonedFiles(contents: Seq[domain.ArticleContent]): Try[Seq[domain.ArticleContent]] = {
-      val existingFilePaths = converterService.getFilePathsInArticleContents(contents)
+        embeds.toList.traverse(cloneEmbedAndUpdateElement) match {
+          case Failure(ex) => Failure(ex)
+          case Success(_)  => Success(content.copy(HtmlTagRules.jsoupDocumentToString(doc)))
+        }
+      })
+    }
 
-      cloneFilesAndReturnMap(existingFilePaths.toVector) match {
-        case Failure(ex) => Failure(ex)
-        case Success(clonedPaths) =>
-          val clonedPathsMap = clonedPaths.toMap
-          contents.toList.traverse(content => {
-            replaceFileEmbedPaths(content.content, clonedPathsMap)
-              .map(newContent => content.copy(content = newContent))
+    /** MUTATES fileEmbed by cloning file and updating data-path */
+    def cloneEmbedAndUpdateElement(fileEmbed: Element): Try[Element] = {
+      Option(fileEmbed.attr(TagAttributes.DataPath.toString)) match {
+        case Some(existingPath) =>
+          cloneFileAndGetNewPath(existingPath).map(newPath => {
+            // Jsoup is mutable and we use it here to update the embeds data-path with the cloned file
+            fileEmbed.attr(TagAttributes.DataPath.toString, newPath)
           })
+        case None => Failure(CloneFileException(s"Could not get ${TagAttributes.DataPath} of file embed '$fileEmbed'."))
       }
     }
 
-    private def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
+    def cloneFileAndGetNewPath(oldPath: String): Try[String] = {
       val ext = getFileExtension(oldPath).getOrElse("")
       val newFileName = randomFilename(ext)
       val withoutPrefix = Path.parse(oldPath).parts.dropWhile(_ == "files").mkString("/")
       fileStorage.copyResource(withoutPrefix, newFileName).map(f => s"/files/$f")
-    }
-
-    private[service] def replaceFileEmbedPaths(content: String, pathsToReplace: Map[String, String]): Try[String] = {
-      val doc = HtmlTagRules.stringToJsoupDocument(content)
-      val embeds = doc
-        .select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']")
-        .asScala
-
-      val results = embeds.toList.traverse(e => {
-        val curPath = e.attr(TagAttributes.DataPath.toString)
-        pathsToReplace.get(curPath) match {
-          case Some(newPath) =>
-            e.attr(TagAttributes.DataPath.toString, newPath)
-            Success(newPath)
-          case None => Failure(CloneFileException(s"Could not find cloned file for $curPath (This is probably a bug)"))
-        }
-      })
-
-      results match {
-        case Failure(ex) => Failure(ex)
-        case _           => Success(HtmlTagRules.jsoupDocumentToString(doc))
-      }
     }
 
     def updateAgreement(
