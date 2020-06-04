@@ -25,10 +25,10 @@ class V25__RemoveDomainFromH5PUrlTest extends UnitSuite with TestEnvironment {
     val LearningResourceAfter =
       """{"tags":[{"tags":["test","test12","testing","erindring"],"language":"nb"}],"notes":[{"note":"Opprettet artikkel.","user":"ZQ3t4C9SiQkUkzXxxlk0IQyM","status":{"other":[],"current":"DRAFT"},"timestamp":"2020-06-03T06:43:13Z"}],"title":[{"title":"image test","language":"nb"}],"status":{"other":[],"current":"DRAFT"},"content":[{"content":"<section><embed data-resource=\"image\" data-resource_id=\"12669\" data-size=\"fullbredde\" data-align=\"\" data-alt=\"Samiske språkområder i Norge. Illustrasjon. \" data-caption=\"\"><br><br><embed data-resource=\"h5p\" data-url=\"/resource/89734643-4006-4c65-a5de-34989ba7b2c8\"><br><embed data-resource=\"h5p\" data-url=\"/resource/7b67cc63-ebd0-4baf-98ea-00a1ec075d89\"><embed data-resource=\"h5p\" data-url=\"/resource/dc6679a2-ad66-4783-a655-b09677f40090\"><embed data-resource=\"h5p\" data-url=\"/resource/b7b64634-1c57-4a0c-985f-a7278a4c4f0f\"></section>","language":"nb"}],"created":"2020-06-03T06:43:13Z","updated":"2020-06-03T11:23:32Z","copyright":{"origin":"","license":"CC-BY-SA-4.0","creators":[],"processors":[],"rightsholders":[]},"grepCodes":["KM2257","KE108"],"metaImage":[],"published":"2020-06-03T06:43:13Z","updatedBy":"ZQ3t4C9SiQkUkzXxxlk0IQyM","articleType":"standard","editorLabels":[],"introduction":[],"visualElement":[],"metaDescription":[],"requiredLibraries":[],"previousVersionsNotes":[]}"""
 
-    migration.convertArticleUpdate(LearningResourceTestBefore, "test") should equal(LearningResourceAfter)
-    migration.convertArticleUpdate(LearningResourceFFBefore, "ff") should equal(LearningResourceAfter)
-    migration.convertArticleUpdate(LearningResourceStagingBefore, "staging") should equal(LearningResourceAfter)
-    migration.convertArticleUpdate(LearningResourceProdBefore, "prod") should equal(LearningResourceAfter)
+    migration.convertArticleUpdate(LearningResourceTestBefore) should equal(LearningResourceAfter)
+    migration.convertArticleUpdate(LearningResourceFFBefore) should equal(LearningResourceAfter)
+    migration.convertArticleUpdate(LearningResourceStagingBefore) should equal(LearningResourceAfter)
+    migration.convertArticleUpdate(LearningResourceProdBefore) should equal(LearningResourceAfter)
   }
 
   test("migration should remove domain url from H5P-urls and convert data-resource to h5p in TopicArticle") {
@@ -43,10 +43,11 @@ class V25__RemoveDomainFromH5PUrlTest extends UnitSuite with TestEnvironment {
 
     val TopicArticleAfter =
       """{"tags":[],"notes":[{"note":"Opprettet artikkel.","user":"ZQ3t4C9SiQkUkzXxxlk0IQyM","status":{"other":[],"current":"DRAFT"},"timestamp":"2020-06-03T11:16:41Z"}],"title":[{"title":"H5P test","language":"nb"}],"status":{"other":[],"current":"DRAFT"},"content":[{"content":"<section></section>","language":"nb"}],"created":"2020-06-03T11:16:42Z","updated":"2020-06-03T11:16:42Z","copyright":{"license":"CC-BY-SA-4.0","creators":[],"processors":[],"rightsholders":[]},"grepCodes":[],"metaImage":[],"published":"2020-06-03T11:16:42Z","updatedBy":"ZQ3t4C9SiQkUkzXxxlk0IQyM","articleType":"topic-article","editorLabels":[],"introduction":[{"language":"nb","introduction":""}],"visualElement":[{"language":"nb","resource":"<embed data-resource=\"h5p\"data-url=\"/resource/b9cb9203-5df0-4732-bde0-83347a2a0d53\">"}],"metaDescription":[{"content":"","language":"nb"}],"requiredLibraries":[],"previousVersionsNotes":[]}"""
-    migration.convertArticleUpdate(TopicArticleTestBefore, "test") should equal(TopicArticleAfter)
-    migration.convertArticleUpdate(TopicArticleFFBefore, "ff") should equal(TopicArticleAfter)
-    migration.convertArticleUpdate(TopicArticleStagingBefore, "staging") should equal(TopicArticleAfter)
-    migration.convertArticleUpdate(TopicArticleProdBefore, "prod") should equal(TopicArticleAfter)
+
+    migration.convertArticleUpdate(TopicArticleTestBefore) should equal(TopicArticleAfter)
+    migration.convertArticleUpdate(TopicArticleFFBefore) should equal(TopicArticleAfter)
+    migration.convertArticleUpdate(TopicArticleStagingBefore) should equal(TopicArticleAfter)
+    migration.convertArticleUpdate(TopicArticleProdBefore) should equal(TopicArticleAfter)
   }
 
   test("migration does nothing if the document is already converted") {
@@ -55,15 +56,15 @@ class V25__RemoveDomainFromH5PUrlTest extends UnitSuite with TestEnvironment {
     val TopicArticleBefore =
       """{"tags":[],"notes":[{"note":"Opprettet artikkel.","user":"ZQ3t4C9SiQkUkzXxxlk0IQyM","status":{"other":[],"current":"DRAFT"},"timestamp":"2020-06-03T11:16:41Z"}],"title":[{"title":"H5P test","language":"nb"}],"status":{"other":[],"current":"DRAFT"},"content":[{"content":"<section></section>","language":"nb"}],"created":"2020-06-03T11:16:42Z","updated":"2020-06-03T11:16:42Z","copyright":{"license":"CC-BY-SA-4.0","creators":[],"processors":[],"rightsholders":[]},"grepCodes":[],"metaImage":[],"published":"2020-06-03T11:16:42Z","updatedBy":"ZQ3t4C9SiQkUkzXxxlk0IQyM","articleType":"topic-article","editorLabels":[],"introduction":[{"language":"nb","introduction":""}],"visualElement":[{"language":"nb","resource":"<embed data-resource=\"h5p\"data-url=\"/resource/b9cb9203-5df0-4732-bde0-83347a2a0d53\">"}],"metaDescription":[{"content":"","language":"nb"}],"requiredLibraries":[],"previousVersionsNotes":[]}"""
 
-    migration.convertArticleUpdate(LearningResourceBefore, "test") should equal(LearningResourceBefore)
-    migration.convertArticleUpdate(LearningResourceBefore, "ff") should equal(LearningResourceBefore)
-    migration.convertArticleUpdate(LearningResourceBefore, "staging") should equal(LearningResourceBefore)
-    migration.convertArticleUpdate(LearningResourceBefore, "prod") should equal(LearningResourceBefore)
+    migration.convertArticleUpdate(LearningResourceBefore) should equal(LearningResourceBefore)
+    migration.convertArticleUpdate(LearningResourceBefore) should equal(LearningResourceBefore)
+    migration.convertArticleUpdate(LearningResourceBefore) should equal(LearningResourceBefore)
+    migration.convertArticleUpdate(LearningResourceBefore) should equal(LearningResourceBefore)
 
-    migration.convertArticleUpdate(TopicArticleBefore, "test") should equal(TopicArticleBefore)
-    migration.convertArticleUpdate(TopicArticleBefore, "ff") should equal(TopicArticleBefore)
-    migration.convertArticleUpdate(TopicArticleBefore, "staging") should equal(TopicArticleBefore)
-    migration.convertArticleUpdate(TopicArticleBefore, "prod") should equal(TopicArticleBefore)
+    migration.convertArticleUpdate(TopicArticleBefore) should equal(TopicArticleBefore)
+    migration.convertArticleUpdate(TopicArticleBefore) should equal(TopicArticleBefore)
+    migration.convertArticleUpdate(TopicArticleBefore) should equal(TopicArticleBefore)
+    migration.convertArticleUpdate(TopicArticleBefore) should equal(TopicArticleBefore)
   }
 
 }

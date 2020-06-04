@@ -7,11 +7,10 @@
 
 package db.migration
 
-import no.ndla.draftapi.DraftApiProperties
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s
 import org.json4s.DefaultFormats
-import org.json4s.JsonAST.{JArray, JObject, JString}
+import org.json4s.JsonAST.{JArray, JString}
 import org.json4s.native.JsonMethods.{compact, parse, render}
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
@@ -32,11 +31,10 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
     val count = countAllArticles.get
     var numPagesLeft = (count / 1000) + 1
     var offset = 0L
-    val env = DraftApiProperties.Environment
 
     while (numPagesLeft > 0) {
       allArticles(offset * 1000).map {
-        case (id, document) => updateArticle(convertArticleUpdate(document, env), id)
+        case (id, document) => updateArticle(convertArticleUpdate(document), id)
       }
       numPagesLeft -= 1
       offset += 1
@@ -69,8 +67,8 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
       .apply
   }
 
-  def updateH5PDomains(html: String, env: String): String = {
-    val oldDomain = if (env != "prod") s"https://h5p-${env}.ndla.no" else "https://h5p.ndla.no"
+  def updateH5PDomains(html: String): String = {
+    val oldDomain = "https?:\\/\\/h5p.{0,8}.ndla.no"
     val newDomain = ""
 
     val updatedHtml = html.replaceAll(oldDomain, newDomain)
@@ -84,27 +82,27 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
     html.replaceAll(oldResourceType, newResourceType)
   }
 
-  def updateContent(contents: JArray, contentType: String, env: String): json4s.JValue = {
+  def updateContent(contents: JArray, contentType: String): json4s.JValue = {
     contents.map {
       case content =>
         content.mapField {
-          case (`contentType`, JString(html)) => (`contentType`, JString(updateH5PDomains(html, env)))
+          case (`contentType`, JString(html)) => (`contentType`, JString(updateH5PDomains(html)))
           case z                              => z
         }
       case y => y
     }
   }
 
-  private[migration] def convertArticleUpdate(document: String, env: String): String = {
+  private[migration] def convertArticleUpdate(document: String): String = {
     val oldArticle = parse(document)
 
     val newArticle = oldArticle.mapField {
       case ("visualElement", visualElements: JArray) => {
-        val updatedContent = updateContent(visualElements, "resource", env)
+        val updatedContent = updateContent(visualElements, "resource")
         ("visualElement", updatedContent)
       }
       case ("content", contents: JArray) => {
-        val updatedContent = updateContent(contents, "content", env)
+        val updatedContent = updateContent(contents, "content")
         ("content", updatedContent)
       }
       case x => x
