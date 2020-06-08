@@ -112,4 +112,14 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
     val result = readService.addUrlOnResource(content)
     result should equal(expectedResult)
   }
+
+  test("addUrlOnResource adds url attribute on h5p embeds") {
+    val h5pPath = "/resource/89734643-4006-4c65-a5de-34989ba7b2c8"
+    val content =
+      s"""<div><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.H5P}" ${TagAttributes.DataPath}="$h5pPath" ${TagAttributes.Title}="This fancy h5p"><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.H5P}" ${TagAttributes.DataPath}="$h5pPath" ${TagAttributes.Title}="This fancy h5p"></div>"""
+    val expectedResult =
+      s"""<div><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.H5P}" ${TagAttributes.DataPath}="$h5pPath" ${TagAttributes.Title}="This fancy h5p" $urlAttr="https://h5p-local.ndla.no/$h5pPath"><$resourceHtmlEmbedTag $resourceAttr="${ResourceType.H5P}" ${TagAttributes.DataPath}="$h5pPath" ${TagAttributes.Title}="This fancy h5p" $urlAttr="https://h5p-local.ndla.no/$h5pPath"></div>"""
+    val result = readService.addUrlOnResource(content)
+    result should equal(expectedResult)
+  }
 }

@@ -12,6 +12,9 @@ import org.json4s
 import org.json4s.DefaultFormats
 import org.json4s.JsonAST.{JArray, JString}
 import org.json4s.native.JsonMethods.{compact, parse, render}
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
+import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
@@ -67,26 +70,54 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
       .apply
   }
 
-  def updateH5PDomains(html: String): String = {
-    val oldDomain = "https?:\\/\\/h5p.{0,8}.ndla.no"
-    val newDomain = ""
-
-    val updatedHtml = html.replaceAll(oldDomain, newDomain)
-    updateH5PResourceType(updatedHtml)
+  private def stringToJsoupDocument(htmlString: String): Element = {
+    val document = Jsoup.parseBodyFragment(htmlString)
+    document.outputSettings().escapeMode(EscapeMode.xhtml).prettyPrint(false)
+    document.select("body").first()
   }
 
-  def updateH5PResourceType(html: String): String = {
-    val oldResourceType = "external"
-    val newResourceType = "h5p"
+  private def jsoupDocumentToString(element: Element): String = {
+    element.select("body").html()
+  }
 
-    html.replaceAll(oldResourceType, newResourceType)
+  def containsH5PLink(url: String): Boolean = {
+    val h5pUrls =
+      Seq("https://h5p.ndla.no", "https://h5p-test.ndla.no", "https://h5p-ff.ndla.no", "https://h5p-staging.ndla.no")
+    val delUrl = h5pUrls.find(u => url.contains(u))
+
+    delUrl match {
+      case Some(_) => true;
+      case None    => false
+    }
+  }
+
+  def relativeUrl(url: String): String = {
+    url.replaceAll("https?://h5p.{0,8}.ndla.no", "")
+  }
+
+  def updateContent(html: String): String = {
+    val doc = stringToJsoupDocument(html)
+    doc
+      .select("embed")
+      .forEach(embed => {
+        val dataResource = embed.attr("data-resource")
+        if (dataResource == "external") {
+          val url = embed.attr("data-url")
+          if (containsH5PLink(url)) {
+            embed.attr("data-path", relativeUrl(url))
+            embed.attr("data-resource", "h5p")
+            embed.removeAttr("data-url")
+          }
+        }
+      })
+    jsoupDocumentToString(doc)
   }
 
   def updateContent(contents: JArray, contentType: String): json4s.JValue = {
     contents.map {
       case content =>
         content.mapField {
-          case (`contentType`, JString(html)) => (`contentType`, JString(updateH5PDomains(html)))
+          case (`contentType`, JString(html)) => (`contentType`, JString(updateContent(html)))
           case z                              => z
         }
       case y => y

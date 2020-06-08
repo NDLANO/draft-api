@@ -42,7 +42,8 @@ object DraftApiProperties extends LazyLogging {
     ResourceType.Image.toString -> s"$Domain/image-api/v2/images",
     "raw-image" -> s"$Domain/image-api/raw/id",
     ResourceType.Audio.toString -> s"$Domain/audio-api/v1/audio",
-    ResourceType.File.toString -> Domain
+    ResourceType.File.toString -> Domain,
+    ResourceType.H5P.toString -> s"https://h5p-$Environment.ndla.no/"
   )
 
   val ArticleApiHost: String = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
