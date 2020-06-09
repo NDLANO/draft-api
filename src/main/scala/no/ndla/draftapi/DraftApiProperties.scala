@@ -43,7 +43,7 @@ object DraftApiProperties extends LazyLogging {
     "raw-image" -> s"$Domain/image-api/raw/id",
     ResourceType.Audio.toString -> s"$Domain/audio-api/v1/audio",
     ResourceType.File.toString -> Domain,
-    ResourceType.H5P.toString -> s"https://h5p-$Environment.ndla.no/"
+    ResourceType.H5P.toString -> H5PAddress
   )
 
   val ArticleApiHost: String = propOrElse("ARTICLE_API_HOST", "article-api.ndla-local")
@@ -88,6 +88,15 @@ object DraftApiProperties extends LazyLogging {
 
   val AttachmentStorageName: String =
     propOrElse("ARTICLE_ATTACHMENT_S3_BUCKET", s"$Environment.article-attachments.ndla")
+
+  lazy val H5PAddress = propOrElse(
+    "NDLA_H5P_ADDRESS",
+    Map(
+      "test" -> "https://h5p-test.ndla.no/",
+      "staging" -> "https://h5p-staging.ndla.no/",
+      "ff" -> "https://h5p-ff.ndla.no/"
+    ).getOrElse(Environment, "https://h5p.ndla.no/")
+  )
 
   lazy val Domain = Domains.get(Environment)
 

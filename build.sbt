@@ -55,7 +55,7 @@ lazy val draft_api = (project in file("."))
     libraryDependencies ++= pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.43",
       "ndla" %% "mapping" % "0.14",
-      "ndla" %% "validation" % "0.38",
+      "ndla" %% "validation" % "0.41",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",
