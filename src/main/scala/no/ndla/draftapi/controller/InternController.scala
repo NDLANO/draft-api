@@ -14,6 +14,7 @@ import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
+import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, IndexService}
@@ -175,6 +176,18 @@ trait InternController {
       val pageSize = intOrDefault("page-size", 250)
 
       readService.getArticleDomainDump(pageNo, pageSize)
+    }
+
+    post("/dump/article") {
+      extract[domain.Article](request.body) match {
+        case Failure(ex) => errorHandler(ex)
+        case Success(article) =>
+          writeService.insertDump(article) match {
+            case Failure(ex)       => errorHandler(ex)
+            case Success(inserted) => Ok(inserted)
+          }
+      }
+
     }
 
   }
