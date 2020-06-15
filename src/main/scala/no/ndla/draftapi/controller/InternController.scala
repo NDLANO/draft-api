@@ -170,7 +170,7 @@ trait InternController {
       }
     }
 
-    get("/dump/article") {
+    get("/dump/article/?") {
       // Dumps Domain articles
       val pageNo = intOrDefault("page", 1)
       val pageSize = intOrDefault("page-size", 250)
@@ -178,7 +178,7 @@ trait InternController {
       readService.getArticleDomainDump(pageNo, pageSize)
     }
 
-    post("/dump/article") {
+    post("/dump/article/?") {
       extract[domain.Article](request.body) match {
         case Failure(ex) => errorHandler(ex)
         case Success(article) =>
