@@ -50,6 +50,17 @@ trait WriteService {
 
   class WriteService extends LazyLogging {
 
+    def insertDump(article: domain.Article): Try[domain.Article] = {
+      draftRepository
+        .newArticleId()
+        .map(newId => {
+          val artWithId = article.copy(
+            id = Some(newId)
+          )
+          draftRepository.insert(artWithId)
+        })
+    }
+
     def copyArticleFromId(
         articleId: Long,
         userInfo: UserInfo,

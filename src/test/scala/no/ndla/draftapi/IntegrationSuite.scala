@@ -12,16 +12,19 @@ import no.ndla.network.secrets.PropertyKeys
 import no.ndla.draftapi.integration.DataSource.getHikariDataSource
 import org.testcontainers.elasticsearch.ElasticsearchContainer
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
-abstract class IntegrationSuite extends UnitSuite {
+abstract class IntegrationSuite(withSearch: Boolean = false) extends UnitSuite {
 
-  val elasticSearchContainer = Try {
-    val esVersion = "6.3.2"
-    val c = new ElasticsearchContainer(s"docker.elastic.co/elasticsearch/elasticsearch:$esVersion")
-    c.start()
-    c
-  }
+  val elasticSearchContainer = if (withSearch) {
+    Try {
+      val esVersion = "6.3.2"
+      val c = new ElasticsearchContainer(s"docker.elastic.co/elasticsearch/elasticsearch:$esVersion")
+      c.start()
+      c
+    }
+  } else { Failure(new RuntimeException("Search disabled for this IntegrationSuite")) }
+
   val elasticSearchHost = elasticSearchContainer.map(c => s"http://${c.getHttpHostAddress}")
 
   setEnv(PropertyKeys.MetaUserNameKey, "postgres")

@@ -16,7 +16,7 @@ import org.scalatest.Outcome
 
 import scala.util.Success
 
-class AgreementSearchServiceTest extends IntegrationSuite with TestEnvironment {
+class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
