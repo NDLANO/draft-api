@@ -21,7 +21,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer
 
 import scala.util.{Success, Try}
 
-class ArticleSearchServiceTest extends IntegrationSuite with TestEnvironment {
+class ArticleSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
