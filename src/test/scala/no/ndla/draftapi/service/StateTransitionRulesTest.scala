@@ -77,17 +77,17 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val expected1 = domain.Status(ARCHIVED, Set(IMPORTED))
     val (Success(res1), _) =
       doTransitionWithoutSideEffect(DraftArticle.copy(status = PublishedStatus),
-        ARCHIVED,
-        TestData.userWithPublishAccess,
-        false)
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
     res1.status should equal(expected1)
 
     val expected2 = domain.Status(ARCHIVED, Set.empty)
     val (Success(res2), _) =
       doTransitionWithoutSideEffect(DraftArticle.copy(status = UnpublishedStatus),
-        ARCHIVED,
-        TestData.userWithPublishAccess,
-        false)
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
     res2.status should equal(expected2)
   }
 
