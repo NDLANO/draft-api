@@ -16,9 +16,11 @@ import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.{Article, EditorNote, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
+import org.eclipse.jetty.util.IO
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
+import org.mockito.internal.matchers.Any
 import org.mockito.invocation.InvocationOnMock
 import scalikejdbc.DBSession
 
@@ -26,6 +28,7 @@ import scala.util.{Failure, Success, Try}
 
 class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
+  import StateTransitionRules.doTransition
 
   val DraftStatus = domain.Status(DRAFT, Set(QUALITY_ASSURED))
   val DraftWithPublishedStatus = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
@@ -64,13 +67,6 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
                                     false)
     res2.status should equal(expected2)
 
-    val expected3 = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
-    val (Success(res3), _) =
-      doTransitionWithoutSideEffect(DraftArticle.copy(status = DraftWithPublishedStatus),
-                                    DRAFT,
-                                    TestData.userWithPublishAccess,
-                                    false)
-    res3.status should equal(expected3)
   }
 
   test("doTransition every state change to Archived should succeed") {
@@ -89,6 +85,39 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
                                     TestData.userWithPublishAccess,
                                     false)
     res2.status should equal(expected2)
+
+    val expected3 = domain.Status(ARCHIVED, Set.empty)
+    val (Success(res3), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = ProposalStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res3.status should equal(expected3)
+
+    val expected4 = domain.Status(ARCHIVED, Set(IMPORTED))
+    val (Success(res4), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = UserTestStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res4.status should equal(expected4)
+
+    val expected5 = domain.Status(ARCHIVED, Set.empty)
+    val (Success(res5), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = DraftStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res5.status should equal(expected5)
+
+    val expected6 = domain.Status(ARCHIVED, Set.empty)
+    val (Success(res6), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = AwaitingUnpublishStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res6.status should equal(expected6)
+
   }
 
   test("doTransition should fail when performing an illegal transition") {
