@@ -28,6 +28,12 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     })
   }
 
+  private def resetIdSequence() = {
+    DB autoCommit (implicit session => {
+      sql"select setval('article_id_sequence', 1, false);".execute.apply
+    })
+  }
+
   def serverIsListening: Boolean = {
     Try(new Socket(DraftApiProperties.MetaServer, DraftApiProperties.MetaPort)) match {
       case Success(c) =>
@@ -192,9 +198,7 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   test("That newEmptyArticle creates the latest available article_id") {
     assume(databaseIsAvailable, "Database is unavailable")
 
-    DB autoCommit (implicit session => {
-      sql"select setval('article_id_sequence', 1, false);".execute.apply
-    })
+    this.resetIdSequence()
 
     repository.newEmptyArticle() should be(Success(1))
     repository.newEmptyArticle() should be(Success(2))

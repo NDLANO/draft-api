@@ -193,7 +193,9 @@ trait WriteService {
             draftRepository.insertWithExternalIds(a, nids, externalSubjectIds, importId)
       }
       for {
-        domainArticle <- converterService.toDomainArticle(withNotes,
+        newId <- draftRepository.newEmptyArticle()
+        domainArticle <- converterService.toDomainArticle(newId,
+                                                          withNotes,
                                                           externalIds,
                                                           user,
                                                           oldNdlaCreatedDate,
