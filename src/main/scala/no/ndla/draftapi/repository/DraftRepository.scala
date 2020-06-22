@@ -120,9 +120,9 @@ trait DraftRepository {
              insert into ${Article.table} (external_id, external_subject_id, article_id)
              values (ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], NEXTVAL('article_id_sequence'))
           """.updateAndReturnGeneratedKey("article_id").apply) match {
-        case Success(article_id) =>
-          logger.info(s"Inserted new empty article: $article_id")
-          Success(article_id)
+        case Success(articleId) =>
+          logger.info(s"Inserted new empty article: $articleId")
+          Success(articleId)
         case Failure(ex) => Failure(ex)
       }
     }
