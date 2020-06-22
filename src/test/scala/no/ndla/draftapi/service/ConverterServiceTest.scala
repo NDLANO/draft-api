@@ -77,7 +77,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val apiArticle = TestData.newArticle.copy(content = Some(content), visualElement = Some(visualElement))
     val expectedTime = TestData.today
 
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
+    when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
+      .thenReturn(Success(1: Long))
     when(clock.now()).thenReturn(expectedTime)
 
     val Success(result) = service.toDomainArticle(apiArticle, List.empty, TestData.userWithWriteAccess, None, None)
@@ -92,7 +93,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val created = new DateTime("2016-12-06T16:20:05Z").toDate
     val updated = new DateTime("2017-03-07T21:18:19Z").toDate
 
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
+    when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
+      .thenReturn(Success(1: Long))
 
     val Success(result) =
       service.toDomainArticle(apiArticle, List.empty, TestData.userWithWriteAccess, Some(created), Some(updated))
@@ -462,7 +464,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("toDomainArticle(NewArticle) should convert grepCodes correctly") {
 
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
+    when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
+      .thenReturn(Success(1: Long))
 
     val Success(res1) = service.toDomainArticle(TestData.newArticle.copy(grepCodes = Seq("a", "b")),
                                                 List(TestData.externalId),

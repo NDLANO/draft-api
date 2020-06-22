@@ -52,7 +52,7 @@ trait WriteService {
 
     def insertDump(article: domain.Article): Try[domain.Article] = {
       draftRepository
-        .newArticleId()
+        .newEmptyArticle()
         .map(newId => {
           val artWithId = article.copy(
             id = Some(newId)
@@ -72,7 +72,7 @@ trait WriteService {
         case None => Failure(NotFoundException(s"Article with id '$articleId' was not found in database."))
         case Some(article) =>
           for {
-            newId <- draftRepository.newArticleId()
+            newId <- draftRepository.newEmptyArticle()
             status = domain.Status(DRAFT, Set.empty)
             notes <- converterService.newNotes(Seq(s"Opprettet artikkel, som kopi av artikkel med id: '$articleId'."),
                                                userInfo,
@@ -493,7 +493,7 @@ trait WriteService {
     }
 
     def newEmptyArticle(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
-      draftRepository.newArticleId().flatMap(id => draftRepository.newEmptyArticle(id, externalIds, externalSubjectIds))
+      draftRepository.newEmptyArticle(externalIds, externalSubjectIds)
     }
 
     def storeFile(file: FileItem): Try[api.UploadedFile] =

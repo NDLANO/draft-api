@@ -35,12 +35,12 @@ trait DraftRepository {
       dataObject.setType("jsonb")
       dataObject.setValue(write(article))
 
-      sql"""
+      val dbId = sql"""
             insert into ${Article.table} (document, revision, article_id)
             values ($dataObject, $startRevision, ${article.id})
           """.updateAndReturnGeneratedKey().apply
 
-      logger.info(s"Inserted new article: ${article.id}, with revision $startRevision")
+      logger.info(s"Inserted new article: ${article.id}, with revision $startRevision (with db id $dbId)")
       article.copy(revision = Some(startRevision))
     }
 
@@ -112,29 +112,18 @@ trait DraftRepository {
       }
     }
 
-    def newEmptyArticle(id: Long, externalIds: List[String], externalSubjectIds: Seq[String])(
-        implicit session: DBSession = AutoSession): Try[Long] = {
+    def newEmptyArticle(
+        externalIds: List[String] = List.empty,
+        externalSubjectIds: Seq[String] = List.empty
+    )(implicit session: DBSession = AutoSession): Try[Long] = {
       Try(sql"""
              insert into ${Article.table} (external_id, external_subject_id, article_id)
-             values (ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], $id)
-          """.update.apply) match {
-        case Success(_) =>
-          logger.info(s"Inserted new empty article: $id")
-          Success(id)
+             values (ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], NEXTVAL('article_id_sequence'))
+          """.updateAndReturnGeneratedKey("article_id").apply) match {
+        case Success(article_id) =>
+          logger.info(s"Inserted new empty article: $article_id")
+          Success(article_id)
         case Failure(ex) => Failure(ex)
-      }
-    }
-
-    def newArticleId()(implicit session: DBSession = AutoSession): Try[Long] = {
-      Try(
-        sql"""select max(article_id) from ${Article.table}"""
-          .map(rs => rs.longOpt("max"))
-          .single()
-          .apply()
-      ) match {
-        case Success(Some(Some(id))) => Success(1 + id)
-        case Success(_)              => Success(1)
-        case Failure(ex)             => Failure(ex)
       }
     }
 

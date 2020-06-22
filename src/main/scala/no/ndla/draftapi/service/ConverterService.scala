@@ -41,7 +41,7 @@ trait ConverterService {
                         user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      draftRepository.newArticleId() match {
+      draftRepository.newEmptyArticle() match {
         case Failure(ex) => Failure(ex)
         case Success(id) =>
           val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))

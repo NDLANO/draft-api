@@ -189,16 +189,20 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.getIdFromExternalId("9999") should be(None)
   }
 
-  test("That newArticleId creates the latest available article_id") {
+  test("That newEmptyArticle creates the latest available article_id") {
     assume(databaseIsAvailable, "Database is unavailable")
-    repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
-    repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
-    repository.insert(sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
-    repository.insert(sampleArticle.copy(id = Some(3), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
-    repository.insert(sampleArticle.copy(id = Some(4), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
-    repository.insert(sampleArticle.copy(id = Some(5), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
 
-    repository.newArticleId() should be(Success(6))
+    DB autoCommit (implicit session => {
+      sql"select setval('article_id_sequence', 1, false);".execute.apply
+    })
+
+    repository.newEmptyArticle() should be(Success(1))
+    repository.newEmptyArticle() should be(Success(2))
+    repository.newEmptyArticle() should be(Success(3))
+    repository.newEmptyArticle() should be(Success(4))
+    repository.newEmptyArticle() should be(Success(5))
+    repository.newEmptyArticle() should be(Success(6))
+    repository.newEmptyArticle() should be(Success(7))
   }
 
   test("That idsWithStatus returns correct drafts") {
