@@ -77,10 +77,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val apiArticle = TestData.newArticle.copy(content = Some(content), visualElement = Some(visualElement))
     val expectedTime = TestData.today
 
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
     when(clock.now()).thenReturn(expectedTime)
 
-    val Success(result) = service.toDomainArticle(apiArticle, List.empty, TestData.userWithWriteAccess, None, None)
+    val Success(result) = service.toDomainArticle(1, apiArticle, List.empty, TestData.userWithWriteAccess, None, None)
     result.content.head.content should equal(expectedContent)
     result.visualElement.head.resource should equal(expectedVisualElement)
     result.created should equal(expectedTime)
@@ -92,10 +91,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val created = new DateTime("2016-12-06T16:20:05Z").toDate
     val updated = new DateTime("2017-03-07T21:18:19Z").toDate
 
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
-
     val Success(result) =
-      service.toDomainArticle(apiArticle, List.empty, TestData.userWithWriteAccess, Some(created), Some(updated))
+      service.toDomainArticle(1, apiArticle, List.empty, TestData.userWithWriteAccess, Some(created), Some(updated))
     result.created should equal(created)
     result.updated should equal(updated)
   }
@@ -461,16 +458,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("toDomainArticle(NewArticle) should convert grepCodes correctly") {
-
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
-
-    val Success(res1) = service.toDomainArticle(TestData.newArticle.copy(grepCodes = Seq("a", "b")),
+    val Success(res1) = service.toDomainArticle(1,
+                                                TestData.newArticle.copy(grepCodes = Seq("a", "b")),
                                                 List(TestData.externalId),
                                                 TestData.userWithWriteAccess,
                                                 None,
                                                 None)
 
-    val Success(res2) = service.toDomainArticle(TestData.newArticle.copy(grepCodes = Seq.empty),
+    val Success(res2) = service.toDomainArticle(1,
+                                                TestData.newArticle.copy(grepCodes = Seq.empty),
                                                 List(TestData.externalId),
                                                 TestData.userWithWriteAccess,
                                                 None,

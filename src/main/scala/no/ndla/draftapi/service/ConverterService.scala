@@ -36,56 +36,52 @@ trait ConverterService {
 
   class ConverterService extends LazyLogging {
 
-    def toDomainArticle(newArticle: api.NewArticle,
+    def toDomainArticle(newArticleId: Long,
+                        newArticle: api.NewArticle,
                         externalIds: List[String],
                         user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      draftRepository.newArticleId() match {
-        case Failure(ex) => Failure(ex)
-        case Success(id) =>
-          val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
-          val domainContent = newArticle.content
-            .map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language))
-            .toSeq
+      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
+      val domainContent = newArticle.content
+        .map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language))
+        .toSeq
 
-          val status = externalIds match {
-            case Nil => domain.Status(DRAFT, Set.empty)
-            case _   => domain.Status(DRAFT, Set(IMPORTED))
-          }
-
-          val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
-          val oldUpdatedDate = oldNdlaUpdatedDate.map(date => new DateTime(date).toDate)
-
-          newNotes(newArticle.notes, user, status).map(
-            notes =>
-              domain.Article(
-                id = Some(id),
-                revision = None,
-                status,
-                title = domainTitles,
-                content = domainContent,
-                copyright = newArticle.copyright.map(toDomainCopyright),
-                tags = toDomainTag(newArticle.tags, newArticle.language).toSeq,
-                requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
-                visualElement =
-                  newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-                introduction =
-                  newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-                metaDescription =
-                  newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-                metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
-                created = oldCreatedDate.getOrElse(clock.now()),
-                updated = oldUpdatedDate.getOrElse(clock.now()),
-                updatedBy = user.id,
-                published = oldUpdatedDate.getOrElse(newArticle.published.getOrElse(clock.now())), // If import use old updated. Else use new published or now
-                articleType = ArticleType.valueOfOrError(newArticle.articleType),
-                notes = notes,
-                previousVersionsNotes = Seq.empty,
-                editorLabels = newArticle.editorLabels,
-                grepCodes = newArticle.grepCodes
-            ))
+      val status = externalIds match {
+        case Nil => domain.Status(DRAFT, Set.empty)
+        case _   => domain.Status(DRAFT, Set(IMPORTED))
       }
+
+      val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
+      val oldUpdatedDate = oldNdlaUpdatedDate.map(date => new DateTime(date).toDate)
+
+      newNotes(newArticle.notes, user, status).map(
+        notes =>
+          domain.Article(
+            id = Some(newArticleId),
+            revision = None,
+            status,
+            title = domainTitles,
+            content = domainContent,
+            copyright = newArticle.copyright.map(toDomainCopyright),
+            tags = toDomainTag(newArticle.tags, newArticle.language).toSeq,
+            requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
+            visualElement =
+              newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
+            introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
+            metaDescription =
+              newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
+            metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
+            created = oldCreatedDate.getOrElse(clock.now()),
+            updated = oldUpdatedDate.getOrElse(clock.now()),
+            updatedBy = user.id,
+            published = oldUpdatedDate.getOrElse(newArticle.published.getOrElse(clock.now())), // If import use old updated. Else use new published or now
+            articleType = ArticleType.valueOfOrError(newArticle.articleType),
+            notes = notes,
+            previousVersionsNotes = Seq.empty,
+            editorLabels = newArticle.editorLabels,
+            grepCodes = newArticle.grepCodes
+        ))
     }
 
     private[service] def newNotes(notes: Seq[String], user: UserInfo, status: Status): Try[Seq[EditorNote]] = {

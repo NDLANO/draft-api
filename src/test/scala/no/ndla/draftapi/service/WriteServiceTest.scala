@@ -82,7 +82,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List.empty)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
-    when(draftRepository.newArticleId()(any[DBSession])).thenReturn(Success(1: Long))
+    when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
+      .thenReturn(Success(1: Long))
 
     service
       .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None, None)
@@ -517,7 +518,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val userinfo = UserInfo("somecoolid", Set.empty)
 
       val newId = 1231.toLong
-      doReturn(Success(newId), Success(newId)).when(draftRepository).newArticleId()(any[DBSession])
+      when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
+        .thenReturn(Success(newId))
 
       val expectedInsertedArticle = article.copy(
         id = Some(newId),
@@ -568,7 +570,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val userinfo = UserInfo("somecoolid", Set.empty)
 
       val newId = 1231.toLong
-      doReturn(Success(newId), Success(newId)).when(draftRepository).newArticleId()(any[DBSession])
+      when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
+        .thenReturn(Success(newId))
 
       val expectedInsertedArticle = article.copy(
         id = Some(newId),
