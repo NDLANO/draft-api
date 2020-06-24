@@ -165,7 +165,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res(AWAITING_QUALITY_ASSURANCE.toString).length should be(6)
     res(QUALITY_ASSURED.toString).length should be(4)
     res(QUEUED_FOR_PUBLISHING.toString).length should be(3)
-    res(PUBLISHED.toString).length should be(5)
+    res(PUBLISHED.toString).length should be(4)
     res(AWAITING_UNPUBLISHING.toString).length should be(4)
     res(UNPUBLISHED.toString).length should be(5)
   }
