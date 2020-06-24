@@ -144,7 +144,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWithAdminAccess, false)
-    sideEffect(res, false).get.status should equal(expectedStatus)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
 
     val captor = ArgumentCaptor.forClass(classOf[Article])
     verify(articleApiClient, times(1))
@@ -167,7 +167,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(AwaitingUnpublishArticle, UNPUBLISHED, TestData.userWithAdminAccess, false)
-    sideEffect(res, false).get.status should equal(expectedStatus)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
 
     val captor = ArgumentCaptor.forClass(classOf[Article])
 
@@ -186,7 +186,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(UnpublishedArticle, ARCHIVED, TestData.userWithPublishAccess, false)
-    sideEffect(res, false).get.status should equal(expectedStatus)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
 
     verify(articleIndexService, times(0))
       .deleteDocument(UnpublishedArticle.id.get)
