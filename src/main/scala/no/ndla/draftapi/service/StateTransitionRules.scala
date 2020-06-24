@@ -145,9 +145,11 @@ trait StateTransitionRules {
        QUEUED_FOR_LANGUAGE        -> QUEUED_FOR_LANGUAGE,
        QUEUED_FOR_LANGUAGE        -> PROPOSAL,
        QUEUED_FOR_LANGUAGE        -> TRANSLATED,
+      (QUEUED_FOR_LANGUAGE        -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
        TRANSLATED                 -> TRANSLATED,
        TRANSLATED                 -> PROPOSAL,
-       TRANSLATED                 -> AWAITING_QUALITY_ASSURANCE
+       TRANSLATED                 -> AWAITING_QUALITY_ASSURANCE,
+       (TRANSLATED                -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
     )
     // format: on
 
