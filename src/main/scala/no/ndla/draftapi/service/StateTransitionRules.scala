@@ -100,50 +100,50 @@ trait StateTransitionRules {
        DRAFT                      -> DRAFT,
        DRAFT                      -> PROPOSAL,
        DRAFT                      -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
+      (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        ARCHIVED                   -> ARCHIVED,
        ARCHIVED                   -> DRAFT,
-      (DRAFT                      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishWithSoftValidation),
        PROPOSAL                   -> PROPOSAL,
        PROPOSAL                   -> DRAFT,
        PROPOSAL                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
        PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
-      (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
-      (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect Set(validateArticleApiArticle) require PublishRoles,
-      (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishWithSoftValidation),
+      (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition, git status
+        PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticleApiArticle require PublishRoles,
+      (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
       (PROPOSAL                   -> AWAITING_QUALITY_ASSURANCE) keepCurrentOnTransition,
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
        USER_TEST                  -> PROPOSAL,
        USER_TEST                  -> DRAFT,
       (USER_TEST                  -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL, PUBLISHED) keepCurrentOnTransition,
-      (USER_TEST                  -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishWithSoftValidation),
+      (USER_TEST                  -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        USER_TEST                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
       (AWAITING_QUALITY_ASSURANCE -> AWAITING_QUALITY_ASSURANCE) keepStates Set(IMPORTED, PROPOSAL, USER_TEST, PUBLISHED),
        AWAITING_QUALITY_ASSURANCE -> DRAFT,
        AWAITING_QUALITY_ASSURANCE -> QUEUED_FOR_LANGUAGE,
       (AWAITING_QUALITY_ASSURANCE -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
-      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED) withSideEffect Set(validateArticleApiArticle),
-      (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishWithSoftValidation),
+      (AWAITING_QUALITY_ASSURANCE -> QUALITY_ASSURED)            keepStates Set(IMPORTED, USER_TEST, PUBLISHED) withSideEffect validateArticleApiArticle,
+      (AWAITING_QUALITY_ASSURANCE -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        AWAITING_QUALITY_ASSURANCE  -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
        QUALITY_ASSURED            -> QUALITY_ASSURED,
        QUALITY_ASSURED            -> DRAFT,
-      (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, PUBLISHED) require PublishRoles withSideEffect Set(validateArticleApiArticle) keepCurrentOnTransition,
-      (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishArticle),
+      (QUALITY_ASSURED            -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, PUBLISHED) require PublishRoles withSideEffect validateArticleApiArticle keepCurrentOnTransition,
+      (QUALITY_ASSURED            -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticle,
        QUALITY_ASSURED             -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
-       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING       withSideEffect Set(validateArticleApiArticle),
-      (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishArticle),
+       QUEUED_FOR_PUBLISHING      -> QUEUED_FOR_PUBLISHING       withSideEffect validateArticleApiArticle,
+      (QUEUED_FOR_PUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishArticle,
        QUEUED_FOR_PUBLISHING      -> DRAFT,
        QUEUED_FOR_PUBLISHING       -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
       (PUBLISHED                  -> DRAFT)                      keepCurrentOnTransition,
       (PUBLISHED                  -> PROPOSAL)                   keepCurrentOnTransition,
-      (PUBLISHED                  -> AWAITING_UNPUBLISHING)      require PublishRoles withSideEffect Set(checkIfArticleIsUsedInLearningStep) keepCurrentOnTransition,
-      (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(checkIfArticleIsUsedInLearningStep , unpublishArticle),
-       PUBLISHED                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect Set(checkIfArticleIsUsedInLearningStep, unpublishArticle),
-      (AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING)      withSideEffect Set(checkIfArticleIsUsedInLearningStep) keepCurrentOnTransition,
+      (PUBLISHED                  -> AWAITING_UNPUBLISHING)      require PublishRoles withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
+      (PUBLISHED                  -> UNPUBLISHED)                keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect unpublishArticle,
+       PUBLISHED                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect  unpublishArticle,
+      (AWAITING_UNPUBLISHING      -> AWAITING_UNPUBLISHING)      withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
        AWAITING_UNPUBLISHING      -> DRAFT,
-      (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect Set(publishArticle),
-      (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(unpublishArticle),
+      (AWAITING_UNPUBLISHING      -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
+      (AWAITING_UNPUBLISHING      -> UNPUBLISHED)                keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect unpublishArticle,
        AWAITING_UNPUBLISHING       -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
-      (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect Set(publishWithSoftValidation),
+      (UNPUBLISHED                -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
        UNPUBLISHED                -> PROPOSAL,
        UNPUBLISHED                -> DRAFT,
        UNPUBLISHED                -> UNPUBLISHED,
@@ -152,11 +152,11 @@ trait StateTransitionRules {
        QUEUED_FOR_LANGUAGE        -> PROPOSAL,
        QUEUED_FOR_LANGUAGE        -> TRANSLATED,
        QUEUED_FOR_LANGUAGE        -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
-      (QUEUED_FOR_LANGUAGE        -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect Set(publishArticle),
+      (QUEUED_FOR_LANGUAGE        -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
        TRANSLATED                 -> TRANSLATED,
        TRANSLATED                 -> PROPOSAL,
        TRANSLATED                 -> AWAITING_QUALITY_ASSURANCE,
-      (TRANSLATED                -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect Set(publishArticle),
+      (TRANSLATED                -> PUBLISHED)                  keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
        TRANSLATED                 -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
     )
     // format: on
@@ -172,7 +172,7 @@ trait StateTransitionRules {
     private[service] def doTransitionWithoutSideEffect(current: domain.Article,
                                                        to: ArticleStatus.Value,
                                                        user: UserInfo,
-                                                       isImported: Boolean): (Try[domain.Article], Set[SideEffect]) = {
+                                                       isImported: Boolean): (Try[domain.Article], Seq[SideEffect]) = {
       getTransition(current.status.current, to, user) match {
         case Some(t) =>
           val currentToOther = if (t.addCurrentStateToOthersOnTransition) Set(current.status.current) else Set()
@@ -180,7 +180,7 @@ trait StateTransitionRules {
           if (containsIllegalStatuses.nonEmpty) {
             val illegalStateTransition = IllegalStatusStateTransition(
               s"Cannot go to $to when article contains $containsIllegalStatuses")
-            return (Failure(illegalStateTransition), Set(SideEffect.fromOutput(Failure(illegalStateTransition))))
+            return (Failure(illegalStateTransition), Seq.empty)
           }
           val other = current.status.other.intersect(t.otherStatesToKeepOnTransition) ++ currentToOther
           val newStatus = domain.Status(to, other)
@@ -192,11 +192,11 @@ trait StateTransitionRules {
                                                  new Date())
             else current.notes
           val convertedArticle = current.copy(status = newStatus, notes = newEditorNotes)
-          (Success(convertedArticle), t.sideEffect)
+          (Success(convertedArticle), t.sideEffects)
         case None =>
           val illegalStateTransition = IllegalStatusStateTransition(
             s"Cannot go to $to when article is ${current.status.current}")
-          (Failure(illegalStateTransition), Set(SideEffect.fromOutput(Failure(illegalStateTransition))))
+          (Failure(illegalStateTransition), Seq.empty)
       }
     }
 

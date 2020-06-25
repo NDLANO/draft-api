@@ -28,7 +28,6 @@ import scala.util.{Failure, Success, Try}
 
 class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   import StateTransitionRules.doTransitionWithoutSideEffect
-  import StateTransitionRules.doTransition
 
   val DraftStatus = domain.Status(DRAFT, Set(QUALITY_ASSURED))
   val DraftWithPublishedStatus = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))

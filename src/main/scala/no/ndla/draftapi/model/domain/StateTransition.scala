@@ -16,14 +16,14 @@ import scala.language.implicitConversions
 case class StateTransition(from: ArticleStatus.Value,
                            to: ArticleStatus.Value,
                            otherStatesToKeepOnTransition: Set[ArticleStatus.Value],
-                           sideEffect: Set[SideEffect],
+                           sideEffects: Seq[SideEffect],
                            addCurrentStateToOthersOnTransition: Boolean,
                            requiredRoles: Set[Role.Value],
                            illegalStatuses: Set[ArticleStatus.Value]) {
 
   def keepCurrentOnTransition: StateTransition = copy(addCurrentStateToOthersOnTransition = true)
   def keepStates(toKeep: Set[ArticleStatus.Value]): StateTransition = copy(otherStatesToKeepOnTransition = toKeep)
-  def withSideEffect(sideEffect: Set[SideEffect]): StateTransition = copy(sideEffect = sideEffect)
+  def withSideEffect(sideEffect: SideEffect): StateTransition = copy(sideEffects = sideEffects :+ sideEffect)
   def require(roles: Set[Role.Value]): StateTransition = copy(requiredRoles = roles)
 
   def illegalStatuses(illegalStatuses: Set[ArticleStatus.Value]): StateTransition =
@@ -36,7 +36,7 @@ object StateTransition {
     StateTransition(from,
                     to,
                     Set(ArticleStatus.IMPORTED, ArticleStatus.PUBLISHED),
-                    Set.empty[SideEffect],
+                    Seq.empty[SideEffect],
                     addCurrentStateToOthersOnTransition = false,
                     UserInfo.WriteRoles,
                     Set())
