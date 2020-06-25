@@ -117,8 +117,8 @@ trait DraftRepository {
         externalSubjectIds: Seq[String] = List.empty
     )(implicit session: DBSession = AutoSession): Try[Long] = {
       Try(sql"""
-             insert into ${Article.table} (external_id, external_subject_id, article_id)
-             values (ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], NEXTVAL('article_id_sequence'))
+             insert into ${Article.table} (external_id, external_subject_id, article_id, revision)
+             values (ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], NEXTVAL('article_id_sequence'), 0)
           """.updateAndReturnGeneratedKey("article_id").apply) match {
         case Success(articleId) =>
           logger.info(s"Inserted new empty article: $articleId")
@@ -147,7 +147,7 @@ trait DraftRepository {
       dataObject.setValue(write(article))
 
       val newRevision = if (isImported) 1 else article.revision.getOrElse(0) + 1
-      val oldRevision = if (isImported) 1 else article.revision
+      val oldRevision = if (isImported) 1 else article.revision.getOrElse(0)
       val count =
         sql"""
               update ${Article.table}
