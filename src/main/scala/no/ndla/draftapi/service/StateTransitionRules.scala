@@ -107,8 +107,8 @@ trait StateTransitionRules {
        PROPOSAL                   -> DRAFT,
        PROPOSAL                   -> ARCHIVED                    require PublishRoles illegalStatuses Set(PUBLISHED),
        PROPOSAL                   -> QUEUED_FOR_LANGUAGE,
-      (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition, git status
-        PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticleApiArticle require PublishRoles,
+      (PROPOSAL                   -> USER_TEST)                  keepCurrentOnTransition,
+      (PROPOSAL                   -> QUEUED_FOR_PUBLISHING)      keepStates Set(IMPORTED, USER_TEST, QUALITY_ASSURED, PUBLISHED) withSideEffect validateArticleApiArticle require PublishRoles,
       (PROPOSAL                   -> PUBLISHED)                  keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect publishWithSoftValidation,
       (PROPOSAL                   -> AWAITING_QUALITY_ASSURANCE) keepCurrentOnTransition,
       (USER_TEST                  -> USER_TEST)                  keepStates Set(IMPORTED, PROPOSAL, PUBLISHED),
