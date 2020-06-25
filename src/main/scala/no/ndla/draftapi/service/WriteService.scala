@@ -186,7 +186,7 @@ trait WriteService {
         notes = newNotes,
         visualElement = visualElement
       )
-      val insertNewArticleFunction = externalIds match {
+      val updateFunction = externalIds match {
         case Nil =>
           (a: domain.Article) =>
             draftRepository.updateArticle(a, false)
@@ -204,7 +204,7 @@ trait WriteService {
                                                           oldNdlaCreatedDate,
                                                           oldNdlaUpdatedDate)
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
-        insertedArticle <- insertNewArticleFunction(domainArticle)
+        insertedArticle <- updateFunction(domainArticle)
         _ <- articleIndexService.indexDocument(insertedArticle)
         _ <- Try(searchApiClient.indexDraft(insertedArticle))
         apiArticle <- converterService.toApiArticle(insertedArticle, newArticle.language)
