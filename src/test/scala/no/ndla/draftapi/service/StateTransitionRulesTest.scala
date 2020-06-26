@@ -16,9 +16,11 @@ import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.{Article, EditorNote, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.ValidationException
+import org.eclipse.jetty.util.IO
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
+import org.mockito.internal.matchers.Any
 import org.mockito.invocation.InvocationOnMock
 import scalikejdbc.DBSession
 
@@ -34,6 +36,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   val AwaitingUnpublishStatus = domain.Status(AWAITING_UNPUBLISHING, Set.empty)
   val UnpublishedStatus = domain.Status(UNPUBLISHED, Set.empty)
   val ProposalStatus = domain.Status(PROPOSAL, Set.empty)
+  val ArchivedStatus = domain.Status(ARCHIVED, Set(PUBLISHED))
   val DraftArticle: Article = TestData.sampleArticleWithByNcSa.copy(status = DraftStatus)
   val AwaitingUnpublishArticle: Article = TestData.sampleArticleWithByNcSa.copy(status = AwaitingUnpublishStatus)
   val UnpublishedArticle: Article = TestData.sampleArticleWithByNcSa.copy(status = UnpublishedStatus)
@@ -63,13 +66,57 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
                                     false)
     res2.status should equal(expected2)
 
-    val expected3 = domain.Status(DRAFT, Set(IMPORTED, PUBLISHED))
+  }
+
+  test("doTransition every state change to Archived should succeed") {
+    val expected1 = domain.Status(ARCHIVED, Set(IMPORTED))
+    val (Success(res1), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = PublishedStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res1.status should equal(expected1)
+
+    val expected2 = domain.Status(ARCHIVED, Set.empty)
+    val (Success(res2), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = UnpublishedStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res2.status should equal(expected2)
+
+    val expected3 = domain.Status(ARCHIVED, Set.empty)
     val (Success(res3), _) =
-      doTransitionWithoutSideEffect(DraftArticle.copy(status = DraftWithPublishedStatus),
-                                    DRAFT,
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = ProposalStatus),
+                                    ARCHIVED,
                                     TestData.userWithPublishAccess,
                                     false)
     res3.status should equal(expected3)
+
+    val expected4 = domain.Status(ARCHIVED, Set(IMPORTED))
+    val (Success(res4), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = UserTestStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res4.status should equal(expected4)
+
+    val expected5 = domain.Status(ARCHIVED, Set.empty)
+    val (Success(res5), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = DraftStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res5.status should equal(expected5)
+
+    val expected6 = domain.Status(ARCHIVED, Set.empty)
+    val (Success(res6), _) =
+      doTransitionWithoutSideEffect(DraftArticle.copy(status = AwaitingUnpublishStatus),
+                                    ARCHIVED,
+                                    TestData.userWithPublishAccess,
+                                    false)
+    res6.status should equal(expected6)
+
   }
 
   test("doTransition should fail when performing an illegal transition") {
@@ -96,7 +143,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWithAdminAccess, false)
-    sideEffect(res, false).get.status should equal(expectedStatus)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
 
     val captor = ArgumentCaptor.forClass(classOf[Article])
     verify(articleApiClient, times(1))
@@ -119,7 +166,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(AwaitingUnpublishArticle, UNPUBLISHED, TestData.userWithAdminAccess, false)
-    sideEffect(res, false).get.status should equal(expectedStatus)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
 
     val captor = ArgumentCaptor.forClass(classOf[Article])
 
@@ -138,7 +185,7 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
 
     val (Success(res), sideEffect) =
       doTransitionWithoutSideEffect(UnpublishedArticle, ARCHIVED, TestData.userWithPublishAccess, false)
-    sideEffect(res, false).get.status should equal(expectedStatus)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
 
     verify(articleIndexService, times(0))
       .deleteDocument(UnpublishedArticle.id.get)
