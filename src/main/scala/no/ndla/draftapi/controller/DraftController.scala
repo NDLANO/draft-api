@@ -513,7 +513,7 @@ trait DraftController {
         domain.ArticleStatus
           .valueOfOrError(params(this.statuss.paramName))
           .flatMap(writeService.updateArticleStatus(_, id, userInfo, isImported)) match {
-          case Success(a)  => a
+          case Success(a)  => Ok(a)
           case Failure(ex) => errorHandler(ex)
         }
 

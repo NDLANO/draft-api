@@ -18,6 +18,7 @@ import org.json4s.jackson.Serialization.write
 
 import scala.util.{Failure, Success, Try}
 import cats.implicits._
+import no.ndla.network.model.HttpRequestException
 
 trait TaxonomyApiClient {
   this: NdlaClient =>
@@ -162,16 +163,28 @@ trait TaxonomyApiClient {
         })
     }
 
+    private def is404[T](resp: Try[T]): Boolean =
+      resp match {
+        case Failure(ex: HttpRequestException) if ex.is404 => true
+        case _                                             => false
+      }
+
     def updateTaxonomyMetadataIfExists(articleId: Long, visible: Boolean) = {
       for {
         resources <- queryResource(articleId)
-        existingResourceMetadataWithId <- resources.traverse(res => getResourceMetadata(res.id).map((res.id, _)))
+        existingResourceMetadataWithId <- resources
+          .map(res => getResourceMetadata(res.id).map((res.id, _)))
+          .filterNot(is404)
+          .sequence
         _ <- existingResourceMetadataWithId.traverse {
           case (resId, existingMeta) => updateResourceMetadata(resId, existingMeta.copy(visible = visible))
         }
 
         topics <- queryTopic(articleId)
-        existingTopicMetadataWithId <- topics.traverse(top => getTopicMetadata(top.id).map((top.id, _)))
+        existingTopicMetadataWithId <- topics
+          .map(top => getTopicMetadata(top.id).map((top.id, _)))
+          .filterNot(is404)
+          .sequence
         _ <- existingTopicMetadataWithId.traverse {
           case (topId, existingMeta) => updateTopicMetadata(topId, existingMeta.copy(visible = visible))
         }
