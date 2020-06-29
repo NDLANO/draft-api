@@ -13,13 +13,12 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.ContentId
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.domain.{ArticleStatus, Language}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, IndexService}
 import org.json4s.Formats
-import org.json4s.ext.EnumNameSerializer
 import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
 
@@ -42,10 +41,7 @@ trait InternController {
 
   class InternController(implicit val swagger: Swagger) extends NdlaController {
     protected val applicationDescription = "API for accessing internal functionality in draft API"
-    protected implicit override val jsonFormats: Formats =
-      org.json4s.DefaultFormats +
-        new EnumNameSerializer(ArticleStatus) +
-        new EnumNameSerializer(ArticleType)
+    protected implicit override val jsonFormats: Formats = domain.Article.jsonEncoder
 
     post("/index") {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)

@@ -10,20 +10,13 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import cats.effect.IO
-import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.auth.UserInfo
+import no.ndla.draftapi.auth.UserInfo.{DirectPublishRoles, PublishRoles}
+import no.ndla.draftapi.integration._
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.auth.UserInfo.{DirectPublishRoles, PublishRoles}
-import no.ndla.draftapi.integration.{
-  ArticleApiClient,
-  ConceptApiClient,
-  LearningPath,
-  LearningpathApiClient,
-  TaxonomyApiClient
-}
-import no.ndla.draftapi.model.domain.{ArticleStatus, StateTransition}
 import no.ndla.draftapi.model.domain.ArticleStatus._
+import no.ndla.draftapi.model.domain.{ArticleStatus, StateTransition}
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service.SideEffect.SideEffect
 import no.ndla.draftapi.service.search.ArticleIndexService

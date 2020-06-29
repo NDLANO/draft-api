@@ -11,11 +11,9 @@ import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.SearchApiHost
-import no.ndla.draftapi.model.domain.{Article, ArticleStatus, ArticleType}
+import no.ndla.draftapi.model.domain.Article
 import no.ndla.draftapi.service.ConverterService
 import no.ndla.network.NdlaClient
-import org.json4s.Formats
-import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization.write
 import scalaj.http.Http
 
@@ -32,10 +30,7 @@ trait SearchApiClient {
     private val indexTimeout = 1000 * 30
 
     def indexDraft(draft: Article): Article = {
-      implicit val formats: Formats =
-        org.json4s.DefaultFormats +
-          new EnumNameSerializer(ArticleStatus) +
-          new EnumNameSerializer(ArticleType)
+      implicit val formats = Article.jsonEncoder
 
       implicit val executionContext: ExecutionContextExecutorService =
         ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
