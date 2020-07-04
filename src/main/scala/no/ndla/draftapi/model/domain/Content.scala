@@ -147,4 +147,32 @@ object Agreement extends SQLSyntaxSupport[Agreement] {
   val JSonSerializer = FieldSerializer[Agreement](
     ignore("id")
   )
+
+}
+
+case class UserData(
+    id: Option[Long],
+    userId: String,
+    savedSearches: String,
+) extends Content
+
+object UserData extends SQLSyntaxSupport[UserData] {
+  implicit val formats = org.json4s.DefaultFormats
+
+  val JSonSerializer = FieldSerializer[UserData](
+    ignore("id")
+  )
+
+  // Hva er egentlig dette, lp? c = content?, rs = result set?
+  def fromResultSet(lp: SyntaxProvider[UserData])(rs: WrappedResultSet): UserData =
+    fromResultSet(lp.resultName)(rs)
+
+  def fromResultSet(lp: ResultName[UserData])(rs: WrappedResultSet): UserData = {
+    val meta = read[UserData](rs.string(lp.c("document")))
+    UserData(
+      Some(rs.long(lp.c("id"))),
+      meta.userId,
+      meta.savedSearches
+    )
+  }
 }

@@ -14,7 +14,7 @@ import no.ndla.draftapi.model.api.NotFoundException
 import no.ndla.draftapi.model.domain.ImportId
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
 
@@ -23,7 +23,7 @@ import scala.math.max
 import scala.util.{Failure, Success, Try}
 
 trait ReadService {
-  this: DraftRepository with AgreementRepository with ConverterService =>
+  this: DraftRepository with AgreementRepository with UserDataRepository with ConverterService =>
   val readService: ReadService
 
   class ReadService {
@@ -151,6 +151,10 @@ trait ReadService {
 
     def importIdOfArticle(externalId: String): Option[ImportId] = {
       draftRepository.importIdOfArticle(externalId)
+    }
+
+    def getUserData(userId: String): Option[api.UserData] = {
+      userDataRepository.withId(userId).map(userData => converterService.toApiUserData(userData))
     }
   }
 }

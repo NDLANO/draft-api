@@ -22,7 +22,7 @@ import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation._
@@ -36,6 +36,7 @@ import scala.util.{Failure, Random, Success, Try}
 trait WriteService {
   this: DraftRepository
     with AgreementRepository
+    with UserDataRepository
     with ConverterService
     with ContentValidator
     with ArticleIndexService
@@ -169,6 +170,20 @@ trait WriteService {
           val agreement = agreementRepository.insert(domainAgreement)
           agreementIndexService.indexDocument(agreement)
           Success(converterService.toApiAgreement(agreement))
+        case Failure(exception) => Failure(exception)
+      }
+    }
+
+    def newUserData(
+      newUserData: api.NewUserData,
+      user: UserInfo,
+    ): Try[api.UserData] = {
+      val domainUserData = converterService.toDomainUserData(newUserData, user)
+
+      contentValidator.validateUserData(domainUserData) match {
+        case Success(_) =>
+          val userData = userDataRepository.insert(domainUserData)
+          Success(converterService.toApiUserData(userData)) // TODO Fiks toApiUserData
         case Failure(exception) => Failure(exception)
       }
     }

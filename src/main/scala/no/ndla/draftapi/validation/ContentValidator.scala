@@ -60,6 +60,16 @@ trait ContentValidator {
       }
     }
 
+    def validateUserData(userData: UserData): Try[UserData] = {
+      val validationErrors = NoHtmlValidator.validate("savedSearches", userData.savedSearches).toList
+
+      if (validationErrors.isEmpty) {
+        Success(userData)
+      } else {
+        Failure(new ValidationException(errors = validationErrors))
+      }
+    }
+
     def validateDates(newCopyright: NewAgreementCopyright): Seq[ValidationMessage] = {
       newCopyright.validFrom.map(dateString => validateDate("copyright.validFrom", dateString)).toSeq.flatten ++
         newCopyright.validTo.map(dateString => validateDate("copyright.validTo", dateString)).toSeq.flatten

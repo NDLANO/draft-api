@@ -15,7 +15,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
+import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException, NewUserData}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain.{ArticleStatus, _}
@@ -103,6 +103,14 @@ trait ConverterService {
         created = clock.now(),
         updated = clock.now(),
         updatedBy = user.id
+      )
+    }
+
+    def toDomainUserData(newUserData: NewUserData, user: UserInfo): domain.UserData = {
+      domain.UserData( // TODO hvor kommer id og saved searches fra?
+        id = newUserData.id,
+        userId = user.id,
+        savedSearches = newUserData.savedSearches
       )
     }
 
@@ -277,6 +285,15 @@ trait ConverterService {
         updatedBy = agreement.updatedBy
       )
     }
+
+    def toApiUserData(userData: domain.UserData): api.UserData = { // TODO hva er rett verdier her
+      api.UserData(
+        id = userData.id,
+        userId = userData.userId,
+        savedSearches = userData.savedSearches
+      )
+    }
+
 
     def toDomainStatus(status: api.Status): Try[domain.Status] = {
       val newCurrent = ArticleStatus.valueOfOrError(status.current)
