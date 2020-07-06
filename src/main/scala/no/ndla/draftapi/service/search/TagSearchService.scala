@@ -27,15 +27,15 @@ import org.json4s.native.Serialization.read
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
 import scala.util.{Failure, Success, Try}
 
-trait ArticleTagSearchService {
+trait TagSearchService {
   this: Elastic4sClient
     with SearchConverterService
     with SearchService
-    with ArticleTagIndexService
+    with TagIndexService
     with SearchConverterService =>
-  val articleTagSearchService: ArticleTagSearchService
+  val tagSearchService: TagSearchService
 
-  class ArticleTagSearchService extends LazyLogging with SearchService[String] {
+  class TagSearchService extends LazyLogging with SearchService[String] {
     override val searchIndex: String = DraftApiProperties.DraftTagSearchIndex
     implicit val formats: Formats = DefaultFormats
 
@@ -56,7 +56,10 @@ trait ArticleTagSearchService {
 
       val fullQuery = boolQuery()
         .must(
-          prefixQuery("tag", query)
+          boolQuery().should(
+            matchQuery("tag", query).boost(2),
+            prefixQuery("tag", query)
+          )
         )
 
       executeSearch(language, page, pageSize, fullQuery)
@@ -116,7 +119,7 @@ trait ArticleTagSearchService {
       implicit val ec: ExecutionContextExecutorService =
         ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val f = Future {
-        articleTagIndexService.indexDocuments
+        tagIndexService.indexDocuments
       }
 
       f.failed.foreach(t => logger.warn("Unable to create index: " + t.getMessage, t))

@@ -7,6 +7,7 @@
 
 package no.ndla.draftapi.service.search
 
+import com.sksamuel.elastic4s.analyzers.{KeywordTokenizer, LowercaseTokenFilter}
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.mappings.MappingDefinition
@@ -17,11 +18,11 @@ import no.ndla.draftapi.model.search.{SearchableArticle, SearchableLanguageForma
 import no.ndla.draftapi.repository.{DraftRepository, Repository}
 import org.json4s.native.Serialization.write
 
-trait ArticleTagIndexService {
+trait TagIndexService {
   this: SearchConverterService with IndexService with DraftRepository =>
-  val articleTagIndexService: ArticleTagIndexService
+  val tagIndexService: TagIndexService
 
-  class ArticleTagIndexService extends LazyLogging with IndexService[Article, SearchableTag] {
+  class TagIndexService extends LazyLogging with IndexService[Article, SearchableTag] {
     implicit val formats = SearchableLanguageFormats.JSonFormats
     override val documentType: String = DraftApiProperties.DraftTagSearchDocument
     override val searchIndex: String = DraftApiProperties.DraftTagSearchIndex

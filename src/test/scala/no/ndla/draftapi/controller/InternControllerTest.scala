@@ -58,13 +58,13 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
 
     when(articleIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index1", "index2")))
     when(agreementIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index5", "index6")))
-    when(articleTagIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index7", "index8")))
+    when(tagIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index7", "index8")))
     doReturn(Success(""), Nil: _*).when(articleIndexService).deleteIndexWithName(Some("index1"))
     doReturn(Success(""), Nil: _*).when(articleIndexService).deleteIndexWithName(Some("index2"))
     doReturn(Success(""), Nil: _*).when(agreementIndexService).deleteIndexWithName(Some("index5"))
     doReturn(Success(""), Nil: _*).when(agreementIndexService).deleteIndexWithName(Some("index6"))
-    doReturn(Success(""), Nil: _*).when(articleTagIndexService).deleteIndexWithName(Some("index7"))
-    doReturn(Success(""), Nil: _*).when(articleTagIndexService).deleteIndexWithName(Some("index8"))
+    doReturn(Success(""), Nil: _*).when(tagIndexService).deleteIndexWithName(Some("index7"))
+    doReturn(Success(""), Nil: _*).when(tagIndexService).deleteIndexWithName(Some("index8"))
 
     delete("/test/index") {
       status should equal(200)
@@ -81,10 +81,10 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
     verify(agreementIndexService).deleteIndexWithName(Some("index6"))
     verifyNoMoreInteractions(agreementIndexService)
 
-    verify(articleTagIndexService).findAllIndexes(DraftApiProperties.DraftTagSearchIndex)
-    verify(articleTagIndexService).deleteIndexWithName(Some("index7"))
-    verify(articleTagIndexService).deleteIndexWithName(Some("index8"))
-    verifyNoMoreInteractions(articleTagIndexService)
+    verify(tagIndexService).findAllIndexes(DraftApiProperties.DraftTagSearchIndex)
+    verify(tagIndexService).deleteIndexWithName(Some("index7"))
+    verify(tagIndexService).deleteIndexWithName(Some("index8"))
+    verifyNoMoreInteractions(tagIndexService)
   }
 
   test("That DELETE /index fails if at least one index isn't found, and no indexes are deleted") {
@@ -115,11 +115,11 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
     "That DELETE /index fails if at least one index couldn't be deleted, but the other indexes are deleted regardless") {
     reset(articleIndexService)
     reset(agreementIndexService)
-    reset(articleTagIndexService)
+    reset(tagIndexService)
 
     when(articleIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index1", "index2")))
     when(agreementIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index5", "index6")))
-    when(articleTagIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index7", "index8")))
+    when(tagIndexService.findAllIndexes(any[String])).thenReturn(Success(List("index7", "index8")))
 
     doReturn(Success(""), Nil: _*).when(articleIndexService).deleteIndexWithName(Some("index1"))
     doReturn(Failure(new RuntimeException("No index with name 'index2' exists")), Nil: _*)
@@ -127,8 +127,8 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
       .deleteIndexWithName(Some("index2"))
     doReturn(Success(""), Nil: _*).when(agreementIndexService).deleteIndexWithName(Some("index5"))
     doReturn(Success(""), Nil: _*).when(agreementIndexService).deleteIndexWithName(Some("index6"))
-    doReturn(Success(""), Nil: _*).when(articleTagIndexService).deleteIndexWithName(Some("index7"))
-    doReturn(Success(""), Nil: _*).when(articleTagIndexService).deleteIndexWithName(Some("index8"))
+    doReturn(Success(""), Nil: _*).when(tagIndexService).deleteIndexWithName(Some("index7"))
+    doReturn(Success(""), Nil: _*).when(tagIndexService).deleteIndexWithName(Some("index8"))
 
     delete("/test/index") {
       status should equal(500)
@@ -139,7 +139,7 @@ class InternControllerTest extends UnitSuite with TestEnvironment with ScalatraF
     verify(articleIndexService).deleteIndexWithName(Some("index2"))
     verify(agreementIndexService).deleteIndexWithName(Some("index5"))
     verify(agreementIndexService).deleteIndexWithName(Some("index6"))
-    verify(articleTagIndexService).deleteIndexWithName(Some("index7"))
-    verify(articleTagIndexService).deleteIndexWithName(Some("index8"))
+    verify(tagIndexService).deleteIndexWithName(Some("index7"))
+    verify(tagIndexService).deleteIndexWithName(Some("index8"))
   }
 }

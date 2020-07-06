@@ -15,7 +15,7 @@ import no.ndla.draftapi.model.domain.ImportId
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
-import no.ndla.draftapi.service.search.{ArticleSearchService, ArticleTagSearchService, SearchConverterService}
+import no.ndla.draftapi.service.search.{ArticleSearchService, TagSearchService, SearchConverterService}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
 
@@ -28,7 +28,7 @@ trait ReadService {
     with AgreementRepository
     with ConverterService
     with ArticleSearchService
-    with ArticleTagSearchService
+    with TagSearchService
     with SearchConverterService =>
   val readService: ReadService
 
@@ -92,7 +92,7 @@ trait ReadService {
     }
 
     def getAllTags(input: String, pageSize: Int, page: Int, language: String): Try[api.TagsSearchResult] = {
-      val result = articleTagSearchService.matchingQuery(
+      val result = tagSearchService.matchingQuery(
         query = input,
         searchLanguage = language,
         page = page,

@@ -17,12 +17,7 @@ import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
-import no.ndla.draftapi.service.search.{
-  AgreementIndexService,
-  ArticleIndexService,
-  ArticleTagIndexService,
-  IndexService
-}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, TagIndexService, IndexService}
 import org.json4s.Formats
 import org.json4s.ext.EnumNameSerializer
 import org.scalatra.swagger.Swagger
@@ -40,7 +35,7 @@ trait InternController {
     with DraftRepository
     with IndexService
     with ArticleIndexService
-    with ArticleTagIndexService
+    with TagIndexService
     with AgreementIndexService
     with User
     with ArticleApiClient =>
@@ -54,6 +49,9 @@ trait InternController {
         new EnumNameSerializer(ArticleType)
 
     post("/index") {
+
+      // TODO: Add tag here
+
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val indexResults = for {
         articleIndex <- Future { articleIndexService.indexDocuments }
@@ -83,7 +81,7 @@ trait InternController {
       val indexes = for {
         articleIndex <- Future { articleIndexService.findAllIndexes(DraftApiProperties.DraftSearchIndex) }
         agreementIndex <- Future { agreementIndexService.findAllIndexes(DraftApiProperties.AgreementSearchIndex) }
-        tagIndex <- Future { articleTagIndexService.findAllIndexes(DraftApiProperties.DraftTagSearchIndex) }
+        tagIndex <- Future { tagIndexService.findAllIndexes(DraftApiProperties.DraftTagSearchIndex) }
       } yield (articleIndex, agreementIndex, tagIndex)
 
       val deleteResults: Seq[Try[_]] = Await.result(indexes, Duration(10, TimeUnit.MINUTES)) match {
@@ -101,7 +99,7 @@ trait InternController {
           })
           val tagDeleteResults = tagIndexes.map(index => {
             logger.info(s"Deleting tag index $index")
-            articleTagIndexService.deleteIndexWithName(Option(index))
+            tagIndexService.deleteIndexWithName(Option(index))
           })
           articleDeleteResults ++ agreementDeleteResults ++ tagDeleteResults
         }

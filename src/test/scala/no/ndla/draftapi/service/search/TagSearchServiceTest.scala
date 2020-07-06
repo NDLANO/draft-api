@@ -19,7 +19,7 @@ import org.scalatest.Outcome
 
 import scala.util.Success
 
-class ArticleTagSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
+class TagSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
@@ -29,8 +29,8 @@ class ArticleTagSearchServiceTest extends IntegrationSuite(withSearch = true) wi
     super.withFixture(test)
   }
 
-  override val articleTagSearchService = new ArticleTagSearchService
-  override val articleTagIndexService = new ArticleTagIndexService
+  override val tagSearchService = new TagSearchService
+  override val tagIndexService = new TagIndexService
   override val converterService = new ConverterService
   override val searchConverterService = new SearchConverterService
 
@@ -77,19 +77,19 @@ class ArticleTagSearchServiceTest extends IntegrationSuite(withSearch = true) wi
   val articlesToIndex = Seq(article1, article2, article3, article4)
 
   override def beforeAll: Unit = if (elasticSearchContainer.isSuccess) {
-    articleTagIndexService.createIndexWithName(DraftApiProperties.DraftTagSearchIndex)
+    tagIndexService.createIndexWithName(DraftApiProperties.DraftTagSearchIndex)
 
-    articlesToIndex.foreach(a => articleTagIndexService.indexDocument(a))
+    articlesToIndex.foreach(a => tagIndexService.indexDocument(a))
 
     val allTagsToIndex = articlesToIndex.flatMap(_.tags)
     val groupedByLanguage = allTagsToIndex.groupBy(_.language)
     val tagsDistinctByLanguage = groupedByLanguage.values.flatMap(x => x.flatMap(_.tags).toSet)
 
-    blockUntil(() => articleTagSearchService.countDocuments == tagsDistinctByLanguage.size)
+    blockUntil(() => tagSearchService.countDocuments == tagsDistinctByLanguage.size)
   }
 
   override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    articleTagIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftTagSearchIndex))
+    tagIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftTagSearchIndex))
   }
 
   def blockUntil(predicate: () => Boolean): Unit = {
@@ -110,14 +110,14 @@ class ArticleTagSearchServiceTest extends IntegrationSuite(withSearch = true) wi
   }
 
   test("That searching for tags returns sensible results") {
-    val Success(result) = articleTagSearchService.matchingQuery("test", "nb", 1, 100)
+    val Success(result) = tagSearchService.matchingQuery("test", "nb", 1, 100)
 
     result.totalCount should be(3)
     result.results should be(Seq("test", "testemer", "testing"))
   }
 
   test("That only prefixes are matched") {
-    val Success(result) = articleTagSearchService.matchingQuery("kylling", "nb", 1, 100)
+    val Success(result) = tagSearchService.matchingQuery("kylling", "nb", 1, 100)
 
     result.totalCount should be(1)
     result.results should be(Seq("kyllingfilet"))
