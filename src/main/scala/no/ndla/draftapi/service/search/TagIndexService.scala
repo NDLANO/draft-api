@@ -39,7 +39,7 @@ trait TagIndexService {
     def getMapping: MappingDefinition = {
       mapping(documentType).fields(
         List(
-          keywordField("tag"),
+          textField("tag"),
           keywordField("language")
         )
       )
