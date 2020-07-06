@@ -49,28 +49,29 @@ trait InternController {
         new EnumNameSerializer(ArticleType)
 
     post("/index") {
-
-      // TODO: Add tag here
-
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val indexResults = for {
         articleIndex <- Future { articleIndexService.indexDocuments }
         agreementIndex <- Future { agreementIndexService.indexDocuments }
-      } yield (articleIndex, agreementIndex)
+        tagIndex <- Future { tagIndexService.indexDocuments }
+      } yield (articleIndex, agreementIndex, tagIndex)
 
       Await.result(indexResults, Duration(10, TimeUnit.MINUTES)) match {
-        case (Success(articleResult), Success(agreementResult)) =>
-          val indexTime = math.max(articleResult.millisUsed, agreementResult.millisUsed)
+        case (Success(articleResult), Success(agreementResult), Success(tagResult)) =>
+          val indexTime = math.max(math.max(articleResult.millisUsed, agreementResult.millisUsed), tagResult.millisUsed)
           val result =
             s"Completed indexing of ${articleResult.totalIndexed} articles, and ${agreementResult.totalIndexed} agreements in $indexTime ms."
           logger.info(result)
           Ok(result)
-        case (Failure(articleFail), _) =>
+        case (Failure(articleFail), _, _) =>
           logger.warn(articleFail.getMessage, articleFail)
           InternalServerError(articleFail.getMessage)
-        case (_, Failure(agreementFail)) =>
+        case (_, Failure(agreementFail), _) =>
           logger.warn(agreementFail.getMessage, agreementFail)
           InternalServerError(agreementFail.getMessage)
+        case (_, _, Failure(tagFail)) =>
+          logger.warn(tagFail.getMessage, tagFail)
+          InternalServerError(tagFail.getMessage)
       }
     }
 
