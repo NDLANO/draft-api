@@ -15,7 +15,7 @@ import no.ndla.draftapi.model.domain.ImportId
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
-import no.ndla.draftapi.service.search.ArticleSearchService
+import no.ndla.draftapi.service.search.{ArticleSearchService, ArticleTagSearchService, SearchConverterService}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
 
@@ -24,7 +24,12 @@ import scala.math.max
 import scala.util.{Failure, Success, Try}
 
 trait ReadService {
-  this: DraftRepository with AgreementRepository with ConverterService with ArticleSearchService =>
+  this: DraftRepository
+    with AgreementRepository
+    with ConverterService
+    with ArticleSearchService
+    with ArticleTagSearchService
+    with SearchConverterService =>
   val readService: ReadService
 
   class ReadService {
@@ -87,13 +92,14 @@ trait ReadService {
     }
 
     def getAllTags(input: String, pageSize: Int, page: Int, language: String): Try[api.TagsSearchResult] = {
-      articleSearchService.executeTagSearch(
+      val result = articleTagSearchService.matchingQuery(
         query = input,
         searchLanguage = language,
-        fallback = false,
         page = page,
         pageSize = pageSize
       )
+
+      result.map(searchConverterService.tagSearchResultAsApiResult)
     }
 
     val getTagUsageMap = MemoizeAutoRenew(() => {

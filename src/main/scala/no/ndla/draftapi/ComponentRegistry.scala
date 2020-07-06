@@ -36,9 +36,11 @@ object ComponentRegistry
     with Elastic4sClient
     with ReindexClient
     with ArticleSearchService
+    with ArticleTagSearchService
     with AgreementSearchService
     with IndexService
     with ArticleIndexService
+    with ArticleTagIndexService
     with AgreementIndexService
     with SearchService
     with LazyLogging
@@ -77,6 +79,8 @@ object ComponentRegistry
 
   lazy val articleSearchService = new ArticleSearchService
   lazy val articleIndexService = new ArticleIndexService
+  lazy val articleTagSearchService = new ArticleTagSearchService
+  lazy val articleTagIndexService = new ArticleTagIndexService
   lazy val agreementSearchService = new AgreementSearchService
   lazy val agreementIndexService = new AgreementIndexService
 
