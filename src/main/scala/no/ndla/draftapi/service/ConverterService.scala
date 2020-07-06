@@ -626,14 +626,5 @@ trait ConverterService {
                               offset: Int): api.GrepCodesSearchResult = {
       api.GrepCodesSearchResult(grepCodesCount, offset, pageSize, grepCodes)
     }
-
-    def toApiArticleTags(tags: Seq[String],
-                         tagsCount: Int,
-                         pageSize: Int,
-                         offset: Int,
-                         language: String): api.TagsSearchResult = {
-      api.TagsSearchResult(tagsCount, offset, pageSize, language, tags)
-    }
-
   }
 }

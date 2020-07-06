@@ -10,6 +10,7 @@ package no.ndla.draftapi.service.search
 import java.util.concurrent.Executors
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
@@ -82,6 +83,68 @@ trait ArticleSearchService {
         )
 
       executeSearch(withIdIn, language, license, sort, page, pageSize, fullQuery, articleTypes, fallback, grepCodes)
+    }
+
+    def getTagHits(response: SearchResponse, language: String): Seq[String] = {
+      val x = response.totalHits match {
+        case count if count > 0 =>
+          val resultArray = response.hits.hits.toList
+
+          resultArray.map(result => {
+            val matchedLanguage = language match {
+              case Language.AllLanguages | "*" => searchConverterService.getLanguageFromHit(result).getOrElse(language)
+              case _                           => language
+            }
+
+            val x = result.highlight
+            val y = result.innerHits
+
+            x.get(s"tags.$matchedLanguage")
+          })
+        case _ => Seq.empty
+      }
+      x.flatten.flatten.distinct
+    }
+
+    def executeTagSearch(
+        query: String,
+        searchLanguage: String,
+        fallback: Boolean,
+        page: Int,
+        pageSize: Int
+    ): Try[api.TagsSearchResult] = {
+      val langToSearch = if (searchLanguage == Language.AllLanguages || fallback) "*" else searchLanguage
+
+      val q = boolQuery().should(
+        simpleStringQuery(query).field(s"tags.$langToSearch")
+      )
+      val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
+
+      val searchToExecute = search(searchIndex)
+        .size(numResults)
+        .from(startAt)
+        .query(q)
+        .highlighting(
+          highlightOptions()
+            .preTags("")
+            .postTags(""),
+          highlight(s"tags.$langToSearch")
+        )
+        .fetchSource(false)
+
+      e4sClient.execute(searchToExecute) match {
+        case Failure(ex) => errorHandler(ex)
+        case Success(response) =>
+          Success(
+            api.TagsSearchResult(
+              totalCount = response.result.totalHits,
+              page = page,
+              pageSize = pageSize,
+              language = if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
+              results = getTagHits(response.result, searchLanguage),
+            )
+          )
+      }
     }
 
     def executeSearch(withIdIn: List[Long],
