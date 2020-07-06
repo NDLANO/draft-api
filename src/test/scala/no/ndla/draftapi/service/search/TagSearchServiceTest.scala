@@ -1,20 +1,15 @@
 /*
- * Part of NDLA draft_api.
- * Copyright (C) 2017 NDLA
+ * Part of NDLA draft-api.
+ * Copyright (C) 2020 NDLA
  *
  * See LICENSE
  */
 
 package no.ndla.draftapi.service.search
 
-import java.util.Date
-
-import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClientFactory
-import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.domain
-import org.joda.time.DateTime
 import org.scalatest.Outcome
 
 import scala.util.Success

@@ -1,20 +1,19 @@
 /*
- * Part of NDLA draft_api.
- * Copyright (C) 2017 NDLA
+ * Part of NDLA draft-api.
+ * Copyright (C) 2020 NDLA
  *
  * See LICENSE
  */
 
 package no.ndla.draftapi.service.search
 
-import com.sksamuel.elastic4s.analyzers.{KeywordTokenizer, LowercaseTokenFilter}
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.mappings.MappingDefinition
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Article
-import no.ndla.draftapi.model.search.{SearchableArticle, SearchableLanguageFormats, SearchableTag}
+import no.ndla.draftapi.model.search.{SearchableLanguageFormats, SearchableTag}
 import no.ndla.draftapi.repository.{DraftRepository, Repository}
 import org.json4s.native.Serialization.write
 

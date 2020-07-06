@@ -1,6 +1,6 @@
 /*
- * Part of NDLA draft_api.
- * Copyright (C) 2017 NDLA
+ * Part of NDLA draft-api.
+ * Copyright (C) 2020 NDLA
  *
  * See LICENSE
  */
@@ -19,9 +19,7 @@ import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.search.SearchableTag
-
 import org.json4s._
-import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.read
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
