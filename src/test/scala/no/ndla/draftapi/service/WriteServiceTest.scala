@@ -50,6 +50,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
     when(articleIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Article](0)))
+    when(tagIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
+      Try(invocation.getArgument[Article](0)))
     when(agreementIndexService.indexDocument(any[Agreement])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Agreement](0)))
     when(readService.addUrlsOnEmbedResources(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
