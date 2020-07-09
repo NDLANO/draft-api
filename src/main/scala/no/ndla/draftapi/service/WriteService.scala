@@ -16,7 +16,7 @@ import io.lemonlabs.uri.Path
 import io.lemonlabs.uri.dsl._
 import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient, TaxonomyApiClient}
+import no.ndla.draftapi.integration.{ArticleApiClient, PartialPublishArticle, SearchApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.api.{Article, _}
 import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
@@ -557,5 +557,22 @@ trait WriteService {
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
       s"$randomString$extensionWithDot"
     }
+
+    def partialPublish(id: Long, language: String, fallback: Boolean): Try[api.Article] = {
+      draftRepository.withId(id) match {
+        case Some(articleToPartialPublish) =>
+          val partialArticle = PartialPublishArticle(
+            grepCodes = Some(articleToPartialPublish.grepCodes)
+          )
+
+          articleApiClient
+            .partialPublishArticle(id, partialArticle)
+            .flatMap(_ => converterService.toApiArticle(articleToPartialPublish, language, fallback))
+
+        case None => Failure(NotFoundException(s"Could not find draft with id of ${id} to partial publish"))
+      }
+
+    }
+
   }
 }

@@ -625,5 +625,35 @@ trait DraftController {
       }
     }
 
+    post(
+      "/partial-publish/:article_id",
+      operation(
+        apiOperation[Article]("partialPublish")
+          summary "Partial publish selected fields partialPublish"
+          description "Partial publish selected fields partialPublish"
+          parameters (
+            asHeaderParam(correlationId),
+            asPathParam(articleId),
+            asQueryParam(language),
+            asQueryParam(fallback)
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500)
+      )
+    ) {
+      val userInfo = user.getUser
+      val articleId = long(this.articleId.paramName)
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+
+      doOrAccessDenied(userInfo.canWrite) {
+        writeService.partialPublish(articleId, language, fallback) match {
+          case Success(article) => Ok(article)
+          case Failure(ex)      => errorHandler(ex)
+        }
+      }
+
+    }
+
   }
 }

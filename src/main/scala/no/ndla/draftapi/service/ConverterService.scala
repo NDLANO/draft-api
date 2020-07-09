@@ -261,8 +261,11 @@ trait ConverterService {
           ))
       } else {
         Failure(
-          NotFoundException(s"The article with id ${article.id.get} and language $language was not found",
-                            article.supportedLanguages))
+          NotFoundException(
+            s"The article with id ${article.id.get} and language $language was not found",
+            article.supportedLanguages
+          )
+        )
       }
     }
 
