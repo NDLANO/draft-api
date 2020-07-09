@@ -8,7 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Error, NewUserData, UserData, UpdatedUserData}
+import no.ndla.draftapi.model.api.{Error, UserData, UpdatedUserData}
 import no.ndla.draftapi.service.{ReadService, WriteService}
 import org.scalatra.{Created, NotFound, Ok}
 import org.scalatra.swagger.{ResponseMessage, Swagger}

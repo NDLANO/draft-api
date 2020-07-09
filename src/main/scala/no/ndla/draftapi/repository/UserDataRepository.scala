@@ -58,13 +58,13 @@ Try{
     }
 
     def withId(id: Long): Option[UserData] =
-      agreementWhere(sqls"agr.id=${id.toInt}")
+      userDataWhere(sqls"ud.id=${id.toInt}")
 
     def withUserId(userId: String): Option[UserData] =
-      agreementWhere(sqls"agr.user_id=$userId")
+      userDataWhere(sqls"ud.user_id=$userId")
   }
 
-  private def agreementWhere(whereClause: SQLSyntax)(
+  private def userDataWhere(whereClause: SQLSyntax)(
     implicit session: DBSession = ReadOnlyAutoSession): Option[UserData] = {
     val ud = UserData.syntax("ud")
     sql"select ${ud.result.*} from ${UserData.as(ud)} where $whereClause"

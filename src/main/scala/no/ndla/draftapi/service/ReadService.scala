@@ -30,7 +30,8 @@ trait ReadService {
     with ArticleSearchService
     with TagSearchService
     with SearchConverterService
-    with UserDataRepository =>
+    with UserDataRepository
+  with WriteService =>
   val readService: ReadService
 
   class ReadService {
@@ -169,12 +170,10 @@ trait ReadService {
     def getUserData(userId: String): Option[api.UserData] = {
       userDataRepository.withUserId(userId) match {
         case None => None
-          /* writeService.newUserData(userId) match {
-          case Success(kek) => Some(kek)
+          writeService.newUserData(userId) match {
+          case Success(newUserData) => Some(newUserData)
           case Failure(_) => None
         }
-
-           */
         case Some(userData) => Some(converterService.toApiUserData(userData))
       }
     }

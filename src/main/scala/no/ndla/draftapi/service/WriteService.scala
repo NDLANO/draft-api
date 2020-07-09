@@ -571,7 +571,7 @@ trait WriteService {
                userId = userId,
                savedSearches = None,
                latestEditedArticles = None,
-               favoriteSubjects = None))
+               favoriteSubjects = None)).map(converterService.toApiUserData)
     }
 
     def updateUserData(updatedUserData: api.UpdatedUserData, user: UserInfo): Try[api.UserData] = {

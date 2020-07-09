@@ -15,7 +15,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException, NewUserData}
+import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain.{ArticleStatus, _}
@@ -105,16 +105,6 @@ trait ConverterService {
         updatedBy = user.id
       )
     }
-/*
-    def toDomainUserData(newUserData: NewUserData, user: UserInfo): domain.UserData = {
-      domain.UserData( // TODO hvor kommer id og saved searches fra?
-        id = newUserData.id,
-        userId = user.id,
-        savedSearches = newUserData.savedSearches
-      )
-    }
-
- */
 
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle =
       domain.ArticleTitle(articleTitle.title, articleTitle.language)
