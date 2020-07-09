@@ -154,7 +154,16 @@ trait ReadService {
     }
 
     def getUserData(userId: String): Option[api.UserData] = {
-      userDataRepository.withId(userId).map(userData => converterService.toApiUserData(userData))
+      userDataRepository.withUserId(userId) match {
+        case None => None
+          /* writeService.newUserData(userId) match {
+          case Success(kek) => Some(kek)
+          case Failure(_) => None
+        }
+
+           */
+        case Some(userData) => Some(converterService.toApiUserData(userData))
+      }
     }
   }
 }

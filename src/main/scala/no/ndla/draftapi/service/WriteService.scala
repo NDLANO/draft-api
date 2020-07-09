@@ -174,20 +174,6 @@ trait WriteService {
       }
     }
 
-    def newUserData(
-      newUserData: api.NewUserData,
-      user: UserInfo,
-    ): Try[api.UserData] = {
-      val domainUserData = converterService.toDomainUserData(newUserData, user)
-
-      contentValidator.validateUserData(domainUserData) match {
-        case Success(_) =>
-          val userData = userDataRepository.insert(domainUserData)
-          Success(converterService.toApiUserData(userData)) // TODO Fiks toApiUserData
-        case Failure(exception) => Failure(exception)
-      }
-    }
-
     def newArticle(newArticle: api.NewArticle,
                    externalIds: List[String],
                    externalSubjectIds: Seq[String],
@@ -568,6 +554,16 @@ trait WriteService {
         if (!extension.headOption.contains('.') && extension.length > 0) s".$extension" else extension
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
       s"$randomString$extensionWithDot"
+    }
+
+    def newUserData(userId: String): Try[api.UserData] = {
+           userDataRepository.insert(
+             domain.UserData(
+               id = None,
+               userId = userId,
+               savedSearches = None,
+               latestEditedArticles = None,
+               favoriteSubjects = None))
     }
 
     def updateUserData(updatedUserData: api.UpdatedUserData, user: UserInfo): Try[api.UserData] = {

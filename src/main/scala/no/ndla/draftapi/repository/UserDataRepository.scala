@@ -25,18 +25,20 @@ trait UserDataRepository {
   class UserDataRepository extends LazyLogging {
     implicit val formats: Formats = org.json4s.DefaultFormats + UserData.JSonSerializer
 
-    def insert(userData: UserData)(implicit session: DBSession = AutoSession): UserData = {
-      val dataObject = new PGobject()
-      dataObject.setType("jsonb")
-      dataObject.setValue(write(userData))
+    def insert(userData: UserData)(implicit session: DBSession = AutoSession): Try[UserData] = {
+Try{
+  val dataObject = new PGobject()
+  dataObject.setType("jsonb")
+  dataObject.setValue(write(userData))
 
-      val userDataId: Long =
-        sql"""
+  val userDataId: Long =
+    sql"""
         insert into ${UserData.table} (user_id, document) values (${userData.userId}, $dataObject)
         """.updateAndReturnGeneratedKey().apply
 
-      logger.info(s"Inserted new user data: $userDataId")
-      userData.copy(id = Some(userDataId))
+  logger.info(s"Inserted new user data: $userDataId")
+  userData.copy(id = Some(userDataId))
+}
     }
 
     def update(userData: UserData)(implicit  session: DBSession = AutoSession): Try[UserData] = {

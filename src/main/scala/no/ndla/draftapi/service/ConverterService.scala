@@ -105,7 +105,7 @@ trait ConverterService {
         updatedBy = user.id
       )
     }
-
+/*
     def toDomainUserData(newUserData: NewUserData, user: UserInfo): domain.UserData = {
       domain.UserData( // TODO hvor kommer id og saved searches fra?
         id = newUserData.id,
@@ -113,6 +113,8 @@ trait ConverterService {
         savedSearches = newUserData.savedSearches
       )
     }
+
+ */
 
     def toDomainTitle(articleTitle: api.ArticleTitle): domain.ArticleTitle =
       domain.ArticleTitle(articleTitle.title, articleTitle.language)
@@ -286,11 +288,12 @@ trait ConverterService {
       )
     }
 
-    def toApiUserData(userData: domain.UserData): api.UserData = { // TODO hva er rett verdier her
+    def toApiUserData(userData: domain.UserData): api.UserData = {
       api.UserData(
-        id = userData.id,
         userId = userData.userId,
-        savedSearches = userData.savedSearches
+        savedSearches = userData.savedSearches,
+        latestEditedArticles = userData.latestEditedArticles,
+        favoriteSubjects = userData.favoriteSubjects
       )
     }
 

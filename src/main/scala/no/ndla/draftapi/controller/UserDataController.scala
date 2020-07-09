@@ -44,18 +44,16 @@ trait UserDataController {
           authorizations "oauth2")
     ) {
       val userInfo = user.getUser
-
       doOrAccessDenied(userInfo.canWrite) {
-        val userData = readService.getUserData(userId) //TODO se over parameter i funksjonen
-
-        if (userData.isEmpty) {
-          NotFound(body = Error(Error.NOT_FOUND, s"No user data for user $userId was found"))
-        } else {
-          userData
+        readService.getUserData(userInfo.id) match {
+          case None =>
+            NotFound(body = Error(Error.NOT_FOUND, s"No data for user ${userInfo.id} was found"))
+          case Some(userData) => userData
         }
       }
     }
 
+    /*
     post(
       "/:user_id", // TODO blir dette rett kall
       operation(
@@ -81,6 +79,8 @@ trait UserDataController {
       }
     }
 
+
+     */
 
     patch(
       "/",
