@@ -24,6 +24,8 @@ trait TestEnvironment
     extends Elastic4sClient
     with ArticleSearchService
     with ArticleIndexService
+    with TagSearchService
+    with TagIndexService
     with AgreementSearchService
     with AgreementIndexService
     with IndexService
@@ -57,6 +59,8 @@ trait TestEnvironment
     with SearchApiClient {
   val articleSearchService = mock[ArticleSearchService]
   val articleIndexService = mock[ArticleIndexService]
+  val tagSearchService = mock[TagSearchService]
+  val tagIndexService = mock[TagIndexService]
   val agreementSearchService = mock[AgreementSearchService]
   val agreementIndexService = mock[AgreementIndexService]
 

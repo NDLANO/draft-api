@@ -10,6 +10,7 @@ package no.ndla.draftapi.service.search
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import com.sksamuel.elastic4s.analyzers.{KeywordTokenizer, LowercaseTokenFilter}
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.mappings.{FieldDefinition, MappingDefinition}
@@ -20,7 +21,9 @@ import no.ndla.draftapi.model.domain.Language.languageAnalyzers
 import no.ndla.draftapi.model.domain.{Content, ReindexResult}
 import no.ndla.draftapi.repository.Repository
 
+import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.util.{Failure, Success, Try}
+import scala.xml.NodeSeq
 
 trait IndexService {
   this: Elastic4sClient =>
@@ -31,7 +34,7 @@ trait IndexService {
     val repository: Repository[D]
 
     def getMapping: MappingDefinition
-    def createIndexRequest(domainModel: D, indexName: String): IndexRequest
+    def createIndexRequest(domainModel: D, indexName: String): Seq[IndexRequest]
 
     private def createIndexIfNotExists() = getAliasTarget.map {
       case Some(index) => Success(index)
@@ -41,7 +44,8 @@ trait IndexService {
     def indexDocument(imported: D): Try[D] = {
       for {
         _ <- createIndexIfNotExists()
-        _ <- e4sClient.execute(createIndexRequest(imported, searchIndex))
+        request = bulk(createIndexRequest(imported, searchIndex))
+        _ <- e4sClient.execute(request)
       } yield imported
     }
 
@@ -99,14 +103,15 @@ trait IndexService {
         Success(0)
       } else {
         val response = e4sClient.execute {
-          bulk(contents.map(content => {
+          bulk(contents.flatMap(content => {
             createIndexRequest(content, indexName)
           }))
         }
 
         response match {
           case Success(r) =>
-            logger.info(s"Indexed ${contents.size} documents. No of failed items: ${r.result.failures.size}")
+            logger.info(
+              s"Indexed ${contents.size} documents ($searchIndex). No of failed items: ${r.result.failures.size}")
             Success(contents.size)
           case Failure(ex) => Failure(ex)
         }
