@@ -28,9 +28,9 @@ trait ArticleIndexService {
     override val searchIndex: String = DraftApiProperties.DraftSearchIndex
     override val repository: Repository[Article] = draftRepository
 
-    override def createIndexRequest(domainModel: Article, indexName: String): IndexRequest = {
+    override def createIndexRequest(domainModel: Article, indexName: String): Seq[IndexRequest] = {
       val source = write(searchConverterService.asSearchableArticle(domainModel))
-      indexInto(indexName / documentType).doc(source).id(domainModel.id.get.toString)
+      Seq(indexInto(indexName / documentType).doc(source).id(domainModel.id.get.toString))
     }
 
     def getMapping: MappingDefinition = {

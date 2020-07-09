@@ -159,6 +159,15 @@ trait SearchConverterService {
         searchResult.results
       )
 
+    def tagSearchResultAsApiResult(searchResult: SearchResult[String]): api.TagsSearchResult =
+      api.TagsSearchResult(
+        searchResult.totalCount,
+        searchResult.page.getOrElse(1),
+        searchResult.pageSize,
+        searchResult.language,
+        searchResult.results
+      )
+
     def asApiAgreementSearchResult(searchResult: SearchResult[api.AgreementSummary]): AgreementSearchResult =
       api.AgreementSearchResult(searchResult.totalCount,
                                 searchResult.page,
@@ -166,5 +175,15 @@ trait SearchConverterService {
                                 searchResult.language,
                                 searchResult.results)
 
+    def asSearchableTags(article: domain.Article): Seq[SearchableTag] = {
+      article.tags.flatMap(
+        articleTags =>
+          articleTags.tags.map(
+            tag =>
+              SearchableTag(
+                tag = tag,
+                language = articleTags.language
+            )))
+    }
   }
 }

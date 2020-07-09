@@ -50,6 +50,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
     when(articleIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Article](0)))
+    when(tagIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
+      Try(invocation.getArgument[Article](0)))
     when(agreementIndexService.indexDocument(any[Agreement])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Agreement](0)))
     when(readService.addUrlsOnEmbedResources(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
@@ -61,12 +63,12 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     when(draftRepository.updateArticle(any[Article], any[Boolean])(any[DBSession]))
       .thenAnswer((invocation: InvocationOnMock) => {
         val arg = invocation.getArgument[Article](0)
-        Try(arg.copy(revision = Some(arg.revision.get + 1)))
+        Try(arg.copy(revision = Some(arg.revision.getOrElse(0) + 1)))
       })
     when(draftRepository.storeArticleAsNewVersion(any[Article])(any[DBSession]))
       .thenAnswer((invocation: InvocationOnMock) => {
         val arg = invocation.getArgument[Article](0)
-        Try(arg.copy(revision = Some(arg.revision.get + 1)))
+        Try(arg.copy(revision = Some(arg.revision.getOrElse(0) + 1)))
       })
 
     when(agreementRepository.update(any[Agreement])(any[DBSession])).thenAnswer((invocation: InvocationOnMock) => {
@@ -79,7 +81,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("newArticle should insert a given article") {
-    when(draftRepository.insert(any[Article])(any[DBSession])).thenReturn(article)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List.empty)
     when(contentValidator.validateArticle(any[Article], any[Boolean])).thenReturn(Success(article))
     when(draftRepository.newEmptyArticle(any[List[String]], any[List[String]])(any[DBSession]))
@@ -87,10 +88,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     service
       .newArticle(TestData.newArticle, List.empty, Seq.empty, TestData.userWithWriteAccess, None, None, None)
-      .get
-      .id
-      .toString should equal(article.id.get.toString)
-    verify(draftRepository, times(1)).insert(any[Article])
+      .isSuccess should be(true)
+
+    verify(draftRepository, times(1)).newEmptyArticle()
+    verify(draftRepository, times(0)).insert(any[Article])
+    verify(draftRepository, times(1)).updateArticle(any[Article], any[Boolean])
     verify(articleIndexService, times(1)).indexDocument(any[Article])
   }
 
