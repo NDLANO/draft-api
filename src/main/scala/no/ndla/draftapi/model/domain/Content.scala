@@ -134,13 +134,13 @@ object Agreement extends SQLSyntaxSupport[Agreement] {
   def fromResultSet(lp: ResultName[Agreement])(rs: WrappedResultSet): Agreement = {
     val meta = read[Agreement](rs.string(lp.c("document")))
     Agreement(
-      Some(rs.long(lp.c("id"))),
-      meta.title,
-      meta.content,
-      meta.copyright,
-      meta.created,
-      meta.updated,
-      meta.updatedBy
+      id = Some(rs.long(lp.c("id"))),
+      title = meta.title,
+      content = meta.content,
+      copyright = meta.copyright,
+      created = meta.created,
+      updated = meta.updated,
+      updatedBy = meta.updatedBy
     )
   }
 
@@ -153,26 +153,27 @@ object Agreement extends SQLSyntaxSupport[Agreement] {
 case class UserData(
     id: Option[Long],
     userId: String,
-    savedSearches: String,
-) extends Content
+    savedSearches: Option[Seq[String]],
+    latestEditedArticles: Option[Seq[String]],
+    favoriteSubjects: Option[Seq[String]]
+)
 
 object UserData extends SQLSyntaxSupport[UserData] {
   implicit val formats = org.json4s.DefaultFormats
+  override val tableName = "userdata"
+  override val schemaName = Some(DraftApiProperties.MetaSchema)
 
   val JSonSerializer = FieldSerializer[UserData](
     ignore("id")
   )
 
-  // Hva er egentlig dette, lp? c = content?, rs = result set?
   def fromResultSet(lp: SyntaxProvider[UserData])(rs: WrappedResultSet): UserData =
     fromResultSet(lp.resultName)(rs)
 
   def fromResultSet(lp: ResultName[UserData])(rs: WrappedResultSet): UserData = {
-    val meta = read[UserData](rs.string(lp.c("document")))
-    UserData(
-      Some(rs.long(lp.c("id"))),
-      meta.userId,
-      meta.savedSearches
+    val userData = read[UserData](rs.string(lp.c("document")))
+    userData.copy(
+      id = Some(rs.long(lp.c("id"))),
     )
   }
 }

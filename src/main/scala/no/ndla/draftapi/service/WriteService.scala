@@ -569,5 +569,23 @@ trait WriteService {
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
       s"$randomString$extensionWithDot"
     }
+
+    def updateUserData(updatedUserData: api.UpdatedUserData, user: UserInfo): Try[api.UserData] = {
+      val userId = user.id
+      userDataRepository.withUserId(userId) match {
+        case None =>
+          Failure(NotFoundException(s"User with id $userId does not exist"))
+        case Some(existing) => {
+          val toUpdate = existing.copy(
+            savedSearches = if (updatedUserData.savedSearches.nonEmpty) updatedUserData.savedSearches else existing.savedSearches,
+            latestEditedArticles = if (updatedUserData.latestEditedArticles.nonEmpty) updatedUserData.latestEditedArticles else existing.latestEditedArticles,
+            favoriteSubjects = if (updatedUserData.favoriteSubjects.nonEmpty) updatedUserData.favoriteSubjects else existing.favoriteSubjects
+          )
+
+          userDataRepository.update(toUpdate).map(a => converterService.toApiUserData(a))
+        }
+      }
+    }
+
   }
 }

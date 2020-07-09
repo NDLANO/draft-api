@@ -1,3 +1,10 @@
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2020 NDLA
+ *
+ * See LICENSE
+ */
+
 package no.ndla.draftapi.repository
 
 import com.typesafe.scalalogging.LazyLogging
@@ -15,48 +22,53 @@ trait UserDataRepository {
   this: DataSource =>
   val userDataRepository: UserDataRepository
 
-  class UserDataRepository extends LazyLogging with Repository[UserData]{ // TODO lage ny repository for UserData
-    implicit val formats: Formats = org.json4s.DefaultFormats + UserData.JSonSerializer // TODO litt usikker på om disse er rett, gjorde som i AgreementRepository
+  class UserDataRepository extends LazyLogging {
+    implicit val formats: Formats = org.json4s.DefaultFormats + UserData.JSonSerializer
 
     def insert(userData: UserData)(implicit session: DBSession = AutoSession): UserData = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(userData))
 
-      val userDataId = // TODO skriv sql
+      val userDataId: Long =
         sql"""
-        insert into ${UserData.table} ...
+        insert into ${UserData.table} (user_id, document) values (${userData.userId}, $dataObject)
         """.updateAndReturnGeneratedKey().apply
 
       logger.info(s"Inserted new user data: $userDataId")
-      userData.copy(id = Some(userDataId)) // todo hva er id?
+      userData.copy(id = Some(userDataId))
     }
 
-    def withId(userId: String): Option[UserData] =
-      agreementWhere(sqls"agr.id=${userId.toInt}")
-
-    def updateSavedSearches(userData: UserData)(implicit  session: DBSession = AutoSession): Try[UserData] = {
+    def update(userData: UserData)(implicit  session: DBSession = AutoSession): Try[UserData] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(userData))
 
-      val count = // TODO skriv sql
-        sql"""
-            update ${UserData.table}
-            set document=$dataObject
-            where user_id=${userData.id}
-        """.update.apply
+      sql"""
+          update ${UserData.table}
+          set document=$dataObject
+          where user_id=${userData.userId}
+      """.update
+        .apply
 
-      logger.info(s"Updated user data ${userData.id} / ${userData}")
+      logger.info(s"Updated user data ${userData.userId}")
       Success(userData)
     }
+
+    def withId(id: Long): Option[UserData] =
+      agreementWhere(sqls"agr.id=${id.toInt}")
+
+    def withUserId(userId: String): Option[UserData] =
+      agreementWhere(sqls"agr.user_id=$userId")
   }
 
   private def agreementWhere(whereClause: SQLSyntax)(
-      implicit session: DBSession = ReadOnlyAutoSession): Option[UserData] = {
-    val userdata = UserData.syntax("userdata") // TODO skriv sql (brukt AgreementRepository, linje 72 som utgangspunkt)
-    sql"select ${userdata.result.*} from "
-
+    implicit session: DBSession = ReadOnlyAutoSession): Option[UserData] = {
+    val ud = UserData.syntax("ud")
+    sql"select ${ud.result.*} from ${UserData.as(ud)} where $whereClause"
+      .map(UserData.fromResultSet(ud))
+      .single
+      .apply()
   }
 
 }

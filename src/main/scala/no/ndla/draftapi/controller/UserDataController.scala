@@ -1,9 +1,16 @@
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2020 NDLA
+ *
+ * See LICENSE
+ */
+
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Error, NewUserData, UserData}
+import no.ndla.draftapi.model.api.{Error, NewUserData, UserData, UpdatedUserData}
 import no.ndla.draftapi.service.{ReadService, WriteService}
-import org.scalatra.{Created, NotFound}
+import org.scalatra.{Created, NotFound, Ok}
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 
 import scala.util.{Failure, Success}
@@ -15,16 +22,16 @@ trait UserDataController {
   val userDataController: UserDataController
 
   class UserDataController(implicit val swagger: Swagger) extends NdlaController {
-    val response400 = ResponseMessage(400, "Validation Error", Some("ValidationError"))
-    val response403 = ResponseMessage(403, "Access Denied", Some("Error"))
-    val response404 = ResponseMessage(404, "Not found", Some("Error"))
-    val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
+    protected val applicationDescription = "API for accessing user data."
+    val response400: ResponseMessage = ResponseMessage(400, "Validation Error", Some("ValidationError"))
+    val response403: ResponseMessage = ResponseMessage(403, "Access Denied", Some("Error"))
+    val response404: ResponseMessage = ResponseMessage(404, "Not found", Some("Error"))
+    val response500: ResponseMessage = ResponseMessage(500, "Unknown error", Some("Error"))
 
     private val query =
       Param[Option[String]]("query", "Return only user data with content matching the specified query.")
-    private val userId = Param[String]("user_id", "Id of the user that is to be fetched") // sjekk om denne er rett
 
-    get("/:user_id", // TODO blir dette rett kall
+    get("/",
       operation(
         apiOperation[UserData]("getSavedSearches")
           summary "Retrieves a list of an users saved searches"
@@ -36,10 +43,9 @@ trait UserDataController {
           responseMessages response500
           authorizations "oauth2")
     ) {
-      val userInfo = user.getUser // TODO is userId available from here?
+      val userInfo = user.getUser
 
-      doOrAccessDenied(userInfo.canWrite) { // TODO er dette rett sjekk
-        val userId = paramOrNone("user_id") // TODO usikker på om user_id er rett variabel
+      doOrAccessDenied(userInfo.canWrite) {
         val userData = readService.getUserData(userId) //TODO se over parameter i funksjonen
 
         if (userData.isEmpty) {
@@ -77,29 +83,27 @@ trait UserDataController {
 
 
     patch(
-      "/:user_id",
+      "/",
       operation(
-        apiOperation[UserData]("updateSavedSearches")
-          summary "Update users saved searches"
-          description "Update users saved searches"
+        apiOperation[UserData]("updateUserData")
+          summary "Update data of an existing user"
+          description "Update data of an existing user"
           parameters(
           asHeaderParam[Option[String]](correlationId),
-          asPathParam[String](userId),
-          bodyParam[UserData]
+          bodyParam[UpdatedUserData]
         )
           authorizations "oauth2"
           responseMessages(response400, response403, response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
-        val userId = this.userId.paramName
-        val updatedSavedSearches = extract[UserData](request.body)
-
-        updateUserData.flatMap( // TODO lag funksjon, finn ut hvilke parameter som trengs
-          writeService.updateUserData(userId, _, updatedSavedSearches)) match {
-          case Success(userData) => Created(body = userData)
+        val updatedUserData = extract[UpdatedUserData](request.body)
+        updatedUserData.flatMap(userData =>
+          writeService.updateUserData(userData, userInfo)) match {
+          case Success(article)   => Ok(body = article)
           case Failure(exception) => errorHandler(exception)
         }
+      }
     }
   }
 

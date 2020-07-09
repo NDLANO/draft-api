@@ -55,7 +55,8 @@ object ComponentRegistry
     with ArticleApiClient
     with SearchApiClient
     with ConceptApiClient
-    with RuleController {
+    with RuleController
+    with UserDataController {
 
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 
@@ -71,6 +72,7 @@ object ComponentRegistry
   lazy val ruleController = new RuleController
   lazy val resourcesApp = new ResourcesApp
   lazy val healthController = new HealthController
+  lazy val userDataController = new UserDataController
 
   lazy val draftRepository = new ArticleRepository
   lazy val agreementRepository = new AgreementRepository
