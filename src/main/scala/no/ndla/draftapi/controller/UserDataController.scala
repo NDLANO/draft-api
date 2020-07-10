@@ -8,9 +8,9 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.auth.User
-import no.ndla.draftapi.model.api.{Error, UserData, UpdatedUserData}
+import no.ndla.draftapi.model.api.{UserData, UpdatedUserData}
 import no.ndla.draftapi.service.{ReadService, WriteService}
-import org.scalatra.{Created, NotFound, Ok}
+import org.scalatra.Ok
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 
 import scala.util.{Failure, Success}
@@ -40,47 +40,17 @@ trait UserDataController {
           asHeaderParam(correlationId),
           asQueryParam(query)
         )
-          responseMessages response500
+          responseMessages(response403, response500)
           authorizations "oauth2")
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         readService.getUserData(userInfo.id) match {
-          case None =>
-            NotFound(body = Error(Error.NOT_FOUND, s"No data for user ${userInfo.id} was found"))
-          case Some(userData) => userData
+          case Failure(error) => errorHandler(error)
+          case Success(userData) => userData
         }
       }
     }
-
-    /*
-    post(
-      "/:user_id", // TODO blir dette rett kall
-      operation(
-        apiOperation[UserData]("createSavedSearches")
-          summary "Create saved searches for user"
-          description "Create saved searches for user"
-          parameters(
-          asHeaderParam(correlationId),
-          bodyParam[UserData]
-        )
-          authorizations "oauth2"
-          responseMessages(response400, response403, response500)) // TODO se om disse blir rett
-    ) {
-      val userInfo = user.getUser
-      doOrAccessDenied(userInfo.canWrite) {
-        val externalId = paramAsListOfString("externalId")
-
-        extract[NewUserData](request.body).flatMap(
-          writeService.newUserData(_, userInfo)) match {
-          case Success(userData) => Created(body = userData)
-          case Failure(exception) => errorHandler(exception)
-        }
-      }
-    }
-
-
-     */
 
     patch(
       "/",
@@ -93,7 +63,7 @@ trait UserDataController {
           bodyParam[UpdatedUserData]
         )
           authorizations "oauth2"
-          responseMessages(response400, response403, response404, response500))
+          responseMessages(response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {

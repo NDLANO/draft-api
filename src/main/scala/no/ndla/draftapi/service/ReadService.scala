@@ -167,14 +167,14 @@ trait ReadService {
       draftRepository.importIdOfArticle(externalId)
     }
 
-    def getUserData(userId: String): Option[api.UserData] = {
+    def getUserData(userId: String): Try[api.UserData] = {
       userDataRepository.withUserId(userId) match {
-        case None => None
+        case None =>
           writeService.newUserData(userId) match {
-          case Success(newUserData) => Some(newUserData)
-          case Failure(_) => None
+          case Success(newUserData) => Success(newUserData)
+          case Failure(exception) => Failure(exception)
         }
-        case Some(userData) => Some(converterService.toApiUserData(userData))
+        case Some(userData) => Success(converterService.toApiUserData(userData))
       }
     }
   }

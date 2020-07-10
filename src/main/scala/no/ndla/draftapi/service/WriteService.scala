@@ -578,16 +578,22 @@ trait WriteService {
       val userId = user.id
       userDataRepository.withUserId(userId) match {
         case None =>
-          Failure(NotFoundException(s"User with id $userId does not exist"))
-        case Some(existing) => {
-          val toUpdate = existing.copy(
-            savedSearches = if (updatedUserData.savedSearches.nonEmpty) updatedUserData.savedSearches else existing.savedSearches,
-            latestEditedArticles = if (updatedUserData.latestEditedArticles.nonEmpty) updatedUserData.latestEditedArticles else existing.latestEditedArticles,
-            favoriteSubjects = if (updatedUserData.favoriteSubjects.nonEmpty) updatedUserData.favoriteSubjects else existing.favoriteSubjects
+          val newUserData = domain.UserData(
+            id = None,
+            userId = userId,
+            savedSearches = updatedUserData.savedSearches,
+            latestEditedArticles = updatedUserData.latestEditedArticles,
+            favoriteSubjects = updatedUserData.favoriteSubjects
           )
+          userDataRepository.insert(newUserData).map(a => converterService.toApiUserData(a))
 
+        case Some(existing) =>
+          val toUpdate = existing.copy(
+            savedSearches = updatedUserData.savedSearches.orElse(existing.savedSearches),
+            latestEditedArticles = updatedUserData.latestEditedArticles.orElse(existing.latestEditedArticles),
+            favoriteSubjects = updatedUserData.favoriteSubjects.orElse(existing.favoriteSubjects)
+          )
           userDataRepository.update(toUpdate).map(a => converterService.toApiUserData(a))
-        }
       }
     }
 
