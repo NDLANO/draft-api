@@ -287,7 +287,6 @@ trait ConverterService {
       )
     }
 
-
     def toDomainStatus(status: api.Status): Try[domain.Status] = {
       val newCurrent = ArticleStatus.valueOfOrError(status.current)
       val newOther = status.other.map(ArticleStatus.valueOfOrError)

@@ -16,9 +16,7 @@ import org.scalatra.swagger.{ResponseMessage, Swagger}
 import scala.util.{Failure, Success}
 
 trait UserDataController {
-  this: ReadService
-    with WriteService
-    with User =>
+  this: ReadService with WriteService with User =>
   val userDataController: UserDataController
 
   class UserDataController(implicit val swagger: Swagger) extends NdlaController {
@@ -31,22 +29,23 @@ trait UserDataController {
     private val query =
       Param[Option[String]]("query", "Return only user data with content matching the specified query.")
 
-    get("/",
+    get(
+      "/",
       operation(
         apiOperation[UserData]("getSavedSearches")
           summary "Retrieves a list of an users saved searches"
           description "Retrieves a list of an users saved searches"
-          parameters(
-          asHeaderParam(correlationId),
-          asQueryParam(query)
+          parameters (
+            asHeaderParam(correlationId),
+            asQueryParam(query)
         )
-          responseMessages(response403, response500)
+          responseMessages (response403, response500)
           authorizations "oauth2")
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         readService.getUserData(userInfo.id) match {
-          case Failure(error) => errorHandler(error)
+          case Failure(error)    => errorHandler(error)
           case Success(userData) => userData
         }
       }
@@ -58,18 +57,17 @@ trait UserDataController {
         apiOperation[UserData]("updateUserData")
           summary "Update data of an existing user"
           description "Update data of an existing user"
-          parameters(
-          asHeaderParam[Option[String]](correlationId),
-          bodyParam[UpdatedUserData]
+          parameters (
+            asHeaderParam[Option[String]](correlationId),
+            bodyParam[UpdatedUserData]
         )
           authorizations "oauth2"
-          responseMessages(response400, response403, response500))
+          responseMessages (response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val updatedUserData = extract[UpdatedUserData](request.body)
-        updatedUserData.flatMap(userData =>
-          writeService.updateUserData(userData, userInfo)) match {
+        updatedUserData.flatMap(userData => writeService.updateUserData(userData, userInfo)) match {
           case Success(article)   => Ok(body = article)
           case Failure(exception) => errorHandler(exception)
         }

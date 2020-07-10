@@ -565,13 +565,14 @@ trait WriteService {
     }
 
     def newUserData(userId: String): Try[api.UserData] = {
-           userDataRepository.insert(
-             domain.UserData(
-               id = None,
-               userId = userId,
-               savedSearches = None,
-               latestEditedArticles = None,
-               favoriteSubjects = None)).map(converterService.toApiUserData)
+      userDataRepository
+        .insert(
+          domain.UserData(id = None,
+                          userId = userId,
+                          savedSearches = None,
+                          latestEditedArticles = None,
+                          favoriteSubjects = None))
+        .map(converterService.toApiUserData)
     }
 
     def updateUserData(updatedUserData: api.UpdatedUserData, user: UserInfo): Try[api.UserData] = {

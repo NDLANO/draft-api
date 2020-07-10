@@ -26,22 +26,22 @@ trait UserDataRepository {
     implicit val formats: Formats = org.json4s.DefaultFormats + UserData.JSonSerializer
 
     def insert(userData: UserData)(implicit session: DBSession = AutoSession): Try[UserData] = {
-Try{
-  val dataObject = new PGobject()
-  dataObject.setType("jsonb")
-  dataObject.setValue(write(userData))
+      Try {
+        val dataObject = new PGobject()
+        dataObject.setType("jsonb")
+        dataObject.setValue(write(userData))
 
-  val userDataId: Long =
-    sql"""
+        val userDataId: Long =
+          sql"""
         insert into ${UserData.table} (user_id, document) values (${userData.userId}, $dataObject)
         """.updateAndReturnGeneratedKey().apply
 
-  logger.info(s"Inserted new user data: $userDataId")
-  userData.copy(id = Some(userDataId))
-}
+        logger.info(s"Inserted new user data: $userDataId")
+        userData.copy(id = Some(userDataId))
+      }
     }
 
-    def update(userData: UserData)(implicit  session: DBSession = AutoSession): Try[UserData] = {
+    def update(userData: UserData)(implicit session: DBSession = AutoSession): Try[UserData] = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(userData))
@@ -50,8 +50,7 @@ Try{
           update ${UserData.table}
           set document=$dataObject
           where user_id=${userData.userId}
-      """.update
-        .apply
+      """.update.apply
 
       logger.info(s"Updated user data ${userData.userId}")
       Success(userData)
@@ -65,7 +64,7 @@ Try{
   }
 
   private def userDataWhere(whereClause: SQLSyntax)(
-    implicit session: DBSession = ReadOnlyAutoSession): Option[UserData] = {
+      implicit session: DBSession = ReadOnlyAutoSession): Option[UserData] = {
     val ud = UserData.syntax("ud")
     sql"select ${ud.result.*} from ${UserData.as(ud)} where $whereClause"
       .map(UserData.fromResultSet(ud))
