@@ -121,4 +121,20 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
     res2.get should be(repository.withUserId("second").get)
   }
 
+  test("that userDataCount returns correct amount of entries") {
+    assume(databaseIsAvailable, "Database is unavailable")
+
+    val data1 = TestData.emptyDomainUserData.copy(userId = "user1")
+    val data2 = TestData.emptyDomainUserData.copy(userId = "user2")
+    val data3 = TestData.emptyDomainUserData.copy(userId = "user2")
+
+    repository.userDataCount should be(0)
+    repository.insert(data1)
+    repository.userDataCount should be(1)
+    repository.insert(data2)
+    repository.userDataCount should be(2)
+    repository.insert(data3)
+    repository.userDataCount should be(2)
+  }
+
 }
