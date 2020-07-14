@@ -56,6 +56,14 @@ trait UserDataRepository {
       Success(userData)
     }
 
+    def userDataCount(implicit session: DBSession = AutoSession): Long = {
+      sql"select count(distinct user_id) from ${UserData.table} where document is not NULL"
+        .map(rs => rs.long("count"))
+        .single()
+        .apply()
+        .getOrElse(0)
+    }
+
     def withId(id: Long): Option[UserData] =
       userDataWhere(sqls"ud.id=${id.toInt}")
 
