@@ -586,7 +586,7 @@ trait WriteService {
             latestEditedArticles = updatedUserData.latestEditedArticles,
             favoriteSubjects = updatedUserData.favoriteSubjects
           )
-          userDataRepository.insert(newUserData).map(a => converterService.toApiUserData(a))
+          userDataRepository.insert(newUserData).map(converterService.toApiUserData)
 
         case Some(existing) =>
           val toUpdate = existing.copy(
@@ -594,7 +594,7 @@ trait WriteService {
             latestEditedArticles = updatedUserData.latestEditedArticles.orElse(existing.latestEditedArticles),
             favoriteSubjects = updatedUserData.favoriteSubjects.orElse(existing.favoriteSubjects)
           )
-          userDataRepository.update(toUpdate).map(a => converterService.toApiUserData(a))
+          userDataRepository.update(toUpdate).map(converterService.toApiUserData)
       }
     }
 

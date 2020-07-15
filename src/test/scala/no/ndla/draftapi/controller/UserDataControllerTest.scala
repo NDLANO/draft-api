@@ -7,7 +7,7 @@
 
 package no.ndla.draftapi.controller
 
-import no.ndla.draftapi.model.api.{NotFoundException, UpdatedUserData}
+import no.ndla.draftapi.model.api.{UpdatedUserData}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import no.ndla.draftapi.auth.UserInfo
 import org.json4s.DefaultFormats
