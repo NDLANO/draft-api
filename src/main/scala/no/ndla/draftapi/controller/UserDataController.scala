@@ -32,9 +32,9 @@ trait UserDataController {
     get(
       "/",
       operation(
-        apiOperation[UserData]("getSavedSearches")
-          summary "Retrieves a list of an users saved searches"
-          description "Retrieves a list of an users saved searches"
+        apiOperation[UserData]("getUserData")
+          summary "Retrieves user's data"
+          description "Retrieves user's data"
           parameters (
             asHeaderParam(correlationId),
             asQueryParam(query)

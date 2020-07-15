@@ -459,7 +459,10 @@ object TestData {
   )
 
   val emptyDomainUserData =
-    UserData(id = None, userId = "", savedSearches = None, latestEditedArticles = None, favoriteSubjects = None)
+    domain.UserData(id = None, userId = "", savedSearches = None, latestEditedArticles = None, favoriteSubjects = None)
+
+  val emptyApiUserData =
+    api.UserData(userId = "", savedSearches = None, latestEditedArticles = None, favoriteSubjects = None)
 
   val newAgreement = NewAgreement("newTitle",
                                   "newString",
