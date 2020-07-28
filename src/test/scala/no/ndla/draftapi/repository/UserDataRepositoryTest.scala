@@ -21,6 +21,12 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
     })
   }
 
+  private def resetIdSequence() = {
+    DB autoCommit (implicit session => {
+      sql"select setval('userdata_id_seq', 1, false);".execute.apply
+    })
+  }
+
   def serverIsListening: Boolean = {
     Try(new Socket(DraftApiProperties.MetaServer, DraftApiProperties.MetaPort)) match {
       case Success(c) =>
@@ -51,7 +57,8 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
 
   test("that inserting records to database is generating id as expected") {
     assume(databaseIsAvailable, "Database is unavailable")
-    //this.resetIdSequence()
+
+    this.resetIdSequence()
 
     val data1 = TestData.emptyDomainUserData
     val data2 = TestData.emptyDomainUserData
@@ -69,6 +76,8 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
   test("that withId and withUserId returns the same userdata") {
     assume(databaseIsAvailable, "Database is unavailable")
 
+    this.resetIdSequence()
+
     val data1 = TestData.emptyDomainUserData.copy(userId = "first", savedSearches = Some(Seq("eple")))
     val data2 = TestData.emptyDomainUserData.copy(userId = "second", latestEditedArticles = Some(Seq("kake")))
     val data3 = TestData.emptyDomainUserData.copy(userId = "third", favoriteSubjects = Some(Seq("bok")))
@@ -85,34 +94,25 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
   test("that updating updates all fields correctly") {
     assume(databaseIsAvailable, "Database is unavailable")
 
-    val initialUserData1 = TestData.emptyDomainUserData.copy(id = None,
-                                                             userId = "first",
-                                                             savedSearches = None,
-                                                             latestEditedArticles = None,
-                                                             favoriteSubjects = None)
+    val initialUserData1 = TestData.emptyDomainUserData.copy(userId = "first")
 
     val initialUserData2 = TestData.emptyDomainUserData.copy(
-      id = None,
       userId = "second",
       savedSearches = Some(Seq("Seiddit", "Emina")),
       latestEditedArticles = Some(Seq("article:6", "article:9")),
       favoriteSubjects = Some(Seq("methematics", "PEBCAK-studies"))
     )
 
-    val updatedUserData1 = TestData.emptyDomainUserData.copy(id = None,
-                                                             userId = "first",
-                                                             savedSearches = Some(Seq("1", "2")),
-                                                             latestEditedArticles = Some(Seq("3", "4")),
-                                                             favoriteSubjects = Some(Seq("5", "6")))
+    val inserted1 = repository.insert(initialUserData1)
+    val inserted2 = repository.insert(initialUserData2)
 
-    val updatedUserData2 = TestData.emptyDomainUserData.copy(id = None,
-                                                             userId = "second",
-                                                             savedSearches = Some(Seq("a", "b")),
-                                                             latestEditedArticles = None,
-                                                             favoriteSubjects = Some(Seq.empty))
+    val updatedUserData1 = inserted1.get.copy(savedSearches = Some(Seq("1", "2")),
+                                              latestEditedArticles = Some(Seq("3", "4")),
+                                              favoriteSubjects = Some(Seq("5", "6")))
 
-    repository.insert(initialUserData1)
-    repository.insert(initialUserData2)
+    val updatedUserData2 = inserted2.get.copy(savedSearches = Some(Seq("a", "b")),
+                                              latestEditedArticles = None,
+                                              favoriteSubjects = Some(Seq.empty))
 
     val res1 = repository.update(updatedUserData1)
     val res2 = repository.update(updatedUserData2)

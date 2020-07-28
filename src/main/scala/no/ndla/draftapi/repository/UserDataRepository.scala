@@ -13,8 +13,8 @@ import no.ndla.draftapi.model.domain.UserData
 import org.json4s.Formats
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
-import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc._
+import scalikejdbc.interpolation.SQLSyntax
 
 import scala.util.{Success, Try}
 

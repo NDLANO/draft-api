@@ -7,10 +7,11 @@
 
 package no.ndla.draftapi.controller
 
-import no.ndla.draftapi.model.api.{UpdatedUserData}
-import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import no.ndla.draftapi.auth.UserInfo
+import no.ndla.draftapi.model.api.UpdatedUserData
+import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.json4s.DefaultFormats
+import org.postgresql.util.{PSQLException, PSQLState}
 import org.scalatra.test.scalatest.ScalatraFunSuite
 
 import scala.util.{Failure, Success}
@@ -38,10 +39,10 @@ class UserDataControllerTest extends UnitSuite with TestEnvironment with Scalatr
       status should equal(403)
     }
   }
-  // TODO: i dunno how to make it return 500 error type, fix before merge
+
   test("GET / should return 500 if there was error returning the data") {
-    when(readService.getUserData(any[String])).thenReturn(Failure(???))
     when(user.getUser).thenReturn(TestData.userWithWriteAccess)
+    when(readService.getUserData(any[String])).thenReturn(Failure(new PSQLException("error", PSQLState.UNKNOWN_STATE)))
 
     get(s"/test/") {
       status should equal(500)
@@ -63,15 +64,6 @@ class UserDataControllerTest extends UnitSuite with TestEnvironment with Scalatr
 
     patch(s"/test/") {
       status should equal(403)
-    }
-  }
-  // TODO: i dunno how to make it return 500 error type, fix before merge
-  test("PATCH / should return 500 if there was error returning the data") {
-    when(writeService.updateUserData(any[UpdatedUserData], any[UserInfo])).thenReturn(Failure(???))
-    when(user.getUser).thenReturn(TestData.userWithNoRoles)
-
-    patch(s"/test/") {
-      status should equal(500)
     }
   }
 
