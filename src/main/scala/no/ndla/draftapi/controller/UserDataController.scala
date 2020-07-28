@@ -32,11 +32,10 @@ trait UserDataController {
         apiOperation[UserData]("getUserData")
           summary "Retrieves user's data"
           description "Retrieves user's data"
-          parameters (
-            asHeaderParam(correlationId),
-          )
+          parameters asHeaderParam(correlationId)
           responseMessages (response403, response500)
-          authorizations "oauth2")
+          authorizations "oauth2"
+      )
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -64,7 +63,7 @@ trait UserDataController {
       doOrAccessDenied(userInfo.canWrite) {
         val updatedUserData = extract[UpdatedUserData](request.body)
         updatedUserData.flatMap(userData => writeService.updateUserData(userData, userInfo)) match {
-          case Success(article)   => Ok(body = article)
+          case Success(data)      => Ok(data)
           case Failure(exception) => errorHandler(exception)
         }
       }
