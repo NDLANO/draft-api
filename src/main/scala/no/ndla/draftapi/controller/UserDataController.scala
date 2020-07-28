@@ -26,9 +26,6 @@ trait UserDataController {
     val response404: ResponseMessage = ResponseMessage(404, "Not found", Some("Error"))
     val response500: ResponseMessage = ResponseMessage(500, "Unknown error", Some("Error"))
 
-    private val query =
-      Param[Option[String]]("query", "Return only user data with content matching the specified query.")
-
     get(
       "/",
       operation(
@@ -37,8 +34,7 @@ trait UserDataController {
           description "Retrieves user's data"
           parameters (
             asHeaderParam(correlationId),
-            asQueryParam(query)
-        )
+          )
           responseMessages (response403, response500)
           authorizations "oauth2")
     ) {
@@ -55,8 +51,8 @@ trait UserDataController {
       "/",
       operation(
         apiOperation[UserData]("updateUserData")
-          summary "Update data of an existing user"
-          description "Update data of an existing user"
+          summary "Update data of logged in user"
+          description "Update data of logged in user"
           parameters (
             asHeaderParam[Option[String]](correlationId),
             bodyParam[UpdatedUserData]
