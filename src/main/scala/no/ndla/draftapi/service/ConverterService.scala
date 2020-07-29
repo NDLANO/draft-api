@@ -278,6 +278,15 @@ trait ConverterService {
       )
     }
 
+    def toApiUserData(userData: domain.UserData): api.UserData = {
+      api.UserData(
+        userId = userData.userId,
+        savedSearches = userData.savedSearches,
+        latestEditedArticles = userData.latestEditedArticles,
+        favoriteSubjects = userData.favoriteSubjects
+      )
+    }
+
     def toDomainStatus(status: api.Status): Try[domain.Status] = {
       val newCurrent = ArticleStatus.valueOfOrError(status.current)
       val newOther = status.other.map(ArticleStatus.valueOfOrError)

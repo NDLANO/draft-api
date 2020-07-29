@@ -22,7 +22,7 @@ import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
 import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, TagIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation._
@@ -36,6 +36,7 @@ import scala.util.{Failure, Random, Success, Try}
 trait WriteService {
   this: DraftRepository
     with AgreementRepository
+    with UserDataRepository
     with ConverterService
     with ContentValidator
     with ArticleIndexService
@@ -562,5 +563,40 @@ trait WriteService {
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
       s"$randomString$extensionWithDot"
     }
+
+    def newUserData(userId: String): Try[api.UserData] = {
+      userDataRepository
+        .insert(
+          domain.UserData(id = None,
+                          userId = userId,
+                          savedSearches = None,
+                          latestEditedArticles = None,
+                          favoriteSubjects = None))
+        .map(converterService.toApiUserData)
+    }
+
+    def updateUserData(updatedUserData: api.UpdatedUserData, user: UserInfo): Try[api.UserData] = {
+      val userId = user.id
+      userDataRepository.withUserId(userId) match {
+        case None =>
+          val newUserData = domain.UserData(
+            id = None,
+            userId = userId,
+            savedSearches = updatedUserData.savedSearches,
+            latestEditedArticles = updatedUserData.latestEditedArticles,
+            favoriteSubjects = updatedUserData.favoriteSubjects
+          )
+          userDataRepository.insert(newUserData).map(converterService.toApiUserData)
+
+        case Some(existing) =>
+          val toUpdate = existing.copy(
+            savedSearches = updatedUserData.savedSearches.orElse(existing.savedSearches),
+            latestEditedArticles = updatedUserData.latestEditedArticles.orElse(existing.latestEditedArticles),
+            favoriteSubjects = updatedUserData.favoriteSubjects.orElse(existing.favoriteSubjects)
+          )
+          userDataRepository.update(toUpdate).map(converterService.toApiUserData)
+      }
+    }
+
   }
 }

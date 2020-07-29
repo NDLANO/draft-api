@@ -14,7 +14,7 @@ import no.ndla.draftapi.model.api.NotFoundException
 import no.ndla.draftapi.model.domain.ImportId
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
 import no.ndla.draftapi.service.search.{ArticleSearchService, TagSearchService, SearchConverterService}
 import no.ndla.validation._
 import org.jsoup.nodes.Element
@@ -29,7 +29,9 @@ trait ReadService {
     with ConverterService
     with ArticleSearchService
     with TagSearchService
-    with SearchConverterService =>
+    with SearchConverterService
+    with UserDataRepository
+    with WriteService =>
   val readService: ReadService
 
   class ReadService {
@@ -163,6 +165,17 @@ trait ReadService {
 
     def importIdOfArticle(externalId: String): Option[ImportId] = {
       draftRepository.importIdOfArticle(externalId)
+    }
+
+    def getUserData(userId: String): Try[api.UserData] = {
+      userDataRepository.withUserId(userId) match {
+        case None =>
+          writeService.newUserData(userId) match {
+            case Success(newUserData) => Success(newUserData)
+            case Failure(exception)   => Failure(exception)
+          }
+        case Some(userData) => Success(converterService.toApiUserData(userData))
+      }
     }
   }
 }

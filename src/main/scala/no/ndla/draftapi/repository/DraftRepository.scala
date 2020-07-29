@@ -9,12 +9,10 @@ package no.ndla.draftapi.repository
 
 import java.util.UUID
 
-import com.typesafe.scalalogging.{LazyLogging, Logger}
-import no.ndla.draftapi.DraftApiProperties
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.integration.DataSource
 import no.ndla.draftapi.model.api.{ArticleVersioningException, NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain._
-import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
