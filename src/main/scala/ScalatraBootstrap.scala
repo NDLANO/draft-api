@@ -29,9 +29,9 @@ class ScalatraBootstrap extends LifeCycle {
     context.mount(agreementController, "/draft-api/v1/agreements/", "agreements")
     context.mount(ruleController, "/draft-api/v1/rules", "rules")
     context.mount(resourcesApp, "/draft-api/api-docs")
+    context.mount(userDataController, "/draft-api/v1/user-data")
     context.mount(internController, "/intern")
     context.mount(healthController, "/health")
-    context.mount(userDataController, "/user-data")
   }
 
 }
