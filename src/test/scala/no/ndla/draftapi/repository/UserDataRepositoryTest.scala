@@ -8,8 +8,11 @@
 package no.ndla.draftapi.repository
 
 import java.net.Socket
-import no.ndla.draftapi.{DBMigrator, DraftApiProperties, IntegrationSuite, TestEnvironment, TestData}
+
+import no.ndla.draftapi.{DBMigrator, DraftApiProperties, IntegrationSuite, TestData, TestEnvironment}
+import org.postgresql.util.PSQLException
 import scalikejdbc._
+
 import scala.util.{Success, Try}
 
 class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
@@ -60,9 +63,9 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
 
     this.resetIdSequence()
 
-    val data1 = TestData.emptyDomainUserData
-    val data2 = TestData.emptyDomainUserData
-    val data3 = TestData.emptyDomainUserData
+    val data1 = TestData.emptyDomainUserData.copy(userId = "user1")
+    val data2 = TestData.emptyDomainUserData.copy(userId = "user2")
+    val data3 = TestData.emptyDomainUserData.copy(userId = "user3")
 
     val res1 = repository.insert(data1)
     val res2 = repository.insert(data2)
@@ -133,7 +136,11 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.userDataCount should be(1)
     repository.insert(data2)
     repository.userDataCount should be(2)
-    repository.insert(data3)
+    try {
+      repository.insert(data3)
+    } catch {
+      case _: PSQLException => // Ignore results
+    }
     repository.userDataCount should be(2)
   }
 
