@@ -13,7 +13,7 @@ import no.ndla.draftapi.{DBMigrator, DraftApiProperties, IntegrationSuite, TestD
 import org.postgresql.util.PSQLException
 import scalikejdbc._
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
   var repository: UserDataRepository = _
@@ -136,10 +136,9 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.userDataCount should be(1)
     repository.insert(data2)
     repository.userDataCount should be(2)
-    try {
-      repository.insert(data3)
-    } catch {
-      case _: PSQLException => // Ignore results
+    try repository.insert(data3) match {
+      case Success(_)                => fail()
+      case Failure(_: PSQLException) => // ignore results
     }
     repository.userDataCount should be(2)
   }
