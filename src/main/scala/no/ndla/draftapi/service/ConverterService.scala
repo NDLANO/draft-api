@@ -281,6 +281,15 @@ trait ConverterService {
       )
     }
 
+    def toApiUserData(userData: domain.UserData): api.UserData = {
+      api.UserData(
+        userId = userData.userId,
+        savedSearches = userData.savedSearches,
+        latestEditedArticles = userData.latestEditedArticles,
+        favoriteSubjects = userData.favoriteSubjects
+      )
+    }
+
     def toDomainStatus(status: api.Status): Try[domain.Status] = {
       val newCurrent = ArticleStatus.valueOfOrError(status.current)
       val newOther = status.other.map(ArticleStatus.valueOfOrError)
@@ -629,14 +638,5 @@ trait ConverterService {
                               offset: Int): api.GrepCodesSearchResult = {
       api.GrepCodesSearchResult(grepCodesCount, offset, pageSize, grepCodes)
     }
-
-    def toApiArticleTags(tags: Seq[String],
-                         tagsCount: Int,
-                         pageSize: Int,
-                         offset: Int,
-                         language: String): api.TagsSearchResult = {
-      api.TagsSearchResult(tagsCount, offset, pageSize, language, tags)
-    }
-
   }
 }

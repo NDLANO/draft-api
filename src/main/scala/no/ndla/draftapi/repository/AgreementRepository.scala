@@ -15,7 +15,7 @@ import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
 import scalikejdbc._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 trait AgreementRepository {
   this: DataSource =>

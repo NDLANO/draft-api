@@ -14,7 +14,7 @@ import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
@@ -33,12 +33,15 @@ object ComponentRegistry
     with HealthController
     with DraftRepository
     with AgreementRepository
+    with UserDataRepository
     with Elastic4sClient
     with ReindexClient
     with ArticleSearchService
+    with TagSearchService
     with AgreementSearchService
     with IndexService
     with ArticleIndexService
+    with TagIndexService
     with AgreementIndexService
     with SearchService
     with LazyLogging
@@ -55,7 +58,8 @@ object ComponentRegistry
     with ArticleApiClient
     with SearchApiClient
     with ConceptApiClient
-    with RuleController {
+    with RuleController
+    with UserDataController {
 
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 
@@ -71,12 +75,16 @@ object ComponentRegistry
   lazy val ruleController = new RuleController
   lazy val resourcesApp = new ResourcesApp
   lazy val healthController = new HealthController
+  lazy val userDataController = new UserDataController
 
   lazy val draftRepository = new ArticleRepository
   lazy val agreementRepository = new AgreementRepository
+  lazy val userDataRepository = new UserDataRepository
 
   lazy val articleSearchService = new ArticleSearchService
   lazy val articleIndexService = new ArticleIndexService
+  lazy val tagSearchService = new TagSearchService
+  lazy val tagIndexService = new TagIndexService
   lazy val agreementSearchService = new AgreementSearchService
   lazy val agreementIndexService = new AgreementIndexService
 

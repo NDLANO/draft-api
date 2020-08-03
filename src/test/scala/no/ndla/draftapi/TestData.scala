@@ -458,6 +458,12 @@ object TestData {
     updatedBy = userWithWriteAccess.id
   )
 
+  val emptyDomainUserData =
+    domain.UserData(id = None, userId = "", savedSearches = None, latestEditedArticles = None, favoriteSubjects = None)
+
+  val emptyApiUserData =
+    api.UserData(userId = "", savedSearches = None, latestEditedArticles = None, favoriteSubjects = None)
+
   val newAgreement = NewAgreement("newTitle",
                                   "newString",
                                   api.NewAgreementCopyright(Some(api.License("by-sa", None, None)),

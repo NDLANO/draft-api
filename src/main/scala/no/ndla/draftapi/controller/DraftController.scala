@@ -148,7 +148,10 @@ trait DraftController {
         }
         val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
 
-        readService.getAllTags(query, pageSize, pageNo, language)
+        readService.getAllTags(query, pageSize, pageNo, language) match {
+          case Failure(ex)     => errorHandler(ex)
+          case Success(result) => Ok(result)
+        }
       }
     }
 

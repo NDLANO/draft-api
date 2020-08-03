@@ -22,8 +22,8 @@ import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.model.{api, domain}
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
-import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, TagIndexService}
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation._
 import org.jsoup.nodes.Element
@@ -36,9 +36,11 @@ import scala.util.{Failure, Random, Success, Try}
 trait WriteService {
   this: DraftRepository
     with AgreementRepository
+    with UserDataRepository
     with ConverterService
     with ContentValidator
     with ArticleIndexService
+    with TagIndexService
     with AgreementIndexService
     with Clock
     with ReadService
@@ -93,6 +95,7 @@ trait WriteService {
             )
             inserted = draftRepository.insert(articleToInsert)
             _ <- articleIndexService.indexDocument(inserted)
+            _ <- tagIndexService.indexDocument(inserted)
             _ <- Try(searchApiClient.indexDraft(inserted))
             enriched = readService.addUrlsOnEmbedResources(inserted)
             converted <- converterService.toApiArticle(enriched, language, fallback)
@@ -206,6 +209,7 @@ trait WriteService {
         _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
         insertedArticle <- updateFunction(domainArticle)
         _ <- articleIndexService.indexDocument(insertedArticle)
+        _ <- tagIndexService.indexDocument(insertedArticle)
         _ <- Try(searchApiClient.indexDraft(insertedArticle))
         apiArticle <- converterService.toApiArticle(insertedArticle, newArticle.language)
       } yield apiArticle
@@ -227,6 +231,7 @@ trait WriteService {
             convertedArticle <- convertedArticleT
             updatedArticle <- updateArticleAndStoreAsNewIfPublished(convertedArticle, isImported)
             _ <- articleIndexService.indexDocument(updatedArticle)
+            _ <- tagIndexService.indexDocument(updatedArticle)
             _ <- Try(searchApiClient.indexDraft(updatedArticle))
             apiArticle <- converterService.toApiArticle(updatedArticle, Language.AllLanguages, fallback = true)
           } yield apiArticle
@@ -293,6 +298,7 @@ trait WriteService {
                                               importId,
                                               shouldAlwaysCopy)
         _ <- articleIndexService.indexDocument(domainArticle)
+        _ <- tagIndexService.indexDocument(domainArticle)
         _ <- Try(searchApiClient.indexDraft(domainArticle))
         _ <- updateTaxonomyForArticle(domainArticle)
       } yield domainArticle
@@ -556,6 +562,40 @@ trait WriteService {
         if (!extension.headOption.contains('.') && extension.length > 0) s".$extension" else extension
       val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
       s"$randomString$extensionWithDot"
+    }
+
+    def newUserData(userId: String): Try[api.UserData] = {
+      userDataRepository
+        .insert(
+          domain.UserData(id = None,
+                          userId = userId,
+                          savedSearches = None,
+                          latestEditedArticles = None,
+                          favoriteSubjects = None))
+        .map(converterService.toApiUserData)
+    }
+
+    def updateUserData(updatedUserData: api.UpdatedUserData, user: UserInfo): Try[api.UserData] = {
+      val userId = user.id
+      userDataRepository.withUserId(userId) match {
+        case None =>
+          val newUserData = domain.UserData(
+            id = None,
+            userId = userId,
+            savedSearches = updatedUserData.savedSearches,
+            latestEditedArticles = updatedUserData.latestEditedArticles,
+            favoriteSubjects = updatedUserData.favoriteSubjects
+          )
+          userDataRepository.insert(newUserData).map(converterService.toApiUserData)
+
+        case Some(existing) =>
+          val toUpdate = existing.copy(
+            savedSearches = updatedUserData.savedSearches.orElse(existing.savedSearches),
+            latestEditedArticles = updatedUserData.latestEditedArticles.orElse(existing.latestEditedArticles),
+            favoriteSubjects = updatedUserData.favoriteSubjects.orElse(existing.favoriteSubjects)
+          )
+          userDataRepository.update(toUpdate).map(converterService.toApiUserData)
+      }
     }
 
     def partialPublish(id: Long, language: String, fallback: Boolean): Try[api.Article] = {

@@ -13,7 +13,7 @@ import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.controller._
 import no.ndla.draftapi.integration._
-import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository}
+import no.ndla.draftapi.repository.{AgreementRepository, DraftRepository, UserDataRepository}
 import no.ndla.draftapi.service._
 import no.ndla.draftapi.service.search._
 import no.ndla.draftapi.validation.ContentValidator
@@ -24,6 +24,8 @@ trait TestEnvironment
     extends Elastic4sClient
     with ArticleSearchService
     with ArticleIndexService
+    with TagSearchService
+    with TagIndexService
     with AgreementSearchService
     with AgreementIndexService
     with IndexService
@@ -33,11 +35,13 @@ trait TestEnvironment
     with InternController
     with HealthController
     with AgreementController
+    with UserDataController
     with ReindexClient
     with DataSource
     with TaxonomyApiClient
     with DraftRepository
     with AgreementRepository
+    with UserDataRepository
     with MockitoSugar
     with ConverterService
     with StateTransitionRules
@@ -57,6 +61,8 @@ trait TestEnvironment
     with SearchApiClient {
   val articleSearchService = mock[ArticleSearchService]
   val articleIndexService = mock[ArticleIndexService]
+  val tagSearchService = mock[TagSearchService]
+  val tagIndexService = mock[TagIndexService]
   val agreementSearchService = mock[AgreementSearchService]
   val agreementIndexService = mock[AgreementIndexService]
 
@@ -64,12 +70,14 @@ trait TestEnvironment
   val draftController = mock[DraftController]
   val fileController = mock[FileController]
   val agreementController = mock[AgreementController]
+  val userDataController = mock[UserDataController]
 
   val healthController = mock[HealthController]
 
   val dataSource = mock[HikariDataSource]
   val draftRepository = mock[ArticleRepository]
   val agreementRepository = mock[AgreementRepository]
+  val userDataRepository = mock[UserDataRepository]
 
   val converterService = mock[ConverterService]
 

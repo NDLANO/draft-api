@@ -9,12 +9,10 @@ package no.ndla.draftapi.repository
 
 import java.util.UUID
 
-import com.typesafe.scalalogging.{LazyLogging, Logger}
-import no.ndla.draftapi.DraftApiProperties
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.integration.DataSource
 import no.ndla.draftapi.model.api.{ArticleVersioningException, NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain._
-import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
@@ -372,42 +370,6 @@ trait DraftRepository {
             where grepCodes ilike ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
 
       (grepCodes, grepCodesCount)
-
-    }
-
-    def getTags(input: String, pageSize: Int, offset: Int, language: String)(
-        implicit session: DBSession = AutoSession): (Seq[String], Int) = {
-      val sanitizedInput = input.replaceAll("%", "")
-      val sanitizedLanguage = language.replaceAll("%", "")
-      val langOrAll = if (sanitizedLanguage == "all" || sanitizedLanguage == "") "%" else sanitizedLanguage
-
-      val tags = sql"""select tags from 
-              (select distinct JSONB_ARRAY_ELEMENTS_TEXT(tagObj->'tags') tags from
-              (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') tagObj from ${Article.table}) _
-              where tagObj->>'language' like ${langOrAll}
-              order by tags) sorted_tags
-              where sorted_tags.tags ilike ${sanitizedInput + '%'}
-              offset ${offset}
-              limit ${pageSize}
-                      """
-        .map(rs => rs.string("tags"))
-        .toList()
-        .apply
-
-      val tagsCount =
-        sql"""
-              select count(*) from 
-              (select distinct JSONB_ARRAY_ELEMENTS_TEXT(tagObj->'tags') tags from
-              (select JSONB_ARRAY_ELEMENTS(document#>'{tags}') tagObj from ${Article.table}) _
-              where tagObj->>'language' like  ${langOrAll}) all_tags
-              where all_tags.tags ilike ${sanitizedInput + '%'};
-           """
-          .map(rs => rs.int("count"))
-          .single()
-          .apply()
-          .getOrElse(0)
-
-      (tags, tagsCount)
 
     }
 
