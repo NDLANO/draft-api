@@ -136,9 +136,10 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
     repository.userDataCount should be(1)
     repository.insert(data2)
     repository.userDataCount should be(2)
-    try repository.insert(data3) match {
+    repository.insert(data3) match {
       case Success(_)                => fail()
-      case Failure(_: PSQLException) => // ignore results
+      case Failure(_: PSQLException) => // ignore results, actually a success
+      case Failure(_)                => fail()
     }
     repository.userDataCount should be(2)
   }
