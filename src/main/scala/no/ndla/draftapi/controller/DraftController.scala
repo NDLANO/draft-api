@@ -632,8 +632,8 @@ trait DraftController {
       "/partial-publish/:article_id",
       operation(
         apiOperation[Article]("partialPublish")
-          summary "Partial publish selected fields partialPublish"
-          description "Partial publish selected fields partialPublish"
+          summary "Partial publish selected fields"
+          description "Partial publish selected fields"
           parameters (
             asHeaderParam(correlationId),
             asPathParam(articleId),
@@ -656,6 +656,33 @@ trait DraftController {
         }
       }
 
+    }
+
+    post(
+      "/partial-publish/",
+      operation(
+        apiOperation[MultiPartialPublishResult]("partialPublishMultiple")
+          summary "Partial publish selected fields for multiple articles"
+          description "Partial publish selected fields for multiple articles"
+          parameters (
+            asHeaderParam(correlationId),
+            bodyParam[Seq[Long]]
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500)
+      )
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        extract[Seq[Long]](request.body) match {
+          case Failure(ex) => errorHandler(ex)
+          case Success(articleIds) =>
+            writeService.partialPublishMultiple(articleIds) match {
+              case Success(response) => Ok(response)
+              case Failure(ex)       => errorHandler(ex)
+            }
+        }
+      }
     }
 
   }
