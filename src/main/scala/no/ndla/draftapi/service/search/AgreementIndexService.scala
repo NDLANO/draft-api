@@ -27,7 +27,7 @@ trait AgreementIndexService {
     override val searchIndex: String = DraftApiProperties.AgreementSearchIndex
     override val repository: Repository[Agreement] = agreementRepository
 
-    override def createIndexRequest(domainModel: Agreement, indexName: String): Seq[IndexRequest] = {
+    override def createIndexRequests(domainModel: Agreement, indexName: String): Seq[IndexRequest] = {
       val source = write(searchConverterService.asSearchableAgreement(domainModel))
       Seq(indexInto(indexName / documentType).doc(source).id(domainModel.id.get.toString))
     }
