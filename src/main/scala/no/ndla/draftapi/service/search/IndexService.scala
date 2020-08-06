@@ -12,6 +12,8 @@ import java.util.Calendar
 
 import com.sksamuel.elastic4s.analyzers.{KeywordTokenizer, LowercaseTokenFilter}
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.RequestSuccess
+import com.sksamuel.elastic4s.http.bulk.BulkResponse
 import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.mappings.{FieldDefinition, MappingDefinition}
 import com.typesafe.scalalogging.LazyLogging
@@ -34,7 +36,7 @@ trait IndexService {
     val repository: Repository[D]
 
     def getMapping: MappingDefinition
-    def createIndexRequest(domainModel: D, indexName: String): Seq[IndexRequest]
+    def createIndexRequests(domainModel: D, indexName: String): Seq[IndexRequest]
 
     private def createIndexIfNotExists() = getAliasTarget.map {
       case Some(index) => Success(index)
@@ -44,8 +46,8 @@ trait IndexService {
     def indexDocument(imported: D): Try[D] = {
       for {
         _ <- createIndexIfNotExists()
-        request = bulk(createIndexRequest(imported, searchIndex))
-        _ <- e4sClient.execute(request)
+        requests = createIndexRequests(imported, searchIndex)
+        _ <- executeRequests(requests)
       } yield imported
     }
 
@@ -102,16 +104,13 @@ trait IndexService {
       if (contents.isEmpty) {
         Success(0)
       } else {
-        val response = e4sClient.execute {
-          bulk(contents.flatMap(content => {
-            createIndexRequest(content, indexName)
-          }))
-        }
+        val requests = contents.flatMap(content => {
+          createIndexRequests(content, indexName)
+        })
 
-        response match {
-          case Success(r) =>
-            logger.info(
-              s"Indexed ${contents.size} documents ($searchIndex). No of failed items: ${r.result.failures.size}")
+        executeRequests(requests) match {
+          case Success((numSuccessful, numFailures)) =>
+            logger.info(s"Indexed $numSuccessful documents ($searchIndex). No of failed items: $numFailures")
             Success(contents.size)
           case Failure(ex) => Failure(ex)
         }
@@ -214,6 +213,21 @@ trait IndexService {
         case Success(resp) if resp.status != 404 => Success(true)
         case Success(_)                          => Success(false)
         case Failure(ex)                         => Failure(ex)
+      }
+    }
+
+    /**
+      * Executes elasticsearch requests in bulk.
+      * Returns success (without executing anything) if supplied with an empty list.
+      *
+      * @param requests a list of elasticsearch [[IndexRequest]]'s
+      * @return A Try suggesting if the request was successful or not with a tuple containing number of successful requests and number of failed requests (in that order)
+      */
+    private def executeRequests(requests: Seq[IndexRequest]): Try[(Long, Long)] = {
+      requests match {
+        case Nil         => Success((0, 0))
+        case head :: Nil => e4sClient.execute(head).map(r => if (r.isSuccess) (1, 0) else (0, 1))
+        case reqs        => e4sClient.execute(bulk(reqs)).map(r => (r.result.successes.size, r.result.failures.size))
       }
     }
 

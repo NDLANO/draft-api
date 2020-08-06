@@ -27,7 +27,7 @@ trait TagIndexService {
     override val searchIndex: String = DraftApiProperties.DraftTagSearchIndex
     override val repository: Repository[Article] = draftRepository
 
-    override def createIndexRequest(domainModel: Article, indexName: String): Seq[IndexRequest] = {
+    override def createIndexRequests(domainModel: Article, indexName: String): Seq[IndexRequest] = {
       val tags = searchConverterService.asSearchableTags(domainModel)
 
       tags.map(t => {
