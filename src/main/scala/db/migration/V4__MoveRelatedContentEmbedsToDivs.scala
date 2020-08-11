@@ -59,7 +59,7 @@ class V4__MoveRelatedContentEmbedsToDivs extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -117,7 +117,7 @@ class V4__MoveRelatedContentEmbedsToDivs extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply
+      .apply()
   }
 
   case class V4_Content(content: String, language: String)

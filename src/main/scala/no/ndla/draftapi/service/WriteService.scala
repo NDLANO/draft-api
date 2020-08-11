@@ -552,7 +552,7 @@ trait WriteService {
           .head
 
         fileStorage
-          .uploadResourceFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size)
+          .uploadResourceFromStream(new ByteArrayInputStream(file.get()), fileName, contentType, file.size)
           .map(uploadPath => domain.UploadedFile(fileName, uploadPath, file.size, contentType, fileExtension))
       })
     }

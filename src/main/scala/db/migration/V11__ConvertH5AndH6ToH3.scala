@@ -56,7 +56,7 @@ class V11__ConvertH5AndH6ToH3 extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -111,7 +111,7 @@ class V11__ConvertH5AndH6ToH3 extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply
+      .apply()
   }
 
 }

@@ -65,7 +65,7 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -155,7 +155,7 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply
+      .apply()
   }
 
   case class V16__Status(current: V16__ArticleStatus.Value, other: Set[V16__ArticleStatus.Value])

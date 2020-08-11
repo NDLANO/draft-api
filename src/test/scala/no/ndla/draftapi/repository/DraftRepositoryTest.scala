@@ -24,13 +24,13 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
 
   def emptyTestDatabase = {
     DB autoCommit (implicit session => {
-      sql"delete from draftapitest.articledata;".execute.apply()(session)
+      sql"delete from draftapitest.articledata;".execute().apply()(session)
     })
   }
 
   private def resetIdSequence() = {
     DB autoCommit (implicit session => {
-      sql"select setval('article_id_sequence', 1, false);".execute.apply
+      sql"select setval('article_id_sequence', 1, false);".execute().apply()
     })
   }
 

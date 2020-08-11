@@ -104,9 +104,9 @@ trait AgreementController {
       "/",
       operation(
         apiOperation[AgreementSearchResult]("getAllAgreements")
-          summary "Show all agreements"
-          description "Shows all agreements. You can search too."
-          parameters (
+          .summary("Show all agreements")
+          .description("Shows all agreements. You can search too.")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(query),
             asQueryParam(agreementIds),
@@ -115,9 +115,9 @@ trait AgreementController {
             asQueryParam(pageSize),
             asQueryParam(sort),
             asQueryParam(scrollId)
-        )
-          authorizations "oauth2"
-          responseMessages response500)
+          )
+          .authorizations("oauth2")
+          .responseMessages(response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -138,14 +138,14 @@ trait AgreementController {
       "/:agreement_id",
       operation(
         apiOperation[Agreement]("getAgreementById")
-          summary "Show agreement with a specified Id"
-          description "Shows the agreement for the specified id."
-          parameters (
+          .summary("Show agreement with a specified Id")
+          .description("Shows the agreement for the specified id.")
+          .parameters(
             asHeaderParam[Option[String]](correlationId),
             pathParam[Long]("agreement_id").description("Id of the article that is to be returned")
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -162,14 +162,14 @@ trait AgreementController {
       "/",
       operation(
         apiOperation[Agreement]("newAgreement")
-          summary "Create a new agreement"
-          description "Creates a new agreement"
-          parameters (
+          .summary("Create a new agreement")
+          .description("Creates a new agreement")
+          .parameters(
             asHeaderParam(correlationId),
             bodyParam[NewAgreement]
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -188,15 +188,15 @@ trait AgreementController {
       "/:agreement_id",
       operation(
         apiOperation[Agreement]("updateAgreement")
-          summary "Update an existing agreement"
-          description "Update an existing agreement"
-          parameters (
+          .summary("Update an existing agreement")
+          .description("Update an existing agreement")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(agreementId),
             bodyParam[UpdatedAgreement]
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response404, response500))
     ) {
       val userInfo = user.getUser
 

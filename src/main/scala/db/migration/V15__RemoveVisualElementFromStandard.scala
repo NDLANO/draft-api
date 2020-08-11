@@ -55,7 +55,7 @@ class V15__RemoveVisualElementFromStandard extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -84,7 +84,7 @@ class V15__RemoveVisualElementFromStandard extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply
+      .apply()
   }
 
   case class V15__Article(articleType: ArticleType.Value)

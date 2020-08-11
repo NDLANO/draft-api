@@ -36,7 +36,7 @@ trait DraftRepository {
       val dbId = sql"""
             insert into ${Article.table} (document, revision, article_id)
             values ($dataObject, $startRevision, ${article.id})
-          """.updateAndReturnGeneratedKey().apply
+          """.updateAndReturnGeneratedKey().apply()
 
       logger.info(s"Inserted new article: ${article.id}, with revision $startRevision (with db id $dbId)")
       article.copy(revision = Some(startRevision))
@@ -62,7 +62,7 @@ trait DraftRepository {
                      $startRevision,
                      $uuid,
                      ${article.id})
-          """.updateAndReturnGeneratedKey().apply
+          """.updateAndReturnGeneratedKey().apply()
 
       logger.info(s"Inserted new article: ${article.id} (with db id $dbId)")
       article.copy(revision = Some(startRevision))
@@ -117,7 +117,7 @@ trait DraftRepository {
       Try(sql"""
              insert into ${Article.table} (external_id, external_subject_id, article_id, revision)
              values (ARRAY[${externalIds}]::text[], ARRAY[${externalSubjectIds}]::text[], NEXTVAL('article_id_sequence'), 0)
-          """.updateAndReturnGeneratedKey("article_id").apply) match {
+          """.updateAndReturnGeneratedKey("article_id").apply()) match {
         case Success(articleId) =>
           logger.info(s"Inserted new empty article: $articleId")
           Success(articleId)
@@ -153,7 +153,7 @@ trait DraftRepository {
               where article_id=${article.id}
               and revision=$oldRevision
               and revision=(select max(revision) from ${Article.table} where article_id=${article.id})
-           """.update.apply
+           """.update().apply()
 
       failIfRevisionMismatch(count, article, newRevision)
     }
@@ -174,7 +174,7 @@ trait DraftRepository {
                    .orderBy(a.revision)
                    .desc
                    .limit(1))
-      }.update.apply
+      }.update().apply()
     }
 
     def updateWithExternalIds(
@@ -207,7 +207,7 @@ trait DraftRepository {
           )
           .where
           .eq(a.c("article_id"), article.id)
-      }.update.apply
+      }.update().apply()
 
       failIfRevisionMismatch(count, article, newRevision)
     }
@@ -227,20 +227,20 @@ trait DraftRepository {
         sql"select article_id, external_id from ${Article
           .as(ar)} where ar.document is not NULL and ar.document#>>'{status,current}' = ${status.toString}"
           .map(rs => ArticleIds(rs.long("article_id"), externalIdsFromResultSet(rs)))
-          .list
-          .apply)
+          .list()
+          .apply())
     }
 
     def exists(id: Long)(implicit session: DBSession = AutoSession): Boolean = {
       sql"select article_id from ${Article.table} where article_id=$id order by revision desc limit 1"
         .map(rs => rs.long("article_id"))
-        .single
+        .single()
         .apply()
         .isDefined
     }
 
     def deleteArticle(articleId: Long)(implicit session: DBSession = AutoSession): Try[Long] = {
-      val numRows = sql"delete from ${Article.table} where article_id = $articleId".update().apply
+      val numRows = sql"delete from ${Article.table} where article_id = $articleId".update().apply()
       if (numRows == 1) {
         Success(articleId)
       } else {
@@ -251,7 +251,7 @@ trait DraftRepository {
     def getIdFromExternalId(externalId: String)(implicit session: DBSession = AutoSession): Option[Long] = {
       sql"select article_id from ${Article.table} where ${externalId} = any (external_id) order by revision desc limit 1"
         .map(rs => rs.long("article_id"))
-        .single
+        .single()
         .apply()
     }
 
@@ -266,7 +266,7 @@ trait DraftRepository {
     def getExternalIdsFromId(id: Long)(implicit session: DBSession = AutoSession): List[String] = {
       sql"select external_id from ${Article.table} where article_id=${id.toInt} order by revision desc limit 1"
         .map(externalIdsFromResultSet)
-        .single
+        .single()
         .apply()
         .getOrElse(List.empty)
     }
@@ -282,7 +282,7 @@ trait DraftRepository {
     def getExternalSubjectIdsFromId(id: Long)(implicit session: DBSession = AutoSession): Seq[String] = {
       sql"select external_subject_id from ${Article.table} where article_id=${id.toInt} order by revision desc limit 1"
         .map(externalSubjectIdsFromResultSet)
-        .single
+        .single()
         .apply()
         .getOrElse(List.empty)
     }
@@ -290,7 +290,7 @@ trait DraftRepository {
     def getImportIdFromId(id: Long)(implicit session: DBSession = AutoSession): Option[String] = {
       sql"select import_id from ${Article.table} where article_id=${id.toInt} order by revision desc limit 1"
         .map(rs => rs.string("import_id"))
-        .single
+        .single()
         .apply()
     }
 
@@ -302,8 +302,8 @@ trait DraftRepository {
               rs.long("article_id"),
               externalIdsFromResultSet(rs)
           ))
-        .list
-        .apply
+        .list()
+        .apply()
     }
 
     def articleCount(implicit session: DBSession = AutoSession): Long = {
@@ -329,15 +329,15 @@ trait DraftRepository {
            limit $pageSize
       """
         .map(Article.fromResultSet(ar))
-        .list
+        .list()
         .apply()
     }
 
     def allTags(implicit session: DBSession = AutoSession): Seq[ArticleTag] = {
       val allTags = sql"""select document->>'tags' from ${Article.table} where document is not NULL"""
         .map(rs => rs.string(1))
-        .list
-        .apply
+        .list()
+        .apply()
 
       allTags
         .flatMap(tag => parse(tag).extract[List[ArticleTag]])
@@ -361,8 +361,8 @@ trait DraftRepository {
             limit ${pageSize}
             """
         .map(rs => rs.string(1))
-        .toList
-        .apply
+        .list()
+        .apply()
 
       val grepCodesCount = sql"""select distinct count(*) from
             (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{grepCodes}') as grepCodes
@@ -394,7 +394,7 @@ trait DraftRepository {
       val ar = Article.syntax("ar")
       sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause"
         .map(Article.fromResultSet(ar))
-        .single
+        .single()
         .apply()
     }
 
@@ -406,7 +406,7 @@ trait DraftRepository {
       val ar = Article.syntax("ar")
       sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $whereClause"
         .map(Article.fromResultSet(ar))
-        .list
+        .list()
         .apply()
     }
 
@@ -416,7 +416,7 @@ trait DraftRepository {
             from ${Article.as(ar)}
             where ar.document is not NULL and $externalId = any (ar.external_id)"""
         .map(rs => ImportId(rs.stringOpt("import_id")))
-        .single
+        .single()
         .apply()
     }
 

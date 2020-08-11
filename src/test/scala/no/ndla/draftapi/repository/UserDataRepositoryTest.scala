@@ -20,13 +20,13 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
 
   def emptyTestDatabase = {
     DB autoCommit (implicit session => {
-      sql"delete from draftapitest.userdata;".execute.apply()(session)
+      sql"delete from draftapitest.userdata;".execute().apply()(session)
     })
   }
 
   private def resetIdSequence() = {
     DB autoCommit (implicit session => {
-      sql"select setval('userdata_id_seq', 1, false);".execute.apply
+      sql"select setval('userdata_id_seq', 1, false);".execute().apply()
     })
   }
 

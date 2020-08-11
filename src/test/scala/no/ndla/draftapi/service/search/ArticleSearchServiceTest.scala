@@ -190,7 +190,7 @@ class ArticleSearchServiceTest extends IntegrationSuite(withSearch = true) with 
     articleType = ArticleType.TopicArticle
   )
 
-  override def beforeAll: Unit = if (elasticSearchContainer.isSuccess) {
+  override def beforeAll(): Unit = if (elasticSearchContainer.isSuccess) {
     articleIndexService.createIndexWithName(DraftApiProperties.DraftSearchIndex)
 
     articleIndexService.indexDocument(article1)

@@ -53,7 +53,7 @@ class V7__AddImageMetaAltText extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -80,7 +80,7 @@ class V7__AddImageMetaAltText extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply
+      .apply()
   }
 
   case class V6_MetaImage(imageId: String, altText: Option[String], language: String)

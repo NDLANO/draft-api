@@ -99,7 +99,7 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.long("article_id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -110,7 +110,7 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply
+      .apply()
   }
 
 }

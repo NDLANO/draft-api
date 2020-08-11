@@ -45,7 +45,7 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
     val ar = Article.syntax("ar")
     sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL order by ar.id limit 1000 offset $offset"
       .map(Article.fromResultSet(ar))
-      .list
+      .list()
       .apply()
   }
 
@@ -68,7 +68,7 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where article_id=${article.id}"
       .update()
-      .apply
+      .apply()
   }
 
 }

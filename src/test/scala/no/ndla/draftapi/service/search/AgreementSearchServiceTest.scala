@@ -102,7 +102,7 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   val agreement10: Agreement =
     sampleAgreement.copy(id = Some(11), title = "Woopie", content = "This agreement is not copyrighted")
 
-  override def beforeAll: Unit = if (elasticSearchContainer.isSuccess) {
+  override def beforeAll(): Unit = if (elasticSearchContainer.isSuccess) {
     agreementIndexService.createIndexWithName(DraftApiProperties.AgreementSearchIndex)
 
     agreementIndexService.indexDocument(agreement1)
