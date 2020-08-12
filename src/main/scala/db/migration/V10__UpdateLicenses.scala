@@ -52,7 +52,7 @@ class V10__UpdateLicenses extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -100,7 +100,7 @@ class V10__UpdateLicenses extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply
+      .apply()
   }
 
   case class V8_Status(current: String, other: Set[String])

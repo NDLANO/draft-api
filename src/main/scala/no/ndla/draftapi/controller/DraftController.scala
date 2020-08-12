@@ -92,15 +92,15 @@ trait DraftController {
       "/tags/",
       operation(
         apiOperation[ArticleTag]("getTags")
-          summary "Retrieves a list of all previously used tags in articles"
-          description "Retrieves a list of all previously used tags in articles"
-          parameters (
+          .summary("Retrieves a list of all previously used tags in articles")
+          .description("Retrieves a list of all previously used tags in articles")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(size),
             asQueryParam(language)
-        )
-          responseMessages response500
-          authorizations "oauth2")
+          )
+          .responseMessages(response500)
+          .authorizations("oauth2"))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -123,17 +123,17 @@ trait DraftController {
       "/tag-search/",
       operation(
         apiOperation[TagsSearchResult]("getTags-paginated")
-          summary "Retrieves a list of all previously used tags in articles"
-          description "Retrieves a list of all previously used tags in articles"
-          parameters (
+          .summary("Retrieves a list of all previously used tags in articles")
+          .description("Retrieves a list of all previously used tags in articles")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(query),
             asQueryParam(pageSize),
             asQueryParam(pageNo),
             asQueryParam(language)
-        )
-          responseMessages (response403, response500)
-          authorizations "oauth2")
+          )
+          .responseMessages(response403, response500)
+          .authorizations("oauth2"))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -205,16 +205,16 @@ trait DraftController {
       "/grep-codes/",
       operation(
         apiOperation[GrepCodesSearchResult]("getGrepCodes")
-          summary "Retrieves a list of all previously used grepCodes in articles"
-          description "Retrieves a list of all previously used grepCodes in articles"
-          parameters (
+          .summary("Retrieves a list of all previously used grepCodes in articles")
+          .description("Retrieves a list of all previously used grepCodes in articles")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(query),
             asQueryParam(pageSize),
             asQueryParam(pageNo)
-        )
-          responseMessages (response403, response500)
-          authorizations "oauth2")
+          )
+          .responseMessages(response403, response500)
+          .authorizations("oauth2"))
     ) {
 
       val userInfo = user.getUser
@@ -237,9 +237,9 @@ trait DraftController {
       "/",
       operation(
         apiOperation[List[SearchResult]]("getAllArticles")
-          summary "Show all articles"
-          description "Shows all articles. You can search it too."
-          parameters (
+          .summary("Show all articles")
+          .description("Shows all articles. You can search it too.")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(articleTypes),
             asQueryParam(query),
@@ -251,9 +251,9 @@ trait DraftController {
             asQueryParam(sort),
             asQueryParam(scrollId),
             asQueryParam(grepCodes)
-        )
-          authorizations "oauth2"
-          responseMessages response500)
+          )
+          .authorizations("oauth2")
+          .responseMessages(response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -281,16 +281,16 @@ trait DraftController {
       "/search/",
       operation(
         apiOperation[List[SearchResult]]("getAllArticlesPost")
-          summary "Show all articles"
-          description "Shows all articles. You can search it too."
-          parameters (
+          .summary("Show all articles")
+          .description("Shows all articles. You can search it too.")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(language),
             bodyParam[ArticleSearchParams],
             asQueryParam(scrollId)
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -319,16 +319,16 @@ trait DraftController {
       "/:article_id",
       operation(
         apiOperation[Article]("getArticleById")
-          summary "Show article with a specified Id"
-          description "Shows the article for the specified id."
-          parameters (
+          .summary("Show article with a specified Id")
+          .description("Shows the article for the specified id.")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asQueryParam(language),
             asQueryParam(fallback)
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500))
     ) {
       val userInfo = user.getUser
       val articleId = long(this.articleId.paramName)
@@ -349,16 +349,17 @@ trait DraftController {
       "/:article_id/history",
       operation(
         apiOperation[Article]("getArticleById")
-          summary "Get all saved articles with a specified Id, latest revision first"
-          description "Retrieves all current and previously published articles with the specified id, latest revision first."
-          parameters (
+          .summary("Get all saved articles with a specified Id, latest revision first")
+          .description(
+            "Retrieves all current and previously published articles with the specified id, latest revision first.")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asQueryParam(language),
             asQueryParam(fallback)
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500))
     ) {
       val userInfo = user.getUser
       val articleId = long(this.articleId.paramName)
@@ -374,14 +375,14 @@ trait DraftController {
       "/external_id/:deprecated_node_id",
       operation(
         apiOperation[ContentId]("getInternalIdByExternalId")
-          summary "Get internal id of article for a specified ndla_node_id"
-          description "Get internal id of article for a specified ndla_node_id"
-          parameters (
+          .summary("Get internal id of article for a specified ndla_node_id")
+          .description("Get internal id of article for a specified ndla_node_id")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(deprecatedNodeId)
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -397,15 +398,15 @@ trait DraftController {
       "/licenses/",
       operation(
         apiOperation[List[License]]("getLicenses")
-          summary "Show all valid licenses"
-          description "Shows all valid licenses"
-          parameters (
+          .summary("Show all valid licenses")
+          .description("Shows all valid licenses")
+          .parameters(
             asHeaderParam(correlationId),
             asQueryParam(filter),
             asQueryParam(filterNot)
-        )
-          responseMessages (response403, response500)
-          authorizations "oauth2")
+          )
+          .responseMessages(response403, response500)
+          .authorizations("oauth2"))
     ) {
       val filterNot = paramOrNone(this.filterNot.paramName)
       val filter = paramOrNone(this.filter.paramName)
@@ -427,14 +428,14 @@ trait DraftController {
       "/",
       operation(
         apiOperation[Article]("newArticle")
-          summary "Create a new article"
-          description "Creates a new article"
-          parameters (
+          .summary("Create a new article")
+          .description("Creates a new article")
+          .parameters(
             asHeaderParam(correlationId),
             bodyParam[NewArticle]
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -461,15 +462,15 @@ trait DraftController {
       "/:article_id",
       operation(
         apiOperation[Article]("updateArticle")
-          summary "Update an existing article"
-          description "Update an existing article"
-          parameters (
+          .summary("Update an existing article")
+          .description("Update an existing article")
+          .parameters(
             asHeaderParam[Option[String]](correlationId),
             asPathParam[Long](articleId),
             bodyParam[UpdatedArticle]
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -500,14 +501,14 @@ trait DraftController {
       "/:article_id/status/:STATUS",
       operation(
         apiOperation[Article]("updateArticleStatus")
-          summary "Update status of an article"
-          description "Update status of an article"
-          parameters (
+          .summary("Update status of an article")
+          .description("Update status of an article")
+          .parameters(
             asPathParam(articleId),
             asPathParam(statuss)
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -527,15 +528,15 @@ trait DraftController {
       "/:article_id/validate/",
       operation(
         apiOperation[ContentId]("validateArticle")
-          summary "Validate an article"
-          description "Validate an article"
-          parameters (
+          .summary("Validate an article")
+          .description("Validate an article")
+          .parameters(
             asHeaderParam[Option[String]](correlationId),
             asPathParam[Long](articleId),
             bodyParam[Option[UpdatedArticle]]
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -564,15 +565,15 @@ trait DraftController {
       "/:article_id/language/:language",
       operation(
         apiOperation[Article]("deleteLanguage")
-          summary "Delete language from article"
-          description "Delete language from article"
-          parameters (
+          .summary("Delete language from article")
+          .description("Delete language from article")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asPathParam(pathLanguage)
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response404, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -586,10 +587,10 @@ trait DraftController {
       "/status-state-machine/",
       operation(
         apiOperation[Map[String, List[String]]]("getStatusStateMachine")
-          summary "Get status state machine"
-          description "Get status state machine"
-          authorizations "oauth2"
-          responseMessages response500
+          .summary("Get status state machine")
+          .description("Get status state machine")
+          .authorizations("oauth2")
+          .responseMessages(response500)
       )
     ) {
       val userInfo = user.getUser
@@ -602,17 +603,17 @@ trait DraftController {
       "/clone/:article_id",
       operation(
         apiOperation[Article]("cloneArticle")
-          summary "Create a new article with the content of the article with the specified id"
-          description "Create a new article with the content of the article with the specified id"
-          parameters (
+          .summary("Create a new article with the content of the article with the specified id")
+          .description("Create a new article with the content of the article with the specified id")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asQueryParam(language),
             asQueryParam(copiedTitleFlag),
             asQueryParam(fallback)
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500))
     ) {
       val userInfo = user.getUser
       val articleId = long(this.articleId.paramName)

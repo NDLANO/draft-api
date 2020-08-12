@@ -37,7 +37,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   val lang = "nb"
   val articleId = 1
 
-  override def beforeEach: Unit = {
+  override def beforeEach(): Unit = {
     when(user.getUser).thenReturn(TestData.userWithWriteAccess)
   }
 

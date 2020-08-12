@@ -30,11 +30,11 @@ trait UserDataController {
       "/",
       operation(
         apiOperation[UserData]("getUserData")
-          summary "Retrieves user's data"
-          description "Retrieves user's data"
-          parameters asHeaderParam(correlationId)
-          responseMessages (response403, response500)
-          authorizations "oauth2"
+          .summary("Retrieves user's data")
+          .description("Retrieves user's data")
+          .parameters(asHeaderParam(correlationId))
+          .responseMessages(response403, response500)
+          .authorizations(" oauth2")
       )
     ) {
       val userInfo = user.getUser
@@ -50,14 +50,14 @@ trait UserDataController {
       "/",
       operation(
         apiOperation[UserData]("updateUserData")
-          summary "Update data of logged in user"
-          description "Update data of logged in user"
-          parameters (
+          .summary("Update data of logged in user")
+          .description("Update data of logged in user")
+          .parameters(
             asHeaderParam[Option[String]](correlationId),
             bodyParam[UpdatedUserData]
-        )
-          authorizations "oauth2"
-          responseMessages (response400, response403, response500))
+          )
+          .authorizations("oauth2")
+          .responseMessages(response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {

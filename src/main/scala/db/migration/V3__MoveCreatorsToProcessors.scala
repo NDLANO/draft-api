@@ -53,7 +53,7 @@ class V3__MoveCreatorsToProcessors extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -82,7 +82,7 @@ class V3__MoveCreatorsToProcessors extends BaseJavaMigration {
     dataObject.setType("jsonb")
     dataObject.setValue(document)
 
-    sql"update articledata set document = ${dataObject} where id = ${id}".update().apply
+    sql"update articledata set document = ${dataObject} where id = ${id}".update().apply()
   }
 
   case class V3_Author(`type`: String, name: String)

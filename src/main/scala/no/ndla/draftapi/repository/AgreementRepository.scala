@@ -74,7 +74,7 @@ trait AgreementRepository {
       val agr = Agreement.syntax("agr")
       sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause"
         .map(Agreement.fromResultSet(agr))
-        .single
+        .single()
         .apply()
     }
 
@@ -83,7 +83,7 @@ trait AgreementRepository {
       val agr = Agreement.syntax("agr")
       sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause"
         .map(Agreement.fromResultSet(agr))
-        .list
+        .list()
         .apply()
     }
 

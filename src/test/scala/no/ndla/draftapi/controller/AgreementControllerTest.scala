@@ -26,7 +26,7 @@ class AgreementControllerTest extends UnitSuite with TestEnvironment with Scalat
 
   val agreementId = 1
 
-  override def beforeEach: Unit = {
+  override def beforeEach(): Unit = {
     when(user.getUser).thenReturn(TestData.userWithWriteAccess)
   }
 

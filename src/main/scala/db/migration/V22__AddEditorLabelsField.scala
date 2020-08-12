@@ -52,7 +52,7 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -61,7 +61,7 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -72,7 +72,7 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply
+      .apply()
   }
 
   private[migration] def convertArticleUpdate(document: String): String = {

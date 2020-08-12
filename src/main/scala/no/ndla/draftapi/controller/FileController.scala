@@ -43,15 +43,15 @@ trait FileController {
       "/",
       operation(
         apiOperation[api.UploadedFile]("uploadFile")
-          summary "Uploads provided file"
-          description "Uploads provided file"
-          authorizations "oauth2"
-          consumes "multipart/form-data"
-          parameters (
+          .summary("Uploads provided file")
+          .description("Uploads provided file")
+          .authorizations("oauth2")
+          .consumes("multipart/form-data")
+          .parameters(
             asHeaderParam(correlationId),
             asFileParam(file)
-        )
-          responseMessages (response400, response403, response500))
+          )
+          .responseMessages(response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
@@ -72,13 +72,13 @@ trait FileController {
       "/",
       operation(
         apiOperation[Unit]("Delete")
-          summary "Deletes provided file"
-          description "Deletes provided file"
-          authorizations "oauth2"
-          parameters (
+          .summary("Deletes provided file")
+          .description("Deletes provided file")
+          .authorizations("oauth2")
+          .parameters(
             asHeaderParam(correlationId),
           )
-          responseMessages (response400, response403, response500))
+          .responseMessages(response400, response403, response500))
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {

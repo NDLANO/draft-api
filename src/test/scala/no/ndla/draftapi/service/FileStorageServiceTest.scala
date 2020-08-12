@@ -15,7 +15,7 @@ import org.mockito.Mockito._
 class FileStorageServiceTest extends UnitSuite with TestEnvironment {
   override lazy val fileStorage = new FileStorageService
 
-  override def beforeEach: Unit = reset(amazonClient)
+  override def beforeEach(): Unit = reset(amazonClient)
 
   test("That objectExists returns true when file exists") {
     val argumentCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])

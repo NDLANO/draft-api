@@ -22,11 +22,11 @@ trait RuleController {
       "/html/",
       operation(
         apiOperation[Map[String, Any]]("getHtmlRules")
-          summary "Show all HTML validation rules"
-          description "Shows all the HTML validation rules."
-          parameters asHeaderParam(correlationId)
-          authorizations "oauth2"
-          responseMessages (response403, response500)
+          .summary("Show all HTML validation rules")
+          .description("Shows all the HTML validation rules.")
+          .parameters(asHeaderParam(correlationId))
+          .authorizations("oauth2")
+          .responseMessages(response403, response500)
       )
     ) {
       val userInfo = user.getUser
@@ -39,11 +39,11 @@ trait RuleController {
       "/embed-tag/",
       operation(
         apiOperation[Map[String, Any]]("getEmbedTagRules")
-          summary "Show all embed tag validation rules"
-          description "Shows all the embed tag  validation rules."
-          parameters asHeaderParam(correlationId)
-          authorizations "oauth2"
-          responseMessages (response403, response500)
+          .summary("Show all embed tag validation rules")
+          .description("Shows all the embed tag  validation rules.")
+          .parameters(asHeaderParam(correlationId))
+          .authorizations("oauth2")
+          .responseMessages(response403, response500)
       )
     ) {
       val userInfo = user.getUser
@@ -56,11 +56,11 @@ trait RuleController {
       "/mathml/",
       operation(
         apiOperation[Map[String, Any]]("getMathMLRules")
-          summary "Show all MathML validation rules"
-          description "Shows all the MathML validation rules."
-          parameters asHeaderParam(correlationId)
-          authorizations "oauth2"
-          responseMessages (response403, response500)
+          .summary("Show all MathML validation rules")
+          .description("Shows all the MathML validation rules.")
+          .parameters(asHeaderParam(correlationId))
+          .authorizations("oauth2")
+          .responseMessages(response403, response500)
       )
     ) {
       val userInfo = user.getUser

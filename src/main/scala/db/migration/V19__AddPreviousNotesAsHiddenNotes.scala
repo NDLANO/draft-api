@@ -56,7 +56,7 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"), rs.long("article_id"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -65,7 +65,7 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
-      .list
+      .list()
       .apply()
   }
 
@@ -76,7 +76,7 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply
+      .apply()
   }
 
   def convertArticleUpdate(articleId: Long, id: Long, document: String)(implicit session: DBSession): String = {
