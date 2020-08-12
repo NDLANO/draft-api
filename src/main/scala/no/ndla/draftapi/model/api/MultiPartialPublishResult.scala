@@ -13,7 +13,7 @@ import org.scalatra.swagger.runtime.annotations.ApiModelProperty
 import scala.annotation.meta.field
 
 @ApiModel(description = "Single failed result")
-case class SinglePublishResult(
+case class PartialPublishFailure(
     @(ApiModelProperty @field)(description = "Id of the article in question") id: Long,
     @(ApiModelProperty @field)(description = "Error message") message: String
 )
@@ -21,5 +21,5 @@ case class SinglePublishResult(
 @ApiModel(description = "A list of articles that were partial published to article-api")
 case class MultiPartialPublishResult(
     @(ApiModelProperty @field)(description = "Successful ids") successes: Seq[Long],
-    @(ApiModelProperty @field)(description = "Failed ids with error messages") failures: Seq[SinglePublishResult]
+    @(ApiModelProperty @field)(description = "Failed ids with error messages") failures: Seq[PartialPublishFailure]
 )

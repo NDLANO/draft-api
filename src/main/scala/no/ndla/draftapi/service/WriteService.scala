@@ -640,7 +640,7 @@ trait WriteService {
           val failures = res.collect {
             case (id, Failure(ex)) => {
               logger.error(s"Partial publishing ${id} failed with ${ex.getMessage}", ex)
-              SinglePublishResult(id, ex.getMessage)
+              PartialPublishFailure(id, ex.getMessage)
             }
           }
 
