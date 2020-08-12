@@ -9,6 +9,7 @@ package no.ndla.draftapi.service
 
 import java.io.ByteArrayInputStream
 import java.util.Date
+import java.util.concurrent.Executors
 
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
@@ -16,7 +17,7 @@ import io.lemonlabs.uri.Path
 import io.lemonlabs.uri.dsl._
 import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import no.ndla.draftapi.auth.UserInfo
-import no.ndla.draftapi.integration.{ArticleApiClient, SearchApiClient, TaxonomyApiClient}
+import no.ndla.draftapi.integration.{ArticleApiClient, PartialPublishArticle, SearchApiClient, TaxonomyApiClient}
 import no.ndla.draftapi.model.api.{Article, _}
 import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
@@ -29,6 +30,8 @@ import no.ndla.validation._
 import org.jsoup.nodes.Element
 import org.scalatra.servlet.FileItem
 
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.math.max
 import scala.util.{Failure, Random, Success, Try}
@@ -598,5 +601,56 @@ trait WriteService {
       }
     }
 
+    def partialPublish(id: Long, language: String, fallback: Boolean): Try[api.Article] =
+      partialPublish(id)._2.flatMap(article => converterService.toApiArticle(article, language, fallback))
+
+    def partialPublish(id: Long): (Long, Try[domain.Article]) = {
+      draftRepository.withId(id) match {
+        case Some(articleToPartialPublish) =>
+          val partialArticle = PartialPublishArticle(
+            grepCodes = Some(articleToPartialPublish.grepCodes)
+          )
+
+          (id, articleApiClient.partialPublishArticle(id, partialArticle).map(_ => articleToPartialPublish))
+        case None => (id, Failure(NotFoundException(s"Could not find draft with id of ${id} to partial publish")))
+      }
+
+    }
+
+    def partialPublishMultiple(ids: Seq[Long]): Try[MultiPartialPublishResult] = {
+      implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(100))
+      val requestInfo = RequestInfo()
+
+      val futures = ids.map(id =>
+        Future {
+          requestInfo.setRequestInfo()
+          partialPublish(id)
+      })
+
+      val duration = ids.size.minutes // Max 1 minute PR article to partial publish for timeout
+      val future = Future.sequence(futures)
+      Try(Await.result(future, duration)) match {
+
+        case Failure(ex) =>
+          logger.error("Awaiting for partial publishing future failed.", ex)
+          Failure(ex)
+
+        case Success(res) =>
+          val successes = res.collect { case (id, Success(_)) => id }
+          val failures = res.collect {
+            case (id, Failure(ex)) => {
+              logger.error(s"Partial publishing ${id} failed with ${ex.getMessage}", ex)
+              PartialPublishFailure(id, ex.getMessage)
+            }
+          }
+
+          Success(
+            MultiPartialPublishResult(
+              successes = successes,
+              failures = failures
+            )
+          )
+      }
+    }
   }
 }

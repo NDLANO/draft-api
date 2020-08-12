@@ -7,22 +7,22 @@
 
 package no.ndla.draftapi.integration
 
-import no.ndla.draftapi.DraftApiProperties.ArticleApiHost
-import no.ndla.draftapi.model.{api, domain}
+import no.ndla.draftapi.DraftApiProperties.{ApiGatewayHost, ArticleApiHost}
 import no.ndla.draftapi.model.api.{ArticleApiValidationError, ContentId}
-import no.ndla.draftapi.model.domain.Article
+import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.service.ConverterService
 import no.ndla.network.NdlaClient
 import no.ndla.network.model.HttpRequestException
-import no.ndla.validation.{ValidationException, ValidationMessage}
-import org.json4s.DefaultFormats
-import org.json4s.native.Serialization.write
+import no.ndla.validation.ValidationException
 import org.json4s.jackson.JsonMethods.parse
-
-import scala.util.{Failure, Success, Try}
+import org.json4s.native.Serialization.write
+import org.json4s.{DefaultFormats, Formats}
 import scalaj.http.Http
 
+import scala.util.{Failure, Try}
+
 case class ArticleApiId(id: Long)
+case class PartialPublishArticle(grepCodes: Option[Seq[String]])
 
 trait ArticleApiClient {
   this: NdlaClient with ConverterService =>
@@ -30,7 +30,20 @@ trait ArticleApiClient {
 
   class ArticleApiClient(ArticleBaseUrl: String = s"http://$ArticleApiHost") {
     private val InternalEndpoint = s"$ArticleBaseUrl/intern"
+    private val PublicEndpoint = s"http://$ApiGatewayHost/article-api/v2/articles"
     private val deleteTimeout = 1000 * 10 // 10 seconds
+    private val timeout = 1000 * 15
+
+    def partialPublishArticle(
+        id: Long,
+        article: PartialPublishArticle,
+    ): Try[Long] = {
+      implicit val format: Formats = org.json4s.DefaultFormats
+      patchWithData[ArticleApiId, PartialPublishArticle](
+        s"$PublicEndpoint/partial-publish/$id",
+        article,
+      ).map(res => res.id)
+    }
 
     def updateArticle(id: Long,
                       article: domain.Article,
@@ -83,6 +96,19 @@ trait ArticleApiClient {
                                                                           format: org.json4s.Formats): Try[A] = {
       ndlaClient.fetchWithForwardedAuth[A](
         Http(endpointUrl).method("DELETE").params(params.toMap).timeout(deleteTimeout, deleteTimeout))
+    }
+
+    private def patchWithData[A, B <: AnyRef](endpointUrl: String, data: B, params: (String, String)*)(
+        implicit mf: Manifest[A],
+        format: org.json4s.Formats): Try[A] = {
+      ndlaClient.fetchWithForwardedAuth[A](
+        Http(endpointUrl)
+          .postData(write(data))
+          .timeout(timeout, timeout)
+          .method("PATCH")
+          .params(params.toMap)
+          .header("content-type", "application/json")
+      )
     }
 
     private def postWithData[A, B <: AnyRef](endpointUrl: String, data: B, params: (String, String)*)(

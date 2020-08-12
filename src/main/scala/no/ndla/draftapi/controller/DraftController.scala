@@ -628,5 +628,62 @@ trait DraftController {
       }
     }
 
+    post(
+      "/partial-publish/:article_id",
+      operation(
+        apiOperation[Article]("partialPublish")
+          summary "Partial publish selected fields"
+          description "Partial publish selected fields"
+          parameters (
+            asHeaderParam(correlationId),
+            asPathParam(articleId),
+            asQueryParam(language),
+            asQueryParam(fallback)
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500)
+      )
+    ) {
+      val userInfo = user.getUser
+      val articleId = long(this.articleId.paramName)
+      val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+      val fallback = booleanOrDefault(this.fallback.paramName, default = false)
+
+      doOrAccessDenied(userInfo.canWrite) {
+        writeService.partialPublish(articleId, language, fallback) match {
+          case Success(article) => Ok(article)
+          case Failure(ex)      => errorHandler(ex)
+        }
+      }
+
+    }
+
+    post(
+      "/partial-publish/",
+      operation(
+        apiOperation[MultiPartialPublishResult]("partialPublishMultiple")
+          summary "Partial publish selected fields for multiple articles"
+          description "Partial publish selected fields for multiple articles"
+          parameters (
+            asHeaderParam(correlationId),
+            bodyParam[Seq[Long]]
+        )
+          authorizations "oauth2"
+          responseMessages (response404, response500)
+      )
+    ) {
+      val userInfo = user.getUser
+      doOrAccessDenied(userInfo.canWrite) {
+        extract[Seq[Long]](request.body) match {
+          case Failure(ex) => errorHandler(ex)
+          case Success(articleIds) =>
+            writeService.partialPublishMultiple(articleIds) match {
+              case Success(response) => Ok(response)
+              case Failure(ex)       => errorHandler(ex)
+            }
+        }
+      }
+    }
+
   }
 }
