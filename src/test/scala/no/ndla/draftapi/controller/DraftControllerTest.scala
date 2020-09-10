@@ -12,7 +12,7 @@ import java.util.Date
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.{ArticleType, Language, Sort}
+import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchSettings, Sort}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import no.ndla.mapping.License.getLicenses
@@ -90,29 +90,21 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
   test("GET / should use size of id-list as page-size if defined") {
     val searchMock = mock[domain.SearchResult[api.ArticleSummary]]
     when(searchMock.scrollId).thenReturn(None)
-    when(
-      articleSearchService.all(any[List[Long]],
-                               any[String],
-                               any[Option[String]],
-                               any[Int],
-                               any[Int],
-                               any[Sort.Value],
-                               any[Seq[String]],
-                               any[Boolean],
-                               any[Seq[String]]))
+    when(articleSearchService.matchingQuery(any[SearchSettings]))
       .thenReturn(Success(searchMock))
 
     get("/test/", "ids" -> "1,2,3,4", "page-size" -> "10", "language" -> "nb") {
       status should equal(200)
-      verify(articleSearchService, times(1)).all(List(1, 2, 3, 4),
-                                                 Language.DefaultLanguage,
-                                                 None,
-                                                 1,
-                                                 4,
-                                                 Sort.ByTitleAsc,
-                                                 ArticleType.all,
-                                                 fallback = false,
-                                                 grepCodes = Seq.empty)
+
+      verify(articleSearchService, times(1)).matchingQuery(
+        TestData.searchSettings.copy(
+          withIdIn = List(1, 2, 3, 4),
+          searchLanguage = Language.DefaultLanguage,
+          page = 1,
+          pageSize = 4,
+          sort = Sort.ByTitleAsc,
+          articleTypes = ArticleType.all
+        ))
     }
   }
 
@@ -237,17 +229,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       Seq.empty[api.ArticleSummary],
       Some(scrollId)
     )
-    when(
-      articleSearchService.all(any[List[Long]],
-                               any[String],
-                               any[Option[String]],
-                               any[Int],
-                               any[Int],
-                               any[Sort.Value],
-                               any[Seq[String]],
-                               any[Boolean],
-                               any[Seq[String]]))
-      .thenReturn(Success(searchResponse))
+    when(articleSearchService.matchingQuery(any[SearchSettings])).thenReturn(Success(searchResponse))
 
     get(s"/test/") {
       status should be(200)
@@ -275,25 +257,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       status should be(200)
     }
 
-    verify(articleSearchService, times(0)).all(any[List[Long]],
-                                               any[String],
-                                               any[Option[String]],
-                                               any[Int],
-                                               any[Int],
-                                               any[Sort.Value],
-                                               any[Seq[String]],
-                                               any[Boolean],
-                                               any[Seq[String]])
-    verify(articleSearchService, times(0)).matchingQuery(any[String],
-                                                         any[List[Long]],
-                                                         any[String],
-                                                         any[Option[String]],
-                                                         any[Int],
-                                                         any[Int],
-                                                         any[Sort.Value],
-                                                         any[Seq[String]],
-                                                         any[Boolean],
-                                                         any[Seq[String]])
+    verify(articleSearchService, times(0)).matchingQuery(any[SearchSettings])
     verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 
@@ -316,25 +280,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       status should be(200)
     }
 
-    verify(articleSearchService, times(0)).all(any[List[Long]],
-                                               any[String],
-                                               any[Option[String]],
-                                               any[Int],
-                                               any[Int],
-                                               any[Sort.Value],
-                                               any[Seq[String]],
-                                               any[Boolean],
-                                               any[Seq[String]])
-    verify(articleSearchService, times(0)).matchingQuery(any[String],
-                                                         any[List[Long]],
-                                                         any[String],
-                                                         any[Option[String]],
-                                                         any[Int],
-                                                         any[Int],
-                                                         any[Sort.Value],
-                                                         any[Seq[String]],
-                                                         any[Boolean],
-                                                         any[Seq[String]])
+    verify(articleSearchService, times(0)).matchingQuery(any[SearchSettings])
     verify(articleSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 

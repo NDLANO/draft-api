@@ -486,4 +486,17 @@ object TestData {
 
   val sampleApiGrepCodesSearchResult = api.GrepCodesSearchResult(10, 1, 1, Seq("a", "b"))
   val sampleApiTagsSearchResult = api.TagsSearchResult(10, 1, 1, "nb", Seq("a", "b"))
+
+  val searchSettings = SearchSettings(
+    query = None,
+    withIdIn = List.empty,
+    searchLanguage = Language.DefaultLanguage,
+    license = None,
+    page = 1,
+    pageSize = 10,
+    sort = Sort.ByIdAsc,
+    articleTypes = Seq.empty,
+    fallback = false,
+    grepCodes = Seq.empty
+  )
 }
