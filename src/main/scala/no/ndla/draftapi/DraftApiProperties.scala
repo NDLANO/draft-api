@@ -83,7 +83,8 @@ object DraftApiProperties extends LazyLogging {
   val MaxPageSize = 10000
   val IndexBulkSize = 200
   val ElasticSearchIndexMaxResultWindow = 10000
-  val ElasticSearchScrollKeepAlive = "10s"
+  val ElasticSearchScrollKeepAlive = "1m"
+  val InitialScrollContextKeywords = List("0", "initial", "start", "first")
 
   val CorrelationIdKey = "correlationID"
   val CorrelationIdHeader = "X-Correlation-ID"

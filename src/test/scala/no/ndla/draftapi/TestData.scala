@@ -497,6 +497,17 @@ object TestData {
     sort = Sort.ByIdAsc,
     articleTypes = Seq.empty,
     fallback = false,
-    grepCodes = Seq.empty
+    grepCodes = Seq.empty,
+    shouldScroll = false
+  )
+
+  val agreementSearchSettings = AgreementSearchSettings(
+    query = None,
+    withIdIn = List.empty,
+    license = None,
+    page = 1,
+    pageSize = 10,
+    sort = Sort.ByIdAsc,
+    shouldScroll = false
   )
 }

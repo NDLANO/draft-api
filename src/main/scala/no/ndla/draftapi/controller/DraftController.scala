@@ -8,6 +8,7 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.DraftApiProperties.InitialScrollContextKeywords
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain
@@ -164,7 +165,8 @@ trait DraftController {
                        idList: List[Long],
                        articleTypesFilter: Seq[String],
                        fallback: Boolean,
-                       grepCodes: Seq[String]) = {
+                       grepCodes: Seq[String],
+                       shouldScroll: Boolean) = {
       val searchSettings = query match {
         case Some(q) =>
           SearchSettings(
@@ -177,7 +179,8 @@ trait DraftController {
             sort = sort.getOrElse(Sort.ByRelevanceDesc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
             fallback = fallback,
-            grepCodes = grepCodes
+            grepCodes = grepCodes,
+            shouldScroll = shouldScroll
           )
         case None =>
           SearchSettings(
@@ -190,7 +193,8 @@ trait DraftController {
             sort = sort.getOrElse(Sort.ByTitleAsc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
             fallback = fallback,
-            grepCodes = grepCodes
+            grepCodes = grepCodes,
+            shouldScroll = shouldScroll
           )
       }
 
@@ -272,8 +276,21 @@ trait DraftController {
           val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
           val fallback = booleanOrDefault(this.fallback.paramName, default = false)
           val grepCodes = paramAsListOfString(this.grepCodes.paramName)
+          val shouldScroll = paramOrNone(this.scrollId.paramName).exists(InitialScrollContextKeywords.contains)
 
-          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, grepCodes)
+          search(
+            query,
+            sort,
+            language,
+            license,
+            page,
+            pageSize,
+            idList,
+            articleTypesFilter,
+            fallback,
+            grepCodes,
+            shouldScroll
+          )
         }
       }
     }
@@ -308,8 +325,21 @@ trait DraftController {
               val articleTypesFilter = searchParams.articleTypes
               val fallback = searchParams.fallback.getOrElse(false)
               val grepCodes = searchParams.grepCodes
+              val shouldScroll = searchParams.scrollId.exists(InitialScrollContextKeywords.contains)
 
-              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, grepCodes)
+              search(
+                query,
+                sort,
+                language,
+                license,
+                page,
+                pageSize,
+                idList,
+                articleTypesFilter,
+                fallback,
+                grepCodes,
+                shouldScroll
+              )
             }
           case Failure(ex) => errorHandler(ex)
         }

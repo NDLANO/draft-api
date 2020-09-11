@@ -628,7 +628,8 @@ class ArticleSearchServiceTest extends IntegrationSuite(withSearch = true) with 
       searchSettings.copy(
         searchLanguage = Language.AllLanguages,
         fallback = true,
-        pageSize = pageSize
+        pageSize = pageSize,
+        shouldScroll = true
       ))
 
     val Success(scroll1) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
@@ -651,7 +652,8 @@ class ArticleSearchServiceTest extends IntegrationSuite(withSearch = true) with 
         query = Some("about"),
         searchLanguage = Language.AllLanguages,
         fallback = true,
-        pageSize = 1
+        pageSize = 1,
+        shouldScroll = true
       ))
     val Success(scroll) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
 

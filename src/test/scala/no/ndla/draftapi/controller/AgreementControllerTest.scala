@@ -7,7 +7,7 @@
 
 package no.ndla.draftapi.controller
 
-import no.ndla.draftapi.model.domain.{SearchResult, Sort}
+import no.ndla.draftapi.model.domain.{AgreementSearchSettings, SearchResult, Sort}
 import no.ndla.draftapi.model.api
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import org.json4s.DefaultFormats
@@ -62,7 +62,7 @@ class AgreementControllerTest extends UnitSuite with TestEnvironment with Scalat
       Seq.empty[api.AgreementSummary],
       Some(scrollId)
     )
-    when(agreementSearchService.all(any[List[Long]], any[Option[String]], any[Int], any[Int], any[Sort.Value]))
+    when(agreementSearchService.matchingQuery(any[AgreementSearchSettings]))
       .thenReturn(Success(searchResponse))
 
     get(s"/test/") {
@@ -91,17 +91,7 @@ class AgreementControllerTest extends UnitSuite with TestEnvironment with Scalat
       status should be(200)
     }
 
-    verify(agreementSearchService, times(0)).all(any[List[Long]],
-                                                 any[Option[String]],
-                                                 any[Int],
-                                                 any[Int],
-                                                 any[Sort.Value])
-    verify(agreementSearchService, times(0)).matchingQuery(any[String],
-                                                           any[List[Long]],
-                                                           any[Option[String]],
-                                                           any[Int],
-                                                           any[Int],
-                                                           any[Sort.Value])
+    verify(agreementSearchService, times(0)).matchingQuery(any[AgreementSearchSettings])
     verify(agreementSearchService, times(1)).scroll(eqTo(scrollId), any[String])
   }
 
