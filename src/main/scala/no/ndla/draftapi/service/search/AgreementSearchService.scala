@@ -59,9 +59,12 @@ trait AgreementSearchService {
                       queryBuilder: BoolQuery): Try[SearchResult[api.AgreementSummary]] = {
       val idFilter = if (settings.withIdIn.isEmpty) None else Some(idsQuery(settings.withIdIn))
 
-      // TODO: License filter?
+      val licenseFilter = settings.license match {
+        case None      => None
+        case Some(lic) => Some(termQuery("license", lic))
+      }
 
-      val filters = List(idFilter)
+      val filters = List(idFilter, licenseFilter)
       val filteredSearch = queryBuilder.filter(filters.flatten)
 
       val (startAt, numResults) = getStartAtAndNumResults(settings.page, settings.pageSize)
