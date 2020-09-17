@@ -8,6 +8,7 @@
 package no.ndla.draftapi.service.search
 
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
+import no.ndla.draftapi.TestData.{agreementSearchSettings, searchSettings}
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
@@ -145,7 +146,7 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   }
 
   test("That all returns all documents ordered by id ascending") {
-    val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdAsc)
+    val Success(results) = agreementSearchService.matchingQuery(agreementSearchSettings.copy(sort = Sort.ByIdAsc))
     val hits = results.results
     results.totalCount should be(10)
     hits.head.id should be(2)
@@ -161,7 +162,7 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   }
 
   test("That all returns all documents ordered by id descending") {
-    val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByIdDesc)
+    val Success(results) = agreementSearchService.matchingQuery(agreementSearchSettings.copy(sort = Sort.ByIdDesc))
     val hits = results.results
     results.totalCount should be(10)
     hits.head.id should be(11)
@@ -169,7 +170,7 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   }
 
   test("That all returns all documents ordered by title ascending") {
-    val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleAsc)
+    val Success(results) = agreementSearchService.matchingQuery(agreementSearchSettings.copy(sort = Sort.ByTitleAsc))
     val hits = results.results
     results.totalCount should be(10)
     hits.head.id should be(2)
@@ -184,7 +185,7 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   }
 
   test("That all returns all documents ordered by title descending") {
-    val Success(results) = agreementSearchService.all(List(), None, 1, 10, Sort.ByTitleDesc)
+    val Success(results) = agreementSearchService.matchingQuery(agreementSearchSettings.copy(sort = Sort.ByTitleDesc))
     val hits = results.results
     results.totalCount should be(10)
     hits.head.id should be(11)
@@ -200,7 +201,8 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   }
 
   test("That paging returns only hits on current page and not more than page-size") {
-    val Success(page1) = agreementSearchService.all(List(), None, 1, 2, Sort.ByTitleAsc)
+    val Success(page1) =
+      agreementSearchService.matchingQuery(agreementSearchSettings.copy(page = 1, pageSize = 2, sort = Sort.ByTitleAsc))
     val hits1 = page1.results
     page1.totalCount should be(10)
     page1.page.get should be(1)
@@ -208,7 +210,8 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
     hits1.head.id should be(2)
     hits1.last.id should be(10)
 
-    val Success(page2) = agreementSearchService.all(List(), None, 2, 2, Sort.ByTitleAsc)
+    val Success(page2) =
+      agreementSearchService.matchingQuery(agreementSearchSettings.copy(page = 2, pageSize = 2, sort = Sort.ByTitleAsc))
     val hits2 = page2.results
     page2.totalCount should be(10)
     page2.page.get should be(2)
@@ -218,45 +221,62 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
   }
 
   test("That search combined with filter by id only returns documents matching the query with one of the given ids") {
-    val Success(results) = agreementSearchService.matchingQuery("Du", List(10), None, 1, 10, Sort.ByRelevanceDesc)
+    val Success(results) = agreementSearchService.matchingQuery(
+      agreementSearchSettings.copy(
+        query = Some("Du"),
+        withIdIn = List(10),
+        sort = Sort.ByRelevanceDesc
+      ))
     val hits = results.results
     results.totalCount should be(1)
     hits.head.id should be(10)
   }
 
   test("That search matches title") {
-    val Success(results) = agreementSearchService.matchingQuery("Ugler", List(), None, 1, 10, Sort.ByTitleAsc)
+    val Success(results) = agreementSearchService.matchingQuery(
+      agreementSearchSettings.copy(
+        query = Some("Ugler"),
+        sort = Sort.ByTitleAsc
+      ))
     val hits = results.results
     results.totalCount should be(1)
     hits.head.id should be(3)
   }
 
   test("That search does not return superman since it has license copyrighted and license is not specified") {
-    val Success(results) = agreementSearchService.matchingQuery("supermann", List(), None, 1, 10, Sort.ByTitleAsc)
+    val Success(results) = agreementSearchService.matchingQuery(
+      agreementSearchSettings.copy(
+        query = Some("supermann"),
+        sort = Sort.ByTitleAsc
+      ))
     results.totalCount should be(0)
   }
 
   test("Searching with logical AND only returns results with all terms") {
-    val Success(search1) = agreementSearchService.matchingQuery("aper + du", List(), None, 1, 10, Sort.ByIdAsc)
+    val Success(search1) = agreementSearchService.matchingQuery(agreementSearchSettings.copy(query = Some("aper + du")))
     val hits1 = search1.results
     hits1.map(_.id) should equal(Seq(2, 7, 8, 9, 10))
 
-    val Success(search2) = agreementSearchService.matchingQuery("lurerier + dersom", List(), None, 1, 10, Sort.ByIdAsc)
+    val Success(search2) =
+      agreementSearchService.matchingQuery(agreementSearchSettings.copy(query = Some("lurerier + dersom")))
     val hits2 = search2.results
     hits2.map(_.id) should equal(Seq(8))
 
     val Success(search3) =
-      agreementSearchService.matchingQuery("tyv + stjeler - Lurerier", List(), None, 1, 10, Sort.ByIdAsc)
+      agreementSearchService.matchingQuery(agreementSearchSettings.copy(query = Some("tyv + stjeler - Lurerier")))
     val hits3 = search3.results
     hits3.map(_.id) should equal(Seq(4, 7, 8))
 
-    val Success(search4) = agreementSearchService.matchingQuery("aper -slemme", List(), None, 1, 10, Sort.ByIdAsc)
+    val Success(search4) =
+      agreementSearchService.matchingQuery(agreementSearchSettings.copy(query = Some("aper -slemme")))
     val hits4 = search4.results
     hits4.map(_.id) should equal(Seq(2))
   }
 
   test("search in content should be ranked lower than title") {
-    val Success(search) = agreementSearchService.matchingQuery("lov", List(), None, 1, 10, Sort.ByRelevanceDesc)
+    val Success(search) =
+      agreementSearchService.matchingQuery(
+        agreementSearchSettings.copy(query = Some("lov"), sort = Sort.ByRelevanceDesc))
     val hits = search.results
     hits.map(_.id) should equal(Seq(8, 2))
   }
@@ -266,7 +286,7 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
     val expectedIds = List(2, 3, 4, 5, 6, 7, 8, 9, 10, 11).sliding(pageSize, pageSize).toList
 
     val Success(initialSearch) =
-      agreementSearchService.all(List.empty, None, 1, pageSize, Sort.ByIdAsc)
+      agreementSearchService.matchingQuery(agreementSearchSettings.copy(pageSize = pageSize, shouldScroll = true))
 
     val Success(scroll1) = agreementSearchService.scroll(initialSearch.scrollId.get, "all")
     val Success(scroll2) = agreementSearchService.scroll(scroll1.scrollId.get, "all")

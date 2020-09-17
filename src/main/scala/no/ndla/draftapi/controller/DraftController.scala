@@ -8,10 +8,11 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.DraftApiProperties.InitialScrollContextKeywords
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.model.api._
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language, Sort}
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language, SearchSettings, Sort}
 import no.ndla.draftapi.service.search.{ArticleSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import no.ndla.draftapi.validation.ContentValidator
@@ -164,11 +165,12 @@ trait DraftController {
                        idList: List[Long],
                        articleTypesFilter: Seq[String],
                        fallback: Boolean,
-                       grepCodes: Seq[String]) = {
-      val result = query match {
+                       grepCodes: Seq[String],
+                       shouldScroll: Boolean) = {
+      val searchSettings = query match {
         case Some(q) =>
-          articleSearchService.matchingQuery(
-            query = q,
+          SearchSettings(
+            query = Some(q),
             withIdIn = idList,
             searchLanguage = language,
             license = license,
@@ -177,23 +179,26 @@ trait DraftController {
             sort = sort.getOrElse(Sort.ByRelevanceDesc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
             fallback = fallback,
-            grepCodes = grepCodes
+            grepCodes = grepCodes,
+            shouldScroll = shouldScroll
           )
         case None =>
-          articleSearchService.all(
+          SearchSettings(
+            query = None,
             withIdIn = idList,
-            language = language,
+            searchLanguage = language,
             license = license,
             page = page,
             pageSize = if (idList.isEmpty) pageSize else idList.size,
             sort = sort.getOrElse(Sort.ByTitleAsc),
             if (articleTypesFilter.isEmpty) ArticleType.all else articleTypesFilter,
             fallback = fallback,
-            grepCodes = grepCodes
+            grepCodes = grepCodes,
+            shouldScroll = shouldScroll
           )
       }
 
-      result match {
+      articleSearchService.matchingQuery(searchSettings) match {
         case Success(searchResult) =>
           val responseHeader = searchResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
           Ok(searchConverterService.asApiSearchResult(searchResult), headers = responseHeader)
@@ -271,8 +276,21 @@ trait DraftController {
           val articleTypesFilter = paramAsListOfString(this.articleTypes.paramName)
           val fallback = booleanOrDefault(this.fallback.paramName, default = false)
           val grepCodes = paramAsListOfString(this.grepCodes.paramName)
+          val shouldScroll = paramOrNone(this.scrollId.paramName).exists(InitialScrollContextKeywords.contains)
 
-          search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, grepCodes)
+          search(
+            query,
+            sort,
+            language,
+            license,
+            page,
+            pageSize,
+            idList,
+            articleTypesFilter,
+            fallback,
+            grepCodes,
+            shouldScroll
+          )
         }
       }
     }
@@ -307,8 +325,21 @@ trait DraftController {
               val articleTypesFilter = searchParams.articleTypes
               val fallback = searchParams.fallback.getOrElse(false)
               val grepCodes = searchParams.grepCodes
+              val shouldScroll = searchParams.scrollId.exists(InitialScrollContextKeywords.contains)
 
-              search(query, sort, language, license, page, pageSize, idList, articleTypesFilter, fallback, grepCodes)
+              search(
+                query,
+                sort,
+                language,
+                license,
+                page,
+                pageSize,
+                idList,
+                articleTypesFilter,
+                fallback,
+                grepCodes,
+                shouldScroll
+              )
             }
           case Failure(ex) => errorHandler(ex)
         }
@@ -633,16 +664,16 @@ trait DraftController {
       "/partial-publish/:article_id",
       operation(
         apiOperation[Article]("partialPublish")
-          summary "Partial publish selected fields"
-          description "Partial publish selected fields"
-          parameters (
+          .summary("Partial publish selected fields")
+          .description("Partial publish selected fields")
+          .parameters(
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asQueryParam(language),
             asQueryParam(fallback)
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500)
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500)
       )
     ) {
       val userInfo = user.getUser
@@ -663,14 +694,14 @@ trait DraftController {
       "/partial-publish/",
       operation(
         apiOperation[MultiPartialPublishResult]("partialPublishMultiple")
-          summary "Partial publish selected fields for multiple articles"
-          description "Partial publish selected fields for multiple articles"
-          parameters (
+          .summary("Partial publish selected fields for multiple articles")
+          .description("Partial publish selected fields for multiple articles")
+          .parameters(
             asHeaderParam(correlationId),
             bodyParam[Seq[Long]]
-        )
-          authorizations "oauth2"
-          responseMessages (response404, response500)
+          )
+          .authorizations("oauth2")
+          .responseMessages(response404, response500)
       )
     ) {
       val userInfo = user.getUser

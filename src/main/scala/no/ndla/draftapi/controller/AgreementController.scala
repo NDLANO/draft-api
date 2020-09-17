@@ -8,10 +8,11 @@
 package no.ndla.draftapi.controller
 
 import no.ndla.draftapi.DraftApiProperties
+import no.ndla.draftapi.DraftApiProperties.InitialScrollContextKeywords
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ReindexClient
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.{Language, Sort}
+import no.ndla.draftapi.model.domain.{AgreementSearchSettings, Language, Sort}
 import no.ndla.draftapi.service.search.{AgreementSearchService, SearchConverterService}
 import no.ndla.draftapi.service.{ConverterService, ReadService, WriteService}
 import org.json4s.{DefaultFormats, Formats}
@@ -71,28 +72,32 @@ trait AgreementController {
                        license: Option[String],
                        page: Int,
                        pageSize: Int,
-                       idList: List[Long]) = {
-      val result = query match {
+                       idList: List[Long],
+                       shouldScroll: Boolean) = {
+      val settings = query match {
         case Some(q) =>
-          agreementSearchService.matchingQuery(
-            query = q,
+          AgreementSearchSettings(
+            query = Some(q),
             withIdIn = idList,
             license = license,
             page = page,
             pageSize = if (idList.isEmpty) pageSize else idList.size,
-            sort = sort.getOrElse(Sort.ByTitleAsc)
+            sort = sort.getOrElse(Sort.ByTitleAsc),
+            shouldScroll = shouldScroll
           )
         case None =>
-          agreementSearchService.all(
+          AgreementSearchSettings(
+            query = None,
             withIdIn = idList,
             license = license,
             page = page,
             pageSize = if (idList.isEmpty) pageSize else idList.size,
-            sort = sort.getOrElse(Sort.ByTitleAsc)
+            sort = sort.getOrElse(Sort.ByTitleAsc),
+            shouldScroll = shouldScroll
           )
       }
 
-      result match {
+      agreementSearchService.matchingQuery(settings) match {
         case Success(searchResult) =>
           val responseHeader = searchResult.scrollId.map(i => this.scrollId.paramName -> i).toMap
           Ok(searchConverterService.asApiAgreementSearchResult(searchResult), headers = responseHeader)
@@ -128,8 +133,9 @@ trait AgreementController {
           val pageSize = intOrDefault(this.pageSize.paramName, DraftApiProperties.DefaultPageSize)
           val page = intOrDefault(this.pageNo.paramName, 1)
           val idList = paramAsListOfLong(this.agreementIds.paramName)
+          val shouldScroll = paramOrNone(this.scrollId.paramName).exists(InitialScrollContextKeywords.contains)
 
-          search(query, sort, license, page, pageSize, idList)
+          search(query, sort, license, page, pageSize, idList, shouldScroll)
         }
       }
     }

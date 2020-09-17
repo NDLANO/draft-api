@@ -38,45 +38,37 @@ trait AgreementSearchService {
       searchConverterService.hitAsAgreementSummary(hit)
     }
 
-    def all(withIdIn: List[Long],
-            license: Option[String],
-            page: Int,
-            pageSize: Int,
-            sort: Sort.Value): Try[SearchResult[api.AgreementSummary]] = {
-      executeSearch(withIdIn, license, sort, page, pageSize, boolQuery())
-    }
+    def matchingQuery(settings: AgreementSearchSettings): Try[SearchResult[api.AgreementSummary]] = {
 
-    def matchingQuery(query: String,
-                      withIdIn: List[Long],
-                      license: Option[String],
-                      page: Int,
-                      pageSize: Int,
-                      sort: Sort.Value): Try[SearchResult[api.AgreementSummary]] = {
-
-      val fullQuery = boolQuery()
-        .must(
+      val fullQuery = settings.query match {
+        case Some(query) =>
           boolQuery()
-            .should(
-              queryStringQuery(query).field("title").boost(2),
-              queryStringQuery(query).field("content").boost(1)
-            ))
+            .must(
+              boolQuery()
+                .should(
+                  queryStringQuery(query).field("title").boost(2),
+                  queryStringQuery(query).field("content").boost(1)
+                ))
+        case None => boolQuery()
+      }
 
-      executeSearch(withIdIn, license, sort, page, pageSize, fullQuery)
+      executeSearch(settings, fullQuery)
     }
 
-    def executeSearch(withIdIn: List[Long],
-                      license: Option[String],
-                      sort: Sort.Value,
-                      page: Int,
-                      pageSize: Int,
+    def executeSearch(settings: AgreementSearchSettings,
                       queryBuilder: BoolQuery): Try[SearchResult[api.AgreementSummary]] = {
-      val idFilter = if (withIdIn.isEmpty) None else Some(idsQuery(withIdIn))
+      val idFilter = if (settings.withIdIn.isEmpty) None else Some(idsQuery(settings.withIdIn))
 
-      val filters = List(idFilter)
+      val licenseFilter = settings.license match {
+        case None      => None
+        case Some(lic) => Some(termQuery("license", lic))
+      }
+
+      val filters = List(idFilter, licenseFilter)
       val filteredSearch = queryBuilder.filter(filters.flatten)
 
-      val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
-      val requestedResultWindow = pageSize * page
+      val (startAt, numResults) = getStartAtAndNumResults(settings.page, settings.pageSize)
+      val requestedResultWindow = settings.pageSize * settings.page
       if (requestedResultWindow > ElasticSearchIndexMaxResultWindow) {
         logger.info(
           s"Max supported results are $ElasticSearchIndexMaxResultWindow, user requested $requestedResultWindow")
@@ -87,18 +79,20 @@ trait AgreementSearchService {
           .size(numResults)
           .from(startAt)
           .query(filteredSearch)
-          .sortBy(getSortDefinition(sort))
+          .sortBy(getSortDefinition(settings.sort))
 
         // Only add scroll param if it is first page
         val searchWithScroll =
-          if (startAt != 0) { searchToExecute } else { searchToExecute.scroll(ElasticSearchScrollKeepAlive) }
+          if (startAt == 0 && settings.shouldScroll) {
+            searchToExecute.scroll(ElasticSearchScrollKeepAlive)
+          } else { searchToExecute }
 
         e4sClient.execute { searchWithScroll } match {
           case Success(response) =>
             Success(
               SearchResult(
                 response.result.totalHits,
-                Some(page),
+                Some(settings.page),
                 numResults,
                 Language.NoLanguage,
                 getHits(response.result, Language.NoLanguage),
