@@ -127,8 +127,9 @@ trait DraftRepository {
 
     private def failIfRevisionMismatch(count: Int, article: Article, newRevision: Int): Try[Article] =
       if (count != 1) {
-        val message = s"Found revision mismatch when attempting to update article ${article.id}"
-        logger.info(message)
+        val message =
+          s"Found revision mismatch when attempting to update article ${article.id} (Updated $count rows...)"
+        logger.warn(message)
         Failure(new OptimisticLockException)
       } else {
         logger.info(s"Updated article ${article.id}")
@@ -215,8 +216,8 @@ trait DraftRepository {
     def withId(articleId: Long): Option[Article] =
       articleWhere(
         sqls"""
-              ar.article_id=${articleId.toInt} 
-              ORDER BY revision 
+              ar.article_id=${articleId.toInt}
+              ORDER BY revision
               DESC LIMIT 1
               """
       )

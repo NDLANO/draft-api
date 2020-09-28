@@ -77,7 +77,8 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case rw: ResultWindowTooLargeException => UnprocessableEntity(body = Error(Error.WINDOW_TOO_LARGE, rw.getMessage))
     case pf: ArticlePublishException       => BadRequest(body = Error(Error.PUBLISH, pf.getMessage))
     case st: IllegalStatusStateTransition  => BadRequest(body = Error(Error.VALIDATION, st.getMessage))
-    case _: PSQLException =>
+    case psql: PSQLException =>
+      logger.error(s"Got postgres exception: '${psql.getMessage}', attempting db reconnect", psql)
       ComponentRegistry.connectToDatabase()
       InternalServerError(Error(Error.DATABASE_UNAVAILABLE, Error.DATABASE_UNAVAILABLE_DESCRIPTION))
     case h: HttpRequestException =>
