@@ -73,6 +73,7 @@ trait SearchConverterService {
         searchableArticle.introduction.languageValues.map(lv => domain.ArticleIntroduction(lv.value, lv.language))
       val visualElements =
         searchableArticle.visualElement.languageValues.map(lv => domain.VisualElement(lv.value, lv.language))
+      val tags = searchableArticle.tags.languageValues.map(lv => domain.ArticleTag(lv.value, lv.language))
       val notes = searchableArticle.notes
       val users = searchableArticle.users
 
@@ -84,20 +85,21 @@ trait SearchConverterService {
       val visualElement = findByLanguageOrBestEffort(visualElements, language).map(converterService.toApiVisualElement)
       val introduction =
         findByLanguageOrBestEffort(introductions, language).map(converterService.toApiArticleIntroduction)
-      val grepCodes = searchableArticle.grepCodes
+      val tag = findByLanguageOrBestEffort(tags, language).map(converterService.toApiArticleTag)
 
       api.ArticleSummary(
-        searchableArticle.id,
-        title,
-        visualElement,
-        introduction,
-        ApplicationUrl.get + searchableArticle.id,
-        searchableArticle.license.getOrElse(""),
-        searchableArticle.articleType,
-        supportedLanguages,
-        notes,
-        users,
-        grepCodes
+        id = searchableArticle.id,
+        title = title,
+        visualElement = visualElement,
+        introduction = introduction,
+        url = ApplicationUrl.get + searchableArticle.id,
+        license = searchableArticle.license.getOrElse(""),
+        articleType = searchableArticle.articleType,
+        supportedLanguages = supportedLanguages,
+        tags = tag,
+        notes = notes,
+        users = users,
+        grepCodes = searchableArticle.grepCodes
       )
     }
 
