@@ -23,6 +23,7 @@ case class ArticleSummary(
     @(ApiModelProperty @field)(description = "Describes the license of the article") license: String,
     @(ApiModelProperty @field)(description = "The type of article this is. Possible values are topic-article,standard") articleType: String,
     @(ApiModelProperty @field)(description = "A list of available languages for this audio") supportedLanguages: Seq[String],
+    @(ApiModelProperty @field)(description = "Searchable tags for the article") tags: Option[ArticleTag],
     @(ApiModelProperty @field)(description = "The notes for this draft article") notes: Seq[String],
     @(ApiModelProperty @field)(description = "The users saved for this draft article") users: Seq[String],
     @(ApiModelProperty @field)(description = "The codes from GREP API registered for this draft article") grepCodes: Seq[String])
