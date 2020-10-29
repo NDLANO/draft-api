@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.service
 
+import java.util.UUID
+
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NewArticleMetaImage}
 import no.ndla.draftapi.model.{api, domain}
@@ -637,5 +639,33 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       None
     )
 
+  }
+
+  test("Extracting h5p paths works as expected") {
+    val enPath1 = s"/resources/${UUID.randomUUID().toString}"
+    val enPath2 = s"/resources/${UUID.randomUUID().toString}"
+    val nbPath1 = s"/resources/${UUID.randomUUID().toString}"
+    val nbPath2 = s"/resources/${UUID.randomUUID().toString}"
+    val vePath1 = s"/resources/${UUID.randomUUID().toString}"
+    val vePath2 = s"/resources/${UUID.randomUUID().toString}"
+
+    val expectedPaths = Seq(enPath1, enPath2, nbPath1, nbPath2, vePath1, vePath2).sorted
+
+    val articleContentNb = domain.ArticleContent(
+      s"""<section><h1>Heisann</h1><embed data-path="$nbPath1" data-resource="h5p" /></section><section><p>Joda<embed data-path="$nbPath2" data-resource="h5p" /></p><embed data-resource="concept" data-path="thisisinvalidbutletsdoit"/></section>""",
+      "nb"
+    )
+    val articleContentEn = domain.ArticleContent(
+      s"""<section><h1>Hello</h1><embed data-path="$enPath1" data-resource="h5p" /></section><section><p>Joda<embed data-path="$enPath2" data-resource="h5p" /></p><embed data-resource="concept" data-path="thisisinvalidbutletsdoit"/></section>""",
+      "en"
+    )
+
+    val visualElementNb = domain.VisualElement(s"""<embed data-path="$vePath1" data-resource="h5p" />""", "nb")
+    val visualElementEn = domain.VisualElement(s"""<embed data-path="$vePath2" data-resource="h5p" />""", "en")
+
+    val article = TestData.sampleDomainArticle.copy(id = Some(1),
+                                                    content = Seq(articleContentNb, articleContentEn),
+                                                    visualElement = Seq(visualElementNb, visualElementEn))
+    service.getEmbeddedH5PPaths(article).sorted should be(expectedPaths)
   }
 }

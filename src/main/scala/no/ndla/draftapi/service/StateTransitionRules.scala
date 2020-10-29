@@ -11,6 +11,7 @@ import java.util.Date
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.ComponentRegistry.h5pApiClient
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
@@ -18,6 +19,7 @@ import no.ndla.draftapi.auth.UserInfo.{DirectPublishRoles, PublishRoles}
 import no.ndla.draftapi.integration.{
   ArticleApiClient,
   ConceptApiClient,
+  H5PApiClient,
   LearningPath,
   LearningpathApiClient,
   TaxonomyApiClient
@@ -40,6 +42,7 @@ trait StateTransitionRules {
     with TaxonomyApiClient
     with LearningpathApiClient
     with ConceptApiClient
+    with H5PApiClient
     with ConverterService
     with ContentValidator
     with ArticleIndexService =>
@@ -80,9 +83,12 @@ trait StateTransitionRules {
             val conceptIds = converterService.getEmbeddedConceptIds(article)
             val conceptTries = conceptApiClient.publishConceptsIfToPublishing(conceptIds)
 
+            val h5pPaths = converterService.getEmbeddedH5PPaths(article)
+            val h5pT = h5pApiClient.publishH5Ps(h5pPaths)
+
             val taxonomyT = taxonomyApiClient.updateTaxonomyIfExists(id, article)
             val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
-            val failures = (conceptTries ++ Seq(taxonomyT, articleUdpT)).collectFirst {
+            val failures = (conceptTries ++ Seq(h5pT, taxonomyT, articleUdpT)).collectFirst {
               case Failure(ex) => Failure(ex)
             }
             failures.getOrElse(articleUdpT)

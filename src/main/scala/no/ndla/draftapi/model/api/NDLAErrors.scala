@@ -68,3 +68,4 @@ case class IllegalStatusStateTransition(message: String = Error.ILLEGAL_STATUS_T
 class ResultWindowTooLargeException(message: String = Error.WINDOW_TOO_LARGE_DESCRIPTION)
     extends RuntimeException(message)
 case class CloneFileException(message: String) extends RuntimeException(message)
+case class H5PException(message: String) extends RuntimeException(message)

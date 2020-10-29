@@ -39,6 +39,7 @@ trait TestEnvironment
     with ReindexClient
     with DataSource
     with TaxonomyApiClient
+    with H5PApiClient
     with DraftRepository
     with AgreementRepository
     with UserDataRepository
@@ -101,5 +102,6 @@ trait TestEnvironment
   val searchApiClient = mock[SearchApiClient]
   val taxonomyApiClient = mock[TaxonomyApiClient]
   val conceptApiClient = mock[ConceptApiClient]
+  val h5pApiClient = mock[H5PApiClient]
   val user = mock[User]
 }
