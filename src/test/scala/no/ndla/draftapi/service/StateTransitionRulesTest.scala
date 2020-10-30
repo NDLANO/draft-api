@@ -130,11 +130,13 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
     when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Seq.empty)
+    when(converterService.getEmbeddedH5PPaths(any[Article])).thenReturn(Seq.empty)
     when(conceptApiClient.publishConceptsIfToPublishing(any[Seq[Long]]))
       .thenAnswer((i: InvocationOnMock) => {
         val ids = i.getArgument[Seq[Long]](0)
         ids.map(id => Try(DraftConcept(id, ConceptStatus("DRAFT"))))
       })
+    when(h5pApiClient.publishH5Ps(Seq.empty)).thenReturn(Success(()))
 
     when(
       articleApiClient
@@ -302,6 +304,45 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
                         false)
           .unsafeRunSync())
     verify(articleApiClient, times(transitionsToTest.size)).validateArticle(any[ArticleApiArticle], any[Boolean])
+  }
+
+  test("publishArticle should call h5p api") {
+    reset(conceptApiClient)
+    reset(h5pApiClient)
+    reset(articleApiClient)
+    val h5pId = "123-kulid-123"
+    val h5pPaths = Seq(s"/resource/$h5pId")
+    val expectedStatus = domain.Status(PUBLISHED, Set.empty)
+    val editorNotes = Seq(EditorNote("Status endret", "unit_test", expectedStatus, new Date()))
+    val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
+    when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
+    when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Seq.empty)
+    when(converterService.getEmbeddedH5PPaths(any[Article])).thenReturn(h5pPaths)
+    when(conceptApiClient.publishConceptsIfToPublishing(any[Seq[Long]]))
+      .thenAnswer((i: InvocationOnMock) => {
+        val ids = i.getArgument[Seq[Long]](0)
+        ids.map(id => Try(DraftConcept(id, ConceptStatus("DRAFT"))))
+      })
+    when(h5pApiClient.publishH5Ps(h5pPaths)).thenReturn(Success(()))
+
+    when(
+      articleApiClient
+        .updateArticle(eqTo(DraftArticle.id.get), any[Article], eqTo(List("1234")), eqTo(false), eqTo(true)))
+      .thenReturn(Success(expectedArticle))
+
+    val (Success(res), sideEffect) =
+      doTransitionWithoutSideEffect(DraftArticle, PUBLISHED, TestData.userWithAdminAccess, false)
+    sideEffect.map(sf => sf(res, false).get.status should equal(expectedStatus))
+
+    val captor = ArgumentCaptor.forClass(classOf[Article])
+    verify(articleApiClient, times(1))
+      .updateArticle(eqTo(DraftArticle.id.get), captor.capture(), eqTo(List("1234")), eqTo(false), eqTo(true))
+
+    verify(h5pApiClient, times(1)).publishH5Ps(h5pPaths)
+
+    val argumentArticle: Article = captor.getValue
+    val argumentArticleWithNotes = argumentArticle.copy(notes = editorNotes)
+    argumentArticleWithNotes should equal(expectedArticle)
   }
 
 }

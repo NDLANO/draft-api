@@ -58,6 +58,7 @@ object ComponentRegistry
     with ArticleApiClient
     with SearchApiClient
     with ConceptApiClient
+    with H5PApiClient
     with RuleController
     with UserDataController {
 
@@ -116,5 +117,6 @@ object ComponentRegistry
   lazy val taxonomyApiClient = new TaxonomyApiClient
   lazy val learningpathApiClient = new LearningpathApiClient
   lazy val conceptApiClient = new ConceptApiClient
+  lazy val h5pApiClient = new H5PApiClient
   lazy val user = new User
 }

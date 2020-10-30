@@ -25,6 +25,7 @@ import no.ndla.mapping.License.getLicense
 import no.ndla.validation._
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
+import org.jsoup.nodes.Element
 
 import scala.jdk.CollectionConverters._
 import scala.util.control.Exception.allCatch
@@ -189,6 +190,32 @@ trait ConverterService {
         }
       })
       conceptIds
+    }
+
+    def getEmbeddedH5PPaths(article: domain.Article): Seq[String] = {
+      val getH5PEmbeds = (htmlElements: Seq[Element]) => {
+        htmlElements.flatMap(elem => {
+          val h5pSelector = s"$resourceHtmlEmbedTag[${TagAttributes.DataResource}=${ResourceType.H5P}]"
+          elem.select(h5pSelector).asScala.toSeq
+        })
+      }
+
+      val htmlElements = article.content.map(content => HtmlTagRules.stringToJsoupDocument(content.content))
+      val visualElements = article.visualElement.map(ve => HtmlTagRules.stringToJsoupDocument(ve.resource))
+
+      val h5pEmbeds = getH5PEmbeds(htmlElements) ++ getH5PEmbeds(visualElements)
+
+      h5pEmbeds.flatMap(embed => {
+        Try(embed.attr(TagAttributes.DataPath.toString)) match {
+          case Success(path) if path.isEmpty =>
+            logger.error(s"Could not derive h5p path (empty string) from embed: '${embed.toString}'")
+            None
+          case Failure(ex) =>
+            logger.error(s"Could not derive h5p path from embed: '${embed.toString}'", ex)
+            None
+          case Success(path) => Some(path)
+        }
+      })
     }
 
     def toDomainAuthor(author: api.Author): domain.Author = domain.Author(author.`type`, author.name)
