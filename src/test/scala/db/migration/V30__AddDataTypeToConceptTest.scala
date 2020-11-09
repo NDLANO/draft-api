@@ -9,8 +9,8 @@ package db.migration
 
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 
-class V26__AddDataTypeToConceptTest extends UnitSuite with TestEnvironment {
-  val migration = new V26__AddDataTypeToConcept
+class V30__AddDataTypeToConceptTest extends UnitSuite with TestEnvironment {
+  val migration = new V30__AddDataTypeToConcept
 
   test("migration should a data-type to concept") {
     val learningResourceBefore =

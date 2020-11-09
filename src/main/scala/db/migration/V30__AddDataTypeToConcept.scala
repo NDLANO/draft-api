@@ -18,7 +18,7 @@ import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
-class V26__AddDataTypeToConcept extends BaseJavaMigration {
+class V30__AddDataTypeToConcept extends BaseJavaMigration {
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
 
   override def migrate(context: Context): Unit = {
