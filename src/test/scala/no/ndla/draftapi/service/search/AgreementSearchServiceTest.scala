@@ -12,12 +12,13 @@ import no.ndla.draftapi.TestData.{agreementSearchSettings, searchSettings}
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
 import org.scalatest.Outcome
 
 import scala.util.Success
 
-class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
+class AgreementSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 

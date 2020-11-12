@@ -16,13 +16,14 @@ import no.ndla.draftapi.TestData.searchSettings
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
 import org.scalatest.Outcome
 import org.testcontainers.elasticsearch.ElasticsearchContainer
 
 import scala.util.{Success, Try}
 
-class ArticleSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
+class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
