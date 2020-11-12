@@ -64,7 +64,7 @@ lazy val draft_api = (project in file("."))
       "ndla" %% "network" % "0.44",
       "ndla" %% "mapping" % "0.15",
       "ndla" %% "validation" % "0.44",
-      "ndla" %% "scalatestsuite" % "0.1",
+      "ndla" %% "scalatestsuite" % "0.1" % "test",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.eclipse.jetty" % "jetty-webapp" % Jettyversion % "container;compile",

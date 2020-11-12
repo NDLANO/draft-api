@@ -123,10 +123,6 @@ class AgreementSearchServiceTest extends IntegrationSuite(EnableElasticsearchCon
     })
   }
 
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    agreementIndexService.deleteIndexWithName(Some(DraftApiProperties.AgreementSearchIndex))
-  }
-
   test("That getStartAtAndNumResults returns SEARCH_MAX_PAGE_SIZE for value greater than SEARCH_MAX_PAGE_SIZE") {
     agreementSearchService.getStartAtAndNumResults(0, 10001) should equal((0, DraftApiProperties.MaxPageSize))
   }

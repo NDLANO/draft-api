@@ -84,10 +84,6 @@ class TagSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer
     blockUntil(() => tagSearchService.countDocuments == tagsDistinctByLanguage.size)
   }
 
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    tagIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftTagSearchIndex))
-  }
-
   def blockUntil(predicate: () => Boolean): Unit = {
     var backoff = 0
     var done = false

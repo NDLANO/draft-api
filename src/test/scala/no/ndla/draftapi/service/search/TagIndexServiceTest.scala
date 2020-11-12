@@ -29,10 +29,6 @@ class TagIndexServiceTest extends IntegrationSuite(EnableElasticsearchContainer 
   override val converterService = new ConverterService
   override val searchConverterService = new SearchConverterService
 
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    tagIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftTagSearchIndex))
-  }
-
   def blockUntil(predicate: () => Boolean): Unit = {
     var backoff = 0
     var done = false

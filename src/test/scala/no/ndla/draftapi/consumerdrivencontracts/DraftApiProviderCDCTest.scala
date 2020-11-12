@@ -98,7 +98,10 @@ class DraftApiProviderCDCTest extends IntegrationSuite(EnablePostgresContainer =
         ComponentRegistry.agreementRepository.insert(TestData.sampleBySaDomainAgreement.copy(id = Some(id)))
       })
 
-  override def afterAll(): Unit = server.foreach(_.stop())
+  override def afterAll(): Unit = {
+    super.afterAll()
+    server.foreach(_.stop())
+  }
 
   private def getGitVersion =
     for {

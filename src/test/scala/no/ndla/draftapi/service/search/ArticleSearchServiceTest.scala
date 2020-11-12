@@ -210,10 +210,6 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
     blockUntil(() => articleSearchService.countDocuments == 11)
   }
 
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    articleIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftSearchIndex))
-  }
-
   test("That getStartAtAndNumResults returns SEARCH_MAX_PAGE_SIZE for value greater than SEARCH_MAX_PAGE_SIZE") {
     articleSearchService.getStartAtAndNumResults(0, 10001) should equal((0, DraftApiProperties.MaxPageSize))
   }
