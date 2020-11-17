@@ -12,12 +12,13 @@ import no.ndla.draftapi.TestData.{agreementSearchSettings, searchSettings}
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
 import no.ndla.draftapi.model.domain._
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
 import org.scalatest.Outcome
 
 import scala.util.Success
 
-class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
+class AgreementSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
@@ -120,10 +121,6 @@ class AgreementSearchServiceTest extends IntegrationSuite(withSearch = true) wit
     blockUntil(() => {
       agreementSearchService.countDocuments == 10
     })
-  }
-
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    agreementIndexService.deleteIndexWithName(Some(DraftApiProperties.AgreementSearchIndex))
   }
 
   test("That getStartAtAndNumResults returns SEARCH_MAX_PAGE_SIZE for value greater than SEARCH_MAX_PAGE_SIZE") {

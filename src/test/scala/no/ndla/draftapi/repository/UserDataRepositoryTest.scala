@@ -9,18 +9,20 @@ package no.ndla.draftapi.repository
 
 import java.net.Socket
 
-import no.ndla.draftapi.{DBMigrator, DraftApiProperties, IntegrationSuite, TestData, TestEnvironment}
+import no.ndla.draftapi.{DBMigrator, DraftApiProperties, TestData, TestEnvironment}
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.postgresql.util.PSQLException
 import scalikejdbc._
 
 import scala.util.{Failure, Success, Try}
 
-class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
+class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = true) with TestEnvironment {
+  override val dataSource = testDataSource.get
   var repository: UserDataRepository = _
 
   def emptyTestDatabase = {
     DB autoCommit (implicit session => {
-      sql"delete from draftapitest.userdata;".execute().apply()(session)
+      sql"delete from userdata;".execute().apply()(session)
     })
   }
 
@@ -49,11 +51,11 @@ class UserDataRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     Try {
-      val datasource = testDataSource.get
       if (serverIsListening) {
-        ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
-        DBMigrator.migrate(datasource)
+        ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
+        DBMigrator.migrate(dataSource)
       }
     }
   }

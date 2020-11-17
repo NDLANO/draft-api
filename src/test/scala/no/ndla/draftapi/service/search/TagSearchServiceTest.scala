@@ -10,11 +10,12 @@ package no.ndla.draftapi.service.search
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClientFactory
 import no.ndla.draftapi.model.domain
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.scalatest.Outcome
 
 import scala.util.Success
 
-class TagSearchServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
+class TagSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
@@ -81,10 +82,6 @@ class TagSearchServiceTest extends IntegrationSuite(withSearch = true) with Test
     val tagsDistinctByLanguage = groupedByLanguage.values.flatMap(x => x.flatMap(_.tags).toSet)
 
     blockUntil(() => tagSearchService.countDocuments == tagsDistinctByLanguage.size)
-  }
-
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    tagIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftTagSearchIndex))
   }
 
   def blockUntil(predicate: () => Boolean): Unit = {

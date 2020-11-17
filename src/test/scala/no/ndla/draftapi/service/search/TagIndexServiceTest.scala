@@ -10,11 +10,12 @@ package no.ndla.draftapi.service.search
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClientFactory
 import no.ndla.draftapi.model.domain
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.scalatest.Outcome
 
 import scala.util.Success
 
-class TagIndexServiceTest extends IntegrationSuite(withSearch = true) with TestEnvironment {
+class TagIndexServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
 
@@ -27,10 +28,6 @@ class TagIndexServiceTest extends IntegrationSuite(withSearch = true) with TestE
   override val tagIndexService = new TagIndexService
   override val converterService = new ConverterService
   override val searchConverterService = new SearchConverterService
-
-  override def afterAll(): Unit = if (elasticSearchContainer.isSuccess) {
-    tagIndexService.deleteIndexWithName(Some(DraftApiProperties.DraftTagSearchIndex))
-  }
 
   def blockUntil(predicate: () => Boolean): Unit = {
     var backoff = 0

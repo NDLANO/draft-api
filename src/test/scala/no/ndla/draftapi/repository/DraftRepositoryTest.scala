@@ -12,19 +12,21 @@ import java.net.Socket
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi._
 import no.ndla.draftapi.model.domain
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
 import scalikejdbc._
 
 import scala.util.{Success, Try}
 
-class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
+class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = true) with TestEnvironment {
+  override val dataSource = testDataSource.get
   var repository: ArticleRepository = _
 
   val sampleArticle: Article = TestData.sampleArticleWithByNcSa
 
   def emptyTestDatabase = {
     DB autoCommit (implicit session => {
-      sql"delete from draftapitest.articledata;".execute().apply()(session)
+      sql"delete from articledata;".execute().apply()(session)
     })
   }
 
@@ -52,11 +54,11 @@ class DraftRepositoryTest extends IntegrationSuite with TestEnvironment {
   }
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     Try {
-      val datasource = testDataSource.get
       if (serverIsListening) {
-        ConnectionPool.singleton(new DataSourceConnectionPool(datasource))
-        DBMigrator.migrate(datasource)
+        ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
+        DBMigrator.migrate(dataSource)
       }
     }
   }

@@ -11,14 +11,15 @@ import java.util.Date
 
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain
-import no.ndla.draftapi.{IntegrationSuite, TestEnvironment}
+import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
+import no.ndla.scalatestsuite.IntegrationSuite
 import org.json4s.native.Serialization.write
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.util.Success
 
-class ArticleApiClientTest extends IntegrationSuite with TestEnvironment {
+class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvironment {
   implicit val formats: DefaultFormats = DefaultFormats
   override val ndlaClient = new NdlaClient
 

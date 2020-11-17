@@ -137,7 +137,7 @@ object DraftApiProperties extends LazyLogging {
   }
 
   def propOpt(key: String): Option[String] =
-    envOrNone(key) match {
+    propOrNone(key) match {
       case Some(prop) => Some(prop)
       case _          => None
     }
