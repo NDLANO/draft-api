@@ -81,7 +81,8 @@ trait ConverterService {
             notes = notes,
             previousVersionsNotes = Seq.empty,
             editorLabels = newArticle.editorLabels,
-            grepCodes = newArticle.grepCodes
+            grepCodes = newArticle.grepCodes,
+            conceptIds = newArticle.conceptIds
         ))
     }
 
@@ -284,7 +285,8 @@ trait ConverterService {
             article.supportedLanguages,
             article.notes.map(toApiEditorNote),
             article.editorLabels,
-            article.grepCodes
+            article.grepCodes,
+            article.conceptIds
           ))
       } else {
         Failure(
@@ -448,7 +450,8 @@ trait ConverterService {
         updatedBy = article.updatedBy,
         published = article.published,
         articleType = article.articleType.toString,
-        grepCodes = article.grepCodes
+        grepCodes = article.grepCodes,
+        conceptIds = article.conceptIds
       )
     }
 
@@ -540,7 +543,8 @@ trait ConverterService {
                   updatedWithClonedFiles.articleType.map(ArticleType.valueOfOrError).getOrElse(toMergeInto.articleType),
                 notes = allNotes,
                 editorLabels = updatedWithClonedFiles.editorLabels.getOrElse(toMergeInto.editorLabels),
-                grepCodes = updatedWithClonedFiles.grepCodes.getOrElse(toMergeInto.grepCodes)
+                grepCodes = updatedWithClonedFiles.grepCodes.getOrElse(toMergeInto.grepCodes),
+                conceptIds = updatedWithClonedFiles.conceptIds.getOrElse(toMergeInto.conceptIds)
               )
 
               updatedWithClonedFiles.language match {
@@ -639,7 +643,8 @@ trait ConverterService {
                 notes = notes,
                 previousVersionsNotes = Seq.empty,
                 editorLabels = article.editorLabels.getOrElse(Seq.empty),
-                grepCodes = article.grepCodes.getOrElse(Seq.empty)
+                grepCodes = article.grepCodes.getOrElse(Seq.empty),
+                conceptIds = article.conceptIds.getOrElse(Seq.empty)
             ))
       }
     }

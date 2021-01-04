@@ -45,7 +45,8 @@ case class Article(
     notes: Seq[EditorNote],
     previousVersionsNotes: Seq[EditorNote],
     editorLabels: Seq[String],
-    grepCodes: Seq[String]
+    grepCodes: Seq[String],
+    conceptIds: Seq[Long]
 ) extends Content {
 
   def supportedLanguages =

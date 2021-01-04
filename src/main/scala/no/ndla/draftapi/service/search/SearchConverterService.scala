@@ -61,7 +61,8 @@ trait SearchConverterService {
         defaultTitle = defaultTitle.map(_.title),
         users = ai.updatedBy +: ai.notes.map(_.user),
         previousNotes = ai.previousVersionsNotes.map(_.note),
-        grepCodes = ai.grepCodes
+        grepCodes = ai.grepCodes,
+        conceptIds = ai.conceptIds
       )
     }
 
@@ -99,7 +100,8 @@ trait SearchConverterService {
         tags = tag,
         notes = notes,
         users = users,
-        grepCodes = searchableArticle.grepCodes
+        grepCodes = searchableArticle.grepCodes,
+        conceptIds = searchableArticle.conceptIds
       )
     }
 
