@@ -24,6 +24,5 @@ case class SearchableArticle(
     defaultTitle: Option[String],
     users: Seq[String],
     previousNotes: Seq[String],
-    grepCodes: Seq[String],
-    conceptIds: Seq[Long]
+    grepCodes: Seq[String]
 )
