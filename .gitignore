@@ -1,5 +1,6 @@
 /.idea
 /.history
+/.bsp
 /target
 **/target
 **/.DS_Store
