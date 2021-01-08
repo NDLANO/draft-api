@@ -24,7 +24,8 @@ case class ArticleApiArticle(revision: Option[Int],
                              updatedBy: String,
                              published: Date,
                              articleType: String,
-                             grepCodes: Seq[String])
+                             grepCodes: Seq[String],
+                             conceptIds: Seq[Long])
 case class ArticleApiTitle(title: String, language: String)
 case class ArticleApiContent(content: String, language: String)
 case class ArticleApiAuthor(`type`: String, name: String)

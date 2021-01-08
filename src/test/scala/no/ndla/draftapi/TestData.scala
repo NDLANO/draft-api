@@ -88,6 +88,7 @@ object TestData {
     supportedLanguages = Seq("nb"),
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -102,6 +103,7 @@ object TestData {
     None,
     None,
     Right(None),
+    None,
     None,
     None,
     None,
@@ -182,6 +184,7 @@ object TestData {
     Seq("nb"),
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -220,6 +223,7 @@ object TestData {
     Seq("nb"),
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -241,6 +245,7 @@ object TestData {
     userWithWriteAccess.id,
     DateTime.now().minusDays(2).withMillisOfSecond(0).toDate,
     ArticleType.TopicArticle,
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty,
@@ -268,6 +273,7 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -289,6 +295,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty,
@@ -316,6 +323,7 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -340,6 +348,7 @@ object TestData {
                     None)),
     Seq.empty,
     "standard",
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty
@@ -374,6 +383,7 @@ object TestData {
     "ndalId54321",
     today,
     ArticleType.Standard,
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty,
@@ -416,6 +426,7 @@ object TestData {
     DateTime.now().minusDays(2).toDate,
     "standard",
     Seq("en"),
+    Seq.empty,
     Seq.empty,
     Seq.empty,
     Seq.empty

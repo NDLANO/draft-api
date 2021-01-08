@@ -202,7 +202,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      grepCodes = Seq.empty
+      grepCodes = Seq.empty,
+      conceptIds = Seq.empty
     )
 
     val updatedNothing = TestData.blankUpdatedArticle.copy(
@@ -236,7 +237,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      grepCodes = Seq.empty
+      grepCodes = Seq.empty,
+      conceptIds = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -260,7 +262,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      grepCodes = Seq.empty
+      grepCodes = Seq.empty,
+      conceptIds = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -281,6 +284,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = None,
       editorLabels = None,
       grepCodes = None,
+      conceptIds = None,
       createNewVersion = None
     )
 
@@ -311,7 +315,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      grepCodes = Seq.empty
+      grepCodes = Seq.empty,
+      conceptIds = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -335,7 +340,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = Seq(EditorNote("Note here", "sheeps", status, TestData.today)),
       previousVersionsNotes = Seq.empty,
       editorLabels = Seq.empty,
-      grepCodes = Seq.empty
+      grepCodes = Seq.empty,
+      conceptIds = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -356,6 +362,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       notes = None,
       editorLabels = None,
       grepCodes = None,
+      conceptIds = None,
       createNewVersion = None
     )
 
