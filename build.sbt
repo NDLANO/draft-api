@@ -51,7 +51,8 @@ lazy val draft_api = (project in file("."))
     // Since pactTest gets its options from Test configuration, the 'Test' (default) config won't run PactProviderTests
     // To run all tests use pact config ('sbt pact:test')
     Test / testOptions := Seq(Tests.Argument("-l", "PactProviderTest")),
-    PactTest / testOptions := Seq.empty
+    PactTest / testOptions := Seq.empty,
+    Test / javaOptions += "-Xms2560M -Xmx2560M"
   )
   .settings(
     name := "draft-api",

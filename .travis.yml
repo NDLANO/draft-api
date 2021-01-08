@@ -29,8 +29,6 @@ matrix:
     - name: "Pact provider verification tests"
       script: sbt ++$TRAVIS_SCALA_VERSION "pact:testOnly -- -n PactProviderTest"
       dist: focal
-      env:
-        - SBT_OPTS="-Xms2560M -Xmx2560M"
       language: scala
       scala: 2.13.3
       jdk:
