@@ -52,7 +52,6 @@ lazy val draft_api = (project in file("."))
     // To run all tests use pact config ('sbt pact:test')
     Test / testOptions := Seq(Tests.Argument("-l", "PactProviderTest")),
     PactTest / testOptions := Seq.empty,
-    Test / javaOptions += "-Xms2560M -Xmx2560M"
   )
   .settings(
     name := "draft-api",
@@ -60,6 +59,7 @@ lazy val draft_api = (project in file("."))
     version := appProperties.value.getProperty("NDLAComponentVersion"),
     scalaVersion := Scalaversion,
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+    Test / javaOptions += "-Xms2560M -Xmx2560M",
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.44",
