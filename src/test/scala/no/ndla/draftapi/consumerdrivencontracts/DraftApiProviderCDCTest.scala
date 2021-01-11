@@ -27,7 +27,10 @@ import scala.util.Try
 
 object PactProviderTest extends Tag("PactProviderTest")
 
-class DraftApiProviderCDCTest extends IntegrationSuite(EnablePostgresContainer = true) with TestEnvironment {
+class DraftApiProviderCDCTest
+    extends IntegrationSuite(EnablePostgresContainer = true)
+    with UnitSuite
+    with TestEnvironment {
   override val dataSource = testDataSource.get
 
   import com.itv.scalapact.circe13._
