@@ -8,10 +8,10 @@
 package no.ndla.draftapi.controller
 
 import java.util.Date
-
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api._
+import no.ndla.draftapi.model.domain.ArticleStatus.{QUALITY_ASSURED_DELAYED, USER_TEST}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchSettings, Sort}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
@@ -167,6 +167,14 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     get(s"/test/$articleId?language=$lang") {
       status should equal(200)
     }
+
+    when(readService.withId(articleId, lang)).thenReturn(
+      Success(TestData.apiArticleUserTest.copy(status = api.Status(QUALITY_ASSURED_DELAYED.toString, Seq.empty))))
+
+    get(s"/test/$articleId?language=$lang") {
+      status should equal(200)
+    }
+
   }
 
   test("That PATCH /:id returns a validation message if article is invalid") {

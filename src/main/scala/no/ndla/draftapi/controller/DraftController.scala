@@ -367,7 +367,9 @@ trait DraftController {
       val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
       val article = readService.withId(articleId, language, fallback)
-      val isPublicStatus = article.map(_.status.current).toOption.contains(ArticleStatus.USER_TEST.toString)
+      val currentOption = article.map(_.status.current).toOption
+      val isPublicStatus = currentOption.contains(ArticleStatus.USER_TEST.toString) || currentOption.contains(
+        ArticleStatus.QUALITY_ASSURED_DELAYED.toString)
       doOrAccessDenied(userInfo.canWrite || isPublicStatus) {
         article match {
           case Success(a)  => a
