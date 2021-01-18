@@ -80,8 +80,10 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
-            val conceptIds = converterService.getEmbeddedConceptIds(article)
-            val conceptTries = conceptApiClient.publishConceptsIfToPublishing(conceptIds)
+            val embeddedConceptIds = converterService.getEmbeddedConceptIds(article)
+            val conceptIds = article.conceptIds.concat(embeddedConceptIds).distinct
+            val conceptTries =
+              conceptApiClient.publishConceptsIfToPublishing(conceptIds)
 
             val h5pPaths = converterService.getEmbeddedH5PPaths(article)
             val h5pT = h5pApiClient.publishH5Ps(h5pPaths)
