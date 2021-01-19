@@ -8,16 +8,15 @@
 package no.ndla.draftapi.controller
 
 import java.util.concurrent.{Executors, TimeUnit}
-
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.ContentId
+import no.ndla.draftapi.model.api.{ContentId, NotFoundException}
 import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
-import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, TagIndexService, IndexService}
+import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, IndexService, TagIndexService}
 import org.json4s.Formats
 import org.json4s.ext.EnumNameSerializer
 import org.scalatra.swagger.Swagger
@@ -182,11 +181,20 @@ trait InternController {
     }
 
     get("/dump/article/?") {
-      // Dumps Domain articles
+      // Dumps all domain articles
       val pageNo = intOrDefault("page", 1)
       val pageSize = intOrDefault("page-size", 250)
 
       readService.getArticleDomainDump(pageNo, pageSize)
+    }
+
+    get("/dump/article/:id") {
+      // Dumps one domain article
+      val id = long("id")
+      draftRepository.withId(id) match {
+        case Some(article) => Ok(article)
+        case None          => errorHandler(NotFoundException(s"Could not find draft with id: '$id"))
+      }
     }
 
     post("/dump/article/?") {
