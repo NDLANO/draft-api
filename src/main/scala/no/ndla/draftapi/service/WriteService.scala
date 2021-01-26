@@ -601,33 +601,63 @@ trait WriteService {
       }
     }
 
-    def partialPublish(id: Long, language: String, fallback: Boolean): Try[api.Article] =
-      partialPublish(id)._2.flatMap(article => converterService.toApiArticle(article, language, fallback))
+    def partialArticleFieldsUpdate(articleToPartialPublish: domain.Article,
+                                   articleFieldsToUpdate: Seq[PartialArticleFields.Value],
+                                   language: String): PartialPublishArticle = {
+      val newGrepCodes = if (articleFieldsToUpdate.contains(PartialArticleFields.grepCodes)) {
+        Some(articleToPartialPublish.grepCodes)
+      } else None
+      val newLicense = if (articleFieldsToUpdate.contains(PartialArticleFields.license)) {
+        articleToPartialPublish.copyright.flatMap(c => c.license)
+      } else None
+      val newMetaDesc = if (articleFieldsToUpdate.contains(PartialArticleFields.metaDescription)) {
+        if (language == "all") Some(articleToPartialPublish.metaDescription)
+        else Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq)
+      } else None
+      val newTags = if (articleFieldsToUpdate.contains(PartialArticleFields.tags)) {
+        if (language == "all") Some(articleToPartialPublish.tags)
+        else Some(articleToPartialPublish.tags.find(t => t.language == language).toSeq)
+      } else None
 
-    def partialPublish(id: Long): (Long, Try[domain.Article]) = {
+      PartialPublishArticle(
+        grepCodes = newGrepCodes,
+        license = newLicense,
+        metaDescription = newMetaDesc,
+        tags = newTags
+      )
+    }
+
+    def partialPublish(id: Long,
+                       articleFieldsToUpdate: Seq[PartialArticleFields.Value],
+                       language: String,
+                       fallback: Boolean): Try[api.Article] =
+      partialPublish(id, articleFieldsToUpdate, language)._2.flatMap(article =>
+        converterService.toApiArticle(article, language, fallback))
+
+    def partialPublish(id: Long,
+                       articleFieldsToUpdate: Seq[PartialArticleFields.Value],
+                       language: String): (Long, Try[domain.Article]) = {
       draftRepository.withId(id) match {
-        case Some(articleToPartialPublish) =>
-          val partialArticle = PartialPublishArticle(
-            grepCodes = Some(articleToPartialPublish.grepCodes)
-          )
-
-          (id, articleApiClient.partialPublishArticle(id, partialArticle).map(_ => articleToPartialPublish))
         case None => (id, Failure(NotFoundException(s"Could not find draft with id of ${id} to partial publish")))
+        case Some(articleToPartialPublish) =>
+          val updatedArticleFields =
+            partialArticleFieldsUpdate(articleToPartialPublish, articleFieldsToUpdate, language)
+          (id, articleApiClient.partialPublishArticle(id, updatedArticleFields).map(_ => articleToPartialPublish))
       }
 
     }
 
-    def partialPublishMultiple(ids: Seq[Long]): Try[MultiPartialPublishResult] = {
+    def partialPublishMultiple(language: String, partialBulk: PartialBulkArticles): Try[MultiPartialPublishResult] = {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(100))
       val requestInfo = RequestInfo()
 
-      val futures = ids.map(id =>
+      val futures = partialBulk.articleIds.map(id =>
         Future {
           requestInfo.setRequestInfo()
-          partialPublish(id)
+          partialPublish(id, partialBulk.fields, language)
       })
 
-      val duration = ids.size.minutes // Max 1 minute PR article to partial publish for timeout
+      val duration = partialBulk.articleIds.size.minutes // Max 1 minute PR article to partial publish for timeout
       val future = Future.sequence(futures)
       Try(Await.result(future, duration)) match {
 

@@ -19,6 +19,7 @@ import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.mapping
 import no.ndla.mapping.LicenseDefinition
 import org.joda.time.DateTime
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 import org.scalatra.{Created, NotFound, Ok}
@@ -36,7 +37,7 @@ trait DraftController {
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController {
-    protected implicit override val jsonFormats: Formats = DefaultFormats
+    protected implicit override val jsonFormats: Formats = DefaultFormats + new EnumNameSerializer(PartialArticleFields)
     protected val applicationDescription = "API for accessing draft articles from ndla.no."
 
     // Additional models used in error responses
@@ -672,7 +673,8 @@ trait DraftController {
             asHeaderParam(correlationId),
             asPathParam(articleId),
             asQueryParam(language),
-            asQueryParam(fallback)
+            asQueryParam(fallback),
+            bodyParam[Seq[String]]
           )
           .authorizations("oauth2")
           .responseMessages(response404, response500)
@@ -684,12 +686,16 @@ trait DraftController {
       val fallback = booleanOrDefault(this.fallback.paramName, default = false)
 
       doOrAccessDenied(userInfo.canWrite) {
-        writeService.partialPublish(articleId, language, fallback) match {
-          case Success(article) => Ok(article)
-          case Failure(ex)      => errorHandler(ex)
+        extract[Seq[PartialArticleFields.Value]](request.body) match {
+          case Failure(ex) => errorHandler(ex)
+          case Success(articleFieldsToUpdate) =>
+            writeService.partialPublish(articleId, articleFieldsToUpdate, language, fallback) match {
+              case Success(article) => Ok(article)
+              case Failure(ex)      => errorHandler(ex)
+            }
         }
-      }
 
+      }
     }
 
     post(
@@ -700,7 +706,8 @@ trait DraftController {
           .description("Partial publish selected fields for multiple articles")
           .parameters(
             asHeaderParam(correlationId),
-            bodyParam[Seq[Long]]
+            asQueryParam(language),
+            bodyParam[Seq[String]]
           )
           .authorizations("oauth2")
           .responseMessages(response404, response500)
@@ -708,10 +715,11 @@ trait DraftController {
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
-        extract[Seq[Long]](request.body) match {
+        val language = paramOrDefault(this.language.paramName, Language.AllLanguages)
+        extract[PartialBulkArticles](request.body) match {
           case Failure(ex) => errorHandler(ex)
-          case Success(articleIds) =>
-            writeService.partialPublishMultiple(articleIds) match {
+          case Success(partialBulk) =>
+            writeService.partialPublishMultiple(language, partialBulk) match {
               case Success(response) => Ok(response)
               case Failure(ex)       => errorHandler(ex)
             }
