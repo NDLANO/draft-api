@@ -89,7 +89,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    availability = "everyone"
   )
 
   val blankUpdatedArticle = api.UpdatedArticle(
@@ -103,6 +104,7 @@ object TestData {
     None,
     None,
     Right(None),
+    None,
     None,
     None,
     None,
@@ -185,7 +187,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    availability = "everyone"
   )
 
   val apiArticleUserTest = api.Article(
@@ -224,7 +227,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    availability = "everyone"
   )
 
   val sampleTopicArticle = Article(
@@ -249,7 +253,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    Availability.everyone
   )
 
   val sampleArticleWithPublicDomain = Article(
@@ -274,7 +279,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    Availability.everyone
   )
 
   val sampleDomainArticle = Article(
@@ -299,7 +305,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    Availability.everyone
   )
 
   val sampleDomainArticle2 = Article(
@@ -324,7 +331,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    Availability.everyone
   )
 
   val newArticle = api.NewArticle(
@@ -351,7 +359,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    availability = None
   )
 
   val sampleArticleWithByNcSa = sampleArticleWithPublicDomain.copy(copyright = Some(byNcSaCopyright))
@@ -387,7 +396,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    Availability.everyone
   )
 
   val apiArticleWithHtmlFaultV2 = api.Article(
@@ -429,7 +439,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Seq.empty
+    Seq.empty,
+    availability = "everyone"
   )
 
   val (nodeId, nodeId2) = ("1234", "4321")

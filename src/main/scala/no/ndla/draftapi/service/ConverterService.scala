@@ -82,7 +82,8 @@ trait ConverterService {
             previousVersionsNotes = Seq.empty,
             editorLabels = newArticle.editorLabels,
             grepCodes = newArticle.grepCodes,
-            conceptIds = newArticle.conceptIds
+            conceptIds = newArticle.conceptIds,
+            availability = Availability.everyone
         ))
     }
 
@@ -286,7 +287,8 @@ trait ConverterService {
             article.notes.map(toApiEditorNote),
             article.editorLabels,
             article.grepCodes,
-            article.conceptIds
+            article.conceptIds,
+            article.availability.toString
           ))
       } else {
         Failure(
@@ -620,6 +622,11 @@ trait ConverterService {
             case Left(_)     => Seq.empty
           }
 
+          val newAvailability = Availability.valueOf(article.availability) match {
+            case None         => Availability.everyone
+            case Some(status) => status
+          }
+
           mergedNotes.map(
             notes =>
               domain.Article(
@@ -644,7 +651,8 @@ trait ConverterService {
                 previousVersionsNotes = Seq.empty,
                 editorLabels = article.editorLabels.getOrElse(Seq.empty),
                 grepCodes = article.grepCodes.getOrElse(Seq.empty),
-                conceptIds = article.conceptIds.getOrElse(Seq.empty)
+                conceptIds = article.conceptIds.getOrElse(Seq.empty),
+                availability = newAvailability
             ))
       }
     }
