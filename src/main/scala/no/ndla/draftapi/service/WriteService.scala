@@ -611,11 +611,11 @@ trait WriteService {
         articleToPartialPublish.copyright.flatMap(c => c.license)
       } else None
       val newMetaDesc = if (articleFieldsToUpdate.contains(PartialArticleFields.metaDescription)) {
-        if (language == "all") Some(articleToPartialPublish.metaDescription)
+        if (language == Language.AllLanguages) Some(articleToPartialPublish.metaDescription)
         else Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq)
       } else None
       val newTags = if (articleFieldsToUpdate.contains(PartialArticleFields.tags)) {
-        if (language == "all") Some(articleToPartialPublish.tags)
+        if (language == Language.AllLanguages) Some(articleToPartialPublish.tags)
         else Some(articleToPartialPublish.tags.find(t => t.language == language).toSeq)
       } else None
 
