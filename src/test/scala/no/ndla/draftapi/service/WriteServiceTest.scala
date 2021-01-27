@@ -14,7 +14,7 @@ import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.api.ArticleApiArticle
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
+import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite, integration}
 import no.ndla.validation.{HtmlTagRules, ValidationMessage}
 import org.joda.time.{DateTime, DateTimeUtils}
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
@@ -741,6 +741,60 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     HtmlTagRules.jsoupDocumentToString(doc) should be(
       s"<section>$expectedEmbed1</section><section>$expectedEmbed2</section>")
+  }
+
+  test("That partialArticleFieldsUpdate updates fields correctly based on language") {
+    val existingArticle = TestData.sampleDomainArticle.copy(
+      grepCodes = Seq("A", "B"),
+      copyright = Some(Copyright(Some("CC-BY-4.0"), Some("origin"), Seq(), Seq(), Seq(), None, None, None)),
+      metaDescription = Seq(
+        ArticleMetaDescription("oldDesc", "nb"),
+        ArticleMetaDescription("oldDescc", "es"),
+        ArticleMetaDescription("oldDesccc", "ru"),
+        ArticleMetaDescription("oldDescccc", "nn")
+      ),
+      tags = Seq(ArticleTag(Seq("old", "tag"), "nb"),
+                 ArticleTag(Seq("guten", "tag"), "de"),
+                 ArticleTag(Seq("oldd", "tagg"), "es"))
+    )
+
+    val articleFieldsToUpdate = Seq(api.PartialArticleFields.grepCodes,
+                                    api.PartialArticleFields.license,
+                                    api.PartialArticleFields.metaDescription,
+                                    api.PartialArticleFields.tags)
+
+    val expectedPartialPublishFields = integration.PartialPublishArticle(
+      grepCodes = Some(Seq("A", "B")),
+      license = Some("CC-BY-4.0"),
+      metaDescription = Some(Seq(ArticleMetaDescription("oldDesc", "nb"))),
+      tags = Some(Seq(ArticleTag(Seq("old", "tag"), "nb")))
+    )
+    val expectedPartialPublishFieldsLangEN = integration.PartialPublishArticle(grepCodes = Some(Seq("A", "B")),
+                                                                               license = Some("CC-BY-4.0"),
+                                                                               metaDescription = Some(Seq.empty),
+                                                                               tags = Some(Seq.empty))
+    val expectedPartialPublishFieldsLangALL = integration.PartialPublishArticle(
+      grepCodes = Some(Seq("A", "B")),
+      license = Some("CC-BY-4.0"),
+      metaDescription = Some(
+        Seq(
+          ArticleMetaDescription("oldDesc", "nb"),
+          ArticleMetaDescription("oldDescc", "es"),
+          ArticleMetaDescription("oldDesccc", "ru"),
+          ArticleMetaDescription("oldDescccc", "nn")
+        )),
+      tags = Some(
+        Seq(ArticleTag(Seq("old", "tag"), "nb"),
+            ArticleTag(Seq("guten", "tag"), "de"),
+            ArticleTag(Seq("oldd", "tagg"), "es")))
+    )
+
+    service.partialArticleFieldsUpdate(existingArticle, articleFieldsToUpdate, "nb") should be(
+      expectedPartialPublishFields)
+    service.partialArticleFieldsUpdate(existingArticle, articleFieldsToUpdate, "en") should be(
+      expectedPartialPublishFieldsLangEN)
+    service.partialArticleFieldsUpdate(existingArticle, articleFieldsToUpdate, "all") should be(
+      expectedPartialPublishFieldsLangALL)
   }
 
 }

@@ -22,7 +22,10 @@ import scalaj.http.Http
 import scala.util.{Failure, Try}
 
 case class ArticleApiId(id: Long)
-case class PartialPublishArticle(grepCodes: Option[Seq[String]])
+case class PartialPublishArticle(grepCodes: Option[Seq[String]],
+                                 license: Option[String],
+                                 metaDescription: Option[Seq[domain.ArticleMetaDescription]],
+                                 tags: Option[Seq[domain.ArticleTag]])
 
 trait ArticleApiClient {
   this: NdlaClient with ConverterService =>
@@ -40,7 +43,7 @@ trait ArticleApiClient {
     ): Try[Long] = {
       implicit val format: Formats = org.json4s.DefaultFormats
       patchWithData[ArticleApiId, PartialPublishArticle](
-        s"$PublicEndpoint/partial-publish/$id",
+        s"$InternalEndpoint/partial-publish/$id",
         article,
       ).map(res => res.id)
     }
