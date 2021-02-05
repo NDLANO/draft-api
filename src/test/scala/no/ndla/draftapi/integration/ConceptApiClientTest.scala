@@ -61,6 +61,7 @@ class ConceptApiClientTest extends UnitSuite with TestEnvironment {
       .when(conceptApiClient)
       .get[DraftConcept](eqTo(idPath6), any, any)(any)
 
-    verify(conceptApiClient, never).put[DraftConcept](any, any, any)(any)}
+    verify(conceptApiClient, never).put[DraftConcept](any, any, any)(any)
+  }
 
 }
