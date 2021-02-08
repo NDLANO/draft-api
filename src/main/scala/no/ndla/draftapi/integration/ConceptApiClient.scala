@@ -33,15 +33,15 @@ trait ConceptApiClient {
     private val conceptTimeout = 1000 * 10 // 10 seconds
 
     def publishConceptsIfToPublishing(ids: Seq[Long]): Seq[Try[DraftConcept]] = {
-      val statusNotToPublish = "PUBLISHED"
-      val shouldPublish = (c: DraftConcept) => c.status.current != statusNotToPublish
+      val statusToPublish = "QUALITY_ASSURED"
+      val shouldPublish = (c: DraftConcept) => c.status.current == statusToPublish
 
       ids.map(id => {
         getDraftConcept(id) match {
           case Success(concept) if shouldPublish(concept) => publishConcept(concept.id)
           case Success(concept) =>
             logger.info(
-              s"Not publishing concept with id '${concept.id}' since status already '${concept.status.current}''")
+              s"Not publishing concept with id '${concept.id}' since status '${concept.status.current}' does not match '${statusToPublish}'")
             Success(concept)
           case Failure(ex) =>
             logger.error(s"Something went wrong when fetching concept with id: '$id'", ex)
