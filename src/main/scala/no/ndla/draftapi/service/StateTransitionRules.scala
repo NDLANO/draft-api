@@ -80,17 +80,12 @@ trait StateTransitionRules {
           case Some(id) =>
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
-            val embeddedConceptIds = converterService.getEmbeddedConceptIds(article)
-            val conceptIds = article.conceptIds.concat(embeddedConceptIds).distinct
-            val conceptTries =
-              conceptApiClient.publishConceptsIfToPublishing(conceptIds)
-
             val h5pPaths = converterService.getEmbeddedH5PPaths(article)
             val h5pT = h5pApiClient.publishH5Ps(h5pPaths)
 
             val taxonomyT = taxonomyApiClient.updateTaxonomyIfExists(id, article)
             val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
-            val failures = (conceptTries ++ Seq(h5pT, taxonomyT, articleUdpT)).collectFirst {
+            val failures = Seq(h5pT, taxonomyT, articleUdpT).collectFirst {
               case Failure(ex) => Failure(ex)
             }
             failures.getOrElse(articleUdpT)
