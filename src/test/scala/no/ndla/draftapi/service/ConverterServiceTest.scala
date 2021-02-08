@@ -680,4 +680,96 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
                                                     visualElement = Seq(visualElementNb, visualElementEn))
     service.getEmbeddedH5PPaths(article).sorted should be(expectedPaths)
   }
+
+  test("toDomainArticle(NewArticle) should convert availability correctly") {
+    val Success(res1) =
+      service.toDomainArticle(1,
+                              TestData.newArticle.copy(availability = Some(Availability.teacher.toString)),
+                              List(TestData.externalId),
+                              TestData.userWithWriteAccess,
+                              None,
+                              None)
+
+    val Success(res2) = service.toDomainArticle(1,
+                                                TestData.newArticle.copy(availability = None),
+                                                List(TestData.externalId),
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    val Success(res3) = service.toDomainArticle(1,
+                                                TestData.newArticle.copy(availability = Some("Krutte go")),
+                                                List(TestData.externalId),
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    res1.availability should be(Availability.teacher)
+    res1.availability should not be (Availability.everyone)
+    // Should default til everyone
+    res2.availability should be(Availability.everyone)
+    res3.availability should be(Availability.everyone)
+  }
+
+  test("toDomainArticle(UpdateArticle) should convert availability correctly") {
+    val Success(res1) = service.toDomainArticle(
+      TestData.sampleDomainArticle.copy(availability = Availability.student),
+      TestData.sampleApiUpdateArticle.copy(availability = Some(Availability.teacher.toString)),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res2) = service.toDomainArticle(
+      TestData.sampleDomainArticle.copy(availability = Availability.student),
+      TestData.sampleApiUpdateArticle.copy(availability = Some("Krutte go")),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    val Success(res3) = service.toDomainArticle(
+      TestData.sampleDomainArticle.copy(availability = Availability.student),
+      TestData.sampleApiUpdateArticle.copy(availability = None),
+      isImported = false,
+      TestData.userWithWriteAccess,
+      None,
+      None
+    )
+
+    res1.availability should be(Availability.teacher)
+    res2.availability should be(Availability.student)
+    res3.availability should be(Availability.student)
+  }
+
+  test("toDomainArticle(updateNullDocumentArticle) should convert availability correctly") {
+
+    val Success(res1) =
+      service.toDomainArticle(1,
+                              TestData.sampleApiUpdateArticle.copy(availability = Some(Availability.student.toString)),
+                              isImported = false,
+                              TestData.userWithWriteAccess,
+                              None,
+                              None)
+
+    val Success(res2) = service.toDomainArticle(2,
+                                                TestData.sampleApiUpdateArticle.copy(availability = Some("Krutte go")),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    val Success(res3) = service.toDomainArticle(3,
+                                                TestData.sampleApiUpdateArticle.copy(availability = None),
+                                                isImported = false,
+                                                TestData.userWithWriteAccess,
+                                                None,
+                                                None)
+
+    res1.availability should be(Availability.student)
+    res2.availability should be(Availability.everyone)
+    res3.availability should be(Availability.everyone)
+  }
 }
