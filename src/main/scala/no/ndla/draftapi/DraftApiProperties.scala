@@ -13,7 +13,6 @@ import no.ndla.network.{AuthUser, Domains}
 import no.ndla.validation.ResourceType
 
 import scala.util.Properties._
-import scala.util.{Failure, Success}
 
 object DraftApiProperties extends LazyLogging {
 
@@ -62,10 +61,10 @@ object DraftApiProperties extends LazyLogging {
     "image-api" -> s"http://$ImageApiHost/intern"
   )
 
-  val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
-  val NDLABrightcovePlayerId = prop("NDLA_BRIGHTCOVE_PLAYER_ID")
+  lazy val NDLABrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
+  lazy val NDLABrightcovePlayerId = prop("NDLA_BRIGHTCOVE_PLAYER_ID")
 
-  val NDLABrightcoveVideoScriptUrl =
+  lazy val NDLABrightcoveVideoScriptUrl =
     s"//players.brightcove.net/$NDLABrightcoveAccountId/${NDLABrightcovePlayerId}_default/index.min.js"
   val H5PResizerScriptUrl = "//ndla.no/sites/all/modules/h5p/library/js/h5p-resizer.js"
   val NRKVideoScriptUrl = Seq("//www.nrk.no/serum/latest/js/video_embed.js", "//nrk.no/serum/latest/js/video_embed.js")

@@ -47,10 +47,10 @@ case class Article(
     editorLabels: Seq[String],
     grepCodes: Seq[String],
     conceptIds: Seq[Long],
-    availability: Availability.Value
+    availability: Availability.Value = Availability.everyone
 ) extends Content {
 
-  def supportedLanguages =
+  def supportedLanguages: Seq[String] =
     getSupportedLanguages(Seq(title, visualElement, introduction, metaDescription, tags, content, metaImage))
 }
 
@@ -58,7 +58,8 @@ object Article extends SQLSyntaxSupport[Article] {
 
   val jsonEncoder: Formats = DefaultFormats +
     new EnumNameSerializer(ArticleStatus) +
-    new EnumNameSerializer(ArticleType)
+    new EnumNameSerializer(ArticleType) +
+    new EnumNameSerializer(Availability)
 
   val repositorySerializer = jsonEncoder +
     FieldSerializer[Article](
@@ -67,7 +68,7 @@ object Article extends SQLSyntaxSupport[Article] {
     )
 
   override val tableName = "articledata"
-  override val schemaName = Some(DraftApiProperties.MetaSchema)
+  override lazy val schemaName = Some(DraftApiProperties.MetaSchema)
 
   def fromResultSet(lp: SyntaxProvider[Article])(rs: WrappedResultSet): Article = fromResultSet(lp.resultName)(rs)
 
