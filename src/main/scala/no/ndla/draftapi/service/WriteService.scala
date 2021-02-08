@@ -604,6 +604,9 @@ trait WriteService {
     def partialArticleFieldsUpdate(articleToPartialPublish: domain.Article,
                                    articleFieldsToUpdate: Seq[PartialArticleFields.Value],
                                    language: String): PartialPublishArticle = {
+      val newAvailability = if (articleFieldsToUpdate.contains(PartialArticleFields.availability)) {
+        Some(articleToPartialPublish.availability)
+      } else None
       val newGrepCodes = if (articleFieldsToUpdate.contains(PartialArticleFields.grepCodes)) {
         Some(articleToPartialPublish.grepCodes)
       } else None
@@ -620,6 +623,7 @@ trait WriteService {
       } else None
 
       PartialPublishArticle(
+        availability = newAvailability,
         grepCodes = newGrepCodes,
         license = newLicense,
         metaDescription = newMetaDesc,
