@@ -32,6 +32,7 @@ trait ConceptApiClient {
     private val draftEndpoint = s"concept-api/v1/drafts"
     private val conceptTimeout = 1000 * 10 // 10 seconds
 
+    // Currently not in use. Code not removed as it may be reimplemented later (February 2020).
     def publishConceptsIfToPublishing(ids: Seq[Long]): Seq[Try[DraftConcept]] = {
       val statusToPublish = "QUALITY_ASSURED"
       val shouldPublish = (c: DraftConcept) => c.status.current == statusToPublish
