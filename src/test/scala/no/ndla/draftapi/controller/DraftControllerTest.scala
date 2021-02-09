@@ -392,4 +392,32 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
+  test("that initial search-context doesn't scroll") {
+    reset(articleSearchService)
+
+    val expectedSettings = TestData.searchSettings.copy(
+      searchLanguage = "all",
+      articleTypes = List("standard", "topic-article"),
+      shouldScroll = true,
+      sort = Sort.ByTitleAsc
+    )
+
+    val result = domain.SearchResult[api.ArticleSummary](
+      totalCount = 0,
+      page = None,
+      pageSize = 10,
+      language = "all",
+      results = Seq.empty,
+      scrollId = Some("heiheihei")
+    )
+    when(articleSearchService.matchingQuery(any[SearchSettings])).thenReturn(Success(result))
+
+    get("/test/?search-context=initial") {
+      status should be(200)
+      verify(articleSearchService, times(1)).matchingQuery(expectedSettings)
+      verify(articleSearchService, times(0)).scroll(any[String], any[String])
+    }
+
+  }
+
 }
