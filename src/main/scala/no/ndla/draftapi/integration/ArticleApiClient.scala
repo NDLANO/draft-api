@@ -14,6 +14,7 @@ import no.ndla.draftapi.service.ConverterService
 import no.ndla.network.NdlaClient
 import no.ndla.network.model.HttpRequestException
 import no.ndla.validation.ValidationException
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.JsonMethods.parse
 import org.json4s.native.Serialization.write
 import org.json4s.{DefaultFormats, Formats}
@@ -22,7 +23,8 @@ import scalaj.http.Http
 import scala.util.{Failure, Try}
 
 case class ArticleApiId(id: Long)
-case class PartialPublishArticle(grepCodes: Option[Seq[String]],
+case class PartialPublishArticle(availability: Option[domain.Availability.Value],
+                                 grepCodes: Option[Seq[String]],
                                  license: Option[String],
                                  metaDescription: Option[Seq[domain.ArticleMetaDescription]],
                                  tags: Option[Seq[domain.ArticleTag]])
@@ -36,12 +38,12 @@ trait ArticleApiClient {
     private val PublicEndpoint = s"http://$ApiGatewayHost/article-api/v2/articles"
     private val deleteTimeout = 1000 * 10 // 10 seconds
     private val timeout = 1000 * 15
+    private implicit val format: Formats = DefaultFormats + new EnumNameSerializer(domain.Availability)
 
     def partialPublishArticle(
         id: Long,
         article: PartialPublishArticle,
     ): Try[Long] = {
-      implicit val format: Formats = org.json4s.DefaultFormats
       patchWithData[ArticleApiId, PartialPublishArticle](
         s"$InternalEndpoint/partial-publish/$id",
         article,
@@ -53,7 +55,6 @@ trait ArticleApiClient {
                       externalIds: List[String],
                       useImportValidation: Boolean,
                       useSoftValidation: Boolean): Try[domain.Article] = {
-      implicit val format: DefaultFormats.type = org.json4s.DefaultFormats
 
       val articleApiArticle = converterService.toArticleApiArticle(article)
       postWithData[api.ArticleApiArticle, api.ArticleApiArticle](
@@ -66,18 +67,15 @@ trait ArticleApiClient {
     }
 
     def unpublishArticle(article: domain.Article): Try[domain.Article] = {
-      implicit val format = org.json4s.DefaultFormats
       val id = article.id.get
       post[ContentId](s"$InternalEndpoint/article/$id/unpublish/").map(_ => article)
     }
 
     def deleteArticle(id: Long): Try[ContentId] = {
-      implicit val format = org.json4s.DefaultFormats
       delete[ContentId](s"$InternalEndpoint/article/$id/")
     }
 
     def validateArticle(article: api.ArticleApiArticle, importValidate: Boolean): Try[api.ArticleApiArticle] = {
-      implicit val format = org.json4s.DefaultFormats
       postWithData[api.ArticleApiArticle, api.ArticleApiArticle](s"$InternalEndpoint/validate/article",
                                                                  article,
                                                                  ("import_validate", importValidate.toString)) match {

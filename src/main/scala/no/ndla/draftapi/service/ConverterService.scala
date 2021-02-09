@@ -56,6 +56,8 @@ trait ConverterService {
       val oldCreatedDate = oldNdlaCreatedDate.map(date => new DateTime(date).toDate)
       val oldUpdatedDate = oldNdlaUpdatedDate.map(date => new DateTime(date).toDate)
 
+      val newAvailability = Availability.valueOf(newArticle.availability).getOrElse(Availability.everyone)
+
       newNotes(newArticle.notes, user, status).map(
         notes =>
           domain.Article(
@@ -82,7 +84,8 @@ trait ConverterService {
             previousVersionsNotes = Seq.empty,
             editorLabels = newArticle.editorLabels,
             grepCodes = newArticle.grepCodes,
-            conceptIds = newArticle.conceptIds
+            conceptIds = newArticle.conceptIds,
+            availability = newAvailability
         ))
     }
 
@@ -286,7 +289,8 @@ trait ConverterService {
             article.notes.map(toApiEditorNote),
             article.editorLabels,
             article.grepCodes,
-            article.conceptIds
+            article.conceptIds,
+            availability = article.availability.toString
           ))
       } else {
         Failure(
@@ -451,7 +455,8 @@ trait ConverterService {
         published = article.published,
         articleType = article.articleType.toString,
         grepCodes = article.grepCodes,
-        conceptIds = article.conceptIds
+        conceptIds = article.conceptIds,
+        availability = article.availability
       )
     }
 
@@ -514,6 +519,8 @@ trait ConverterService {
         case None    => newNotes(newLanguageEditorNote, user, toMergeInto.status)
       }
 
+      val updatedAvailability = Availability.valueOf(article.availability).getOrElse(toMergeInto.availability)
+
       // Cloning files if they exist in other languages when adding new language
       val contentWithClonedFiles = if (isNewLanguage) {
         article.content.traverse(updContent => {
@@ -544,7 +551,8 @@ trait ConverterService {
                 notes = allNotes,
                 editorLabels = updatedWithClonedFiles.editorLabels.getOrElse(toMergeInto.editorLabels),
                 grepCodes = updatedWithClonedFiles.grepCodes.getOrElse(toMergeInto.grepCodes),
-                conceptIds = updatedWithClonedFiles.conceptIds.getOrElse(toMergeInto.conceptIds)
+                conceptIds = updatedWithClonedFiles.conceptIds.getOrElse(toMergeInto.conceptIds),
+                availability = updatedAvailability
               )
 
               updatedWithClonedFiles.language match {
@@ -620,6 +628,8 @@ trait ConverterService {
             case Left(_)     => Seq.empty
           }
 
+          val updatedAvailability = Availability.valueOf(article.availability).getOrElse(Availability.everyone)
+
           mergedNotes.map(
             notes =>
               domain.Article(
@@ -644,7 +654,8 @@ trait ConverterService {
                 previousVersionsNotes = Seq.empty,
                 editorLabels = article.editorLabels.getOrElse(Seq.empty),
                 grepCodes = article.grepCodes.getOrElse(Seq.empty),
-                conceptIds = article.conceptIds.getOrElse(Seq.empty)
+                conceptIds = article.conceptIds.getOrElse(Seq.empty),
+                availability = updatedAvailability
             ))
       }
     }

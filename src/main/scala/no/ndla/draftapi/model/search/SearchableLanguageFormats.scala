@@ -7,11 +7,8 @@
 
 package no.ndla.draftapi.model.search
 
-import java.text.SimpleDateFormat
-import java.util.TimeZone
-
 import org.json4s.JsonAST.{JField, JObject, JString}
-import org.json4s.{CustomSerializer, DefaultFormats, Extraction, Formats}
+import org.json4s.{CustomSerializer, Extraction, Formats}
 
 class SearchableLanguageValuesSerializer
     extends CustomSerializer[SearchableLanguageValues](_ =>

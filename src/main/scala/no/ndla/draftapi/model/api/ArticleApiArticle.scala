@@ -6,6 +6,7 @@
  */
 
 package no.ndla.draftapi.model.api
+import no.ndla.draftapi.model.domain.Availability
 
 import java.util.Date
 
@@ -25,7 +26,8 @@ case class ArticleApiArticle(revision: Option[Int],
                              published: Date,
                              articleType: String,
                              grepCodes: Seq[String],
-                             conceptIds: Seq[Long])
+                             conceptIds: Seq[Long],
+                             availability: Availability.Value)
 case class ArticleApiTitle(title: String, language: String)
 case class ArticleApiContent(content: String, language: String)
 case class ArticleApiAuthor(`type`: String, name: String)

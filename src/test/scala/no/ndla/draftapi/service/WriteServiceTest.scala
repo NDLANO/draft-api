@@ -745,6 +745,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   test("That partialArticleFieldsUpdate updates fields correctly based on language") {
     val existingArticle = TestData.sampleDomainArticle.copy(
+      availability = Availability.everyone,
       grepCodes = Seq("A", "B"),
       copyright = Some(Copyright(Some("CC-BY-4.0"), Some("origin"), Seq(), Seq(), Seq(), None, None, None)),
       metaDescription = Seq(
@@ -758,22 +759,30 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                  ArticleTag(Seq("oldd", "tagg"), "es"))
     )
 
-    val articleFieldsToUpdate = Seq(api.PartialArticleFields.grepCodes,
-                                    api.PartialArticleFields.license,
-                                    api.PartialArticleFields.metaDescription,
-                                    api.PartialArticleFields.tags)
+    val articleFieldsToUpdate = Seq(
+      api.PartialArticleFields.availability,
+      api.PartialArticleFields.grepCodes,
+      api.PartialArticleFields.license,
+      api.PartialArticleFields.metaDescription,
+      api.PartialArticleFields.tags
+    )
 
     val expectedPartialPublishFields = integration.PartialPublishArticle(
+      availability = Some(Availability.everyone),
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(Seq(ArticleMetaDescription("oldDesc", "nb"))),
       tags = Some(Seq(ArticleTag(Seq("old", "tag"), "nb")))
     )
-    val expectedPartialPublishFieldsLangEN = integration.PartialPublishArticle(grepCodes = Some(Seq("A", "B")),
-                                                                               license = Some("CC-BY-4.0"),
-                                                                               metaDescription = Some(Seq.empty),
-                                                                               tags = Some(Seq.empty))
+    val expectedPartialPublishFieldsLangEN = integration.PartialPublishArticle(
+      availability = Some(Availability.everyone),
+      grepCodes = Some(Seq("A", "B")),
+      license = Some("CC-BY-4.0"),
+      metaDescription = Some(Seq.empty),
+      tags = Some(Seq.empty)
+    )
     val expectedPartialPublishFieldsLangALL = integration.PartialPublishArticle(
+      availability = Some(Availability.everyone),
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(

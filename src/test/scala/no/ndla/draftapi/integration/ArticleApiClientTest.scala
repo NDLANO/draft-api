@@ -8,19 +8,19 @@
 package no.ndla.draftapi.integration
 
 import java.util.Date
-
 import no.ndla.draftapi.model.api.ContentId
 import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.domain.Availability
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 import no.ndla.network.AuthUser
 import no.ndla.scalatestsuite.IntegrationSuite
 import org.json4s.native.Serialization.write
-import org.json4s.{DefaultFormats, Formats}
+import org.json4s.Formats
 
 import scala.util.Success
 
 class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvironment {
-  implicit val formats: DefaultFormats = DefaultFormats
+  implicit val formats: Formats = domain.Article.jsonEncoder
   override val ndlaClient = new NdlaClient
 
   // Pact CDC imports
@@ -64,7 +64,8 @@ class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvi
     previousVersionsNotes = Seq.empty,
     editorLabels = Seq.empty,
     grepCodes = Seq.empty,
-    conceptIds = Seq.empty
+    conceptIds = Seq.empty,
+    availability = Availability.everyone
   )
 
   val exampleToken =
@@ -72,8 +73,6 @@ class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvi
   val authHeaderMap = Map("Authorization" -> s"Bearer $exampleToken")
 
   test("that updating articles should work") {
-    implicit val formats: Formats = domain.Article.jsonEncoder
-
     forgePact
       .between("draft-api")
       .and("article-api")
@@ -164,7 +163,8 @@ class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvi
       .runConsumerTest { mockConfig =>
         AuthUser.setHeader(s"Bearer $exampleToken")
         val articleApiCient = new ArticleApiClient(mockConfig.baseUrl)
-        articleApiCient.validateArticle(articleApiArticle, importValidate = false).isSuccess should be(true)
+        val result = articleApiCient.validateArticle(articleApiArticle, importValidate = false)
+        result.isSuccess should be(true)
       }
   }
 }

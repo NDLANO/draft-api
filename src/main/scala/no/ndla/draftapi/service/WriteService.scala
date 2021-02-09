@@ -604,27 +604,28 @@ trait WriteService {
     def partialArticleFieldsUpdate(articleToPartialPublish: domain.Article,
                                    articleFieldsToUpdate: Seq[PartialArticleFields.Value],
                                    language: String): PartialPublishArticle = {
-      val newGrepCodes = if (articleFieldsToUpdate.contains(PartialArticleFields.grepCodes)) {
-        Some(articleToPartialPublish.grepCodes)
-      } else None
-      val newLicense = if (articleFieldsToUpdate.contains(PartialArticleFields.license)) {
-        articleToPartialPublish.copyright.flatMap(c => c.license)
-      } else None
-      val newMetaDesc = if (articleFieldsToUpdate.contains(PartialArticleFields.metaDescription)) {
-        if (language == Language.AllLanguages) Some(articleToPartialPublish.metaDescription)
-        else Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq)
-      } else None
-      val newTags = if (articleFieldsToUpdate.contains(PartialArticleFields.tags)) {
-        if (language == Language.AllLanguages) Some(articleToPartialPublish.tags)
-        else Some(articleToPartialPublish.tags.find(t => t.language == language).toSeq)
-      } else None
 
-      PartialPublishArticle(
-        grepCodes = newGrepCodes,
-        license = newLicense,
-        metaDescription = newMetaDesc,
-        tags = newTags
-      )
+      val initialPartial = PartialPublishArticle(None, None, None, None, None)
+      articleFieldsToUpdate.distinct.foldLeft(initialPartial)((partialPublishArticle, field) => {
+        field match {
+          case PartialArticleFields.availability =>
+            partialPublishArticle.copy(availability = Some(articleToPartialPublish.availability))
+          case PartialArticleFields.grepCodes =>
+            partialPublishArticle.copy(grepCodes = Some(articleToPartialPublish.grepCodes))
+          case PartialArticleFields.license =>
+            partialPublishArticle.copy(license = articleToPartialPublish.copyright.flatMap(c => c.license))
+          case PartialArticleFields.metaDescription if (language == Language.AllLanguages) =>
+            partialPublishArticle.copy(metaDescription = Some(articleToPartialPublish.metaDescription))
+          case PartialArticleFields.metaDescription =>
+            partialPublishArticle.copy(
+              metaDescription = Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq))
+          case PartialArticleFields.tags if (language == Language.AllLanguages) =>
+            partialPublishArticle.copy(tags = Some(articleToPartialPublish.tags))
+          case PartialArticleFields.tags =>
+            partialPublishArticle.copy(
+              tags = Some(articleToPartialPublish.tags.find(t => t.language == language).toSeq))
+        }
+      })
     }
 
     def partialPublish(id: Long,

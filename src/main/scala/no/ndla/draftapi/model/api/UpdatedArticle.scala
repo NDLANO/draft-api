@@ -11,6 +11,7 @@ package no.ndla.draftapi.model.api
 import java.util.Date
 import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 import scala.annotation.meta.field
+import no.ndla.draftapi.model.domain.Availability
 
 @ApiModel(description = "Information about the article")
 case class UpdatedArticle(
@@ -32,5 +33,6 @@ case class UpdatedArticle(
     @(ApiModelProperty @field)(description = "The labels attached to this article; meant for editors.") editorLabels: Option[Seq[String]],
     @(ApiModelProperty @field)(description = "A list of codes from GREP API connected to the article") grepCodes: Option[Seq[String]],
     @(ApiModelProperty @field)(description = "A list of conceptIds connected to the article") conceptIds: Option[Seq[Long]],
-    @(ApiModelProperty @field)(description = "Stores the new article as a separate version. Useful when making big changes that should be revertable.") createNewVersion: Option[Boolean]
+    @(ApiModelProperty @field)(description = "Stores the new article as a separate version. Useful when making big changes that should be revertable.") createNewVersion: Option[Boolean],
+    @(ApiModelProperty @field)(description = "Value that dictates who gets to see the article. Possible values are: everyone/student/teacher") availability: Option[String]
 )
