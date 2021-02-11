@@ -13,9 +13,9 @@ val JacksonVersion = "2.12.1"
 val CatsEffectVersion = "2.1.2"
 val ElasticsearchVersion = "6.8.13"
 val Json4SVersion = "3.6.7"
-val FlywayVersion = "7.1.1"
-val PostgresVersion = "42.2.14"
-val HikariConnectionPoolVersion = "3.4.5"
+val FlywayVersion = "7.5.3"
+val PostgresVersion = "42.2.18"
+val HikariConnectionPoolVersion = "4.0.1"
 
 val appProperties = settingKey[Properties]("The application properties")
 

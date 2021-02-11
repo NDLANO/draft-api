@@ -8,19 +8,32 @@
 package no.ndla.draftapi.repository
 
 import java.net.Socket
-
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi._
 import no.ndla.draftapi.model.domain
 import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
+import org.scalatest.Outcome
 import scalikejdbc._
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = true) with TestEnvironment {
   override val dataSource = testDataSource.get
-  var repository: ArticleRepository = _
+  var repository: ArticleRepository = new ArticleRepository
+
+  // Skip tests if no docker environment available
+  override def withFixture(test: NoArgTest): Outcome = {
+    postgresContainer match {
+      case Failure(ex) =>
+        println(s"Postgres container not running, cancelling '${this.getClass.getName}'")
+        println(s"Got exception: ${ex.getMessage}")
+        ex.printStackTrace()
+      case _ =>
+    }
+    assume(postgresContainer.isSuccess)
+    super.withFixture(test)
+  }
 
   val sampleArticle: Article = TestData.sampleArticleWithByNcSa
 
@@ -37,18 +50,19 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   def serverIsListening: Boolean = {
-    Try(new Socket(DraftApiProperties.MetaServer, DraftApiProperties.MetaPort)) match {
+    val server = DraftApiProperties.MetaServer
+    val port = DraftApiProperties.MetaPort
+    Try(new Socket(server, port)) match {
       case Success(c) =>
         c.close()
         true
       case _ => false
     }
   }
-  def databaseIsAvailable: Boolean = Try(repository.articleCount).isSuccess
 
   override def beforeEach(): Unit = {
     repository = new ArticleRepository()
-    if (databaseIsAvailable) {
+    if (serverIsListening) {
       emptyTestDatabase
     }
   }
@@ -64,7 +78,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("Fetching external ids works as expected") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val externalIds = List("1", "2", "3")
     val idWithExternals = 1
     val idWithoutExternals = 2
@@ -78,7 +91,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("withId also returns archieved articles") {
-    assume(databaseIsAvailable, "Database is unavailable")
     repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
     repository.insert(
       sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.ARCHIVED, Set.empty)))
@@ -88,7 +100,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("that importIdOfArticle works correctly") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val externalIds = List("1", "2", "3")
     val uuid = "d4e84cd3-ab94-46d5-9839-47ec682d27c2"
     val id1 = 1
@@ -106,7 +117,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("ExternalIds should not contains NULLs") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(10))
     repository.insertWithExternalIds(art1, null, List.empty, None)
     val result1 = repository.getExternalIdsFromId(10)
@@ -115,7 +125,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("Updating an article should work as expected") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art2 = sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art3 = sampleArticle.copy(id = Some(3), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
@@ -137,7 +146,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("That storing an article an retrieving it returns the original article") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art2 = sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
     val art3 = sampleArticle.copy(id = Some(3),
@@ -156,7 +164,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("That updateWithExternalIds updates article correctly") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     repository.insertWithExternalIds(art1, List("1234", "5678"), List.empty, None)
 
@@ -167,7 +174,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("That getAllIds returns all articles") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art2 = sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
     val art3 = sampleArticle.copy(id = Some(3), status = domain.Status(domain.ArticleStatus.USER_TEST, Set.empty))
@@ -188,7 +194,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("that getIdFromExternalId returns id of article correctly") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(14), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     repository.insert(art1)
     repository.insertWithExternalIds(art1.copy(revision = Some(3)), List("5678"), List.empty, None)
@@ -198,8 +203,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("That newEmptyArticle creates the latest available article_id") {
-    assume(databaseIsAvailable, "Database is unavailable")
-
     this.resetIdSequence()
 
     repository.newEmptyArticle() should be(Success(1))
@@ -212,7 +215,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("That idsWithStatus returns correct drafts") {
-    assume(databaseIsAvailable, "Database is unavailable")
     repository.insert(sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
     repository.insert(sampleArticle.copy(id = Some(2), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)))
     repository.insert(
@@ -245,7 +247,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("That getArticlesByPage returns all latest articles") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     val art2 = sampleArticle.copy(id = Some(1),
                                   revision = Some(2),
@@ -276,7 +277,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("published, then copied article creates new db version and bumps revision by two") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.UNPUBLISHED, Set.empty),
                                                     revision = Some(3))
     repository.insert(article)
@@ -296,7 +296,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("published article keeps revison on import") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val article = TestData.sampleDomainArticle.copy(status = domain.Status(domain.ArticleStatus.IMPORTED, Set.empty),
                                                     revision = Some(1))
     repository.insert(article)
@@ -314,7 +313,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("published, then copied article keeps old notes in hidden field and notes is emptied") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val timeToFreeze = new DateTime().withMillisOfSecond(0)
     withFrozenTime(timeToFreeze) {
       val status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty)
@@ -368,7 +366,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
   }
 
   test("getGrepCodes returns non-duplicate grepCodes and correct number of them") {
-    assume(databaseIsAvailable, "Database is unavailable")
     val sampleArticle1 = TestData.sampleTopicArticle.copy(grepCodes = Seq("abc", "bcd"))
     val sampleArticle2 = TestData.sampleTopicArticle.copy(grepCodes = Seq("bcd", "cde"))
     val sampleArticle3 = TestData.sampleTopicArticle.copy(grepCodes = Seq("def"))
@@ -419,5 +416,4 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
     grepCodes8.length should be(1)
     grepCodesCount8 should be(1)
   }
-
 }

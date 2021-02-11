@@ -165,7 +165,7 @@ case class UserData(
 object UserData extends SQLSyntaxSupport[UserData] {
   implicit val formats = org.json4s.DefaultFormats
   override val tableName = "userdata"
-  override val schemaName = Some(DraftApiProperties.MetaSchema)
+  lazy override val schemaName = Some(DraftApiProperties.MetaSchema)
 
   val JSonSerializer = FieldSerializer[UserData](
     ignore("id")

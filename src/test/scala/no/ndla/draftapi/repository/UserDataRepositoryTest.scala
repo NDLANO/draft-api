@@ -8,17 +8,30 @@
 package no.ndla.draftapi.repository
 
 import java.net.Socket
-
 import no.ndla.draftapi.{DBMigrator, DraftApiProperties, TestData, TestEnvironment}
 import no.ndla.scalatestsuite.IntegrationSuite
 import org.postgresql.util.PSQLException
+import org.scalatest.Outcome
 import scalikejdbc._
 
 import scala.util.{Failure, Success, Try}
 
 class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = true) with TestEnvironment {
   override val dataSource = testDataSource.get
-  var repository: UserDataRepository = _
+  var repository: UserDataRepository = new UserDataRepository
+
+  // Skip tests if no docker environment available
+  override def withFixture(test: NoArgTest): Outcome = {
+    postgresContainer match {
+      case Failure(ex) =>
+        println(s"Postgres container not running, cancelling '${this.getClass.getName}'")
+        println(s"Got exception: ${ex.getMessage}")
+        ex.printStackTrace()
+      case _ =>
+    }
+    assume(postgresContainer.isSuccess)
+    super.withFixture(test)
+  }
 
   def emptyTestDatabase = {
     DB autoCommit (implicit session => {
@@ -33,19 +46,20 @@ class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = 
   }
 
   def serverIsListening: Boolean = {
-    Try(new Socket(DraftApiProperties.MetaServer, DraftApiProperties.MetaPort)) match {
+    val server = DraftApiProperties.MetaServer
+    val port = DraftApiProperties.MetaPort
+    Try(new Socket(server, port)) match {
       case Success(c) =>
         c.close()
         true
-      case _ => false
+      case _ =>
+        false
     }
   }
 
-  def databaseIsAvailable: Boolean = Try(repository.userDataCount).isSuccess
-
   override def beforeEach(): Unit = {
     repository = new UserDataRepository
-    if (databaseIsAvailable) {
+    if (serverIsListening) {
       emptyTestDatabase
     }
   }
@@ -61,8 +75,6 @@ class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = 
   }
 
   test("that inserting records to database is generating id as expected") {
-    assume(databaseIsAvailable, "Database is unavailable")
-
     this.resetIdSequence()
 
     val data1 = TestData.emptyDomainUserData.copy(userId = "user1")
@@ -79,8 +91,6 @@ class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = 
   }
 
   test("that withId and withUserId returns the same userdata") {
-    assume(databaseIsAvailable, "Database is unavailable")
-
     this.resetIdSequence()
 
     val data1 = TestData.emptyDomainUserData.copy(userId = "first", savedSearches = Some(Seq("eple")))
@@ -97,8 +107,6 @@ class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = 
   }
 
   test("that updating updates all fields correctly") {
-    assume(databaseIsAvailable, "Database is unavailable")
-
     val initialUserData1 = TestData.emptyDomainUserData.copy(userId = "first")
 
     val initialUserData2 = TestData.emptyDomainUserData.copy(
@@ -127,8 +135,6 @@ class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = 
   }
 
   test("that userDataCount returns correct amount of entries") {
-    assume(databaseIsAvailable, "Database is unavailable")
-
     val data1 = TestData.emptyDomainUserData.copy(userId = "user1")
     val data2 = TestData.emptyDomainUserData.copy(userId = "user2")
     val data3 = TestData.emptyDomainUserData.copy(userId = "user2")

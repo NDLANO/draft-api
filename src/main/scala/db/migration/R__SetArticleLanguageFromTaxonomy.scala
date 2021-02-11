@@ -36,6 +36,20 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   case class KeywordName(data: List[Map[String, String]])
 
   override def getChecksum: Integer = 1 // Change this to something else if you want to repeat migration
+  override def migrate(context: Context): Unit = {
+    /*
+    // Environments are migrated already
+    // So this is a noop migration to speed up tests and fresh local runs
+    // If we want to repeat migration just remove this comment and change checksum
+
+    val db = DB(context.getConnection)
+    db.autoClose(false)
+
+    db.withinTx { implicit session =>
+      migrateArticles
+    }
+   */
+  }
 
   def fetchResourceFromTaxonomy(endpoint: String): Seq[(Long, Option[Long])] = {
     val url = TaxonomyApiEndpoint + endpoint
@@ -94,15 +108,6 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       case Some(x) =>
         if (x == "language-neutral") None else get6391CodeFor6392Code(x)
       case None => None
-    }
-  }
-
-  override def migrate(context: Context): Unit = {
-    val db = DB(context.getConnection)
-    db.autoClose(false)
-
-    db.withinTx { implicit session =>
-      migrateArticles
     }
   }
 
