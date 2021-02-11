@@ -1,5 +1,5 @@
 # Draft API 
-[![Build Status](https://travis-ci.org/NDLANO/draft-api.svg?branch=master)](https://travis-ci.org/NDLANO/draft-api)
+![CI](https://github.com/NDLANO/draft-api/workflows/CI/badge.svg)
 
 Creates, updates and returns an Article draft`. Implements Elasticsearch for search within the article database.
 

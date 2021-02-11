@@ -7,21 +7,17 @@
 
 package no.ndla.draftapi.service.search
 
-import java.nio.file.{Files, Path}
-import java.util.Date
-
-import com.sksamuel.elastic4s.embedded.LocalNode
 import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
 import no.ndla.draftapi.TestData.searchSettings
 import no.ndla.draftapi._
-import no.ndla.draftapi.integration.{Elastic4sClientFactory, NdlaE4sClient}
+import no.ndla.draftapi.integration.Elastic4sClientFactory
 import no.ndla.draftapi.model.domain._
 import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
 import org.scalatest.Outcome
-import org.testcontainers.elasticsearch.ElasticsearchContainer
 
-import scala.util.{Success, Try}
+import java.util.Date
+import scala.util.Success
 
 class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
