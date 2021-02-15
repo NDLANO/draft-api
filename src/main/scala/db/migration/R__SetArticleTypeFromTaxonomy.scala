@@ -48,12 +48,18 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
   }
 
   override def migrate(context: Context): Unit = {
+    /*
+    // Environments are migrated already
+    // So this is a noop migration to speed up tests and fresh local runs
+    // If we want to repeat migration just remove this comment and change checksum
+
     val db = DB(context.getConnection)
     db.autoClose(false)
 
     db.withinTx { implicit session =>
       migrateArticles
     }
+   */
   }
 
   def migrateArticles(implicit session: DBSession): Unit = {
