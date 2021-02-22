@@ -8,14 +8,13 @@
 package no.ndla.draftapi.service
 
 import java.util.Date
-
 import cats.effect.IO
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.{externalApiUrls, resourceHtmlEmbedTag}
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.ArticleApiClient
-import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException}
+import no.ndla.draftapi.model.api.{NewAgreement, NotFoundException, RelatedContentLink}
 import no.ndla.draftapi.model.domain.ArticleStatus._
 import no.ndla.draftapi.model.domain.Language._
 import no.ndla.draftapi.model.domain.{ArticleStatus, _}
@@ -85,7 +84,8 @@ trait ConverterService {
             editorLabels = newArticle.editorLabels,
             grepCodes = newArticle.grepCodes,
             conceptIds = newArticle.conceptIds,
-            availability = newAvailability
+            availability = newAvailability,
+            relatedContent = toDomainRelatedContent(newArticle.relatedContent)
         ))
     }
 
@@ -97,6 +97,14 @@ trait ConverterService {
           Failure(
             new ValidationException(errors = Seq(ValidationMessage("notes", "A note can not be an empty string"))))
       }
+    }
+
+    def toDomainRelatedContent(relatedContent: Seq[api.RelatedContent]): Seq[RelatedContent] = {
+      relatedContent.map {
+        case Left(x)  => Left(domain.RelatedContentLink(url = x.url, title = x.title))
+        case Right(x) => Right(x)
+      }
+
     }
 
     def toDomainAgreement(newAgreement: NewAgreement, user: UserInfo): domain.Agreement = {
@@ -290,7 +298,8 @@ trait ConverterService {
             article.editorLabels,
             article.grepCodes,
             article.conceptIds,
-            availability = article.availability.toString
+            availability = article.availability.toString,
+            article.relatedContent.map(toApiRelatedContent)
           ))
       } else {
         Failure(
@@ -377,6 +386,14 @@ trait ConverterService {
 
     def toApiAuthor(author: domain.Author): api.Author = api.Author(author.`type`, author.name)
 
+    def toApiRelatedContent(relatedContent: domain.RelatedContent): api.RelatedContent = {
+      relatedContent match {
+        case Left(x)  => Left(api.RelatedContentLink(url = x.url, title = x.title))
+        case Right(x) => Right(x)
+      }
+
+    }
+
     def toApiArticleTag(tag: domain.ArticleTag): api.ArticleTag = api.ArticleTag(tag.tags, tag.language)
 
     def toApiRequiredLibrary(required: domain.RequiredLibrary): api.RequiredLibrary = {
@@ -456,7 +473,8 @@ trait ConverterService {
         articleType = article.articleType.toString,
         grepCodes = article.grepCodes,
         conceptIds = article.conceptIds,
-        availability = article.availability
+        availability = article.availability,
+        relatedContent = article.relatedContent.map(toApiRelatedContent)
       )
     }
 
@@ -655,7 +673,8 @@ trait ConverterService {
                 editorLabels = article.editorLabels.getOrElse(Seq.empty),
                 grepCodes = article.grepCodes.getOrElse(Seq.empty),
                 conceptIds = article.conceptIds.getOrElse(Seq.empty),
-                availability = updatedAvailability
+                availability = updatedAvailability,
+                relatedContent = article.relatedContent.map(toDomainRelatedContent).getOrElse(Seq.empty)
             ))
       }
     }
