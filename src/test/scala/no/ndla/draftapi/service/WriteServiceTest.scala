@@ -806,4 +806,28 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       expectedPartialPublishFieldsLangALL)
   }
 
+  test("That updateArticle updates relatedContent") {
+    val apiRelatedContent1 = api.RelatedContentLink("url1", "title1")
+    val domainRelatedContent1 = domain.RelatedContentLink("url1", "title1")
+    val relatedContent2 = 2
+
+    val updatedApiArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      relatedContent = Some(Seq(Left(apiRelatedContent1), Right(relatedContent2)))
+    )
+    val expectedArticle =
+      article.copy(revision = Some(article.revision.get + 1),
+                   relatedContent = Seq(Left(domainRelatedContent1), Right(relatedContent2)),
+                   updated = today)
+
+    service.updateArticle(articleId,
+                          updatedApiArticle,
+                          List.empty,
+                          Seq.empty,
+                          TestData.userWithWriteAccess,
+                          None,
+                          None,
+                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
+  }
+
 }

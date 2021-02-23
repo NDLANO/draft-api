@@ -8,4 +8,4 @@
 
 package no.ndla.draftapi.model.domain
 
-case class RelatedContentLink(url: String, title: String)
+case class RelatedContentLink(title: String, url: String)

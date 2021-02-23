@@ -570,7 +570,10 @@ trait ConverterService {
                 editorLabels = updatedWithClonedFiles.editorLabels.getOrElse(toMergeInto.editorLabels),
                 grepCodes = updatedWithClonedFiles.grepCodes.getOrElse(toMergeInto.grepCodes),
                 conceptIds = updatedWithClonedFiles.conceptIds.getOrElse(toMergeInto.conceptIds),
-                availability = updatedAvailability
+                availability = updatedAvailability,
+                relatedContent = updatedWithClonedFiles.relatedContent
+                  .map(toDomainRelatedContent)
+                  .getOrElse(toMergeInto.relatedContent)
               )
 
               updatedWithClonedFiles.language match {
