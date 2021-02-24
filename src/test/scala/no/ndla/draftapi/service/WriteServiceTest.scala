@@ -181,6 +181,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                    content = Seq(ArticleContent(newContent, "en")),
                    updated = today)
 
+    when(writeService.partialPublish(any, any, any)).thenReturn((expectedArticle.id.get, Success(expectedArticle)))
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(expectedArticle.id.get))
+
     service.updateArticle(articleId,
                           updatedApiArticle,
                           List.empty,
