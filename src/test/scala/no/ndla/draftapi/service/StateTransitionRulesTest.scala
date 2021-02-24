@@ -243,7 +243,13 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   test("unpublishArticle should succeed if article is not used in a learningstep") {
     val articleId = 7
     val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
-    when(learningpathApiClient.getLearningpathsWithPaths(Seq(s"/article/$articleId")))
+    val paths = Seq(
+      s"/article-iframe/*/$articleId",
+      s"/article-iframe/*/$articleId/\\?*",
+      s"/article-iframe/*/$articleId\\?*",
+      s"/article/$articleId"
+    )
+    when(learningpathApiClient.getLearningpathsWithPaths(paths))
       .thenReturn(Success(Seq.empty))
     when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
 
@@ -256,7 +262,13 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val articleId: Long = 7
     val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
     val learningPath = TestData.sampleLearningPath
-    when(learningpathApiClient.getLearningpathsWithPaths(Seq(s"/article/$articleId")))
+    val paths = Seq(
+      s"/article-iframe/*/$articleId",
+      s"/article-iframe/*/$articleId/\\?*",
+      s"/article-iframe/*/$articleId\\?*",
+      s"/article/$articleId"
+    )
+    when(learningpathApiClient.getLearningpathsWithPaths(paths))
       .thenReturn(Success(Seq(learningPath)))
 
     val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article, false)
@@ -281,7 +293,13 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   test("checkIfArticleIsUsedInLearningStep should succeed if article is not used in a learningstep") {
     val articleId = 7
     val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
-    when(learningpathApiClient.getLearningpathsWithPaths(Seq(s"/article/7"))).thenReturn(Success(Seq.empty))
+    val paths = Seq(
+      s"/article-iframe/*/$articleId",
+      s"/article-iframe/*/$articleId/\\?*",
+      s"/article-iframe/*/$articleId\\?*",
+      s"/article/$articleId"
+    )
+    when(learningpathApiClient.getLearningpathsWithPaths(paths)).thenReturn(Success(Seq.empty))
     when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
 
     val res = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article, false)
