@@ -328,6 +328,7 @@ trait WriteService {
     }
 
     /** Article status should not be updated if notes and/or editorLabels are the only changes */
+    /** Update 2021: Nor should the status be updated if any of PartialArticleFields.Value has changed */
     private def shouldUpdateStatus(changedArticle: domain.Article, existingArticle: domain.Article): Boolean = {
       // Function that sets values we don't want to include when comparing articles to check if we should update status
       val withComparableValues =
@@ -338,7 +339,12 @@ trait WriteService {
             editorLabels = Seq.empty,
             created = new Date(0),
             updated = new Date(0),
-            updatedBy = ""
+            updatedBy = "",
+            availability = Availability.everyone,
+            grepCodes = Seq.empty,
+            copyright = article.copyright.map(e => e.copy(license = None)),
+            metaDescription = Seq.empty,
+            tags = Seq.empty
         )
 
       withComparableValues(changedArticle) != withComparableValues(existingArticle)
@@ -411,7 +417,7 @@ trait WriteService {
                                       user: UserInfo,
                                       oldNdlaCreatedDate: Option[Date],
                                       oldNdlaUpdatedDate: Option[Date],
-                                      importId: Option[String]) = {
+                                      importId: Option[String]): Try[api.Article] = {
 
       for {
         convertedArticle <- converterService.toDomainArticle(
@@ -432,6 +438,9 @@ trait WriteService {
           isImported = externalIds.nonEmpty,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
+        _ <- partialPublish(existing.id.get,
+                            PartialArticleFields.values.toSeq,
+                            updatedApiArticle.language.getOrElse(Language.AllLanguages))._2
         apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage),
                                                     updatedApiArticle.language.isEmpty)
