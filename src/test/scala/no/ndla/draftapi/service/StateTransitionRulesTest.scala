@@ -241,10 +241,12 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   }
 
   test("unpublishArticle should succeed if article is not used in a learningstep") {
+    reset(articleApiClient, taxonomyApiClient, learningpathApiClient)
     val articleId = 7
     val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
     val paths = Seq(
       s"/article-iframe/*/$articleId",
+      s"/article-iframe/*/$articleId/",
       s"/article-iframe/*/$articleId/\\?*",
       s"/article-iframe/*/$articleId\\?*",
       s"/article/$articleId"
@@ -252,6 +254,8 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     when(learningpathApiClient.getLearningpathsWithPaths(paths))
       .thenReturn(Success(Seq.empty))
     when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
+    when(taxonomyApiClient.queryResource(articleId)).thenReturn(Success(List.empty))
+    when(taxonomyApiClient.queryTopic(articleId)).thenReturn(Success(List.empty))
 
     val res = StateTransitionRules.unpublishArticle(article, false)
     res.isSuccess should be(true)
@@ -264,12 +268,15 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val learningPath = TestData.sampleLearningPath
     val paths = Seq(
       s"/article-iframe/*/$articleId",
+      s"/article-iframe/*/$articleId/",
       s"/article-iframe/*/$articleId/\\?*",
       s"/article-iframe/*/$articleId\\?*",
       s"/article/$articleId"
     )
     when(learningpathApiClient.getLearningpathsWithPaths(paths))
       .thenReturn(Success(Seq(learningPath)))
+    when(taxonomyApiClient.queryResource(articleId)).thenReturn(Success(List.empty))
+    when(taxonomyApiClient.queryTopic(articleId)).thenReturn(Success(List.empty))
 
     val Failure(res: ValidationException) = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article, false)
     res.errors.head.message should equal("Learningpath(s) with id(s) 1 contains a learning step that uses this article")
@@ -291,20 +298,23 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
   }
 
   test("checkIfArticleIsUsedInLearningStep should succeed if article is not used in a learningstep") {
+    reset(articleApiClient, taxonomyApiClient, learningpathApiClient)
     val articleId = 7
     val article = TestData.sampleDomainArticle.copy(id = Some(articleId))
     val paths = Seq(
       s"/article-iframe/*/$articleId",
+      s"/article-iframe/*/$articleId/",
       s"/article-iframe/*/$articleId/\\?*",
       s"/article-iframe/*/$articleId\\?*",
       s"/article/$articleId"
     )
     when(learningpathApiClient.getLearningpathsWithPaths(paths)).thenReturn(Success(Seq.empty))
     when(articleApiClient.unpublishArticle(article)).thenReturn(Success(article))
+    when(taxonomyApiClient.queryResource(articleId)).thenReturn(Success(List.empty))
+    when(taxonomyApiClient.queryTopic(articleId)).thenReturn(Success(List.empty))
 
     val res = StateTransitionRules.checkIfArticleIsUsedInLearningStep(article, false)
     res.isSuccess should be(true)
-    verify(articleApiClient, times(1)).unpublishArticle(article)
   }
 
   test("validateArticle should be called when transitioning to QUEUED_FOR_PUBLISHING") {
