@@ -328,7 +328,7 @@ trait WriteService {
     }
 
     /** Article status should not be updated if notes and/or editorLabels are the only changes */
-    /** Update 2021: Nor should the status be updated if any of PartialArticleFields.Value has changed */
+    /** Update 2021: Nor should the status be updated if only any of PartialArticleFields.Value has changed */
     private def shouldUpdateStatus(changedArticle: domain.Article, existingArticle: domain.Article): Boolean = {
       // Function that sets values we don't want to include when comparing articles to check if we should update status
       val withComparableValues =
@@ -438,9 +438,15 @@ trait WriteService {
           isImported = externalIds.nonEmpty,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
-        _ <- partialPublish(existing.id.get,
-                            PartialArticleFields.values.toSeq,
-                            updatedApiArticle.language.getOrElse(Language.AllLanguages))._2
+        _ <- existing.id match {
+          case Some(id) =>
+            partialPublish(id,
+                           PartialArticleFields.values.toSeq,
+                           updatedApiArticle.language.getOrElse(Language.AllLanguages))._2
+          case None =>
+            Failure(ArticleVersioningException("Article supplied to partialPublish did not have an id. This is a bug."))
+        }
+
         apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage),
                                                     updatedApiArticle.language.isEmpty)
@@ -479,6 +485,9 @@ trait WriteService {
           isImported = false,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
+        _ <- partialPublish(articleId,
+                            PartialArticleFields.values.toSeq,
+                            updatedApiArticle.language.getOrElse(Language.AllLanguages))._2
         apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage))
       } yield apiArticle
