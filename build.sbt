@@ -103,7 +103,7 @@ lazy val draft_api = (project in file("."))
       "org.typelevel" %% "cats-effect" % CatsEffectVersion,
       "org.slf4j" % "slf4j-api" % "1.7.30"
     ) ++ vulnerabilityOverrides)
-      // Excluding slf4j-api (and specifically adding 1.7.30) because of conflict between 1.7.30 and 2.0.0-alpha1
+    // Excluding slf4j-api (and specifically adding 1.7.30) because of conflict between 1.7.30 and 2.0.0-alpha1
       .map(_.exclude("org.slf4j", "slf4j-api"))
   )
   .enablePlugins(DockerPlugin)
