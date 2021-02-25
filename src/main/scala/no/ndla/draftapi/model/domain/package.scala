@@ -12,6 +12,8 @@ package object domain {
     lang.filter(_.nonEmpty)
   }
 
+  type RelatedContent = Either[RelatedContentLink, Long]
+
   case class ArticleIds(articleId: Long, externalId: List[String], importId: Option[String] = None)
   case class ImportId(importId: Option[String])
 }

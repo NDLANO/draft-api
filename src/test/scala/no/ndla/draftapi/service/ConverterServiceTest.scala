@@ -204,7 +204,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val updatedNothing = TestData.blankUpdatedArticle.copy(
@@ -240,7 +241,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -266,7 +268,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -320,7 +323,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -346,7 +350,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
