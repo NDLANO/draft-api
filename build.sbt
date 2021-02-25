@@ -62,7 +62,7 @@ lazy val draft_api = (project in file("."))
     scalaVersion := Scalaversion,
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
-    libraryDependencies ++= pactTestFramework ++ Seq(
+    libraryDependencies ++= (pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.44",
       "ndla" %% "mapping" % "0.15",
       "ndla" %% "validation" % "0.47",
@@ -100,8 +100,11 @@ lazy val draft_api = (project in file("."))
       "org.mockito" %% "mockito-scala-scalatest" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % FlywayVersion,
       "io.lemonlabs" %% "scala-uri" % "1.5.1",
-      "org.typelevel" %% "cats-effect" % CatsEffectVersion
-    ) ++ vulnerabilityOverrides,
+      "org.typelevel" %% "cats-effect" % CatsEffectVersion,
+      "org.slf4j" % "slf4j-api" % "1.7.30"
+    ) ++ vulnerabilityOverrides)
+      // Excluding slf4j-api (and specifically adding 1.7.30) because of conflict between 1.7.30 and 2.0.0-alpha1
+      .map(_.exclude("org.slf4j", "slf4j-api"))
   )
   .enablePlugins(DockerPlugin)
   .enablePlugins(JettyPlugin)
