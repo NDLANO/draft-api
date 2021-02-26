@@ -168,4 +168,34 @@ class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvi
         result.isSuccess should be(true)
       }
   }
+
+  test("that updateArticle should parse relatedContent correctly") {
+    forgePact
+      .between("draft-api")
+      .and("article-api")
+      .addInteraction(
+        interaction
+          .description("Updating an article returns 200")
+          .given("articles")
+          .uponReceiving(method = POST,
+                         path = "/intern/article/1",
+                         query = None,
+                         headers = authHeaderMap,
+                         body = write(testArticle.copy(relatedContent = Seq(Right(2)))),
+                         matchingRules = None)
+          .willRespondWith(200)
+      )
+      .runConsumerTest { mockConfig =>
+        AuthUser.setHeader(s"Bearer $exampleToken")
+        val articleApiClient = new ArticleApiClient(mockConfig.baseUrl)
+        val updatedArticle = articleApiClient.updateArticle(1,
+                                                            testArticle.copy(relatedContent = Seq(Right(2))),
+                                                            List("1234"),
+                                                            false,
+                                                            false)
+        val Right(relatedId) = updatedArticle.get.relatedContent.head
+        relatedId.toLong should be(1L)
+
+      }
+  }
 }
