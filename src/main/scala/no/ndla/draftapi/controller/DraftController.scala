@@ -37,7 +37,7 @@ trait DraftController {
   val draftController: DraftController
 
   class DraftController(implicit val swagger: Swagger) extends NdlaController {
-    protected implicit override val jsonFormats: Formats = DefaultFormats + new EnumNameSerializer(PartialArticleFields)
+    protected implicit override val jsonFormats: Formats = DefaultFormats.withLong + new EnumNameSerializer(PartialArticleFields)
     protected val applicationDescription = "API for accessing draft articles from ndla.no."
 
     // Additional models used in error responses
