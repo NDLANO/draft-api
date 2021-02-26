@@ -23,6 +23,9 @@ class NdlaControllerTest extends UnitSuite with TestEnvironment {
     val updatedArticle = ndlaController.extract[UpdatedArticle]("""{"revision":2,"relatedContent":[1]}""").get
 
     updatedArticle should be(TestData.blankUpdatedArticle.copy(revision = 2, relatedContent = Some(Seq(Right(1L)))))
+
+    val Right(relatedId) = updatedArticle.relatedContent.get.head
+    relatedId.toLong should be(1L)
   }
 
 }
