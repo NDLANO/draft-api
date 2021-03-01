@@ -38,7 +38,7 @@ trait ArticleApiClient {
     private val PublicEndpoint = s"http://$ApiGatewayHost/article-api/v2/articles"
     private val deleteTimeout = 1000 * 10 // 10 seconds
     private val timeout = 1000 * 15
-    private implicit val format: Formats = DefaultFormats + new EnumNameSerializer(domain.Availability)
+    private implicit val format: Formats = DefaultFormats.withLong + new EnumNameSerializer(domain.Availability)
 
     def partialPublishArticle(
         id: Long,

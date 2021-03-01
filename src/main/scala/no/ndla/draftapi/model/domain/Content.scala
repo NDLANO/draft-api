@@ -56,7 +56,7 @@ case class Article(
 
 object Article extends SQLSyntaxSupport[Article] {
 
-  val jsonEncoder: Formats = DefaultFormats +
+  val jsonEncoder: Formats = DefaultFormats.withLong +
     new EnumNameSerializer(ArticleStatus) +
     new EnumNameSerializer(ArticleType) +
     new EnumNameSerializer(Availability)
