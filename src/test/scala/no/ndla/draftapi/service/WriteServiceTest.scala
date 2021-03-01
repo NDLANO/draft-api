@@ -269,17 +269,31 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
       updated = today,
       published = yesterday,
-      articleType = ArticleType.TopicArticle
+      articleType = ArticleType.TopicArticle,
+      notes = Seq(
+        EditorNote(note = "Artikkelen har blitt delpublisert",
+                   user = "unit test",
+                   status = Status(current = ArticleStatus.DRAFT, other = Set.empty),
+                   timestamp = today))
     )
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(expectedArticle.id.get))
 
-    service.updateArticle(articleId,
-                          updatedApiArticle,
-                          List.empty,
-                          Seq.empty,
-                          TestData.userWithWriteAccess,
-                          None,
-                          None,
-                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
+    val result_with_fixed_timestamp = converterService
+      .toApiArticle(expectedArticle, "en")
+      .map(article => article.copy(notes = Seq(article.notes.head.copy(timestamp = today))))
+
+    val expected_with_fixed_timestamp = service
+      .updateArticle(articleId,
+                     updatedApiArticle,
+                     List.empty,
+                     Seq.empty,
+                     TestData.userWithWriteAccess,
+                     None,
+                     None,
+                     None)
+      .map(article => article.copy(notes = Seq(article.notes.head.copy(timestamp = today))))
+
+    expected_with_fixed_timestamp should equal(result_with_fixed_timestamp)
   }
 
   test("updateArticle should use user-defined status if defined") {
@@ -706,6 +720,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.copyright.get.license.get.license should be("COPYRIGHTED")
     result1.metaDescription.get.metaDescription should be("newMeta")
     result1.tags.get.tags should be(Seq("new", "tag"))
+    result1.notes.head.note should be("Artikkelen har blitt delpublisert")
   }
 
   test("article status should change if any of the other fields changes") {
@@ -753,6 +768,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.status.current should not be (existing.status.current.toString)
     result1.status.current should be(ArticleStatus.PROPOSAL.toString)
     result1.status.other.sorted should not be (existing.status.other.map(_.toString).toSeq.sorted)
+    result1.notes.head.note should not be ("Artikkelen har blitt delpublisert")
   }
 
   test("article status should change if both the PartialArticleFields and other fields changes") {
@@ -813,6 +829,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.metaDescription.get.metaDescription should be("newMeta")
     result1.tags.get.tags should be(Seq("new", "tag"))
     result1.conceptIds should be(Seq(1, 2, 3))
+    result1.notes.reverse.head.note should be("Artikkelen har blitt delpublisert")
   }
 
   test("Deleting storage should be called with correct path") {

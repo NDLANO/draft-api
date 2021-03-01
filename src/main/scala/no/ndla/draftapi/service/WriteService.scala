@@ -350,6 +350,36 @@ trait WriteService {
       withComparableValues(changedArticle) != withComparableValues(existingArticle)
     }
 
+    private def shouldPartialPublish(existingArticle: domain.Article, changedArticle: domain.Article): Boolean = {
+      existingArticle.availability != changedArticle.availability ||
+      existingArticle.grepCodes != changedArticle.grepCodes ||
+      existingArticle.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
+      existingArticle.metaDescription != changedArticle.metaDescription ||
+      existingArticle.tags != changedArticle.tags
+    }
+
+    private def partialPublishIfNeeded(existingArticle: domain.Article,
+                                       changedArticle: domain.Article,
+                                       language: String,
+                                       user: UserInfo): Try[domain.Article] = {
+      if (!shouldPartialPublish(existingArticle, changedArticle)) {
+        Success(changedArticle)
+      } else {
+        existingArticle.id match {
+          case None =>
+            Failure(ArticleVersioningException("Article supplied to partialPublish did not have an id. This is a bug."))
+          case Some(id) =>
+            partialPublish(id, PartialArticleFields.values.toSeq, language)
+            val newEditorNotes =
+              changedArticle.notes :+ domain.EditorNote("Artikkelen har blitt delpublisert",
+                                                        user.id,
+                                                        existingArticle.status,
+                                                        new Date())
+            Success(changedArticle.copy(notes = newEditorNotes))
+        }
+      }
+    }
+
     private def updateStatusIfNeeded(convertedArticle: domain.Article,
                                      existingArticle: domain.Article,
                                      updatedApiArticle: api.UpdatedArticle,
@@ -438,16 +468,11 @@ trait WriteService {
           isImported = externalIds.nonEmpty,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
-        _ <- existing.id match {
-          case Some(id) =>
-            partialPublish(id,
-                           PartialArticleFields.values.toSeq,
-                           updatedApiArticle.language.getOrElse(Language.AllLanguages))._2
-          case None =>
-            Failure(ArticleVersioningException("Article supplied to partialPublish did not have an id. This is a bug."))
-        }
-
-        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
+        articleWithUpdatedNote <- partialPublishIfNeeded(existing,
+                                                         updatedArticle,
+                                                         updatedApiArticle.language.getOrElse(Language.AllLanguages),
+                                                         user)
+        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(articleWithUpdatedNote),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage),
                                                     updatedApiArticle.language.isEmpty)
       } yield apiArticle
