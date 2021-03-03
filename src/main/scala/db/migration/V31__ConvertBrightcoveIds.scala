@@ -7,16 +7,97 @@
 
 package db.migration
 
+import no.ndla.draftapi.DraftApiProperties.prop
+import no.ndla.network.model.HttpRequestException
+import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 import org.json4s
-import org.json4s.DefaultFormats
+import org.json4s.{DefaultFormats, Formats}
 import org.json4s.JsonAST.{JArray, JString}
 import org.json4s.native.JsonMethods.{compact, parse, render}
+import org.json4s.native.Serialization.read
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
+import scalaj.http.{Http, HttpRequest, HttpResponse}
 import scalikejdbc.{DB, DBSession, _}
+import org.joda.time.DateTime
+
+import scala.util.{Failure, Success, Try}
+
+case class BrightcoveToken(access_token: String, expires_in: Long)
+case class StoredToken(accessToken: String, expiresAt: Long)
+case class BrightcoveData(id: String)
+
+object BrightcoveApiClient {
+  implicit val jsonFormats: Formats = DefaultFormats
+
+  private lazy val BrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
+  private lazy val ClientId = prop("BRIGHTCOVE_API_CLIENT_ID")
+  private lazy val ClientSecret = prop("BRIGHTCOVE_API_CLIENT_SECRET")
+  private val timeout = 20 * 1000 // 20 Seconds
+
+  private var accessToken: Option[StoredToken] = None
+
+  def fetchBrightcoveVideo(id: String): Try[BrightcoveData] = {
+    refreshTokenIfInvalid().flatMap(token => fetch(id, token))
+  }
+
+  private def refreshToken(): Try[StoredToken] = {
+    fetchAccessToken().map(token => {
+      val temp = StoredToken(
+        token.access_token,
+        token.expires_in + (new DateTime().getMillis / 1000)
+      )
+      accessToken = Some(temp)
+      temp
+    })
+  }
+
+  private def refreshTokenIfInvalid(): Try[StoredToken] = {
+    accessToken match {
+      case Some(storedToken) if ((new DateTime().getMillis / 1000) < storedToken.expiresAt) => Success(storedToken)
+      case _                                                                                => refreshToken()
+    }
+  }
+
+  private def fetch(id: String, token: StoredToken): Try[BrightcoveData] = {
+    doRequest(
+      Http(s"https://cms.api.brightcove.com/v1/accounts/$BrightcoveAccountId/videos/$id")
+        .header("Authorization", s"Bearer ${token.accessToken}")
+        .timeout(timeout, timeout))
+      .flatMap(e => extract[BrightcoveData](e.body))
+  }
+
+  private def fetchAccessToken(): Try[BrightcoveToken] = {
+    doRequest(
+      Http("https://oauth.brightcove.com/v4/access_token?grant_type=client_credentials")
+        .method("POST")
+        .auth(ClientId, ClientSecret)
+        .timeout(timeout, timeout))
+      .flatMap(e => extract[BrightcoveToken](e.body))
+  }
+
+  private def extract[T](json: String)(implicit mf: scala.reflect.Manifest[T]): Try[T] = {
+    Try { read[T](json) } match {
+      case Failure(e)    => Failure(new ValidationException(errors = Seq(ValidationMessage("body", e.getMessage))))
+      case Success(data) => Success(data)
+    }
+  }
+
+  private def doRequest(request: HttpRequest): Try[HttpResponse[String]] = {
+    Try(request.asString).flatMap(response => {
+      if (response.isError) {
+        Failure(new HttpRequestException(
+          s"Received error ${response.code} ${response.statusLine} when calling ${request.url}. Body was ${response.body}",
+          Some(response)))
+      } else {
+        Success(response)
+      }
+    })
+  }
+}
 
 class V31__ConvertBrightcoveIds extends BaseJavaMigration {
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
@@ -89,11 +170,7 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration {
         if (dataResource == "brightcove") {
           val brightcoveId = embed.attr("data-videoid")
           if (brightcoveId.contains("ref:")) {
-
-            //val asd =  GET new brightcoveId
-
-
-            embed.attr("data-videoid", "asd")
+            BrightcoveApiClient.fetchBrightcoveVideo(brightcoveId).map(b => embed.attr("data-videoid", b.id))
           }
         }
       })
@@ -105,7 +182,7 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration {
       content.mapField {
         case (`contentType`, JString(html)) => (`contentType`, JString(updateContent(html)))
         case z                              => z
-      })
+    })
   }
 
   private[migration] def convertArticleUpdate(document: String): String = {
