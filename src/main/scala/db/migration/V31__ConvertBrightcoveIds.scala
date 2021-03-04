@@ -7,6 +7,7 @@
 
 package db.migration
 
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties.prop
 import no.ndla.network.model.HttpRequestException
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -30,7 +31,7 @@ case class BrightcoveToken(access_token: String, expires_in: Long)
 case class StoredToken(accessToken: String, expiresAt: Long)
 case class BrightcoveData(id: String)
 
-object BrightcoveApiClient {
+class BrightcoveApiClient {
   implicit val jsonFormats: Formats = DefaultFormats
 
   private lazy val BrightcoveAccountId = prop("NDLA_BRIGHTCOVE_ACCOUNT_ID")
@@ -55,14 +56,14 @@ object BrightcoveApiClient {
     })
   }
 
-  private def refreshTokenIfInvalid(): Try[StoredToken] = {
+  def refreshTokenIfInvalid(): Try[StoredToken] = {
     accessToken match {
-      case Some(storedToken) if ((new DateTime().getMillis / 1000) < storedToken.expiresAt) => Success(storedToken)
-      case _                                                                                => refreshToken()
+      case Some(storedToken) if (new DateTime().getMillis / 1000) < storedToken.expiresAt - 10 => Success(storedToken)
+      case _                                                                                   => refreshToken()
     }
   }
 
-  private def fetch(id: String, token: StoredToken): Try[BrightcoveData] = {
+  def fetch(id: String, token: StoredToken): Try[BrightcoveData] = {
     doRequest(
       Http(s"https://cms.api.brightcove.com/v1/accounts/$BrightcoveAccountId/videos/$id")
         .header("Authorization", s"Bearer ${token.accessToken}")
@@ -99,8 +100,10 @@ object BrightcoveApiClient {
   }
 }
 
-class V31__ConvertBrightcoveIds extends BaseJavaMigration {
+class V31__ConvertBrightcoveIds extends BaseJavaMigration with LazyLogging {
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+
+  val Brightcove = new BrightcoveApiClient
 
   override def migrate(context: Context) = {
     val db = DB(context.getConnection)
@@ -118,7 +121,7 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration {
 
     while (numPagesLeft > 0) {
       allArticles(offset * 1000).map {
-        case (id, document) => updateArticle(convertArticleUpdate(document), id)
+        case (id, document) => updateArticle(convertArticleUpdate(document, id), id)
       }
       numPagesLeft -= 1
       offset += 1
@@ -161,8 +164,9 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration {
     element.select("body").html()
   }
 
-  def updateContent(html: String): String = {
+  def updateContent(html: String, id: Long): String = {
     val doc = stringToJsoupDocument(html)
+    println("kek: ", doc)
     doc
       .select("embed")
       .forEach(embed => {
@@ -170,31 +174,35 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration {
         if (dataResource == "brightcove") {
           val brightcoveId = embed.attr("data-videoid")
           if (brightcoveId.contains("ref:")) {
-            BrightcoveApiClient.fetchBrightcoveVideo(brightcoveId).map(b => embed.attr("data-videoid", b.id))
+            Brightcove.fetchBrightcoveVideo(brightcoveId) match {
+              case Success(brightcoveObj) => embed.attr("data-videoid", brightcoveObj.id)
+              case Failure(exception) =>
+                logger.error(s"Article with id $id failed to update BrightcoveId. ${exception.getMessage}")
+            }
           }
         }
       })
     jsoupDocumentToString(doc)
   }
 
-  def updateContent(contents: JArray, contentType: String): json4s.JValue = {
+  def updateContent(contents: JArray, contentType: String, id: Long): json4s.JValue = {
     contents.map(content =>
       content.mapField {
-        case (`contentType`, JString(html)) => (`contentType`, JString(updateContent(html)))
+        case (`contentType`, JString(html)) => (`contentType`, JString(updateContent(html, id)))
         case z                              => z
     })
   }
 
-  private[migration] def convertArticleUpdate(document: String): String = {
+  private[migration] def convertArticleUpdate(document: String, id: Long): String = {
     val oldArticle = parse(document)
 
     val newArticle = oldArticle.mapField {
       case ("visualElement", visualElements: JArray) => {
-        val updatedContent = updateContent(visualElements, "resource")
+        val updatedContent = updateContent(visualElements, "resource", id)
         ("visualElement", updatedContent)
       }
       case ("content", contents: JArray) => {
-        val updatedContent = updateContent(contents, "content")
+        val updatedContent = updateContent(contents, "content", id)
         ("content", updatedContent)
       }
       case x => x
