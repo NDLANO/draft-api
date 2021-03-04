@@ -38,10 +38,10 @@ class V31__ConvertBrightcoveIdsTest extends UnitSuite with TestEnvironment {
     when(BcMock.fetchBrightcoveVideo("ref:100471")).thenReturn(Success(BrightcoveData("5796444576001")))
     when(BcMock.fetchBrightcoveVideo("ref:100505")).thenReturn(Success(BrightcoveData("5796440234001")))
 
-    migration.convertArticleUpdate(learningResourceBefore1, 0) should be(learningResourceAfter1)
-    migration.convertArticleUpdate(learningResourceBefore2, 0) should be(learningResourceAfter2)
+    migration.convertArticleUpdate(learningResourceBefore1, 0)._1 should be(learningResourceAfter1)
+    migration.convertArticleUpdate(learningResourceBefore2, 0)._1 should be(learningResourceAfter2)
 
-    migration.convertArticleUpdate(topicArticleBefore1, 0) should be(topicArticleAfter1)
+    migration.convertArticleUpdate(topicArticleBefore1, 0)._1 should be(topicArticleAfter1)
 
   }
 }
