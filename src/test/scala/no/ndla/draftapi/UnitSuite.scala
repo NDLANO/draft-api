@@ -27,4 +27,6 @@ trait UnitSuite extends UnitTestSuite {
 
   setProp("NDLA_BRIGHTCOVE_ACCOUNT_ID", "some-account-id")
   setProp("NDLA_BRIGHTCOVE_PLAYER_ID", "some-player-id")
+  setProp("BRIGHTCOVE_API_CLIENT_ID", "some-client-id")
+  setProp("BRIGHTCOVE_API_CLIENT_SECRET", "some-secret")
 }
