@@ -166,7 +166,6 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration with LazyLogging {
 
   def updateContent(html: String, id: Long): String = {
     val doc = stringToJsoupDocument(html)
-    println("kek: ", doc)
     doc
       .select("embed")
       .forEach(embed => {
