@@ -12,19 +12,23 @@ import no.ndla.draftapi.DraftApiProperties.prop
 import no.ndla.network.model.HttpRequestException
 import no.ndla.validation.{ValidationException, ValidationMessage}
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
+import org.joda.time.DateTime
 import org.json4s
-import org.json4s.{DefaultFormats, Formats}
 import org.json4s.JsonAST.{JArray, JString}
 import org.json4s.native.JsonMethods.{compact, parse, render}
 import org.json4s.native.Serialization.read
+import org.json4s.{DefaultFormats, Formats}
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Entities.EscapeMode
 import org.postgresql.util.PGobject
 import scalaj.http.{Http, HttpRequest, HttpResponse}
 import scalikejdbc.{DB, DBSession, _}
-import org.joda.time.DateTime
 
+import java.util.concurrent.Executors
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 case class BrightcoveToken(access_token: String, expires_in: Long)
@@ -119,12 +123,28 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration with LazyLogging {
     var numPagesLeft = (count / 1000) + 1
     var offset = 0L
 
+    implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(20))
+
     while (numPagesLeft > 0) {
+      var futures = ListBuffer.empty[Future[(String, Long)]]
+
       allArticles(offset * 1000).map {
-        case (id, document) => updateArticle(convertArticleUpdate(document, id), id)
+        case (id, document) =>
+          // Convert each article in separate thread
+          futures += Future { convertArticleUpdate(document, id) }
       }
+
       numPagesLeft -= 1
       offset += 1
+
+      // Wait for all threads to finish before doing database stuff because memory runs out if we do all at once
+      val futs = Future.sequence(futures)
+      val allThemArticles = Await.result(futs, Duration.Inf)
+
+      allThemArticles.map {
+        case (newDocument, articleId) =>
+          updateArticle(newDocument, articleId)(session)
+      }
     }
   }
 
@@ -174,9 +194,11 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration with LazyLogging {
           val brightcoveId = embed.attr("data-videoid")
           if (brightcoveId.contains("ref:")) {
             Brightcove.fetchBrightcoveVideo(brightcoveId) match {
-              case Success(brightcoveObj) => embed.attr("data-videoid", brightcoveObj.id)
+              case Success(brightcoveObj) =>
+                println(s"Successfully fetched ${brightcoveId} as ${brightcoveObj.id} for article $id")
+                embed.attr("data-videoid", brightcoveObj.id)
               case Failure(exception) =>
-                logger.error(s"Article with id $id failed to update BrightcoveId. ${exception.getMessage}")
+                println(s"Article with id $id failed to update BrightcoveId. ${exception.getMessage}")
             }
           }
         }
@@ -192,7 +214,7 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration with LazyLogging {
     })
   }
 
-  private[migration] def convertArticleUpdate(document: String, id: Long): String = {
+  private[migration] def convertArticleUpdate(document: String, id: Long): (String, Long) = {
     val oldArticle = parse(document)
 
     val newArticle = oldArticle.mapField {
@@ -207,7 +229,7 @@ class V31__ConvertBrightcoveIds extends BaseJavaMigration with LazyLogging {
       case x => x
     }
 
-    compact(render(newArticle))
+    compact(render(newArticle)) -> id
   }
 
 }
