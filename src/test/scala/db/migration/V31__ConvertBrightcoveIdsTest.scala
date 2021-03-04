@@ -8,9 +8,9 @@
 package db.migration
 
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
+import scala.util.{Success, Try}
 
 class V31__ConvertBrightcoveIdsTest extends UnitSuite with TestEnvironment {
-  val migration = new V31__ConvertBrightcoveIds
 
   test("migration should update data-videoid from ref:xxxx id type to new number format in Brightcove embeds") {
 
@@ -29,9 +29,18 @@ class V31__ConvertBrightcoveIdsTest extends UnitSuite with TestEnvironment {
     val topicArticleAfter1 =
       """{"id":932,"tags":[{"tags":["handlemønstre","kommunikasjonsprosessen","kundebehov","markedsføre","markedsplan","markedsføring","medievaner","verdikjede"],"language":"nb"},{"tags":["handlemønster","kommunikasjonsprosessen","marknadsføre","marknadsplan","marknadsføring","medievanar","verdikjede"],"language":"nn"}],"notes":[{"note":"Embed plassert før første tekst har blitt slettet og gjort om til visuelt element, dersom det var mulig. Status har blitt endret til 'Til kvalitetssikring'.","user":"System","status":{"other":["IMPORTED"],"current":"PUBLISHED"},"timestamp":"2019-03-29T13:17:08Z"}],"title":[{"title":"Markedsføring og kommunikasjon","language":"nb"},{"title":"Marknadsføring og kommunikasjon","language":"nn"}],"status":{"other":["IMPORTED"],"current":"AWAITING_QUALITY_ASSURANCE"},"content":[{"content":"<section><h2>Hva er markedsføring?</h2><p>Markedsføring som begrep defineres slik i <em>Store norske leksikon</em>:</p><blockquote>Markedsføring dreier seg ikke bare om «kunsten å selge varer, tjenester og ideer», men også om «kunsten å investere i fornøyde kunder».</blockquote><p>Vi kan derfor si at markedsføring handler om:</p><ul><li>å velge ut de produktene kundene ønsker og trenger</li> <li>å bestemme deg for hvilke kunder du vil satse på (målgruppe)</li> <li>å finne ut hvordan produktet skal selges (i butikk, på Internett, fra dør til dør og så videre)</li> <li>å finne ut hvordan du kan yte best mulig kundeservice</li></ul><p>Innenfor emnet markedsføring vil du lære mer om markedsplanen, handlemønster og medievaner, verdikjeden, kommunikasjonsprosessen og ikke minst få tips til utforming av skriftlig informasjon og materiell.</p></section><section><div data-type=\"related-content\"><embed data-article-id=\"933\" data-resource=\"related-content\"></div></section>","language":"nb"},{"content":"<section><h2>Kva er marknadsføring?</h2><p>Marknadsføring som omgrep blir definert slik i <em>Store norske leksikon</em>:</p><blockquote>Markedsføring dreier seg ikke bare om «kunsten å selge varer, tjenester og ideer», men også om «kunsten å investere i fornøyde kunder».</blockquote><p>Vi kan derfor seie at marknadsføring handlar om:</p><ul><li>å velje ut dei produkta kundane ønskjer og treng</li> <li>å bestemme deg for kva slags kundar du vil satse på</li> <li>å finne ut korleis produktet skal seljast (i butikk, på Internett, frå dør til dør og så bortetter)</li> <li>å finne ut korleis du kan yte best mogleg kundeservice</li></ul><p>Innanfor emnet marknadsføring vil du lære meir om marknadsplanen, handlemønster og medievanar, verdikjeda, kommunikasjonsprosessen og ikkje minst få tips til utforming av skriftleg informasjon og materiell.</p></section><section><div data-type=\"related-content\"><embed data-article-id=\"933\" data-resource=\"related-content\"></div></section>","language":"nn"}],"created":"2011-10-24T06:47:03Z","updated":"2018-03-21T09:19:21Z","revision":1,"copyright":{"license":"CC-BY-SA-4.0","creators":[{"name":"Oddvar Torgersen","type":"Writer"},{"name":"Hanne-Lisbet Løite","type":"Writer"}],"processors":[],"rightsholders":[{"name":"Amendor AS","type":"Supplier"},{"name":"NKI Forlaget","type":"Publisher"}]},"metaImage":[{"altText":"Salg i utstillingsvindu. Foto.","imageId":"3258","language":"nb"},{"altText":"Salg i utstillingsvindu. Foto.","imageId":"3258","language":"nn"}],"published":"2018-03-21T09:19:21Z","updatedBy":"r0gHb9Xg3li4yyXv0QSGQczV3bviakrT","articleType":"topic-article","editorLabels":[],"introduction":[{"language":"nb","introduction":"Mange forbinder markedsføring med salg og reklame, men markedsføring handler også om å forstå kundens behov og tilpasse seg en bestemt kundegruppe."},{"language":"nn","introduction":"Mange knyter marknadsføring til sal og reklame, men marknadsføring handlar også om å forstå kunden sine behov og tilpasse seg ei bestemt kundegruppe."}],"visualElement":[{"language":"nb","resource":"<embed data-account=\"4806596774001\" data-caption=\"Markedsføring på fem minutt\" data-player=\"BkLm8fT\" data-resource=\"brightcove\" data-videoid=\"5796444576001\">"},{"language":"nn","resource":"<embed data-account=\"4806596774001\" data-caption=\"Marknadsføring på fem minutt\" data-player=\"BkLm8fT\" data-resource=\"brightcove\" data-videoid=\"5796440234001\">"}],"metaDescription":[{"content":"Hva er markedsføring? Markedsføring er alle de fasene i et arbeid som går ut på å tilfredsstille kundens behov slik at vi tjener penger på det.","language":"nb"},{"content":"Kva er marknadsføring? Marknadsføring er alle dei fasane i eit arbeid som går ut på å tilfredsstille kundebehova slik at vi tener pengar på det.","language":"nn"}],"requiredLibraries":[],"previousVersionsNotes":[]}"""
 
-    migration.convertArticleUpdate(learningResourceBefore1) should be(learningResourceAfter1)
-    migration.convertArticleUpdate(learningResourceBefore2) should be(learningResourceAfter2)
+    val migration = spy(new V31__ConvertBrightcoveIds)
+    when(migration.Brightcove.fetchBrightcoveVideo("ref:93528")).thenReturn(Success(BrightcoveData("5796417200001")))
+    migration.convertArticleUpdate(learningResourceBefore1, 0) should be(learningResourceAfter1)
 
-    migration.convertArticleUpdate(topicArticleBefore1) should be(topicArticleAfter1)
   }
 }
+
+// when(migration.Brightcove.refreshTokenIfInvalid().get).thenReturn(StoredToken("asd", 123))
+// when(migration.Brightcove.fetch("ref:93528", asdf).get).thenReturn(BrightcoveData("134"))
+// when(migration.Brightcove.fetchBrightcoveVideo("ref:125442").get).thenReturn(BrightcoveData("5796514409001"))
+// when(migration.Brightcove.fetchBrightcoveVideo("ref:100471").get).thenReturn(BrightcoveData("5796444576001"))
+
+// migration.convertArticleUpdate(learningResourceBefore2, 0) should be(learningResourceAfter2)
+
+// migration.convertArticleUpdate(topicArticleBefore1, 0) should be(topicArticleAfter1)
