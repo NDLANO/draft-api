@@ -232,7 +232,15 @@ trait StateTransitionRules {
     private[this] def learningPathsUsingArticle(articleId: Long): Seq[LearningPath] = {
       val resources = taxonomyApiClient.queryResource(articleId).getOrElse(List.empty).flatMap(_.paths)
       val topics = taxonomyApiClient.queryTopic(articleId).getOrElse(List.empty).flatMap(_.paths)
-      val paths = resources ++ topics :+ s"/article/$articleId"
+      val plainPaths = List(
+        s"/article-iframe/*/$articleId",
+        s"/article-iframe/*/$articleId/",
+        s"/article-iframe/*/$articleId/\\?*",
+        s"/article-iframe/*/$articleId\\?*",
+        s"/article/$articleId"
+      )
+
+      val paths = resources ++ topics ++ plainPaths
 
       learningpathApiClient.getLearningpathsWithPaths(paths) match {
         case Success(learningpaths) => learningpaths

@@ -46,7 +46,7 @@ import org.scalatra.util.NotNothing
 import scala.util.{Failure, Success, Try}
 
 abstract class NdlaController extends ScalatraServlet with NativeJsonSupport with LazyLogging with SwaggerSupport {
-  protected implicit override val jsonFormats: Formats = DefaultFormats
+  protected implicit override val jsonFormats: Formats = DefaultFormats.withLong
 
   before() {
     contentType = formats("json")

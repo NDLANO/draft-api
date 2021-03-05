@@ -204,7 +204,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val updatedNothing = TestData.blankUpdatedArticle.copy(
@@ -240,7 +241,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -266,7 +268,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -320,7 +323,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val expectedArticle = Article(
@@ -346,7 +350,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Seq.empty,
       grepCodes = Seq.empty,
       conceptIds = Seq.empty,
-      availability = Availability.everyone
+      availability = Availability.everyone,
+      relatedContent = Seq.empty
     )
 
     val updatedEverything = TestData.blankUpdatedArticle.copy(
@@ -772,4 +777,18 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res2.availability should be(Availability.everyone)
     res3.availability should be(Availability.everyone)
   }
+
+  test("toDomainArticle should convert relatedContent correctly") {
+
+    val Success(res1) =
+      service.toDomainArticle(1,
+                              TestData.sampleApiUpdateArticle.copy(relatedContent = Some(List(Right(1)))),
+                              isImported = false,
+                              TestData.userWithWriteAccess,
+                              None,
+                              None)
+
+    res1.relatedContent should be(List(Right(1L)))
+  }
+
 }

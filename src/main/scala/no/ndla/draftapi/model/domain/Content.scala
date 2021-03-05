@@ -8,7 +8,6 @@
 package no.ndla.draftapi.model.domain
 
 import java.util.Date
-
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Language.getSupportedLanguages
 import no.ndla.validation.{ValidationException, ValidationMessage}
@@ -47,7 +46,8 @@ case class Article(
     editorLabels: Seq[String],
     grepCodes: Seq[String],
     conceptIds: Seq[Long],
-    availability: Availability.Value = Availability.everyone
+    availability: Availability.Value = Availability.everyone,
+    relatedContent: Seq[RelatedContent]
 ) extends Content {
 
   def supportedLanguages: Seq[String] =
@@ -56,7 +56,7 @@ case class Article(
 
 object Article extends SQLSyntaxSupport[Article] {
 
-  val jsonEncoder: Formats = DefaultFormats +
+  val jsonEncoder: Formats = DefaultFormats.withLong +
     new EnumNameSerializer(ArticleStatus) +
     new EnumNameSerializer(ArticleType) +
     new EnumNameSerializer(Availability)

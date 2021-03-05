@@ -419,5 +419,4 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
 
   }
-
 }

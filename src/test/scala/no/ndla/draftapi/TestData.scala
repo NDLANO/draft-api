@@ -90,7 +90,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    availability = "everyone"
+    availability = "everyone",
+    Seq.empty
   )
 
   val blankUpdatedArticle = api.UpdatedArticle(
@@ -104,6 +105,7 @@ object TestData {
     None,
     None,
     Right(None),
+    None,
     None,
     None,
     None,
@@ -188,7 +190,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    availability = "everyone"
+    availability = "everyone",
+    Seq.empty
   )
 
   val apiArticleUserTest = api.Article(
@@ -228,7 +231,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    availability = "everyone"
+    availability = "everyone",
+    Seq.empty
   )
 
   val sampleTopicArticle = Article(
@@ -254,7 +258,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Availability.everyone
+    Availability.everyone,
+    Seq.empty
   )
 
   val sampleArticleWithPublicDomain = Article(
@@ -280,7 +285,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Availability.everyone
+    Availability.everyone,
+    Seq.empty
   )
 
   val sampleDomainArticle = Article(
@@ -306,7 +312,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Availability.everyone
+    Availability.everyone,
+    Seq.empty
   )
 
   val sampleDomainArticle2 = Article(
@@ -332,7 +339,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Availability.everyone
+    Availability.everyone,
+    Seq.empty
   )
 
   val newArticle = api.NewArticle(
@@ -360,7 +368,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    availability = None
+    availability = None,
+    Seq.empty
   )
 
   val sampleArticleWithByNcSa = sampleArticleWithPublicDomain.copy(copyright = Some(byNcSaCopyright))
@@ -397,7 +406,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    Availability.everyone
+    Availability.everyone,
+    Seq.empty
   )
 
   val apiArticleWithHtmlFaultV2 = api.Article(
@@ -440,7 +450,8 @@ object TestData {
     Seq.empty,
     Seq.empty,
     Seq.empty,
-    availability = "everyone"
+    availability = "everyone",
+    Seq.empty
   )
 
   val (nodeId, nodeId2) = ("1234", "4321")

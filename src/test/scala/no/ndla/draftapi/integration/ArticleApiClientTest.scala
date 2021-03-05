@@ -65,7 +65,8 @@ class ArticleApiClientTest extends IntegrationSuite with UnitSuite with TestEnvi
     editorLabels = Seq.empty,
     grepCodes = Seq.empty,
     conceptIds = Seq.empty,
-    availability = Availability.everyone
+    availability = Availability.everyone,
+    relatedContent = Seq.empty
   )
 
   val exampleToken =

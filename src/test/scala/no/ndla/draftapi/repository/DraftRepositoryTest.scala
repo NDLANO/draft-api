@@ -416,4 +416,12 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
     grepCodes8.length should be(1)
     grepCodesCount8 should be(1)
   }
+
+  test("withId parse relatedContent correctly") {
+    repository.insert(sampleArticle.copy(id = Some(1), relatedContent = Seq(Right(2))))
+
+    val Right(relatedId) = repository.withId(1).get.relatedContent.head
+    relatedId.toLong should be(2L)
+
+  }
 }
