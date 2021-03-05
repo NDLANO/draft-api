@@ -270,30 +270,16 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       updated = today,
       published = yesterday,
       articleType = ArticleType.TopicArticle,
-      notes = Seq(
-        EditorNote(note = "Artikkelen har blitt delpublisert",
-                   user = "unit test",
-                   status = Status(current = ArticleStatus.DRAFT, other = Set.empty),
-                   timestamp = today))
     )
-    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(expectedArticle.id.get))
 
-    val result_with_fixed_timestamp = converterService
-      .toApiArticle(expectedArticle, "en")
-      .map(article => article.copy(notes = Seq(article.notes.head.copy(timestamp = today))))
-
-    val expected_with_fixed_timestamp = service
-      .updateArticle(articleId,
-                     updatedApiArticle,
-                     List.empty,
-                     Seq.empty,
-                     TestData.userWithWriteAccess,
-                     None,
-                     None,
-                     None)
-      .map(article => article.copy(notes = Seq(article.notes.head.copy(timestamp = today))))
-
-    expected_with_fixed_timestamp should equal(result_with_fixed_timestamp)
+    service.updateArticle(articleId,
+                          updatedApiArticle,
+                          List.empty,
+                          Seq.empty,
+                          TestData.userWithWriteAccess,
+                          None,
+                          None,
+                          None) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
   test("updateArticle should use user-defined status if defined") {
