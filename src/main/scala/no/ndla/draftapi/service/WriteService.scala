@@ -350,22 +350,30 @@ trait WriteService {
       withComparableValues(changedArticle) != withComparableValues(existingArticle)
     }
 
-    private def shouldPartialPublish(existingArticle: domain.Article, changedArticle: domain.Article): Boolean = {
-      existingArticle.availability != changedArticle.availability ||
-      existingArticle.grepCodes != changedArticle.grepCodes ||
-      existingArticle.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
-      existingArticle.metaDescription != changedArticle.metaDescription ||
-      existingArticle.tags != changedArticle.tags
+    private def shouldPartialPublish(existingArticle: Option[domain.Article],
+                                     changedArticle: domain.Article): Boolean = {
+      val isPublished = changedArticle.status.current == ArticleStatus.PUBLISHED || changedArticle.status.other
+        .contains(ArticleStatus.PUBLISHED)
+
+      val hasChangedPartialPublishField = existingArticle.forall(e => {
+        e.availability != changedArticle.availability ||
+        e.grepCodes != changedArticle.grepCodes ||
+        e.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
+        e.metaDescription != changedArticle.metaDescription ||
+        e.tags != changedArticle.tags
+      })
+
+      isPublished && hasChangedPartialPublishField
     }
 
-    private def partialPublishIfNeeded(existingArticle: domain.Article,
+    private def partialPublishIfNeeded(existingArticle: Option[domain.Article],
                                        changedArticle: domain.Article,
                                        language: String,
                                        user: UserInfo): Try[domain.Article] = {
       if (!shouldPartialPublish(existingArticle, changedArticle)) {
         Success(changedArticle)
       } else {
-        existingArticle.id match {
+        changedArticle.id match {
           case None =>
             Failure(ArticleVersioningException("Article supplied to partialPublish did not have an id. This is a bug."))
           case Some(id) =>
@@ -373,7 +381,7 @@ trait WriteService {
             val newEditorNotes =
               changedArticle.notes :+ domain.EditorNote("Artikkelen har blitt delpublisert",
                                                         user.id,
-                                                        existingArticle.status,
+                                                        changedArticle.status,
                                                         new Date())
             Success(changedArticle.copy(notes = newEditorNotes))
         }
@@ -468,7 +476,7 @@ trait WriteService {
           isImported = externalIds.nonEmpty,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
-        articleWithUpdatedNote <- partialPublishIfNeeded(existing,
+        articleWithUpdatedNote <- partialPublishIfNeeded(Some(existing),
                                                          updatedArticle,
                                                          updatedApiArticle.language.getOrElse(Language.AllLanguages),
                                                          user)
@@ -510,10 +518,11 @@ trait WriteService {
           isImported = false,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
-        _ <- partialPublish(articleId,
-                            PartialArticleFields.values.toSeq,
-                            updatedApiArticle.language.getOrElse(Language.AllLanguages))._2
-        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
+        articleWithUpdatedNote <- partialPublishIfNeeded(None,
+                                                         updatedArticle,
+                                                         updatedApiArticle.language.getOrElse(Language.AllLanguages),
+                                                         user)
+        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(articleWithUpdatedNote),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage))
       } yield apiArticle
 
