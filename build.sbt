@@ -65,7 +65,7 @@ lazy val draft_api = (project in file("."))
     libraryDependencies ++= (pactTestFramework ++ Seq(
       "ndla" %% "network" % "0.44",
       "ndla" %% "mapping" % "0.15",
-      "ndla" %% "validation" % "0.47",
+      "ndla" %% "validation" % "0.48",
       "ndla" %% "scalatestsuite" % "0.3" % "test",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
