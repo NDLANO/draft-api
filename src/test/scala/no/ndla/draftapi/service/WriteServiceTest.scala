@@ -672,6 +672,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
           validTo = None
         )),
       metaDescription = Some("newMeta"),
+      relatedContent = Some(Seq(Left(api.RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(Seq("new", "tag"))
     )
 
@@ -682,6 +683,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
       metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
       tags = Seq.empty
     )
 
@@ -705,6 +707,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.grepCodes should be(Seq("a", "b", "c"))
     result1.copyright.get.license.get.license should be("COPYRIGHTED")
     result1.metaDescription.get.metaDescription should be("newMeta")
+    result1.relatedContent.head.leftSide should be(Left(api.RelatedContentLink("title1", "url2")))
+    result1.relatedContent.reverse.head should be(Right(12L))
     result1.tags.get.tags should be(Seq("new", "tag"))
     result1.notes.head.note should be("Artikkelen har blitt delpublisert")
   }
@@ -735,6 +739,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
       metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
       tags = Seq.empty
     )
 
@@ -777,6 +782,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
           validTo = None
         )),
       metaDescription = Some("newMeta"),
+      relatedContent = Some(Seq(Left(api.RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(Seq("new", "tag")),
       conceptIds = Some(Seq(1, 2, 3))
     )
@@ -788,6 +794,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
       metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
       tags = Seq.empty,
       conceptIds = Seq.empty
     )
@@ -813,6 +820,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.grepCodes should be(Seq("a", "b", "c"))
     result1.copyright.get.license.get.license should be("COPYRIGHTED")
     result1.metaDescription.get.metaDescription should be("newMeta")
+    result1.relatedContent.head.leftSide should be(Left(api.RelatedContentLink("title1", "url2")))
+    result1.relatedContent.reverse.head should be(Right(12L))
     result1.tags.get.tags should be(Seq("new", "tag"))
     result1.conceptIds should be(Seq(1, 2, 3))
     result1.notes.reverse.head.note should be("Artikkelen har blitt delpublisert")
@@ -923,6 +932,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         ArticleMetaDescription("oldDesccc", "ru"),
         ArticleMetaDescription("oldDescccc", "nn")
       ),
+      relatedContent = Seq(Left(RelatedContentLink("title1", "url2")), Right(12L)),
       tags = Seq(ArticleTag(Seq("old", "tag"), "nb"),
                  ArticleTag(Seq("guten", "tag"), "de"),
                  ArticleTag(Seq("oldd", "tagg"), "es"))
@@ -933,6 +943,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       api.PartialArticleFields.grepCodes,
       api.PartialArticleFields.license,
       api.PartialArticleFields.metaDescription,
+      api.PartialArticleFields.relatedContent,
       api.PartialArticleFields.tags
     )
 
@@ -941,6 +952,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(Seq(ArticleMetaDescription("oldDesc", "nb"))),
+      relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(Seq(ArticleTag(Seq("old", "tag"), "nb")))
     )
     val expectedPartialPublishFieldsLangEN = integration.PartialPublishArticle(
@@ -948,6 +960,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(Seq.empty),
+      relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(Seq.empty)
     )
     val expectedPartialPublishFieldsLangALL = integration.PartialPublishArticle(
@@ -961,6 +974,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
           ArticleMetaDescription("oldDesccc", "ru"),
           ArticleMetaDescription("oldDescccc", "nn")
         )),
+      relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(
         Seq(ArticleTag(Seq("old", "tag"), "nb"),
             ArticleTag(Seq("guten", "tag"), "de"),
