@@ -344,6 +344,7 @@ trait WriteService {
             grepCodes = Seq.empty,
             copyright = article.copyright.map(e => e.copy(license = None)),
             metaDescription = Seq.empty,
+            relatedContent = Seq.empty,
             tags = Seq.empty
         )
 
@@ -360,6 +361,7 @@ trait WriteService {
         e.grepCodes != changedArticle.grepCodes ||
         e.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
         e.metaDescription != changedArticle.metaDescription ||
+        e.relatedContent != changedArticle.relatedContent ||
         e.tags != changedArticle.tags
       })
 
@@ -657,7 +659,7 @@ trait WriteService {
                                    articleFieldsToUpdate: Seq[PartialArticleFields.Value],
                                    language: String): PartialPublishArticle = {
 
-      val initialPartial = PartialPublishArticle(None, None, None, None, None)
+      val initialPartial = PartialPublishArticle(None, None, None, None, None, None)
       articleFieldsToUpdate.distinct.foldLeft(initialPartial)((partialPublishArticle, field) => {
         field match {
           case PartialArticleFields.availability =>
@@ -671,6 +673,8 @@ trait WriteService {
           case PartialArticleFields.metaDescription =>
             partialPublishArticle.copy(
               metaDescription = Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq))
+          case PartialArticleFields.relatedContent =>
+            partialPublishArticle.copy(relatedContent = Some(articleToPartialPublish.relatedContent))
           case PartialArticleFields.tags if (language == Language.AllLanguages) =>
             partialPublishArticle.copy(tags = Some(articleToPartialPublish.tags))
           case PartialArticleFields.tags =>

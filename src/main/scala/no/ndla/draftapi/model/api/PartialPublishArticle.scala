@@ -13,7 +13,7 @@ import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 import scala.annotation.meta.field
 
 object PartialArticleFields extends Enumeration {
-  val availability, grepCodes, license, metaDescription, tags = Value
+  val availability, grepCodes, license, metaDescription, relatedContent, tags = Value
 }
 
 // format: off

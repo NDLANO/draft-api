@@ -27,6 +27,7 @@ case class PartialPublishArticle(availability: Option[domain.Availability.Value]
                                  grepCodes: Option[Seq[String]],
                                  license: Option[String],
                                  metaDescription: Option[Seq[domain.ArticleMetaDescription]],
+                                 relatedContent: Option[Seq[domain.RelatedContent]],
                                  tags: Option[Seq[domain.ArticleTag]])
 
 trait ArticleApiClient {
