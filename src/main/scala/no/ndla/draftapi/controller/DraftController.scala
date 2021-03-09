@@ -24,7 +24,7 @@ import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.swagger.{ResponseMessage, Swagger}
 import org.scalatra.{Created, NotFound, Ok}
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait DraftController {
   this: ReadService
@@ -515,7 +515,7 @@ trait DraftController {
         val oldNdlaUpdatedDate = paramOrNone("oldNdlaUpdatedDate").map(new DateTime(_).toDate)
         val importId = paramOrNone("importId")
         val id = long(this.articleId.paramName)
-        val updateArticle = extract[UpdatedArticle](request.body)
+        val updateArticle: Try[UpdatedArticle] = extract[UpdatedArticle](request.body)
 
         updateArticle.flatMap(
           writeService.updateArticle(id,

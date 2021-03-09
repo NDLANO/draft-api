@@ -328,6 +328,7 @@ trait WriteService {
     }
 
     /** Article status should not be updated if notes and/or editorLabels are the only changes */
+    /** Update 2021: Nor should the status be updated if only any of PartialArticleFields.Value has changed */
     private def shouldUpdateStatus(changedArticle: domain.Article, existingArticle: domain.Article): Boolean = {
       // Function that sets values we don't want to include when comparing articles to check if we should update status
       val withComparableValues =
@@ -338,10 +339,55 @@ trait WriteService {
             editorLabels = Seq.empty,
             created = new Date(0),
             updated = new Date(0),
-            updatedBy = ""
+            updatedBy = "",
+            availability = Availability.everyone,
+            grepCodes = Seq.empty,
+            copyright = article.copyright.map(e => e.copy(license = None)),
+            metaDescription = Seq.empty,
+            relatedContent = Seq.empty,
+            tags = Seq.empty
         )
 
       withComparableValues(changedArticle) != withComparableValues(existingArticle)
+    }
+
+    private def shouldPartialPublish(existingArticle: Option[domain.Article],
+                                     changedArticle: domain.Article): Boolean = {
+      val isPublished = changedArticle.status.current == ArticleStatus.PUBLISHED || changedArticle.status.other
+        .contains(ArticleStatus.PUBLISHED)
+
+      val hasChangedPartialPublishField = existingArticle.forall(e => {
+        e.availability != changedArticle.availability ||
+        e.grepCodes != changedArticle.grepCodes ||
+        e.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
+        e.metaDescription != changedArticle.metaDescription ||
+        e.relatedContent != changedArticle.relatedContent ||
+        e.tags != changedArticle.tags
+      })
+
+      isPublished && hasChangedPartialPublishField
+    }
+
+    private def partialPublishIfNeeded(existingArticle: Option[domain.Article],
+                                       changedArticle: domain.Article,
+                                       language: String,
+                                       user: UserInfo): Try[domain.Article] = {
+      if (!shouldPartialPublish(existingArticle, changedArticle)) {
+        Success(changedArticle)
+      } else {
+        changedArticle.id match {
+          case None =>
+            Failure(ArticleVersioningException("Article supplied to partialPublish did not have an id. This is a bug."))
+          case Some(id) =>
+            partialPublish(id, PartialArticleFields.values.toSeq, language)
+            val newEditorNotes =
+              changedArticle.notes :+ domain.EditorNote("Artikkelen har blitt delpublisert",
+                                                        user.id,
+                                                        changedArticle.status,
+                                                        new Date())
+            Success(changedArticle.copy(notes = newEditorNotes))
+        }
+      }
     }
 
     private def updateStatusIfNeeded(convertedArticle: domain.Article,
@@ -411,7 +457,7 @@ trait WriteService {
                                       user: UserInfo,
                                       oldNdlaCreatedDate: Option[Date],
                                       oldNdlaUpdatedDate: Option[Date],
-                                      importId: Option[String]) = {
+                                      importId: Option[String]): Try[api.Article] = {
 
       for {
         convertedArticle <- converterService.toDomainArticle(
@@ -432,7 +478,11 @@ trait WriteService {
           isImported = externalIds.nonEmpty,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
-        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
+        articleWithUpdatedNote <- partialPublishIfNeeded(Some(existing),
+                                                         updatedArticle,
+                                                         updatedApiArticle.language.getOrElse(Language.AllLanguages),
+                                                         user)
+        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(articleWithUpdatedNote),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage),
                                                     updatedApiArticle.language.isEmpty)
       } yield apiArticle
@@ -470,7 +520,11 @@ trait WriteService {
           isImported = false,
           shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
         )
-        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
+        articleWithUpdatedNote <- partialPublishIfNeeded(None,
+                                                         updatedArticle,
+                                                         updatedApiArticle.language.getOrElse(Language.AllLanguages),
+                                                         user)
+        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(articleWithUpdatedNote),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage))
       } yield apiArticle
 
@@ -605,7 +659,7 @@ trait WriteService {
                                    articleFieldsToUpdate: Seq[PartialArticleFields.Value],
                                    language: String): PartialPublishArticle = {
 
-      val initialPartial = PartialPublishArticle(None, None, None, None, None)
+      val initialPartial = PartialPublishArticle(None, None, None, None, None, None)
       articleFieldsToUpdate.distinct.foldLeft(initialPartial)((partialPublishArticle, field) => {
         field match {
           case PartialArticleFields.availability =>
@@ -619,6 +673,8 @@ trait WriteService {
           case PartialArticleFields.metaDescription =>
             partialPublishArticle.copy(
               metaDescription = Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq))
+          case PartialArticleFields.relatedContent =>
+            partialPublishArticle.copy(relatedContent = Some(articleToPartialPublish.relatedContent))
           case PartialArticleFields.tags if (language == Language.AllLanguages) =>
             partialPublishArticle.copy(tags = Some(articleToPartialPublish.tags))
           case PartialArticleFields.tags =>

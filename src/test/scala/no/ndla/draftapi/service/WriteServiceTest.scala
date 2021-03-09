@@ -181,6 +181,9 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                    content = Seq(ArticleContent(newContent, "en")),
                    updated = today)
 
+    when(writeService.partialPublish(any, any, any)).thenReturn((expectedArticle.id.get, Success(expectedArticle)))
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(expectedArticle.id.get))
+
     service.updateArticle(articleId,
                           updatedApiArticle,
                           List.empty,
@@ -266,7 +269,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
       updated = today,
       published = yesterday,
-      articleType = ArticleType.TopicArticle
+      articleType = ArticleType.TopicArticle,
     )
 
     service.updateArticle(articleId,
@@ -649,6 +652,181 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     result1.status.other.sorted should be(existing.status.other.map(_.toString).toSeq.sorted)
   }
 
+  test("article status should not be updated if any of the PartialArticleFields changes") {
+    val existingTitle = "tittel"
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("nb"),
+      title = Some(existingTitle),
+      availability = Some(Availability.teacher.toString),
+      grepCodes = Some(Seq("a", "b", "c")),
+      copyright = Some(
+        api.Copyright(
+          license = Some(api.License("COPYRIGHTED", None, None)),
+          origin = None,
+          creators = Seq.empty,
+          processors = Seq.empty,
+          rightsholders = Seq.empty,
+          agreementId = None,
+          validFrom = None,
+          validTo = None
+        )),
+      metaDescription = Some("newMeta"),
+      relatedContent = Some(Seq(Left(api.RelatedContentLink("title1", "url2")), Right(12L))),
+      tags = Some(Seq("new", "tag"))
+    )
+
+    val existing = TestData.sampleDomainArticle.copy(
+      title = Seq(ArticleTitle(existingTitle, "nb")),
+      status = TestData.statusWithPublished,
+      availability = Availability.everyone,
+      grepCodes = Seq.empty,
+      copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
+      metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
+      tags = Seq.empty
+    )
+
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    when(writeService.partialPublish(any, any, any)).thenReturn((existing.id.get, Success(existing)))
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(existing.id.get))
+
+    val Success(result1) = service.updateArticle(existing.id.get,
+                                                 updatedArticle,
+                                                 List.empty,
+                                                 Seq.empty,
+                                                 TestData.userWithWriteAccess,
+                                                 None,
+                                                 None,
+                                                 None)
+
+    result1.status.current should be(existing.status.current.toString)
+    result1.status.other.sorted should be(existing.status.other.map(_.toString).toSeq.sorted)
+
+    result1.availability should be(Availability.teacher.toString)
+    result1.grepCodes should be(Seq("a", "b", "c"))
+    result1.copyright.get.license.get.license should be("COPYRIGHTED")
+    result1.metaDescription.get.metaDescription should be("newMeta")
+    result1.relatedContent.head.leftSide should be(Left(api.RelatedContentLink("title1", "url2")))
+    result1.relatedContent.reverse.head should be(Right(12L))
+    result1.tags.get.tags should be(Seq("new", "tag"))
+    result1.notes.head.note should be("Artikkelen har blitt delpublisert")
+  }
+
+  test("article status should change if any of the other fields changes") {
+    val existingTitle = "tittel"
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("nb"),
+      title = Some(existingTitle),
+      copyright = Some(
+        api.Copyright(
+          license = Some(api.License("COPYRIGHTED", None, None)),
+          origin = Some("shouldCauseStatusChange"),
+          creators = Seq.empty,
+          processors = Seq.empty,
+          rightsholders = Seq.empty,
+          agreementId = None,
+          validFrom = None,
+          validTo = None
+        ))
+    )
+
+    val existing = TestData.sampleDomainArticle.copy(
+      title = Seq(ArticleTitle(existingTitle, "nb")),
+      status = TestData.statusWithPublished,
+      availability = Availability.everyone,
+      grepCodes = Seq.empty,
+      copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
+      metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
+      tags = Seq.empty
+    )
+
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    when(writeService.partialPublish(any, any, any)).thenReturn((existing.id.get, Success(existing)))
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(existing.id.get))
+
+    val Success(result1) = service.updateArticle(existing.id.get,
+                                                 updatedArticle,
+                                                 List.empty,
+                                                 Seq.empty,
+                                                 TestData.userWithWriteAccess,
+                                                 None,
+                                                 None,
+                                                 None)
+
+    result1.status.current should not be (existing.status.current.toString)
+    result1.status.current should be(ArticleStatus.PROPOSAL.toString)
+    result1.status.other.sorted should not be (existing.status.other.map(_.toString).toSeq.sorted)
+    result1.notes.head.note should not be ("Artikkelen har blitt delpublisert")
+  }
+
+  test("article status should change if both the PartialArticleFields and other fields changes") {
+    val existingTitle = "tittel"
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("nb"),
+      title = Some(existingTitle),
+      availability = Some(Availability.teacher.toString),
+      grepCodes = Some(Seq("a", "b", "c")),
+      copyright = Some(
+        api.Copyright(
+          license = Some(api.License("COPYRIGHTED", None, None)),
+          origin = None,
+          creators = Seq.empty,
+          processors = Seq.empty,
+          rightsholders = Seq.empty,
+          agreementId = None,
+          validFrom = None,
+          validTo = None
+        )),
+      metaDescription = Some("newMeta"),
+      relatedContent = Some(Seq(Left(api.RelatedContentLink("title1", "url2")), Right(12L))),
+      tags = Some(Seq("new", "tag")),
+      conceptIds = Some(Seq(1, 2, 3))
+    )
+
+    val existing = TestData.sampleDomainArticle.copy(
+      title = Seq(ArticleTitle(existingTitle, "nb")),
+      status = TestData.statusWithPublished,
+      availability = Availability.everyone,
+      grepCodes = Seq.empty,
+      copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
+      metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
+      tags = Seq.empty,
+      conceptIds = Seq.empty
+    )
+
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    when(writeService.partialPublish(any, any, any)).thenReturn((existing.id.get, Success(existing)))
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(existing.id.get))
+
+    val Success(result1) = service.updateArticle(existing.id.get,
+                                                 updatedArticle,
+                                                 List.empty,
+                                                 Seq.empty,
+                                                 TestData.userWithWriteAccess,
+                                                 None,
+                                                 None,
+                                                 None)
+
+    result1.status.current should not be (existing.status.current.toString)
+    result1.status.current should be(ArticleStatus.PROPOSAL.toString)
+    result1.status.other.sorted should not be (existing.status.other.map(_.toString).toSeq.sorted)
+
+    result1.availability should be(Availability.teacher.toString)
+    result1.grepCodes should be(Seq("a", "b", "c"))
+    result1.copyright.get.license.get.license should be("COPYRIGHTED")
+    result1.metaDescription.get.metaDescription should be("newMeta")
+    result1.relatedContent.head.leftSide should be(Left(api.RelatedContentLink("title1", "url2")))
+    result1.relatedContent.reverse.head should be(Right(12L))
+    result1.tags.get.tags should be(Seq("new", "tag"))
+    result1.conceptIds should be(Seq(1, 2, 3))
+    result1.notes.reverse.head.note should be("Artikkelen har blitt delpublisert")
+  }
+
   test("Deleting storage should be called with correct path") {
     val imported = "https://api.ndla.no/files/194277/Temahefte%20egg%20og%20meieriprodukterNN.pdf"
     val notImported = "https://api.ndla.no/files/resources/01f6TKKF1wpAsc1Z.pdf"
@@ -754,6 +932,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         ArticleMetaDescription("oldDesccc", "ru"),
         ArticleMetaDescription("oldDescccc", "nn")
       ),
+      relatedContent = Seq(Left(RelatedContentLink("title1", "url2")), Right(12L)),
       tags = Seq(ArticleTag(Seq("old", "tag"), "nb"),
                  ArticleTag(Seq("guten", "tag"), "de"),
                  ArticleTag(Seq("oldd", "tagg"), "es"))
@@ -764,6 +943,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       api.PartialArticleFields.grepCodes,
       api.PartialArticleFields.license,
       api.PartialArticleFields.metaDescription,
+      api.PartialArticleFields.relatedContent,
       api.PartialArticleFields.tags
     )
 
@@ -772,6 +952,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(Seq(ArticleMetaDescription("oldDesc", "nb"))),
+      relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(Seq(ArticleTag(Seq("old", "tag"), "nb")))
     )
     val expectedPartialPublishFieldsLangEN = integration.PartialPublishArticle(
@@ -779,6 +960,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(Seq.empty),
+      relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(Seq.empty)
     )
     val expectedPartialPublishFieldsLangALL = integration.PartialPublishArticle(
@@ -792,6 +974,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
           ArticleMetaDescription("oldDesccc", "ru"),
           ArticleMetaDescription("oldDescccc", "nn")
         )),
+      relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(
         Seq(ArticleTag(Seq("old", "tag"), "nb"),
             ArticleTag(Seq("guten", "tag"), "de"),
