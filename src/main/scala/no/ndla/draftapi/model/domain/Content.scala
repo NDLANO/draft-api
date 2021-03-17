@@ -77,7 +77,7 @@ object Article extends SQLSyntaxSupport[Article] {
     val meta = read[Article](rs.string(lp.c("document")))
     meta.copy(
       id = Some(rs.long(lp.c("article_id"))),
-      revision = Some(rs.int(lp.c("revision"))),
+      revision = Some(rs.int(lp.c("revision"))), // TODO: Kanskje fikse sånn at tomstrengeer ikke blir henta ut?
     )
   }
 }

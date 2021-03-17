@@ -256,12 +256,13 @@ trait WriteService {
         externalIds: List[String],
         externalSubjectIds: Seq[String],
         importId: Option[String]
-    ) = draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
-      case Success(updated) if updated.status.current == PUBLISHED =>
-        draftRepository.storeArticleAsNewVersion(updated)
-      case Success(updated) => Success(updated)
-      case Failure(ex)      => Failure(ex)
-    }
+    ): Try[domain.Article] =
+      draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
+        case Success(updated) if updated.status.current == PUBLISHED =>
+          draftRepository.storeArticleAsNewVersion(updated)
+        case Success(updated) => Success(updated)
+        case Failure(ex)      => Failure(ex)
+      }
 
     /** Determines which repository function(s) should be called and calls them */
     private def performArticleUpdate(
@@ -348,20 +349,24 @@ trait WriteService {
             tags = Seq.empty
         )
 
-      withComparableValues(changedArticle) != withComparableValues(existingArticle)
+      val comparableNew = withComparableValues(changedArticle)
+      val comparableExisting = withComparableValues(existingArticle)
+      val shouldUpdateStatus = comparableNew != comparableExisting
+      shouldUpdateStatus
     }
 
     private def shouldPartialPublish(existingArticle: Option[domain.Article],
                                      changedArticle: domain.Article): Boolean = {
-      val isPublished = changedArticle.status.current == ArticleStatus.PUBLISHED || changedArticle.status.other
-        .contains(ArticleStatus.PUBLISHED)
+      val isPublished =
+        changedArticle.status.current == ArticleStatus.PUBLISHED ||
+          changedArticle.status.other.contains(ArticleStatus.PUBLISHED)
 
       val hasChangedPartialPublishField = existingArticle.forall(e => {
         e.availability != changedArticle.availability ||
         e.grepCodes != changedArticle.grepCodes ||
         e.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
         e.metaDescription != changedArticle.metaDescription ||
-        e.relatedContent != changedArticle.relatedContent ||
+        e.relatedContent != changedArticle.relatedContent || // TODO: related content virker ikke sier bartek
         e.tags != changedArticle.tags
       })
 

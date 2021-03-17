@@ -70,10 +70,16 @@ trait ConverterService {
             requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
             visualElement =
               newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-            introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-            metaDescription =
-              newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-            metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
+            introduction = newArticle.introduction
+              .map(intro => toDomainIntroduction(intro, newArticle.language))
+              .filterNot(_.isEmpty)
+              .toSeq,
+            metaDescription = newArticle.metaDescription
+              .map(meta => toDomainMetaDescription(meta, newArticle.language))
+              .filterNot(_.isEmpty)
+              .toSeq,
+            metaImage =
+              newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).filterNot(_.isEmpty).toSeq,
             created = oldCreatedDate.getOrElse(clock.now()),
             updated = oldUpdatedDate.getOrElse(clock.now()),
             updatedBy = user.id,

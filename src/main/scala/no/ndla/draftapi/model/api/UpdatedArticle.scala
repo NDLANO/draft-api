@@ -36,4 +36,4 @@ case class UpdatedArticle(
     @(ApiModelProperty @field)(description = "Stores the new article as a separate version. Useful when making big changes that should be revertable.") createNewVersion: Option[Boolean],
     @(ApiModelProperty @field)(description = "Value that dictates who gets to see the article. Possible values are: everyone/student/teacher") availability: Option[String],
     @(ApiModelProperty @field)(description = "A list of content related to the article") relatedContent: Option[Seq[RelatedContent]]
-                         )
+)
