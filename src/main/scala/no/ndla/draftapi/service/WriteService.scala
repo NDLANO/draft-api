@@ -294,12 +294,14 @@ trait WriteService {
         case Some(language) => getArticleOnLanguage(toUpdate, language)
         case None           => toUpdate
       }
+
+      val willPartialPublish = shouldPartialPublish(oldArticle, toUpdate)
+      val withMaybeNote =
+        if (willPartialPublish) converterService.addNote(toUpdate, "Artikkelen har blitt delpublisert", user)
+        else toUpdate
+
       for {
         _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
-        willPartialPublish = shouldPartialPublish(oldArticle, toUpdate)
-        withMaybeNote = if (willPartialPublish)
-          converterService.addNote(toUpdate, "Artikkelen har blitt delpublisert", user)
-        else toUpdate
         domainArticle <- performArticleUpdate(withMaybeNote,
                                               externalIds,
                                               externalSubjectIds,
