@@ -690,7 +690,7 @@ trait DraftController {
         extract[Seq[PartialArticleFields.Value]](request.body) match {
           case Failure(ex) => errorHandler(ex)
           case Success(articleFieldsToUpdate) =>
-            writeService.partialPublish(articleId, articleFieldsToUpdate, language, fallback) match {
+            writeService.partialPublishAndConvertToApiArticle(articleId, articleFieldsToUpdate, language, fallback) match {
               case Success(article) => Ok(article)
               case Failure(ex)      => errorHandler(ex)
             }
