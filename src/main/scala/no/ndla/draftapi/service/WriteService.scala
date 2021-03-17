@@ -372,7 +372,7 @@ trait WriteService {
         e.grepCodes != changedArticle.grepCodes ||
         e.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
         e.metaDescription != changedArticle.metaDescription ||
-        e.relatedContent != changedArticle.relatedContent || // TODO: related content virker ikke sier bartek
+        e.relatedContent != changedArticle.relatedContent ||
         e.tags != changedArticle.tags
       })
 
