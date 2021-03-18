@@ -108,7 +108,7 @@ trait StateTransitionRules {
        ARCHIVED                      -> ARCHIVED,
        ARCHIVED                      -> DRAFT,
        AWAITING_ARCHIVING            -> AWAITING_ARCHIVING,
-       AWAITING_ARCHIVING            -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED),
+       AWAITING_ARCHIVING            -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect unpublishArticle,
        PROPOSAL                      -> PROPOSAL,
        PROPOSAL                      -> DRAFT,
        PROPOSAL                      -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED),
