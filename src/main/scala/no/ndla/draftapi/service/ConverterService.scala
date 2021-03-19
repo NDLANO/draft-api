@@ -64,7 +64,7 @@ trait ConverterService {
             revision = None,
             status,
             title = domainTitles,
-            content = domainContent,
+            content = domainContent.filterNot(_.isEmpty),
             copyright = newArticle.copyright.map(toDomainCopyright),
             tags = toDomainTag(newArticle.tags, newArticle.language).toSeq,
             requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),

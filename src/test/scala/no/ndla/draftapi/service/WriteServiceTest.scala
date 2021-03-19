@@ -1079,4 +1079,39 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     articlePassedToUpdate.notes.head.note should be("Artikkelen har blitt delpublisert")
   }
 
+  test("New articles are not made with empty-strings for empty fields") {
+    val newArt = TestData.newArticle.copy(
+      language = "nb",
+      title = "Jonas",
+      content = Some(""),
+      introduction = Some(""),
+      tags = Seq(),
+      metaDescription = Some(""),
+      visualElement = Some(""),
+    )
+
+    when(draftRepository.newEmptyArticle(any[List[String]], any[Seq[String]])(any[DBSession])).thenReturn(Success(10L))
+
+    val Success(created) = service.newArticle(
+      newArt,
+      List.empty,
+      Seq.empty,
+      TestData.userWithWriteAccess,
+      None,
+      None,
+      None
+    )
+
+    val captor: ArgumentCaptor[domain.Article] = ArgumentCaptor.forClass(classOf[domain.Article])
+    Mockito.verify(draftRepository).updateArticle(captor.capture(), anyBoolean)
+    val articlePassedToUpdate = captor.getValue
+
+    articlePassedToUpdate.content should be(Seq.empty)
+    articlePassedToUpdate.introduction should be(Seq.empty)
+    articlePassedToUpdate.tags should be(Seq.empty)
+    articlePassedToUpdate.metaDescription should be(Seq.empty)
+    articlePassedToUpdate.visualElement should be(Seq.empty)
+
+  }
+
 }
