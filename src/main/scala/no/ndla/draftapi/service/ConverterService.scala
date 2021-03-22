@@ -64,16 +64,22 @@ trait ConverterService {
             revision = None,
             status,
             title = domainTitles,
-            content = domainContent,
+            content = domainContent.filterNot(_.isEmpty),
             copyright = newArticle.copyright.map(toDomainCopyright),
             tags = toDomainTag(newArticle.tags, newArticle.language).toSeq,
             requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
             visualElement =
               newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
-            introduction = newArticle.introduction.map(intro => toDomainIntroduction(intro, newArticle.language)).toSeq,
-            metaDescription =
-              newArticle.metaDescription.map(meta => toDomainMetaDescription(meta, newArticle.language)).toSeq,
-            metaImage = newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).toSeq,
+            introduction = newArticle.introduction
+              .map(intro => toDomainIntroduction(intro, newArticle.language))
+              .filterNot(_.isEmpty)
+              .toSeq,
+            metaDescription = newArticle.metaDescription
+              .map(meta => toDomainMetaDescription(meta, newArticle.language))
+              .filterNot(_.isEmpty)
+              .toSeq,
+            metaImage =
+              newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).filterNot(_.isEmpty).toSeq,
             created = oldCreatedDate.getOrElse(clock.now()),
             updated = oldUpdatedDate.getOrElse(clock.now()),
             updatedBy = user.id,
@@ -703,5 +709,12 @@ trait ConverterService {
                               offset: Int): api.GrepCodesSearchResult = {
       api.GrepCodesSearchResult(grepCodesCount, offset, pageSize, grepCodes)
     }
+
+    def addNote(article: domain.Article, noteText: String, user: UserInfo): domain.Article = {
+      article.copy(
+        notes = article.notes :+ domain.EditorNote(noteText, user.id, article.status, new Date())
+      )
+    }
+
   }
 }

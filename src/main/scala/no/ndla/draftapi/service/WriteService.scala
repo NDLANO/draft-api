@@ -10,7 +10,6 @@ package no.ndla.draftapi.service
 import java.io.ByteArrayInputStream
 import java.util.Date
 import java.util.concurrent.Executors
-
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import io.lemonlabs.uri.Path
@@ -18,7 +17,7 @@ import io.lemonlabs.uri.dsl._
 import no.ndla.draftapi.DraftApiProperties.supportedUploadExtensions
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.{ArticleApiClient, PartialPublishArticle, SearchApiClient, TaxonomyApiClient}
-import no.ndla.draftapi.model.api.{Article, _}
+import no.ndla.draftapi.model.api.{Article, PartialArticleFields, _}
 import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PROPOSAL, PUBLISHED}
 import no.ndla.draftapi.model.domain.Language.UnknownLanguage
 import no.ndla.draftapi.model.domain._
@@ -256,12 +255,13 @@ trait WriteService {
         externalIds: List[String],
         externalSubjectIds: Seq[String],
         importId: Option[String]
-    ) = draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
-      case Success(updated) if updated.status.current == PUBLISHED =>
-        draftRepository.storeArticleAsNewVersion(updated)
-      case Success(updated) => Success(updated)
-      case Failure(ex)      => Failure(ex)
-    }
+    ): Try[domain.Article] =
+      draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
+        case Success(updated) if updated.status.current == PUBLISHED =>
+          draftRepository.storeArticleAsNewVersion(updated)
+        case Success(updated) => Success(updated)
+        case Failure(ex)      => Failure(ex)
+      }
 
     /** Determines which repository function(s) should be called and calls them */
     private def performArticleUpdate(
@@ -285,21 +285,33 @@ trait WriteService {
                               importId: Option[String],
                               externalIds: List[String],
                               externalSubjectIds: Seq[String],
-                              shouldValidateLanguage: Option[String],
+                              language: Option[String],
                               isImported: Boolean,
-                              shouldAlwaysCopy: Boolean): Try[domain.Article] = {
-      val articleToValidate = shouldValidateLanguage match {
+                              shouldAlwaysCopy: Boolean,
+                              oldArticle: Option[domain.Article],
+                              user: UserInfo): Try[domain.Article] = {
+      val articleToValidate = language match {
         case Some(language) => getArticleOnLanguage(toUpdate, language)
         case None           => toUpdate
       }
+
+      val willPartialPublish = shouldPartialPublish(oldArticle, toUpdate)
+      val withMaybeNote =
+        if (willPartialPublish) converterService.addNote(toUpdate, "Artikkelen har blitt delpublisert", user)
+        else toUpdate
+
       for {
         _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
-        domainArticle <- performArticleUpdate(toUpdate,
+        domainArticle <- performArticleUpdate(withMaybeNote,
                                               externalIds,
                                               externalSubjectIds,
                                               isImported,
                                               importId,
                                               shouldAlwaysCopy)
+        _ <- partialPublishIfNeeded(willPartialPublish,
+                                    domainArticle,
+                                    PartialArticleFields.values.toSeq,
+                                    language.getOrElse(Language.AllLanguages))
         _ <- articleIndexService.indexDocument(domainArticle)
         _ <- tagIndexService.indexDocument(domainArticle)
         _ <- Try(searchApiClient.indexDraft(domainArticle))
@@ -348,13 +360,17 @@ trait WriteService {
             tags = Seq.empty
         )
 
-      withComparableValues(changedArticle) != withComparableValues(existingArticle)
+      val comparableNew = withComparableValues(changedArticle)
+      val comparableExisting = withComparableValues(existingArticle)
+      val shouldUpdateStatus = comparableNew != comparableExisting
+      shouldUpdateStatus
     }
 
     private def shouldPartialPublish(existingArticle: Option[domain.Article],
                                      changedArticle: domain.Article): Boolean = {
-      val isPublished = changedArticle.status.current == ArticleStatus.PUBLISHED || changedArticle.status.other
-        .contains(ArticleStatus.PUBLISHED)
+      val isPublished =
+        changedArticle.status.current == ArticleStatus.PUBLISHED ||
+          changedArticle.status.other.contains(ArticleStatus.PUBLISHED)
 
       val hasChangedPartialPublishField = existingArticle.forall(e => {
         e.availability != changedArticle.availability ||
@@ -366,28 +382,6 @@ trait WriteService {
       })
 
       isPublished && hasChangedPartialPublishField
-    }
-
-    private def partialPublishIfNeeded(existingArticle: Option[domain.Article],
-                                       changedArticle: domain.Article,
-                                       language: String,
-                                       user: UserInfo): Try[domain.Article] = {
-      if (!shouldPartialPublish(existingArticle, changedArticle)) {
-        Success(changedArticle)
-      } else {
-        changedArticle.id match {
-          case None =>
-            Failure(ArticleVersioningException("Article supplied to partialPublish did not have an id. This is a bug."))
-          case Some(id) =>
-            partialPublish(id, PartialArticleFields.values.toSeq, language)
-            val newEditorNotes =
-              changedArticle.notes :+ domain.EditorNote("Artikkelen har blitt delpublisert",
-                                                        user.id,
-                                                        changedArticle.status,
-                                                        new Date())
-            Success(changedArticle.copy(notes = newEditorNotes))
-        }
-      }
     }
 
     private def updateStatusIfNeeded(convertedArticle: domain.Article,
@@ -474,15 +468,13 @@ trait WriteService {
           importId,
           externalIds,
           externalSubjectIds,
-          shouldValidateLanguage = updatedApiArticle.language,
+          language = updatedApiArticle.language,
           isImported = externalIds.nonEmpty,
-          shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
+          shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false),
+          oldArticle = Some(existing),
+          user = user
         )
-        articleWithUpdatedNote <- partialPublishIfNeeded(Some(existing),
-                                                         updatedArticle,
-                                                         updatedApiArticle.language.getOrElse(Language.AllLanguages),
-                                                         user)
-        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(articleWithUpdatedNote),
+        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage),
                                                     updatedApiArticle.language.isEmpty)
       } yield apiArticle
@@ -516,15 +508,13 @@ trait WriteService {
           importId = importId,
           externalIds = externalIds,
           externalSubjectIds = externalSubjectIds,
-          shouldValidateLanguage = updatedApiArticle.language,
+          language = updatedApiArticle.language,
           isImported = false,
-          shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false)
+          shouldAlwaysCopy = updatedApiArticle.createNewVersion.getOrElse(false),
+          oldArticle = None,
+          user = user
         )
-        articleWithUpdatedNote <- partialPublishIfNeeded(None,
-                                                         updatedArticle,
-                                                         updatedApiArticle.language.getOrElse(Language.AllLanguages),
-                                                         user)
-        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(articleWithUpdatedNote),
+        apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
                                                     updatedApiArticle.language.getOrElse(UnknownLanguage))
       } yield apiArticle
 
@@ -655,9 +645,9 @@ trait WriteService {
       }
     }
 
-    def partialArticleFieldsUpdate(articleToPartialPublish: domain.Article,
-                                   articleFieldsToUpdate: Seq[PartialArticleFields.Value],
-                                   language: String): PartialPublishArticle = {
+    private[service] def partialArticleFieldsUpdate(articleToPartialPublish: domain.Article,
+                                                    articleFieldsToUpdate: Seq[PartialArticleFields.Value],
+                                                    language: String): PartialPublishArticle = {
 
       val initialPartial = PartialPublishArticle(None, None, None, None, None, None)
       articleFieldsToUpdate.distinct.foldLeft(initialPartial)((partialPublishArticle, field) => {
@@ -684,25 +674,36 @@ trait WriteService {
       })
     }
 
-    def partialPublish(id: Long,
-                       articleFieldsToUpdate: Seq[PartialArticleFields.Value],
-                       language: String,
-                       fallback: Boolean): Try[api.Article] =
-      partialPublish(id, articleFieldsToUpdate, language)._2.flatMap(article =>
+    def partialPublishAndConvertToApiArticle(id: Long,
+                                             fieldsToPublish: Seq[PartialArticleFields.Value],
+                                             language: String,
+                                             fallback: Boolean): Try[api.Article] =
+      partialPublish(id, fieldsToPublish, language)._2.flatMap(article =>
         converterService.toApiArticle(article, language, fallback))
 
     def partialPublish(id: Long,
                        articleFieldsToUpdate: Seq[PartialArticleFields.Value],
-                       language: String): (Long, Try[domain.Article]) = {
+                       language: String): (Long, Try[domain.Article]) =
       draftRepository.withId(id) match {
-        case None => (id, Failure(NotFoundException(s"Could not find draft with id of ${id} to partial publish")))
-        case Some(articleToPartialPublish) =>
-          val updatedArticleFields =
-            partialArticleFieldsUpdate(articleToPartialPublish, articleFieldsToUpdate, language)
-          (id, articleApiClient.partialPublishArticle(id, updatedArticleFields).map(_ => articleToPartialPublish))
+        case None          => id -> Failure(NotFoundException(s"Could not find draft with id of ${id} to partial publish"))
+        case Some(article) => id -> partialPublish(article, articleFieldsToUpdate, language)
       }
 
-    }
+    private def partialPublishIfNeeded(shouldPartialPublish: Boolean,
+                                       article: domain.Article,
+                                       articleFieldsToUpdate: Seq[PartialArticleFields.Value],
+                                       language: String): Try[domain.Article] =
+      if (shouldPartialPublish) partialPublish(article, articleFieldsToUpdate, language) else Success(article)
+
+    private def partialPublish(article: domain.Article,
+                               fieldsToPublish: Seq[PartialArticleFields.Value],
+                               language: String): Try[domain.Article] =
+      article.id match {
+        case None => Failure(new IllegalStateException(s"Article to partial publish did not have id. This is a bug."))
+        case Some(id) =>
+          val partialArticle = partialArticleFieldsUpdate(article, fieldsToPublish, language)
+          articleApiClient.partialPublishArticle(id, partialArticle).map(_ => article)
+      }
 
     def partialPublishMultiple(language: String, partialBulk: PartialBulkArticles): Try[MultiPartialPublishResult] = {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(100))

@@ -1013,4 +1013,105 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
                           None) should equal(converterService.toApiArticle(expectedArticle, "en"))
   }
 
+  test("partial publish notes should be updated before update function") {
+    val existingTitle = "tittel"
+    val updatedArticle = TestData.blankUpdatedArticle.copy(
+      revision = 1,
+      language = Some("nb"),
+      title = Some(existingTitle),
+      availability = Some(Availability.teacher.toString),
+      grepCodes = Some(Seq("a", "b", "c")),
+      copyright = Some(
+        api.Copyright(
+          license = Some(api.License("COPYRIGHTED", None, None)),
+          origin = None,
+          creators = Seq.empty,
+          processors = Seq.empty,
+          rightsholders = Seq.empty,
+          agreementId = None,
+          validFrom = None,
+          validTo = None
+        )),
+      metaDescription = Some("newMeta"),
+      relatedContent = Some(Seq(Left(api.RelatedContentLink("title1", "url2")), Right(12L))),
+      tags = Some(Seq("new", "tag"))
+    )
+
+    val existing = TestData.sampleDomainArticle.copy(
+      title = Seq(ArticleTitle(existingTitle, "nb")),
+      status = TestData.statusWithPublished,
+      availability = Availability.everyone,
+      grepCodes = Seq.empty,
+      copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
+      metaDescription = Seq.empty,
+      relatedContent = Seq.empty,
+      tags = Seq.empty
+    )
+
+    when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
+    when(writeService.partialPublish(any, any, any)).thenReturn((existing.id.get, Success(existing)))
+    when(articleApiClient.partialPublishArticle(any, any)).thenReturn(Success(existing.id.get))
+
+    val Success(result1) = service.updateArticle(existing.id.get,
+                                                 updatedArticle,
+                                                 List.empty,
+                                                 Seq.empty,
+                                                 TestData.userWithWriteAccess,
+                                                 None,
+                                                 None,
+                                                 None)
+
+    result1.status.current should be(existing.status.current.toString)
+    result1.status.other.sorted should be(existing.status.other.map(_.toString).toSeq.sorted)
+
+    result1.availability should be(Availability.teacher.toString)
+    result1.grepCodes should be(Seq("a", "b", "c"))
+    result1.copyright.get.license.get.license should be("COPYRIGHTED")
+    result1.metaDescription.get.metaDescription should be("newMeta")
+    result1.relatedContent.head.leftSide should be(Left(api.RelatedContentLink("title1", "url2")))
+    result1.relatedContent.reverse.head should be(Right(12L))
+    result1.tags.get.tags should be(Seq("new", "tag"))
+    result1.notes.head.note should be("Artikkelen har blitt delpublisert")
+
+    val captor: ArgumentCaptor[domain.Article] = ArgumentCaptor.forClass(classOf[domain.Article])
+    Mockito.verify(draftRepository).updateArticle(captor.capture(), anyBoolean)
+    val articlePassedToUpdate = captor.getValue
+    articlePassedToUpdate.notes.head.note should be("Artikkelen har blitt delpublisert")
+  }
+
+  test("New articles are not made with empty-strings for empty fields") {
+    val newArt = TestData.newArticle.copy(
+      language = "nb",
+      title = "Jonas",
+      content = Some(""),
+      introduction = Some(""),
+      tags = Seq(),
+      metaDescription = Some(""),
+      visualElement = Some(""),
+    )
+
+    when(draftRepository.newEmptyArticle(any[List[String]], any[Seq[String]])(any[DBSession])).thenReturn(Success(10L))
+
+    val Success(created) = service.newArticle(
+      newArt,
+      List.empty,
+      Seq.empty,
+      TestData.userWithWriteAccess,
+      None,
+      None,
+      None
+    )
+
+    val captor: ArgumentCaptor[domain.Article] = ArgumentCaptor.forClass(classOf[domain.Article])
+    Mockito.verify(draftRepository).updateArticle(captor.capture(), anyBoolean)
+    val articlePassedToUpdate = captor.getValue
+
+    articlePassedToUpdate.content should be(Seq.empty)
+    articlePassedToUpdate.introduction should be(Seq.empty)
+    articlePassedToUpdate.tags should be(Seq.empty)
+    articlePassedToUpdate.metaDescription should be(Seq.empty)
+    articlePassedToUpdate.visualElement should be(Seq.empty)
+
+  }
+
 }
