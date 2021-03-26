@@ -10,8 +10,6 @@ package no.ndla.draftapi.service
 import java.util.Date
 
 import cats.effect.IO
-import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.ComponentRegistry.h5pApiClient
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
 import no.ndla.draftapi.model.domain
@@ -61,7 +59,7 @@ trait StateTransitionRules {
       doIfArticleIsUnusedByLearningpath(article.id.getOrElse(1)) {
         article.id match {
           case Some(id) =>
-            val taxMetadataT = taxonomyApiClient.updateTaxonomyMetadataIfExists(id, false)
+            val taxMetadataT = taxonomyApiClient.updateTaxonomyMetadataIfExists(id, visible = false)
             val articleUpdT = articleApiClient.unpublishArticle(article)
             val failures = Seq(taxMetadataT, articleUpdT).collectFirst { case Failure(ex) => Failure(ex) }
             failures.getOrElse(articleUpdT)
@@ -92,7 +90,7 @@ trait StateTransitionRules {
           case _ => Failure(NotFoundException("This is a bug, article to publish has no id."))
       }
 
-    private val publishArticle = publishArticleSideEffect(false)
+    private val publishArticle = publishArticleSideEffect()
     private val publishWithSoftValidation = publishArticleSideEffect(true)
 
     import StateTransition._
@@ -108,8 +106,9 @@ trait StateTransitionRules {
        ARCHIVED                      -> ARCHIVED,
        ARCHIVED                      -> DRAFT,
        AWAITING_ARCHIVING            -> AWAITING_ARCHIVING,
-       AWAITING_ARCHIVING            -> UNPUBLISHED                    require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect unpublishArticle,
-       PROPOSAL                      -> PROPOSAL,
+      (AWAITING_ARCHIVING            -> AWAITING_UNPUBLISHING)         require PublishRoles withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
+      AWAITING_ARCHIVING            -> UNPUBLISHED                     keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect unpublishArticle,
+      PROPOSAL                      -> PROPOSAL,
        PROPOSAL                      -> DRAFT,
        PROPOSAL                      -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED),
        PROPOSAL                      -> AWAITING_ARCHIVING,
@@ -161,7 +160,7 @@ trait StateTransitionRules {
       (PUBLISHED                     -> PROPOSAL)                      keepCurrentOnTransition,
       (PUBLISHED                     -> AWAITING_UNPUBLISHING)         require PublishRoles withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
       (PUBLISHED                     -> UNPUBLISHED)                   keepStates Set(IMPORTED) require DirectPublishRoles withSideEffect unpublishArticle,
-       PUBLISHED                     -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect  unpublishArticle,
+       PUBLISHED                     -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED) withSideEffect unpublishArticle,
        PUBLISHED                     -> AWAITING_ARCHIVING,
       (AWAITING_UNPUBLISHING         -> AWAITING_UNPUBLISHING)         withSideEffect checkIfArticleIsUsedInLearningStep keepCurrentOnTransition,
        AWAITING_UNPUBLISHING         -> DRAFT,
