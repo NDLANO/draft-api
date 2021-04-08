@@ -11,15 +11,14 @@ import java.util.Date
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api._
-import no.ndla.draftapi.model.domain.ArticleStatus.{QUALITY_ASSURED_DELAYED, USER_TEST}
+import no.ndla.draftapi.model.domain.ArticleStatus.{QUALITY_ASSURED_DELAYED, QUEUED_FOR_PUBLISHING_DELAYED}
 import no.ndla.draftapi.model.domain.{ArticleType, Language, SearchSettings, Sort}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.{DraftSwagger, TestData, TestEnvironment, UnitSuite}
 import no.ndla.mapping.License.getLicenses
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.{read, write}
-import org.mockito.ArgumentMatchers.{eq => eqTo, _}
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers._
 import org.scalatra.test.scalatest.ScalatraFunSuite
 
 import scala.util.{Failure, Success}
@@ -160,7 +159,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     }
   }
 
-  test("That GET /<article_id> returns 200 if status is USER_TEST even if auth header does not have any roles") {
+  test("That GET /<article_id> returns 200 if status is allowed even if auth header does not have any roles") {
     when(user.getUser).thenReturn(TestData.userWithNoRoles)
     when(readService.withId(articleId, lang)).thenReturn(Success(TestData.apiArticleUserTest))
 
@@ -175,6 +174,12 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       status should equal(200)
     }
 
+    when(readService.withId(articleId, lang)).thenReturn(
+      Success(TestData.apiArticleUserTest.copy(status = api.Status(QUEUED_FOR_PUBLISHING_DELAYED.toString, Seq.empty))))
+
+    get(s"/test/$articleId?language=$lang") {
+      status should equal(200)
+    }
   }
 
   test("That PATCH /:id returns a validation message if article is invalid") {

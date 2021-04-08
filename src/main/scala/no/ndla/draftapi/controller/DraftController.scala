@@ -370,8 +370,9 @@ trait DraftController {
 
       val article = readService.withId(articleId, language, fallback)
       val currentOption = article.map(_.status.current).toOption
-      val isPublicStatus = currentOption.contains(ArticleStatus.USER_TEST.toString) || currentOption.contains(
-        ArticleStatus.QUALITY_ASSURED_DELAYED.toString)
+      val isPublicStatus = currentOption.contains(ArticleStatus.USER_TEST.toString) ||
+        currentOption.contains(ArticleStatus.QUALITY_ASSURED_DELAYED.toString) ||
+        currentOption.contains(ArticleStatus.QUEUED_FOR_PUBLISHING_DELAYED.toString)
       doOrAccessDenied(userInfo.canWrite || isPublicStatus) {
         article match {
           case Success(a)  => a
