@@ -30,10 +30,12 @@ trait TagIndexService {
     override def createIndexRequests(domainModel: Article, indexName: String): Seq[IndexRequest] = {
       val tags = searchConverterService.asSearchableTags(domainModel)
 
-      tags.map(t => {
-        val source = write(t)
-        indexInto(indexName / documentType).doc(source).id(s"${t.language}.${t.tag}")
-      })
+      tags
+        .map(t => {
+          val source = write(t)
+          indexInto(indexName / documentType).doc(source).id(s"${t.language}.${t.tag}")
+        })
+        .toSeq
     }
 
     def getMapping: MappingDefinition = {

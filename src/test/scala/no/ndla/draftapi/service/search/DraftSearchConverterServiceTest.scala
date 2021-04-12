@@ -17,7 +17,7 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
   override val searchConverterService = new SearchConverterService
   val sampleArticle = TestData.sampleArticleWithPublicDomain.copy()
 
-  val titles = List(
+  val titles = Set(
     ArticleTitle("Bokmål tittel", "nb"),
     ArticleTitle("Nynorsk tittel", "nn"),
     ArticleTitle("English title", "en"),
@@ -27,7 +27,7 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
     ArticleTitle("Nekonata titolo", "unknown")
   )
 
-  val articles = Seq(
+  val articles = Set(
     ArticleContent("Bokmål artikkel", "nb"),
     ArticleContent("Nynorsk artikkel", "nn"),
     ArticleContent("English article", "en"),
@@ -37,7 +37,7 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
     ArticleContent("Nekonata artikolo", "unknown")
   )
 
-  val articleTags = Seq(
+  val articleTags = Set(
     ArticleTag(Seq("fugl", "fisk"), "nb"),
     ArticleTag(Seq("fugl", "fisk"), "nn"),
     ArticleTag(Seq("bird", "fish"), "en"),
@@ -114,15 +114,15 @@ class DraftSearchConverterServiceTest extends UnitSuite with TestEnvironment {
     languageList.languageValues.find(_.language == lang).get.value
   }
 
-  private def titleForLang(titles: Seq[ArticleTitle], lang: String = "unknown"): String = {
+  private def titleForLang(titles: Set[ArticleTitle], lang: String = "unknown"): String = {
     titles.find(_.language == lang).get.title
   }
 
-  private def articleForLang(articles: Seq[ArticleContent], lang: String = "unknown"): String = {
+  private def articleForLang(articles: Set[ArticleContent], lang: String = "unknown"): String = {
     articles.find(_.language == lang).get.content
   }
 
-  private def tagsForLang(tags: Seq[ArticleTag], lang: String = "unknown") = {
+  private def tagsForLang(tags: Set[ArticleTag], lang: String = "unknown") = {
     tags.find(_.language == lang).get.tags
   }
 }

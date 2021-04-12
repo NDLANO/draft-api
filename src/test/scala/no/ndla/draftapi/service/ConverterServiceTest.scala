@@ -49,7 +49,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("that toApiArticle returns sorted supportedLanguages") {
     when(draftRepository.getExternalIdsFromId(TestData.articleId)).thenReturn(List(TestData.externalId))
     val result = service.toApiArticle(
-      TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title :+ ArticleTitle("hehe", "unknown")),
+      TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title + ArticleTitle("hehe", "unknown")),
       "nb")
     result.get.supportedLanguages should be(Seq("unknown", "nb"))
   }
@@ -185,15 +185,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       id = Some(3),
       revision = Some(4),
       status = status,
-      title = Seq(ArticleTitle("Title test", "nb")),
-      content = Seq(ArticleContent("Content test", "nb")),
+      title = Set(ArticleTitle("Title test", "nb")),
+      content = Set(ArticleContent("Content test", "nb")),
       copyright = TestData.sampleArticleWithByNcSa.copyright,
-      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb")),
-      requiredLibraries = Seq(RequiredLibrary("", "", "")),
-      visualElement = Seq(VisualElement("someembed", "nb")),
-      introduction = Seq(ArticleIntroduction("introduction", "nb")),
-      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb")),
-      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb")),
+      tags = Set(ArticleTag(Seq("a", "b", "c"), "nb")),
+      requiredLibraries = Set(RequiredLibrary("", "", "")),
+      visualElement = Set(VisualElement("someembed", "nb")),
+      introduction = Set(ArticleIntroduction("introduction", "nb")),
+      metaDescription = Set(ArticleMetaDescription("metadesc", "nb")),
+      metaImage = Set(ArticleMetaImage("123", "metaimgalt", "nb")),
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
@@ -222,15 +222,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       id = Some(3),
       revision = Some(4),
       status = status,
-      title = Seq(ArticleTitle("Title test", "nb")),
-      content = Seq(ArticleContent("Content test", "nb")),
+      title = Set(ArticleTitle("Title test", "nb")),
+      content = Set(ArticleContent("Content test", "nb")),
       copyright = TestData.sampleArticleWithByNcSa.copyright,
-      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb")),
-      requiredLibraries = Seq(RequiredLibrary("", "", "")),
-      visualElement = Seq(VisualElement("someembed", "nb")),
-      introduction = Seq(ArticleIntroduction("introduction", "nb")),
-      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb")),
-      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb")),
+      tags = Set(ArticleTag(Seq("a", "b", "c"), "nb")),
+      requiredLibraries = Set(RequiredLibrary("", "", "")),
+      visualElement = Set(VisualElement("someembed", "nb")),
+      introduction = Set(ArticleIntroduction("introduction", "nb")),
+      metaDescription = Set(ArticleMetaDescription("metadesc", "nb")),
+      metaImage = Set(ArticleMetaImage("123", "metaimgalt", "nb")),
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
@@ -249,15 +249,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       id = Some(3),
       revision = Some(4),
       status = status,
-      title = Seq(ArticleTitle("NyTittel", "nb")),
-      content = Seq(ArticleContent("NyContent", "nb")),
+      title = Set(ArticleTitle("NyTittel", "nb")),
+      content = Set(ArticleContent("NyContent", "nb")),
       copyright = TestData.sampleArticleWithByNcSa.copyright,
-      tags = Seq(ArticleTag(Seq("1", "2", "3"), "nb")),
-      requiredLibraries = Seq(RequiredLibrary("", "", "")),
-      visualElement = Seq(VisualElement("NyVisualElement", "nb")),
-      introduction = Seq(ArticleIntroduction("NyIntro", "nb")),
-      metaDescription = Seq(ArticleMetaDescription("NyMeta", "nb")),
-      metaImage = Seq(ArticleMetaImage("321", "NyAlt", "nb")),
+      tags = Set(ArticleTag(Seq("1", "2", "3"), "nb")),
+      requiredLibraries = Set(RequiredLibrary("", "", "")),
+      visualElement = Set(VisualElement("NyVisualElement", "nb")),
+      introduction = Set(ArticleIntroduction("NyIntro", "nb")),
+      metaDescription = Set(ArticleMetaDescription("NyMeta", "nb")),
+      metaImage = Set(ArticleMetaImage("321", "NyAlt", "nb")),
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
@@ -304,15 +304,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       id = Some(3),
       revision = Some(4),
       status = status,
-      title = Seq(ArticleTitle("Title test", "nb")),
-      content = Seq(ArticleContent("Content test", "nb")),
+      title = Set(ArticleTitle("Title test", "nb")),
+      content = Set(ArticleContent("Content test", "nb")),
       copyright = TestData.sampleArticleWithByNcSa.copyright,
-      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb")),
-      requiredLibraries = Seq(RequiredLibrary("", "", "")),
-      visualElement = Seq(VisualElement("someembed", "nb")),
-      introduction = Seq(ArticleIntroduction("introduction", "nb")),
-      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb")),
-      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb")),
+      tags = Set(ArticleTag(Seq("a", "b", "c"), "nb")),
+      requiredLibraries = Set(RequiredLibrary("", "", "")),
+      visualElement = Set(VisualElement("someembed", "nb")),
+      introduction = Set(ArticleIntroduction("introduction", "nb")),
+      metaDescription = Set(ArticleMetaDescription("metadesc", "nb")),
+      metaImage = Set(ArticleMetaImage("123", "metaimgalt", "nb")),
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
@@ -331,15 +331,15 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       id = Some(3),
       revision = Some(4),
       status = status,
-      title = Seq(ArticleTitle("Title test", "nb"), ArticleTitle("NyTittel", "en")),
-      content = Seq(ArticleContent("Content test", "nb"), ArticleContent("NyContent", "en")),
+      title = Set(ArticleTitle("Title test", "nb"), ArticleTitle("NyTittel", "en")),
+      content = Set(ArticleContent("Content test", "nb"), ArticleContent("NyContent", "en")),
       copyright = TestData.sampleArticleWithByNcSa.copyright,
-      tags = Seq(ArticleTag(Seq("a", "b", "c"), "nb"), ArticleTag(Seq("1", "2", "3"), "en")),
-      requiredLibraries = Seq(RequiredLibrary("", "", "")),
-      visualElement = Seq(VisualElement("someembed", "nb"), VisualElement("NyVisualElement", "en")),
-      introduction = Seq(ArticleIntroduction("introduction", "nb"), ArticleIntroduction("NyIntro", "en")),
-      metaDescription = Seq(ArticleMetaDescription("metadesc", "nb"), ArticleMetaDescription("NyMeta", "en")),
-      metaImage = Seq(ArticleMetaImage("123", "metaimgalt", "nb"), ArticleMetaImage("321", "NyAlt", "en")),
+      tags = Set(ArticleTag(Seq("a", "b", "c"), "nb"), ArticleTag(Seq("1", "2", "3"), "en")),
+      requiredLibraries = Set(RequiredLibrary("", "", "")),
+      visualElement = Set(VisualElement("someembed", "nb"), VisualElement("NyVisualElement", "en")),
+      introduction = Set(ArticleIntroduction("introduction", "nb"), ArticleIntroduction("NyIntro", "en")),
+      metaDescription = Set(ArticleMetaDescription("metadesc", "nb"), ArticleMetaDescription("NyMeta", "en")),
+      metaImage = Set(ArticleMetaImage("123", "metaimgalt", "nb"), ArticleMetaImage("321", "NyAlt", "en")),
       created = TestData.today,
       updated = TestData.today,
       updatedBy = "theuserthatchangeditid",
@@ -563,7 +563,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("toDomainArticle(UpdateArticle) should update metaImage correctly") {
 
     val beforeUpdate = TestData.sampleDomainArticle.copy(
-      metaImage = Seq(domain.ArticleMetaImage("1", "Hei", "nb"), domain.ArticleMetaImage("2", "Hej", "nn")))
+      metaImage = Set(domain.ArticleMetaImage("1", "Hei", "nb"), domain.ArticleMetaImage("2", "Hej", "nn")))
 
     val Success(res1) = service.toDomainArticle(
       beforeUpdate,
@@ -593,8 +593,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       None
     )
 
-    res1.metaImage should be(Seq(domain.ArticleMetaImage("2", "Hej", "nn")))
-    res2.metaImage should be(Seq(domain.ArticleMetaImage("2", "Hej", "nn"), domain.ArticleMetaImage("1", "Hola", "nb")))
+    res1.metaImage should be(Set(domain.ArticleMetaImage("2", "Hej", "nn")))
+    res2.metaImage should be(Set(domain.ArticleMetaImage("2", "Hej", "nn"), domain.ArticleMetaImage("1", "Hola", "nb")))
     res3.metaImage should be(beforeUpdate.metaImage)
   }
 
@@ -623,16 +623,16 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
                                                 None,
                                                 None)
 
-    res1.metaImage should be(Seq.empty)
-    res2.metaImage should be(Seq(domain.ArticleMetaImage("1", "Hola", "nb")))
-    res3.metaImage should be(Seq.empty)
+    res1.metaImage should be(Set.empty)
+    res2.metaImage should be(Set(domain.ArticleMetaImage("1", "Hola", "nb")))
+    res3.metaImage should be(Set.empty)
   }
 
   test("toDomainArticle should clone files if existing files appear in new language") {
     val embed1 =
       """<embed data-alt="Kul alt1" data-path="/files/resources/abc123.pdf" data-resource="file" data-title="Kul tittel1" data-type="pdf">"""
     val existingArticle = TestData.sampleDomainArticle.copy(
-      content = Seq(domain.ArticleContent(s"<section><h1>Hei</h1>$embed1</section>", "nb"))
+      content = Set(domain.ArticleContent(s"<section><h1>Hei</h1>$embed1</section>", "nb"))
     )
 
     val newContent = s"<section><h1>Hello</h1>$embed1</section>"
@@ -666,7 +666,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val vePath1 = s"/resources/${UUID.randomUUID().toString}"
     val vePath2 = s"/resources/${UUID.randomUUID().toString}"
 
-    val expectedPaths = Seq(enPath1, enPath2, nbPath1, nbPath2, vePath1, vePath2).sorted
+    val expectedPaths = Set(enPath1, enPath2, nbPath1, nbPath2, vePath1, vePath2)
 
     val articleContentNb = domain.ArticleContent(
       s"""<section><h1>Heisann</h1><embed data-path="$nbPath1" data-resource="h5p" /></section><section><p>Joda<embed data-path="$nbPath2" data-resource="h5p" /></p><embed data-resource="concept" data-path="thisisinvalidbutletsdoit"/></section>""",
@@ -681,9 +681,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val visualElementEn = domain.VisualElement(s"""<embed data-path="$vePath2" data-resource="h5p" />""", "en")
 
     val article = TestData.sampleDomainArticle.copy(id = Some(1),
-                                                    content = Seq(articleContentNb, articleContentEn),
-                                                    visualElement = Seq(visualElementNb, visualElementEn))
-    service.getEmbeddedH5PPaths(article).sorted should be(expectedPaths)
+                                                    content = Set(articleContentNb, articleContentEn),
+                                                    visualElement = Set(visualElementNb, visualElementEn))
+    service.getEmbeddedH5PPaths(article) should be(expectedPaths)
   }
 
   test("toDomainArticle(NewArticle) should convert availability correctly") {

@@ -32,7 +32,7 @@ trait H5PApiClient {
     private val h5pTimeout = 20 * 1000 // 20 Seconds
     implicit val formats: DefaultFormats.type = DefaultFormats
 
-    def publishH5Ps(paths: Seq[String]): Try[Unit] = {
+    def publishH5Ps(paths: Set[String]): Try[Unit] = {
       if (paths.isEmpty) {
         Success(())
       } else {

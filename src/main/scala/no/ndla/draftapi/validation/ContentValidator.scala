@@ -75,7 +75,7 @@ trait ContentValidator {
     }
 
     def validateArticle(article: Article, allowUnknownLanguage: Boolean): Try[Article] = {
-      val validationErrors = article.content.flatMap(c => validateArticleContent(c, allowUnknownLanguage)) ++
+      val validationErrors = article.content.toSeq.flatMap(c => validateArticleContent(c, allowUnknownLanguage)) ++
         article.introduction.flatMap(i => validateIntroduction(i, allowUnknownLanguage)) ++
         article.metaDescription.flatMap(m => validateMetaDescription(m, allowUnknownLanguage)) ++
         validateTitles(article.title, allowUnknownLanguage) ++
@@ -159,14 +159,14 @@ trait ContentValidator {
         validateLanguage("language", content.language, allowUnknownLanguage)
     }
 
-    private def validateTitles(titles: Seq[ArticleTitle], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+    private def validateTitles(titles: Set[ArticleTitle], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
       if (titles.isEmpty)
         Seq(
           ValidationMessage(
             "title",
             "An article must contain at least one title. Perhaps you tried to delete the only title in the article?"))
       else
-        titles.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
+        titles.toSeq.flatMap(t => validateTitle(t.title, t.language, allowUnknownLanguage))
     }
 
     private def validateTitle(title: String,
@@ -207,8 +207,8 @@ trait ContentValidator {
         NoHtmlValidator.validate("author.name", author.name).toList
     }
 
-    private def validateTags(tags: Seq[ArticleTag], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
-      tags.flatMap(tagList => {
+    private def validateTags(tags: Set[ArticleTag], allowUnknownLanguage: Boolean): Seq[ValidationMessage] = {
+      tags.toSeq.flatMap(tagList => {
         tagList.tags.flatMap(NoHtmlValidator.validate("tags", _)).toList :::
           validateLanguage("language", tagList.language, allowUnknownLanguage).toList
       })

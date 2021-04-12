@@ -82,11 +82,11 @@ trait WriteService {
                                                userInfo,
                                                status)
             newTitles = if (usePostFix) article.title.map(t => t.copy(title = t.title + " (Kopi)")) else article.title
-            newContents <- contentWithClonedFiles(article.content.toList)
+            newContents <- contentWithClonedFiles(article.content)
             articleToInsert = article.copy(
               id = Some(newId),
               title = newTitles,
-              content = newContents,
+              content = newContents.toSet,
               revision = Some(1),
               updated = clock.now(),
               created = clock.now(),
@@ -105,7 +105,7 @@ trait WriteService {
       }
     }
 
-    def contentWithClonedFiles(contents: List[domain.ArticleContent]): Try[List[domain.ArticleContent]] = {
+    def contentWithClonedFiles(contents: Set[domain.ArticleContent]): Try[List[domain.ArticleContent]] = {
       contents.toList.traverse(content => {
         val doc = HtmlTagRules.stringToJsoupDocument(content.content)
         val embeds = doc.select(s"embed[${TagAttributes.DataResource}='${ResourceType.File}']").asScala
@@ -355,9 +355,9 @@ trait WriteService {
             availability = Availability.everyone,
             grepCodes = Seq.empty,
             copyright = article.copyright.map(e => e.copy(license = None)),
-            metaDescription = Seq.empty,
+            metaDescription = Set.empty,
             relatedContent = Seq.empty,
-            tags = Seq.empty
+            tags = Set.empty
         )
 
       val comparableNew = withComparableValues(changedArticle)
@@ -662,14 +662,14 @@ trait WriteService {
             partialPublishArticle.copy(metaDescription = Some(articleToPartialPublish.metaDescription))
           case PartialArticleFields.metaDescription =>
             partialPublishArticle.copy(
-              metaDescription = Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSeq))
+              metaDescription = Some(articleToPartialPublish.metaDescription.find(m => m.language == language).toSet))
           case PartialArticleFields.relatedContent =>
             partialPublishArticle.copy(relatedContent = Some(articleToPartialPublish.relatedContent))
           case PartialArticleFields.tags if (language == Language.AllLanguages) =>
             partialPublishArticle.copy(tags = Some(articleToPartialPublish.tags))
           case PartialArticleFields.tags =>
             partialPublishArticle.copy(
-              tags = Some(articleToPartialPublish.tags.find(t => t.language == language).toSeq))
+              tags = Some(articleToPartialPublish.tags.find(t => t.language == language).toSet))
         }
       })
     }

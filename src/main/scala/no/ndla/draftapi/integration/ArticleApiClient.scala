@@ -26,9 +26,9 @@ case class ArticleApiId(id: Long)
 case class PartialPublishArticle(availability: Option[domain.Availability.Value],
                                  grepCodes: Option[Seq[String]],
                                  license: Option[String],
-                                 metaDescription: Option[Seq[domain.ArticleMetaDescription]],
+                                 metaDescription: Option[Set[domain.ArticleMetaDescription]],
                                  relatedContent: Option[Seq[domain.RelatedContent]],
-                                 tags: Option[Seq[domain.ArticleTag]])
+                                 tags: Option[Set[domain.ArticleTag]])
 
 trait ArticleApiClient {
   this: NdlaClient with ConverterService =>

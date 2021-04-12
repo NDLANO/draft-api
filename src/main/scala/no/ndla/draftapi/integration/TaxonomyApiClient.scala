@@ -47,8 +47,8 @@ trait TaxonomyApiClient {
       * @return List of Resources or Topics that were updated if none failed.
       */
     private def updateTaxonomy[T](resource: Seq[T],
-                                  titles: Seq[ArticleTitle],
-                                  updateFunc: (T, ArticleTitle, Seq[ArticleTitle]) => Try[T]): Try[List[T]] = {
+                                  titles: Set[ArticleTitle],
+                                  updateFunc: (T, ArticleTitle, Set[ArticleTitle]) => Try[T]): Try[List[T]] = {
       Language.findByLanguageOrBestEffort(titles, Language.DefaultLanguage) match {
         case Some(title) =>
           val updated = resource.map(updateFunc(_, title, titles))
@@ -63,9 +63,9 @@ trait TaxonomyApiClient {
     private def updateTitleAndTranslations[T <: Taxonomy[T]](
         res: T,
         defaultTitle: ArticleTitle,
-        titles: Seq[ArticleTitle],
+        titles: Set[ArticleTitle],
         updateFunc: T => Try[T],
-        updateTranslationsFunc: Seq[ArticleTitle] => Try[List[Translation]],
+        updateTranslationsFunc: Set[ArticleTitle] => Try[List[Translation]],
         getTranslationsFunc: String => Try[List[Translation]],
         deleteTranslationFunc: Translation => Try[Unit]) = {
       val resourceResult = updateFunc(res.withName(defaultTitle.title))
@@ -88,7 +88,7 @@ trait TaxonomyApiClient {
     }
 
     private def updateTranslations(id: String,
-                                   titles: Seq[ArticleTitle],
+                                   titles: Set[ArticleTitle],
                                    updateTranslationFunc: (String, String, String) => Try[Translation]) = {
       val tries = titles.map(t => updateTranslationFunc(id, t.language, t.title))
       Traverse[List].sequence(tries.toList)
@@ -96,8 +96,8 @@ trait TaxonomyApiClient {
 
     private def updateResourceTitleAndTranslations(res: Resource,
                                                    defaultTitle: ArticleTitle,
-                                                   titles: Seq[ArticleTitle]) = {
-      val updateTranslationsFunc = updateTranslations(res.id, _: Seq[ArticleTitle], updateResourceTranslation)
+                                                   titles: Set[ArticleTitle]) = {
+      val updateTranslationsFunc = updateTranslations(res.id, _: Set[ArticleTitle], updateResourceTranslation)
       updateTitleAndTranslations(
         res,
         defaultTitle,
@@ -109,8 +109,8 @@ trait TaxonomyApiClient {
       )
     }
 
-    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, titles: Seq[ArticleTitle]) = {
-      val updateTranslationsFunc = updateTranslations(top.id, _: Seq[ArticleTitle], updateTopicTranslation)
+    private def updateTopicTitleAndTranslations(top: Topic, defaultTitle: ArticleTitle, titles: Set[ArticleTitle]) = {
+      val updateTranslationsFunc = updateTranslations(top.id, _: Set[ArticleTitle], updateTopicTranslation)
       updateTitleAndTranslations(
         top,
         defaultTitle,

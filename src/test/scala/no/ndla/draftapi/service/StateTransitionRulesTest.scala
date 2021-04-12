@@ -129,14 +129,14 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     val editorNotes = Seq(EditorNote("Status endret", "unit_test", expectedStatus, new Date()))
     val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
-    when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Seq.empty)
-    when(converterService.getEmbeddedH5PPaths(any[Article])).thenReturn(Seq.empty)
+    when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Set.empty)
+    when(converterService.getEmbeddedH5PPaths(any[Article])).thenReturn(Set.empty)
     when(conceptApiClient.publishConceptsIfToPublishing(any[Seq[Long]]))
       .thenAnswer((i: InvocationOnMock) => {
         val ids = i.getArgument[Seq[Long]](0)
         ids.map(id => Try(DraftConcept(id, ConceptStatus("DRAFT"))))
       })
-    when(h5pApiClient.publishH5Ps(Seq.empty)).thenReturn(Success(()))
+    when(h5pApiClient.publishH5Ps(Set.empty)).thenReturn(Success(()))
 
     when(
       articleApiClient
@@ -339,12 +339,12 @@ class StateTransitionRulesTest extends UnitSuite with TestEnvironment {
     reset(h5pApiClient)
     reset(articleApiClient)
     val h5pId = "123-kulid-123"
-    val h5pPaths = Seq(s"/resource/$h5pId")
+    val h5pPaths = Set(s"/resource/$h5pId")
     val expectedStatus = domain.Status(PUBLISHED, Set.empty)
     val editorNotes = Seq(EditorNote("Status endret", "unit_test", expectedStatus, new Date()))
     val expectedArticle = AwaitingUnpublishArticle.copy(status = expectedStatus, notes = editorNotes)
     when(draftRepository.getExternalIdsFromId(any[Long])(any[DBSession])).thenReturn(List("1234"))
-    when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Seq.empty)
+    when(converterService.getEmbeddedConceptIds(any[Article])).thenReturn(Set.empty)
     when(converterService.getEmbeddedH5PPaths(any[Article])).thenReturn(h5pPaths)
     when(conceptApiClient.publishConceptsIfToPublishing(any[Seq[Long]]))
       .thenAnswer((i: InvocationOnMock) => {

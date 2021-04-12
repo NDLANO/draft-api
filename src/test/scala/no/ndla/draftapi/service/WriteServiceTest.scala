@@ -178,7 +178,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
-                   content = Seq(ArticleContent(newContent, "en")),
+                   content = Set(ArticleContent(newContent, "en")),
                    updated = today)
 
     when(writeService.partialPublish(any, any, any)).thenReturn((expectedArticle.id.get, Success(expectedArticle)))
@@ -203,7 +203,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     )
     val expectedArticle =
       article.copy(revision = Some(article.revision.get + 1),
-                   title = Seq(ArticleTitle(newTitle, "en")),
+                   title = Set(ArticleTitle(newTitle, "en")),
                    updated = today)
 
     service.updateArticle(articleId,
@@ -257,16 +257,16 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     val expectedArticle = article.copy(
       revision = Some(article.revision.get + 1),
-      title = Seq(ArticleTitle(updatedTitle, "en")),
-      content = Seq(ArticleContent(updatedContent, "en")),
+      title = Set(ArticleTitle(updatedTitle, "en")),
+      content = Set(ArticleContent(updatedContent, "en")),
       copyright =
         Some(Copyright(Some("a"), Some("c"), Seq(Author("Opphavsmann", "Jonas")), List(), List(), None, None, None)),
-      tags = Seq(ArticleTag(Seq("en", "to", "tre"), "en")),
-      requiredLibraries = Seq(RequiredLibrary("tjup", "tjap", "tjim")),
-      visualElement = Seq(VisualElement(updatedVisualElement, "en")),
-      introduction = Seq(ArticleIntroduction(updatedIntro, "en")),
-      metaDescription = Seq(ArticleMetaDescription(updatedMetaDescription, "en")),
-      metaImage = Seq(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
+      tags = Set(ArticleTag(Seq("en", "to", "tre"), "en")),
+      requiredLibraries = Set(RequiredLibrary("tjup", "tjap", "tjim")),
+      visualElement = Set(VisualElement(updatedVisualElement, "en")),
+      introduction = Set(ArticleIntroduction(updatedIntro, "en")),
+      metaDescription = Set(ArticleMetaDescription(updatedMetaDescription, "en")),
+      metaImage = Set(ArticleMetaImage(updatedMetaId, updatedMetaAlt, "en")),
       updated = today,
       published = yesterday,
       articleType = ArticleType.TopicArticle,
@@ -386,14 +386,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   test("That delete article removes language from all languagefields") {
     val article =
       TestData.sampleDomainArticle.copy(id = Some(3),
-                                        title = Seq(ArticleTitle("title", "nb"), ArticleTitle("title", "nn")))
+                                        title = Set(ArticleTitle("title", "nb"), ArticleTitle("title", "nn")))
     val articleCaptor: ArgumentCaptor[Article] = ArgumentCaptor.forClass(classOf[Article])
 
     when(draftRepository.withId(anyLong)).thenReturn(Some(article))
     service.deleteLanguage(article.id.get, "nn", UserInfo("asdf", Set()))
     verify(draftRepository).updateArticle(articleCaptor.capture(), anyBoolean)
 
-    articleCaptor.getValue.title.length should be(1)
+    articleCaptor.getValue.title.size should be(1)
   }
 
   test("That get file extension will split extension and name as expected") {
@@ -487,11 +487,11 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       TestData.sampleDomainArticle.copy(
         id = Some(5),
         content =
-          Seq(ArticleContent("<section> Valid Content </section>", "nb"), ArticleContent("<div> content <div", "nn"))
+          Set(ArticleContent("<section> Valid Content </section>", "nb"), ArticleContent("<div> content <div", "nn"))
       )
     val nbArticle =
       article.copy(
-        content = Seq(ArticleContent("<section> Valid Content </section>", "nb"))
+        content = Set(ArticleContent("<section> Valid Content </section>", "nb"))
       )
 
     when(draftRepository.withId(anyLong)).thenReturn(Some(article))
@@ -513,7 +513,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val article =
         TestData.sampleDomainArticle.copy(
           id = Some(5),
-          title = Seq(domain.ArticleTitle("Tittel", "nb"), domain.ArticleTitle("Title", "en")),
+          title = Set(domain.ArticleTitle("Tittel", "nb"), domain.ArticleTitle("Title", "en")),
           status = Status(ArticleStatus.PUBLISHED, Set(ArticleStatus.IMPORTED)),
           updated = yesterday.toDate,
           created = yesterday.minusDays(1).toDate,
@@ -528,7 +528,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
       val expectedInsertedArticle = article.copy(
         id = Some(newId),
-        title = Seq(domain.ArticleTitle("Tittel (Kopi)", "nb"), domain.ArticleTitle("Title (Kopi)", "en")),
+        title = Set(domain.ArticleTitle("Tittel (Kopi)", "nb"), domain.ArticleTitle("Title (Kopi)", "en")),
         revision = Some(1),
         updated = today.toDate,
         created = today.toDate,
@@ -565,7 +565,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       val article =
         TestData.sampleDomainArticle.copy(
           id = Some(5),
-          title = Seq(domain.ArticleTitle("Tittel", "nb"), domain.ArticleTitle("Title", "en")),
+          title = Set(domain.ArticleTitle("Tittel", "nb"), domain.ArticleTitle("Title", "en")),
           status = Status(ArticleStatus.PUBLISHED, Set(ArticleStatus.IMPORTED)),
           updated = yesterday.toDate,
           created = yesterday.minusDays(1).toDate,
@@ -637,7 +637,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       editorLabels = Some(Seq("note3", "note4"))
     )
 
-    val existing = TestData.sampleDomainArticle.copy(title = Seq(ArticleTitle(existingTitle, "nb")),
+    val existing = TestData.sampleDomainArticle.copy(title = Set(ArticleTitle(existingTitle, "nb")),
                                                      status = TestData.statusWithPublished)
     when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
     val Success(result1) = service.updateArticle(existing.id.get,
@@ -677,14 +677,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     )
 
     val existing = TestData.sampleDomainArticle.copy(
-      title = Seq(ArticleTitle(existingTitle, "nb")),
+      title = Set(ArticleTitle(existingTitle, "nb")),
       status = TestData.statusWithPublished,
       availability = Availability.everyone,
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
-      metaDescription = Seq.empty,
+      metaDescription = Set.empty,
       relatedContent = Seq.empty,
-      tags = Seq.empty
+      tags = Set.empty
     )
 
     when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
@@ -733,14 +733,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     )
 
     val existing = TestData.sampleDomainArticle.copy(
-      title = Seq(ArticleTitle(existingTitle, "nb")),
+      title = Set(ArticleTitle(existingTitle, "nb")),
       status = TestData.statusWithPublished,
       availability = Availability.everyone,
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
-      metaDescription = Seq.empty,
+      metaDescription = Set.empty,
       relatedContent = Seq.empty,
-      tags = Seq.empty
+      tags = Set.empty
     )
 
     when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
@@ -788,14 +788,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     )
 
     val existing = TestData.sampleDomainArticle.copy(
-      title = Seq(ArticleTitle(existingTitle, "nb")),
+      title = Set(ArticleTitle(existingTitle, "nb")),
       status = TestData.statusWithPublished,
       availability = Availability.everyone,
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
-      metaDescription = Seq.empty,
+      metaDescription = Set.empty,
       relatedContent = Seq.empty,
-      tags = Seq.empty,
+      tags = Set.empty,
       conceptIds = Seq.empty
     )
 
@@ -889,7 +889,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val expectedNb = domain.ArticleContent(s"<section><h1>Hei</h1>$expectedEmbed1$expectedEmbed2</section>", "nb")
     val expectedEn = domain.ArticleContent(s"<section><h1>Hello</h1>$expectedEmbed3$expectedEmbed4</section>", "en")
 
-    val result = service.contentWithClonedFiles(List(contentNb, contentEn))
+    val result = service.contentWithClonedFiles(Set(contentNb, contentEn))
 
     result should be(Success(List(expectedNb, expectedEn)))
 
@@ -926,14 +926,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       availability = Availability.everyone,
       grepCodes = Seq("A", "B"),
       copyright = Some(Copyright(Some("CC-BY-4.0"), Some("origin"), Seq(), Seq(), Seq(), None, None, None)),
-      metaDescription = Seq(
+      metaDescription = Set(
         ArticleMetaDescription("oldDesc", "nb"),
         ArticleMetaDescription("oldDescc", "es"),
         ArticleMetaDescription("oldDesccc", "ru"),
         ArticleMetaDescription("oldDescccc", "nn")
       ),
       relatedContent = Seq(Left(RelatedContentLink("title1", "url2")), Right(12L)),
-      tags = Seq(ArticleTag(Seq("old", "tag"), "nb"),
+      tags = Set(ArticleTag(Seq("old", "tag"), "nb"),
                  ArticleTag(Seq("guten", "tag"), "de"),
                  ArticleTag(Seq("oldd", "tagg"), "es"))
     )
@@ -951,24 +951,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       availability = Some(Availability.everyone),
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
-      metaDescription = Some(Seq(ArticleMetaDescription("oldDesc", "nb"))),
+      metaDescription = Some(Set(ArticleMetaDescription("oldDesc", "nb"))),
       relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
-      tags = Some(Seq(ArticleTag(Seq("old", "tag"), "nb")))
+      tags = Some(Set(ArticleTag(Seq("old", "tag"), "nb")))
     )
     val expectedPartialPublishFieldsLangEN = integration.PartialPublishArticle(
       availability = Some(Availability.everyone),
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
-      metaDescription = Some(Seq.empty),
+      metaDescription = Some(Set.empty),
       relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
-      tags = Some(Seq.empty)
+      tags = Some(Set.empty)
     )
     val expectedPartialPublishFieldsLangALL = integration.PartialPublishArticle(
       availability = Some(Availability.everyone),
       grepCodes = Some(Seq("A", "B")),
       license = Some("CC-BY-4.0"),
       metaDescription = Some(
-        Seq(
+        Set(
           ArticleMetaDescription("oldDesc", "nb"),
           ArticleMetaDescription("oldDescc", "es"),
           ArticleMetaDescription("oldDesccc", "ru"),
@@ -976,7 +976,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
         )),
       relatedContent = Some(Seq(Left(RelatedContentLink("title1", "url2")), Right(12L))),
       tags = Some(
-        Seq(ArticleTag(Seq("old", "tag"), "nb"),
+        Set(ArticleTag(Seq("old", "tag"), "nb"),
             ArticleTag(Seq("guten", "tag"), "de"),
             ArticleTag(Seq("oldd", "tagg"), "es")))
     )
@@ -1038,14 +1038,14 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     )
 
     val existing = TestData.sampleDomainArticle.copy(
-      title = Seq(ArticleTitle(existingTitle, "nb")),
+      title = Set(ArticleTitle(existingTitle, "nb")),
       status = TestData.statusWithPublished,
       availability = Availability.everyone,
       grepCodes = Seq.empty,
       copyright = Some(TestData.publicDomainCopyright.copy(license = Some("oldLicense"), origin = None)),
-      metaDescription = Seq.empty,
+      metaDescription = Set.empty,
       relatedContent = Seq.empty,
-      tags = Seq.empty
+      tags = Set.empty
     )
 
     when(draftRepository.withId(existing.id.get)).thenReturn(Some(existing))
@@ -1106,25 +1106,25 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     Mockito.verify(draftRepository).updateArticle(captor.capture(), anyBoolean)
     val articlePassedToUpdate = captor.getValue
 
-    articlePassedToUpdate.content should be(Seq.empty)
-    articlePassedToUpdate.introduction should be(Seq.empty)
-    articlePassedToUpdate.tags should be(Seq.empty)
-    articlePassedToUpdate.metaDescription should be(Seq.empty)
-    articlePassedToUpdate.visualElement should be(Seq.empty)
+    articlePassedToUpdate.content should be(Set.empty)
+    articlePassedToUpdate.introduction should be(Set.empty)
+    articlePassedToUpdate.tags should be(Set.empty)
+    articlePassedToUpdate.metaDescription should be(Set.empty)
+    articlePassedToUpdate.visualElement should be(Set.empty)
 
   }
 
-  test("shouldUpdateStatus returns false if articles are equal") {
+  test("shouldUpdateStatus should return false if only difference is language field order") {
     val nnTitle = ArticleTitle("Title", "nn")
     val nbTitle = ArticleTitle("Title", "nb")
 
-    val article1 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
-    val article2 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
+    val article1 = TestData.sampleDomainArticle.copy(title = Set(nnTitle, nbTitle))
+    val article2 = TestData.sampleDomainArticle.copy(title = Set(nnTitle, nbTitle))
     service.shouldUpdateStatus(article1, article2) should be(false)
 
-    val article3 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
-    val article4 = TestData.sampleDomainArticle.copy(title = Seq(nbTitle, nnTitle))
-    service.shouldUpdateStatus(article3, article4) should be(true) // Should be false!
+    val article3 = TestData.sampleDomainArticle.copy(title = Set(nnTitle, nbTitle))
+    val article4 = TestData.sampleDomainArticle.copy(title = Set(nbTitle, nnTitle))
+    service.shouldUpdateStatus(article3, article4) should be(false)
   }
 
 }

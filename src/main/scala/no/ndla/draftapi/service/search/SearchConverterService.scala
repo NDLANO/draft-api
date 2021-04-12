@@ -32,7 +32,7 @@ trait SearchConverterService {
 
     def asSearchableArticle(ai: Article): SearchableArticle = {
 
-      val defaultTitle = ai.title
+      val defaultTitle = ai.title.toSeq
         .sortBy(title => {
           val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
           languagePriority.indexOf(title.language)
@@ -41,14 +41,14 @@ trait SearchConverterService {
 
       SearchableArticle(
         id = ai.id.get,
-        title = SearchableLanguageValues(ai.title.map(title => LanguageValue(title.language, title.title))),
-        visualElement =
-          SearchableLanguageValues(ai.visualElement.map(visual => LanguageValue(visual.language, visual.resource))),
-        introduction =
-          SearchableLanguageValues(ai.introduction.map(intro => LanguageValue(intro.language, intro.introduction))),
-        content = SearchableLanguageValues(
-          ai.content.map(article => LanguageValue(article.language, Jsoup.parseBodyFragment(article.content).text()))),
-        tags = SearchableLanguageList(ai.tags.map(tag => LanguageValue(tag.language, tag.tags))),
+        title = SearchableLanguageValues(ai.title.toSeq.map(title => LanguageValue(title.language, title.title))),
+        visualElement = SearchableLanguageValues(
+          ai.visualElement.toSeq.map(visual => LanguageValue(visual.language, visual.resource))),
+        introduction = SearchableLanguageValues(
+          ai.introduction.toSeq.map(intro => LanguageValue(intro.language, intro.introduction))),
+        content = SearchableLanguageValues(ai.content.toSeq.map(article =>
+          LanguageValue(article.language, Jsoup.parseBodyFragment(article.content).text()))),
+        tags = SearchableLanguageList(ai.tags.toSeq.map(tag => LanguageValue(tag.language, tag.tags))),
         lastUpdated = new DateTime(ai.updated),
         license = ai.copyright.flatMap(_.license),
         authors = ai.copyright
@@ -177,7 +177,7 @@ trait SearchConverterService {
                                 searchResult.language,
                                 searchResult.results)
 
-    def asSearchableTags(article: domain.Article): Seq[SearchableTag] = {
+    def asSearchableTags(article: domain.Article): Set[SearchableTag] = {
       article.tags.flatMap(
         articleTags =>
           articleTags.tags.map(

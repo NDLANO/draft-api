@@ -29,7 +29,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That updating one resources translations works as expected") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -60,7 +60,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That updating one topics translations works as expected") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -89,7 +89,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That updating multiple resources translations works as expected") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -127,7 +127,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
   }
   test("That updating multiple topics translations works as expected") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -162,7 +162,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That both resources and topics for single article is updated") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -214,7 +214,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That updateTaxonomyIfExists fails if updating translation fails") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -249,7 +249,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That updateTaxonomyIfExists fails if updating fetching topics fails") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -270,7 +270,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Topic](1))).when(taxonomyApiClient).putRaw(any[String], any[Topic], any[(String, String)])(any[Formats])
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Resource](1))).when(taxonomyApiClient).putRaw(any[String], any[Resource], any[(String, String)])(any[Formats])
     doAnswer((i: InvocationOnMock) => Success(i.getArgument[Translation](1))).when(taxonomyApiClient).putRaw(any[String], any[Translation], any[(String, String)])(any[Formats])
-    
+
     doReturn(Success(()), Success(())).when(taxonomyApiClient).delete(any[String], any[(String, String)])
     doReturn(Success(List.empty), Success(List.empty)).when(taxonomyApiClient).getResourceTranslations(any[String])
     doReturn(Success(List.empty), Success(List.empty)).when(taxonomyApiClient).getTopicTranslations(any[String])
@@ -281,7 +281,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That updateTaxonomyIfExists fails if updating fetching resources fails") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -307,7 +307,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
   }
   test("That nothing happens (successfully) if no taxonomy exists") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))
@@ -336,7 +336,7 @@ class TaxonomyApiClientTest extends UnitSuite with TestEnvironment {
 
   test("That translations are deleted if found in taxonomy, but not in article") {
     val article = TestData.sampleDomainArticle.copy(
-      title = Seq(
+      title = Set(
         ArticleTitle("Norsk", "nb"),
         ArticleTitle("Engelsk", "en")
       ))

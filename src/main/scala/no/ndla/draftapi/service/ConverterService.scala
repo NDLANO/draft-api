@@ -42,10 +42,10 @@ trait ConverterService {
                         user: UserInfo,
                         oldNdlaCreatedDate: Option[Date],
                         oldNdlaUpdatedDate: Option[Date]): Try[domain.Article] = {
-      val domainTitles = Seq(domain.ArticleTitle(newArticle.title, newArticle.language))
+      val domainTitles = Set(domain.ArticleTitle(newArticle.title, newArticle.language))
       val domainContent = newArticle.content
         .map(content => domain.ArticleContent(removeUnknownEmbedTagAttributes(content), newArticle.language))
-        .toSeq
+        .toSet
 
       val status = externalIds match {
         case Nil => domain.Status(DRAFT, Set.empty)
@@ -66,20 +66,20 @@ trait ConverterService {
             title = domainTitles,
             content = domainContent.filterNot(_.isEmpty),
             copyright = newArticle.copyright.map(toDomainCopyright),
-            tags = toDomainTag(newArticle.tags, newArticle.language).toSeq,
-            requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries),
+            tags = toDomainTag(newArticle.tags, newArticle.language).toSet,
+            requiredLibraries = newArticle.requiredLibraries.map(toDomainRequiredLibraries).toSet,
             visualElement =
-              newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSeq,
+              newArticle.visualElement.map(visual => toDomainVisualElement(visual, newArticle.language)).toSet,
             introduction = newArticle.introduction
               .map(intro => toDomainIntroduction(intro, newArticle.language))
               .filterNot(_.isEmpty)
-              .toSeq,
+              .toSet,
             metaDescription = newArticle.metaDescription
               .map(meta => toDomainMetaDescription(meta, newArticle.language))
               .filterNot(_.isEmpty)
-              .toSeq,
+              .toSet,
             metaImage =
-              newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).filterNot(_.isEmpty).toSeq,
+              newArticle.metaImage.map(meta => toDomainMetaImage(meta, newArticle.language)).filterNot(_.isEmpty).toSet,
             created = oldCreatedDate.getOrElse(clock.now()),
             updated = oldUpdatedDate.getOrElse(clock.now()),
             updatedBy = user.id,
@@ -192,7 +192,7 @@ trait ConverterService {
       )
     }
 
-    def getEmbeddedConceptIds(article: domain.Article): Seq[Long] = {
+    def getEmbeddedConceptIds(article: domain.Article): Set[Long] = {
       val htmlElements = article.content.map(content => HtmlTagRules.stringToJsoupDocument(content.content))
       val conceptEmbeds = htmlElements.flatMap(elem => {
         val conceptSelector = s"$resourceHtmlEmbedTag[${TagAttributes.DataResource}=${ResourceType.ConceptLink}]"
@@ -210,8 +210,8 @@ trait ConverterService {
       conceptIds
     }
 
-    def getEmbeddedH5PPaths(article: domain.Article): Seq[String] = {
-      val getH5PEmbeds = (htmlElements: Seq[Element]) => {
+    def getEmbeddedH5PPaths(article: domain.Article): Set[String] = {
+      val getH5PEmbeds = (htmlElements: Set[Element]) => {
         htmlElements.flatMap(elem => {
           val h5pSelector = s"$resourceHtmlEmbedTag[${TagAttributes.DataResource}=${ResourceType.H5P}]"
           elem.select(h5pSelector).asScala.toSeq
@@ -289,7 +289,7 @@ trait ConverterService {
             articleContent,
             article.copyright.map(toApiCopyright),
             tags,
-            article.requiredLibraries.map(toApiRequiredLibrary),
+            article.requiredLibraries.map(toApiRequiredLibrary).toSeq,
             visualElement,
             introduction,
             metaDescription,
@@ -462,16 +462,16 @@ trait ConverterService {
     def toArticleApiArticle(article: domain.Article): api.ArticleApiArticle = {
       api.ArticleApiArticle(
         revision = article.revision,
-        title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)),
-        content = article.content.map(c => api.ArticleApiContent(c.content, c.language)),
+        title = article.title.map(t => api.ArticleApiTitle(t.title, t.language)).toSeq,
+        content = article.content.map(c => api.ArticleApiContent(c.content, c.language)).toSeq,
         copyright = article.copyright.map(toArticleApiCopyright),
-        tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)),
+        tags = article.tags.map(t => api.ArticleApiTag(t.tags, t.language)).toSeq,
         requiredLibraries =
-          article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)),
-        visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)),
-        introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)),
-        metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)),
-        metaImage = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.altText, m.language)),
+          article.requiredLibraries.map(r => api.ArticleApiRequiredLibrary(r.mediaType, r.name, r.url)).toSeq,
+        visualElement = article.visualElement.map(v => api.ArticleApiVisualElement(v.resource, v.language)).toSeq,
+        introduction = article.introduction.map(i => api.ArticleApiIntroduction(i.introduction, i.language)).toSeq,
+        metaDescription = article.metaDescription.map(m => api.ArticleApiMetaDescription(m.content, m.language)).toSeq,
+        metaImage = article.metaImage.map(m => api.ArticleApiMetaImage(m.imageId, m.altText, m.language)).toSeq,
         created = article.created,
         updated = article.updated,
         updatedBy = article.updatedBy,
@@ -502,7 +502,7 @@ trait ConverterService {
       fileEmbeds.flatMap(e => Option(e.attr(TagAttributes.DataPath.toString)))
     }
 
-    def cloneFilesIfExists(existingContent: Seq[String], newContent: String): Try[String] = {
+    def cloneFilesIfExists(existingContent: Set[String], newContent: String): Try[String] = {
       val existingFiles = existingContent.flatMap(getExistingPaths)
 
       val doc = HtmlTagRules.stringToJsoupDocument(newContent)
@@ -564,7 +564,7 @@ trait ConverterService {
                 copyright = updatedWithClonedFiles.copyright.map(toDomainCopyright).orElse(toMergeInto.copyright),
                 requiredLibraries = updatedWithClonedFiles.requiredLibraries
                   .map(y => y.map(x => toDomainRequiredLibraries(x)))
-                  .toSeq
+                  .toSet
                   .flatten,
                 created = createdDate,
                 updated = updatedDate,
@@ -651,8 +651,8 @@ trait ConverterService {
           }
 
           val newMetaImage = article.metaImage match {
-            case Right(meta) => meta.map(m => domain.ArticleMetaImage(m.id, m.alt, lang)).toSeq
-            case Left(_)     => Seq.empty
+            case Right(meta) => meta.map(m => domain.ArticleMetaImage(m.id, m.alt, lang)).toSet
+            case Left(_)     => Set.empty[domain.ArticleMetaImage]
           }
 
           val updatedAvailability = Availability.valueOf(article.availability).getOrElse(Availability.everyone)
@@ -663,14 +663,14 @@ trait ConverterService {
                 id = Some(id),
                 revision = Some(1),
                 status = status,
-                title = article.title.map(t => domain.ArticleTitle(t, lang)).toSeq,
-                content = article.content.map(c => domain.ArticleContent(c, lang)).toSeq,
+                title = article.title.map(t => domain.ArticleTitle(t, lang)).toSet,
+                content = article.content.map(c => domain.ArticleContent(c, lang)).toSet,
                 copyright = article.copyright.map(toDomainCopyright),
-                tags = article.tags.toSeq.map(tags => domain.ArticleTag(tags, lang)),
-                requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSeq.flatten,
-                visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
-                introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
-                metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
+                tags = article.tags.map(tags => domain.ArticleTag(tags, lang)).toSet,
+                requiredLibraries = article.requiredLibraries.map(_.map(toDomainRequiredLibraries)).toSet.flatten,
+                visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSet,
+                introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSet,
+                metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSet,
                 metaImage = newMetaImage,
                 created = createdDate,
                 updated = updatedDate,
@@ -689,6 +689,11 @@ trait ConverterService {
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField](existing: Seq[A], updated: Seq[A]): Seq[A] = {
+      val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
+      (toKeep ++ updated).filterNot(_.isEmpty)
+    }
+
+    private[service] def mergeLanguageFields[A <: LanguageField](existing: Set[A], updated: Seq[A]): Set[A] = {
       val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
       (toKeep ++ updated).filterNot(_.isEmpty)
     }

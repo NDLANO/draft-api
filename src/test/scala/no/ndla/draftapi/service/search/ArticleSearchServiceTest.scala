@@ -65,52 +65,52 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
   val article1: Article = TestData.sampleArticleWithByNcSa.copy(
     id = Option(1),
-    title = List(ArticleTitle("Batmen er på vift med en bil", "nb")),
-    introduction = List(ArticleIntroduction("Batmen", "nb")),
-    content = List(
-      ArticleContent("Bilde av en <strong>bil</strong> flaggermusmann som vifter med vingene <em>bil</em>.", "nb")),
-    tags = List(ArticleTag(List("fugl"), "nb")),
+    title = Set(ArticleTitle("Batmen er på vift med en bil", "nb")),
+    introduction = Set(ArticleIntroduction("Batmen", "nb")),
+    content =
+      Set(ArticleContent("Bilde av en <strong>bil</strong> flaggermusmann som vifter med vingene <em>bil</em>.", "nb")),
+    tags = Set(ArticleTag(List("fugl"), "nb")),
     created = today.minusDays(4).toDate,
     updated = today.minusDays(3).toDate
   )
 
   val article2: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(2),
-    title = List(ArticleTitle("Pingvinen er ute og går", "nb")),
-    introduction = List(ArticleIntroduction("Pingvinen", "nb")),
-    content = List(ArticleContent("<p>Bilde av en</p><p> en <em>pingvin</em> som vagger borover en gate</p>", "nb")),
-    tags = List(ArticleTag(List("fugl"), "nb")),
+    title = Set(ArticleTitle("Pingvinen er ute og går", "nb")),
+    introduction = Set(ArticleIntroduction("Pingvinen", "nb")),
+    content = Set(ArticleContent("<p>Bilde av en</p><p> en <em>pingvin</em> som vagger borover en gate</p>", "nb")),
+    tags = Set(ArticleTag(List("fugl"), "nb")),
     created = today.minusDays(4).toDate,
     updated = today.minusDays(2).toDate
   )
 
   val article3: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(3),
-    title = List(ArticleTitle("Donald Duck kjører bil", "nb")),
-    introduction = List(ArticleIntroduction("Donald Duck", "nb")),
-    content = List(ArticleContent("<p>Bilde av en en and</p><p> som <strong>kjører</strong> en rød bil.</p>", "nb")),
-    tags = List(ArticleTag(List("and"), "nb")),
+    title = Set(ArticleTitle("Donald Duck kjører bil", "nb")),
+    introduction = Set(ArticleIntroduction("Donald Duck", "nb")),
+    content = Set(ArticleContent("<p>Bilde av en en and</p><p> som <strong>kjører</strong> en rød bil.</p>", "nb")),
+    tags = Set(ArticleTag(List("and"), "nb")),
     created = today.minusDays(4).toDate,
     updated = today.minusDays(1).toDate
   )
 
   val article4: Article = TestData.sampleArticleWithCopyrighted.copy(
     id = Option(4),
-    title = List(ArticleTitle("Superman er ute og flyr", "nb")),
-    introduction = List(ArticleIntroduction("Superman", "nb")),
+    title = Set(ArticleTitle("Superman er ute og flyr", "nb")),
+    introduction = Set(ArticleIntroduction("Superman", "nb")),
     content =
-      List(ArticleContent("<p>Bilde av en flygende mann</p><p> som <strong>har</strong> superkrefter.</p>", "nb")),
-    tags = List(ArticleTag(List("supermann"), "nb")),
+      Set(ArticleContent("<p>Bilde av en flygende mann</p><p> som <strong>har</strong> superkrefter.</p>", "nb")),
+    tags = Set(ArticleTag(List("supermann"), "nb")),
     created = today.minusDays(4).toDate,
     updated = today.toDate
   )
 
   val article5: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(5),
-    title = List(ArticleTitle("Hulken løfter biler", "nb")),
-    introduction = List(ArticleIntroduction("Hulken", "nb")),
-    content = List(ArticleContent("<p>Bilde av hulk</p><p> som <strong>løfter</strong> en rød bil.</p>", "nb")),
-    tags = List(ArticleTag(List("hulk"), "nb")),
+    title = Set(ArticleTitle("Hulken løfter biler", "nb")),
+    introduction = Set(ArticleIntroduction("Hulken", "nb")),
+    content = Set(ArticleContent("<p>Bilde av hulk</p><p> som <strong>løfter</strong> en rød bil.</p>", "nb")),
+    tags = Set(ArticleTag(List("hulk"), "nb")),
     created = today.minusDays(40).toDate,
     updated = today.minusDays(35).toDate,
     notes = Seq(
@@ -124,32 +124,32 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
   val article6: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(6),
-    title = List(ArticleTitle("Loke og Tor prøver å fange midgaardsormen", "nb")),
-    introduction = List(ArticleIntroduction("Loke og Tor", "nb")),
-    content = List(
+    title = Set(ArticleTitle("Loke og Tor prøver å fange midgaardsormen", "nb")),
+    introduction = Set(ArticleIntroduction("Loke og Tor", "nb")),
+    content = Set(
       ArticleContent("<p>Bilde av <em>Loke</em> og <em>Tor</em></p><p> som <strong>fisker</strong> fra Naglfar.</p>",
                      "nb")),
-    tags = List(ArticleTag(List("Loke", "Tor", "Naglfar"), "nb")),
+    tags = Set(ArticleTag(List("Loke", "Tor", "Naglfar"), "nb")),
     created = today.minusDays(30).toDate,
     updated = today.minusDays(25).toDate
   )
 
   val article7: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(7),
-    title = List(ArticleTitle("Yggdrasil livets tre", "nb")),
-    introduction = List(ArticleIntroduction("Yggdrasil", "nb")),
-    content = List(ArticleContent("<p>Bilde av <em>Yggdrasil</em> livets tre med alle dyrene som bor i det.", "nb")),
-    tags = List(ArticleTag(List("yggdrasil"), "nb")),
+    title = Set(ArticleTitle("Yggdrasil livets tre", "nb")),
+    introduction = Set(ArticleIntroduction("Yggdrasil", "nb")),
+    content = Set(ArticleContent("<p>Bilde av <em>Yggdrasil</em> livets tre med alle dyrene som bor i det.", "nb")),
+    tags = Set(ArticleTag(List("yggdrasil"), "nb")),
     created = today.minusDays(20).toDate,
     updated = today.minusDays(15).toDate
   )
 
   val article8: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(8),
-    title = List(ArticleTitle("Baldur har mareritt", "nb")),
-    introduction = List(ArticleIntroduction("Baldur", "nb")),
-    content = List(ArticleContent("<p>Bilde av <em>Baldurs</em> mareritt om Ragnarok.", "nb")),
-    tags = List(ArticleTag(List("baldur"), "nb")),
+    title = Set(ArticleTitle("Baldur har mareritt", "nb")),
+    introduction = Set(ArticleIntroduction("Baldur", "nb")),
+    content = Set(ArticleContent("<p>Bilde av <em>Baldurs</em> mareritt om Ragnarok.", "nb")),
+    tags = Set(ArticleTag(List("baldur"), "nb")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
     articleType = ArticleType.TopicArticle
@@ -157,10 +157,10 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
   val article9: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(9),
-    title = List(ArticleTitle("Baldur har mareritt om Ragnarok", "nb")),
-    introduction = List(ArticleIntroduction("Baldur", "nb")),
-    content = List(ArticleContent("<p>Bilde av <em>Baldurs</em> som har  mareritt.", "nb")),
-    tags = List(ArticleTag(List("baldur"), "nb")),
+    title = Set(ArticleTitle("Baldur har mareritt om Ragnarok", "nb")),
+    introduction = Set(ArticleIntroduction("Baldur", "nb")),
+    content = Set(ArticleContent("<p>Bilde av <em>Baldurs</em> som har  mareritt.", "nb")),
+    tags = Set(ArticleTag(List("baldur"), "nb")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
     articleType = ArticleType.TopicArticle
@@ -168,10 +168,10 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
   val article10: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(10),
-    title = List(ArticleTitle("This article is in english", "en")),
-    introduction = List(ArticleIntroduction("Engulsk", "en")),
-    content = List(ArticleContent("<p>Something something <em>english</em> What about", "en")),
-    tags = List(ArticleTag(List("englando"), "en")),
+    title = Set(ArticleTitle("This article is in english", "en")),
+    introduction = Set(ArticleIntroduction("Engulsk", "en")),
+    content = Set(ArticleContent("<p>Something something <em>english</em> What about", "en")),
+    tags = Set(ArticleTag(List("englando"), "en")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
     articleType = ArticleType.TopicArticle
@@ -179,10 +179,10 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
   val article11: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(11),
-    title = List(ArticleTitle("Katter", "nb"), ArticleTitle("Cats", "en")),
-    introduction = List(ArticleIntroduction("Katter er store", "nb"), ArticleIntroduction("Cats are big", "en")),
-    content = List(ArticleContent("<p>Noe om en katt</p>", "nb"), ArticleContent("<p>Something about a cat</p>", "en")),
-    tags = List(ArticleTag(List("katt"), "nb"), ArticleTag(List("cat"), "en")),
+    title = Set(ArticleTitle("Katter", "nb"), ArticleTitle("Cats", "en")),
+    introduction = Set(ArticleIntroduction("Katter er store", "nb"), ArticleIntroduction("Cats are big", "en")),
+    content = Set(ArticleContent("<p>Noe om en katt</p>", "nb"), ArticleContent("<p>Something about a cat</p>", "en")),
+    tags = Set(ArticleTag(List("katt"), "nb"), ArticleTag(List("cat"), "en")),
     created = today.minusDays(10).toDate,
     updated = today.minusDays(5).toDate,
     articleType = ArticleType.TopicArticle

@@ -31,7 +31,7 @@ class TagSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer
   override val searchConverterService = new SearchConverterService
 
   val article1 = TestData.sampleDomainArticle.copy(
-    tags = Seq(
+    tags = Set(
       domain.ArticleTag(
         Seq("test", "testing", "testemer"),
         "nb"
@@ -40,7 +40,7 @@ class TagSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer
   )
 
   val article2 = TestData.sampleDomainArticle.copy(
-    tags = Seq(
+    tags = Set(
       domain.ArticleTag(
         Seq("test"),
         "en"
@@ -49,7 +49,7 @@ class TagSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer
   )
 
   val article3 = TestData.sampleDomainArticle.copy(
-    tags = Seq(
+    tags = Set(
       domain.ArticleTag(
         Seq("hei", "test", "testing"),
         "nb"
@@ -62,7 +62,7 @@ class TagSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer
   )
 
   val article4 = TestData.sampleDomainArticle.copy(
-    tags = Seq(
+    tags = Set(
       domain.ArticleTag(
         Seq("kyllingfilet", "filetkylling"),
         "nb"

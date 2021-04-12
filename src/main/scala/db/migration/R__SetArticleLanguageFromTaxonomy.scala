@@ -77,7 +77,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
   }
 
-  def fetchArticleTags(externalId: Long): Seq[ArticleTag] = {
+  def fetchArticleTags(externalId: Long): Set[ArticleTag] = {
 
     val url = "http://api.topic.ndla.no/rest/v1/keywords/?filter%5Bnode%5D=ndlanode_" + externalId.toString
 
@@ -87,7 +87,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
     } yield extracted
 
     keywordsT match {
-      case Failure(_) => Seq()
+      case Failure(_) => Set()
       case Success(keywords) =>
         keywords.keyword
           .flatMap(_.names)
@@ -97,7 +97,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
           .groupBy(_._1)
           .map(entry => (entry._1, entry._2.map(_._2)))
           .map(t => ArticleTag(t._2, Language.languageOrUnknown(t._1)))
-          .toList
+          .toSet
     }
 
   }
@@ -133,7 +133,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
   }
 
   def convertArticle(articleId: Long, externalId: Option[Long])(implicit session: DBSession): Option[Article] = {
-    val externalTags = externalId.map(fetchArticleTags).getOrElse(Seq())
+    val externalTags = externalId.map(fetchArticleTags).getOrElse(Set())
     val oldArticle = fetchArticleInfo(articleId)
     convertArticleLanguage(oldArticle, externalTags)
   }
@@ -148,8 +148,8 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       .apply()
   }
 
-  def convertArticleLanguage(oldArticle: Option[Article], externalTags: Seq[ArticleTag]): Option[Article] = {
-    val contentLanguages = oldArticle.map(_.content).getOrElse(Seq()).map(content => content.language)
+  def convertArticleLanguage(oldArticle: Option[Article], externalTags: Set[ArticleTag]): Option[Article] = {
+    val contentLanguages = oldArticle.map(_.content).getOrElse(Set()).map(content => content.language)
     oldArticle.map(
       article =>
         article.copy(
@@ -163,20 +163,20 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
       ))
   }
 
-  def mergeTags(oldTags: Seq[ArticleTag],
-                externalTags: Seq[ArticleTag],
-                contentLanguages: Seq[String]): Seq[ArticleTag] = {
+  def mergeTags(oldTags: Set[ArticleTag],
+                externalTags: Set[ArticleTag],
+                contentLanguages: Iterable[String]): Set[ArticleTag] = {
     val combinedSeq = oldTags ++ externalTags
     combinedSeq
       .groupBy(_.language)
-      .filter(mapEntry => contentLanguages.contains(mapEntry._1))
+      .filter(mapEntry => contentLanguages.toSeq.contains(mapEntry._1))
       .map(mapEntry => createTag(mapEntry._1, mapEntry._2))
-      .toSeq
+      .toSet
   }
 
-  def createTag(language: String, tags: Seq[ArticleTag]): ArticleTag = {
-    val distinctTags = tags.flatMap(_.tags).distinct
-    ArticleTag(distinctTags, language)
+  def createTag(language: String, tags: Set[ArticleTag]): ArticleTag = {
+    val distinctTags = tags.flatMap(_.tags)
+    ArticleTag(distinctTags.toSeq, language)
   }
 
   def copyArticleTitle(field: ArticleTitle): ArticleTitle = {

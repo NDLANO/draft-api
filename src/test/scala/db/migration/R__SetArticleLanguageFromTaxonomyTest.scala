@@ -6,15 +6,15 @@ class R__SetArticleLanguageFromTaxonomyTest extends UnitSuite with TestEnvironme
   val migration = new R__SetArticleLanguageFromTaxonomy
 
   test("merge tags so that we only have distinct tags, and only in content language") {
-    val oldTags = Seq(ArticleTag(Seq("one", "two", "three"), "en"))
+    val oldTags = Set(ArticleTag(Seq("one", "two", "three"), "en"))
     val newTags =
-      Seq(ArticleTag(Seq("en", "to"), "nb"), ArticleTag(Seq("one", "two"), "en"), ArticleTag(Seq("uno", "dos"), "es"))
+      Set(ArticleTag(Seq("en", "to"), "nb"), ArticleTag(Seq("one", "two"), "en"), ArticleTag(Seq("uno", "dos"), "es"))
     val contentEnglish = Seq("en")
     val contentEnNb = Seq("en", "nb")
-    val mergedNbEnTags = Seq(ArticleTag(Seq("en", "to"), "nb"), ArticleTag(Seq("one", "two", "three"), "en"))
+    val mergedNbEnTags = Set(ArticleTag(Seq("en", "to"), "nb"), ArticleTag(Seq("one", "two", "three"), "en"))
 
     migration.mergeTags(oldTags, newTags, contentEnglish) should be(oldTags)
-    migration.mergeTags(oldTags, newTags, contentEnNb).sortBy(_.language) should be(mergedNbEnTags.sortBy(_.language))
+    migration.mergeTags(oldTags, newTags, contentEnNb) should be(mergedNbEnTags)
   }
 
 }

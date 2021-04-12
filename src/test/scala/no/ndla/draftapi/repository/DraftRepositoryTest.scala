@@ -135,7 +135,7 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
     repository.insert(art3)
     repository.insert(art4)
 
-    val updatedContent = Seq(ArticleContent("What u do mr", "nb"))
+    val updatedContent = Set(ArticleContent("What u do mr", "nb"))
 
     repository.updateArticle(art1.copy(content = updatedContent))
 
@@ -167,7 +167,7 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
     val art1 = sampleArticle.copy(id = Some(1), status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty))
     repository.insertWithExternalIds(art1, List("1234", "5678"), List.empty, None)
 
-    val updatedContent = Seq(ArticleContent("This is updated with external ids yo", "en"))
+    val updatedContent = Set(ArticleContent("This is updated with external ids yo", "en"))
     val updatedArt = art1.copy(content = updatedContent)
     repository.updateWithExternalIds(updatedArt, List("1234", "5678"), List.empty, None)
     repository.withId(art1.id.get).get should be(updatedArt)
