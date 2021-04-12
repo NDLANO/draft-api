@@ -341,7 +341,7 @@ trait WriteService {
 
     /** Article status should not be updated if notes and/or editorLabels are the only changes */
     /** Update 2021: Nor should the status be updated if only any of PartialArticleFields.Value has changed */
-    private def shouldUpdateStatus(changedArticle: domain.Article, existingArticle: domain.Article): Boolean = {
+    def shouldUpdateStatus(changedArticle: domain.Article, existingArticle: domain.Article): Boolean = {
       // Function that sets values we don't want to include when comparing articles to check if we should update status
       val withComparableValues =
         (article: domain.Article) =>
