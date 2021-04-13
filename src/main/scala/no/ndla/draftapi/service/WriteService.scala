@@ -357,7 +357,13 @@ trait WriteService {
             copyright = article.copyright.map(e => e.copy(license = None)),
             metaDescription = Seq.empty,
             relatedContent = Seq.empty,
-            tags = Seq.empty
+            tags = Seq.empty,
+            // LanguageField ordering shouldn't matter:
+            visualElement = article.visualElement.sorted,
+            content = article.content.sorted,
+            introduction = article.introduction.sorted,
+            metaImage = article.metaImage.sorted,
+            title = article.title.sorted
         )
 
       val comparableNew = withComparableValues(changedArticle)

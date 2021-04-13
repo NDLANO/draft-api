@@ -7,7 +7,8 @@
 
 package no.ndla.draftapi.model.domain
 
-trait LanguageField {
+trait LanguageField extends Ordered[LanguageField] {
+  def compare(that: LanguageField): Int = this.language.compare(that.language)
   def isEmpty: Boolean
   def language: String
 }
