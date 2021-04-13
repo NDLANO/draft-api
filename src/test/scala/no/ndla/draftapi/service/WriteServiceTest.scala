@@ -1114,4 +1114,17 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   }
 
+  test("shouldUpdateStatus returns false if articles are equal") {
+    val nnTitle = ArticleTitle("Title", "nn")
+    val nbTitle = ArticleTitle("Title", "nb")
+
+    val article1 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
+    val article2 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
+    service.shouldUpdateStatus(article1, article2) should be(false)
+
+    val article3 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
+    val article4 = TestData.sampleDomainArticle.copy(title = Seq(nbTitle, nnTitle))
+    service.shouldUpdateStatus(article3, article4) should be(false)
+  }
+
 }
