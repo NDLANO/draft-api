@@ -1124,7 +1124,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     val article3 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
     val article4 = TestData.sampleDomainArticle.copy(title = Seq(nbTitle, nnTitle))
-    service.shouldUpdateStatus(article3, article4) should be(true) // Should be false!
+    service.shouldUpdateStatus(article3, article4) should be(false)
   }
 
 }
