@@ -9,9 +9,9 @@ package no.ndla.draftapi.service
 
 import java.io.ByteArrayInputStream
 import java.util.Date
-
 import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.api.ArticleApiArticle
+import no.ndla.draftapi.model.domain.ArticleStatus.{DRAFT, PUBLISHED}
 import no.ndla.draftapi.model.{api, domain}
 import no.ndla.draftapi.model.domain._
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite, integration}
@@ -1125,6 +1125,24 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val article3 = TestData.sampleDomainArticle.copy(title = Seq(nnTitle, nbTitle))
     val article4 = TestData.sampleDomainArticle.copy(title = Seq(nbTitle, nnTitle))
     service.shouldUpdateStatus(article3, article4) should be(false)
+  }
+
+  test("shouldPartialPublish return false if articles are equal") {
+    val nnMeta = ArticleMetaDescription("Meta nn", "nn")
+    val nbMeta = ArticleMetaDescription("Meta nb", "nb")
+
+    val article1 = TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set(PUBLISHED)),
+                                                     metaDescription = Seq(nnMeta, nbMeta))
+    val article2 = TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set(PUBLISHED)),
+                                                     metaDescription = Seq(nnMeta, nbMeta))
+    service.shouldPartialPublish(Some(article1), article2) should be(false)
+
+    val article3 = TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set(PUBLISHED)),
+                                                     metaDescription = Seq(nnMeta, nbMeta))
+    val article4 = TestData.sampleDomainArticle.copy(status = domain.Status(DRAFT, Set(PUBLISHED)),
+                                                     metaDescription = Seq(nbMeta, nnMeta))
+    service.shouldPartialPublish(Some(article3), article4) should be(false)
+
   }
 
 }

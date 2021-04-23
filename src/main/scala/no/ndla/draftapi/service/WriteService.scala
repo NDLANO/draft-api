@@ -372,8 +372,7 @@ trait WriteService {
       shouldUpdateStatus
     }
 
-    private def shouldPartialPublish(existingArticle: Option[domain.Article],
-                                     changedArticle: domain.Article): Boolean = {
+    def shouldPartialPublish(existingArticle: Option[domain.Article], changedArticle: domain.Article): Boolean = {
       val isPublished =
         changedArticle.status.current == ArticleStatus.PUBLISHED ||
           changedArticle.status.other.contains(ArticleStatus.PUBLISHED)
@@ -382,9 +381,9 @@ trait WriteService {
         e.availability != changedArticle.availability ||
         e.grepCodes != changedArticle.grepCodes ||
         e.copyright.flatMap(e => e.license) != changedArticle.copyright.flatMap(e => e.license) ||
-        e.metaDescription != changedArticle.metaDescription ||
+        e.metaDescription.sorted != changedArticle.metaDescription.sorted ||
         e.relatedContent != changedArticle.relatedContent ||
-        e.tags != changedArticle.tags
+        e.tags.sorted != changedArticle.tags.sorted
       })
 
       isPublished && hasChangedPartialPublishField
