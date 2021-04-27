@@ -141,36 +141,29 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     res.forall { case (_, to) => to.isEmpty } should be(true)
   }
 
-  test("stateTransitionsToApi should return only certain entries if user only has write roles") {
-    val res = service.stateTransitionsToApi(TestData.userWithWriteAccess)
-    res(IMPORTED.toString).length should be(1)
-    res(DRAFT.toString).length should be(2)
-    res(PROPOSAL.toString).length should be(5)
-    res(USER_TEST.toString).length should be(4)
-    res(AWAITING_QUALITY_ASSURANCE.toString).length should be(6)
-    res(QUALITY_ASSURED.toString).length should be(2)
-    res(QUALITY_ASSURED_DELAYED.toString).length should be(2)
-    res(QUEUED_FOR_PUBLISHING.toString).length should be(2)
-    res(QUEUED_FOR_PUBLISHING_DELAYED.toString).length should be(2)
-    res(PUBLISHED.toString).length should be(2)
-    res(AWAITING_UNPUBLISHING.toString).length should be(2)
-    res(UNPUBLISHED.toString).length should be(3)
+  test("stateTransitionsToApi should return different number of transitions based on access") {
+    val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
+    val writeTrans = service.stateTransitionsToApi(TestData.userWithWriteAccess)
+
+    // format: off
+    writeTrans(IMPORTED.toString).length should be(adminTrans(IMPORTED.toString).length)
+    writeTrans(DRAFT.toString).length should be < adminTrans(DRAFT.toString).length
+    writeTrans(PROPOSAL.toString).length should be < adminTrans(PROPOSAL.toString).length
+    writeTrans(USER_TEST.toString).length should be < adminTrans(USER_TEST.toString).length
+    writeTrans(AWAITING_QUALITY_ASSURANCE.toString).length should be < adminTrans(AWAITING_QUALITY_ASSURANCE.toString).length
+    writeTrans(QUALITY_ASSURED.toString).length should be < adminTrans(QUALITY_ASSURED.toString).length
+    writeTrans(QUALITY_ASSURED_DELAYED.toString).length should be < adminTrans(QUALITY_ASSURED_DELAYED.toString).length
+    writeTrans(QUEUED_FOR_PUBLISHING.toString).length should be < adminTrans(QUEUED_FOR_PUBLISHING.toString).length
+    writeTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString).length should be < adminTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString).length
+    writeTrans(PUBLISHED.toString).length should be < adminTrans(PUBLISHED.toString).length
+    writeTrans(AWAITING_UNPUBLISHING.toString).length should be < adminTrans(AWAITING_UNPUBLISHING.toString).length
+    writeTrans(UNPUBLISHED.toString).length should be < adminTrans(UNPUBLISHED.toString).length
+    // format: on
   }
 
-  test("stateTransitionsToApi should return all entries if user is admin") {
-    val res = service.stateTransitionsToApi(TestData.userWithAdminAccess)
-    res(IMPORTED.toString).length should be(1)
-    res(DRAFT.toString).length should be(4)
-    res(PROPOSAL.toString).length should be(9)
-    res(USER_TEST.toString).length should be(6)
-    res(AWAITING_QUALITY_ASSURANCE.toString).length should be(8)
-    res(QUALITY_ASSURED.toString).length should be(6)
-    res(QUALITY_ASSURED_DELAYED.toString).length should be(4)
-    res(QUEUED_FOR_PUBLISHING.toString).length should be(4)
-    res(QUEUED_FOR_PUBLISHING_DELAYED.toString).length should be(4)
-    res(PUBLISHED.toString).length should be(5)
-    res(AWAITING_UNPUBLISHING.toString).length should be(5)
-    res(UNPUBLISHED.toString).length should be(5)
+  test("stateTransitionsToApi should have transitions from all statuses if admin") {
+    val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
+    adminTrans.size should be(ArticleStatus.values.size)
   }
 
   test("newNotes should fail if empty strings are recieved") {
