@@ -154,6 +154,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     writeTrans(QUALITY_ASSURED.toString).length should be < adminTrans(QUALITY_ASSURED.toString).length
     writeTrans(QUALITY_ASSURED_DELAYED.toString).length should be < adminTrans(QUALITY_ASSURED_DELAYED.toString).length
     writeTrans(QUEUED_FOR_PUBLISHING.toString).length should be < adminTrans(QUEUED_FOR_PUBLISHING.toString).length
+    writeTrans(QUEUED_FOR_LANGUAGE.toString).length should be < adminTrans(QUEUED_FOR_LANGUAGE.toString).length
+    writeTrans(TRANSLATED.toString).length should be < adminTrans(TRANSLATED.toString).length
     writeTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString).length should be < adminTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString).length
     writeTrans(PUBLISHED.toString).length should be < adminTrans(PUBLISHED.toString).length
     writeTrans(AWAITING_UNPUBLISHING.toString).length should be < adminTrans(AWAITING_UNPUBLISHING.toString).length
@@ -164,6 +166,20 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("stateTransitionsToApi should have transitions from all statuses if admin") {
     val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
     adminTrans.size should be(ArticleStatus.values.size)
+  }
+
+  test("stateTransitionsToApi should have transitions in inserted order") {
+    val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
+    adminTrans(QUEUED_FOR_LANGUAGE.toString) should be(
+      Seq(QUEUED_FOR_LANGUAGE.toString, PROPOSAL.toString, TRANSLATED.toString, ARCHIVED.toString, PUBLISHED.toString))
+    adminTrans(TRANSLATED.toString) should be(
+      Seq(TRANSLATED.toString,
+          PROPOSAL.toString,
+          AWAITING_QUALITY_ASSURANCE.toString,
+          QUALITY_ASSURED.toString,
+          PUBLISHED.toString,
+          ARCHIVED.toString)
+    )
   }
 
   test("newNotes should fail if empty strings are recieved") {

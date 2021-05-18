@@ -8,7 +8,6 @@
 package no.ndla.draftapi.service
 
 import java.util.Date
-
 import cats.effect.IO
 import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.model.api.{IllegalStatusStateTransition, NotFoundException}
@@ -30,6 +29,7 @@ import no.ndla.draftapi.service.search.ArticleIndexService
 import no.ndla.draftapi.validation.ContentValidator
 import no.ndla.validation.{ValidationException, ValidationMessage}
 
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -96,7 +96,7 @@ trait StateTransitionRules {
     import StateTransition._
 
     // format: off
-    val StateTransitions: Set[StateTransition] = Set(
+    val StateTransitions: mutable.LinkedHashSet[StateTransition] = mutable.LinkedHashSet(
       (IMPORTED                      -> DRAFT)                         keepCurrentOnTransition,
        DRAFT                         -> DRAFT,
        DRAFT                         -> PROPOSAL,
@@ -182,7 +182,7 @@ trait StateTransitionRules {
        QUEUED_FOR_LANGUAGE           -> PROPOSAL,
        QUEUED_FOR_LANGUAGE           -> TRANSLATED,
        QUEUED_FOR_LANGUAGE           -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED),
-       QUEUED_FOR_LANGUAGE           -> AWAITING_ARCHIVING,
+       //QUEUED_FOR_LANGUAGE           -> AWAITING_ARCHIVING,
       (QUEUED_FOR_LANGUAGE           -> PUBLISHED)                     keepStates Set(IMPORTED) require PublishRoles withSideEffect publishArticle,
        TRANSLATED                    -> TRANSLATED,
        TRANSLATED                    -> PROPOSAL,
