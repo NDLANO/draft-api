@@ -171,10 +171,10 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("stateTransitionsToApi should have transitions in inserted order") {
     val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
     adminTrans(QUEUED_FOR_LANGUAGE.toString) should be(
-      Seq(QUEUED_FOR_LANGUAGE.toString, PROPOSAL.toString, TRANSLATED.toString, ARCHIVED.toString, PUBLISHED.toString))
+      Seq(PROPOSAL.toString, QUEUED_FOR_LANGUAGE.toString, TRANSLATED.toString, ARCHIVED.toString, PUBLISHED.toString))
     adminTrans(TRANSLATED.toString) should be(
-      Seq(TRANSLATED.toString,
-          PROPOSAL.toString,
+      Seq(PROPOSAL.toString,
+          TRANSLATED.toString,
           AWAITING_QUALITY_ASSURANCE.toString,
           QUALITY_ASSURED.toString,
           PUBLISHED.toString,
