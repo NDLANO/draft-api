@@ -29,7 +29,7 @@ trait SearchApiClient {
   class SearchApiClient(SearchApiBaseUrl: String = s"http://$SearchApiHost") extends LazyLogging {
 
     private val InternalEndpoint = s"$SearchApiBaseUrl/intern"
-    private val indexTimeout = 1000 * 30
+    private val indexTimeout = 1000 * 60
 
     def indexDraft(draft: Article): Article = {
       implicit val formats: Formats =
