@@ -79,11 +79,11 @@ trait StateTransitionRules {
             val externalIds = draftRepository.getExternalIdsFromId(id)
 
             val h5pPaths = converterService.getEmbeddedH5PPaths(article)
-            val h5pT = h5pApiClient.publishH5Ps(h5pPaths)
+            h5pApiClient.publishH5Ps(h5pPaths)
 
             val taxonomyT = taxonomyApiClient.updateTaxonomyIfExists(id, article)
             val articleUdpT = articleApiClient.updateArticle(id, article, externalIds, isImported, useSoftValidation)
-            val failures = Seq(h5pT, taxonomyT, articleUdpT).collectFirst {
+            val failures = Seq(taxonomyT, articleUdpT).collectFirst {
               case Failure(ex) => Failure(ex)
             }
             failures.getOrElse(articleUdpT)
