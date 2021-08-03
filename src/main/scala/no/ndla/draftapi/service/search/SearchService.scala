@@ -8,12 +8,11 @@
 package no.ndla.draftapi.service.search
 
 import java.lang.Math.max
-
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.draftapi.DraftApiProperties.{MaxPageSize, ElasticSearchScrollKeepAlive}
+import no.ndla.draftapi.DraftApiProperties.{DefaultLanguage, ElasticSearchScrollKeepAlive, MaxPageSize}
 import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain._
@@ -68,7 +67,7 @@ trait SearchService {
 
     def getSortDefinition(sort: Sort.Value, language: String): FieldSort = {
       val sortLanguage = language match {
-        case domain.Language.NoLanguage => domain.Language.DefaultLanguage
+        case domain.Language.NoLanguage => DefaultLanguage
         case _                          => language
       }
 

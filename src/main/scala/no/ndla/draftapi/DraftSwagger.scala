@@ -19,8 +19,8 @@ class ResourcesApp(implicit val swagger: Swagger) extends ScalatraServlet with N
 object DraftApiInfo {
 
   val contactInfo = ContactInfo(
-    "NDLA",
-    "ndla.no",
+    DraftApiProperties.ContactName,
+    DraftApiProperties.ContactUrl,
     DraftApiProperties.ContactEmail
   )
 
@@ -32,7 +32,7 @@ object DraftApiInfo {
   val apiInfo = ApiInfo(
     "Draft API",
     "Services for accessing draft articles, draft and agreements",
-    "http://ndla.no",
+    DraftApiProperties.TermsUrl,
     contactInfo,
     licenseInfo
   )

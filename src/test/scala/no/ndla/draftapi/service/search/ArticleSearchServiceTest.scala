@@ -7,7 +7,7 @@
 
 package no.ndla.draftapi.service.search
 
-import no.ndla.draftapi.DraftApiProperties.DefaultPageSize
+import no.ndla.draftapi.DraftApiProperties.{DefaultLanguage, DefaultPageSize}
 import no.ndla.draftapi.TestData.searchSettings
 import no.ndla.draftapi._
 import no.ndla.draftapi.integration.Elastic4sClientFactory
@@ -233,7 +233,7 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
     val Success(results2) = articleSearchService.matchingQuery(
       searchSettings.copy(
-        searchLanguage = Language.DefaultLanguage,
+        searchLanguage = DefaultLanguage,
         articleTypes = ArticleType.all
       ))
     results2.totalCount should be(9)

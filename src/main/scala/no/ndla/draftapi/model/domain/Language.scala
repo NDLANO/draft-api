@@ -9,16 +9,16 @@ package no.ndla.draftapi.model.domain
 
 import com.sksamuel.elastic4s.analyzers._
 import no.ndla.mapping.ISO639
+import no.ndla.draftapi.DraftApiProperties.DefaultLanguage
 import scala.language.reflectiveCalls
 
 object Language {
-  val DefaultLanguage = "nb"
   val UnknownLanguage = "unknown"
   val NoLanguage = ""
   val AllLanguages = "all"
 
   val languageAnalyzers = Seq(
-    LanguageAnalyzer(DefaultLanguage, NorwegianLanguageAnalyzer),
+    LanguageAnalyzer("nb", NorwegianLanguageAnalyzer),
     LanguageAnalyzer("nn", NorwegianLanguageAnalyzer),
     LanguageAnalyzer("en", EnglishLanguageAnalyzer),
     LanguageAnalyzer("fr", FrenchLanguageAnalyzer),
@@ -30,7 +30,7 @@ object Language {
     LanguageAnalyzer(UnknownLanguage, StandardAnalyzer)
   )
 
-  val supportedLanguages = languageAnalyzers.map(_.lang)
+  val supportedLanguages: Seq[String] = languageAnalyzers.map(_.lang)
 
   def findByLanguageOrBestEffort[P <: LanguageField](sequence: Seq[P], language: String): Option[P] = {
     sequence

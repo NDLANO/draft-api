@@ -11,7 +11,7 @@ trait RuleController {
 
   class RuleController(implicit val swagger: Swagger) extends NdlaController {
     protected implicit override val jsonFormats: Formats = DefaultFormats
-    protected val applicationDescription = "API for accessing validation rules from ndla.no"
+    protected val applicationDescription = "API for accessing validation rules."
 
     registerModel[Error]()
 
