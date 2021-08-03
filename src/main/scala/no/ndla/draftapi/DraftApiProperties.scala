@@ -72,6 +72,7 @@ object DraftApiProperties extends LazyLogging {
 
   lazy val BrightcoveVideoScriptUrl =
     s"//players.brightcove.net/$BrightcoveAccountId/${BrightcovePlayerId}_default/index.min.js"
+  val H5PResizerScriptUrl = "//h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js"
   val NRKVideoScriptUrl = Seq("//www.nrk.no/serum/latest/js/video_embed.js", "//nrk.no/serum/latest/js/video_embed.js")
 
   val SearchServer: String = propOrElse("SEARCH_SERVER", "http://search-draft-api.ndla-local")
