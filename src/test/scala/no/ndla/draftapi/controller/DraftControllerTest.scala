@@ -7,6 +7,8 @@
 
 package no.ndla.draftapi.controller
 
+import no.ndla.draftapi.DraftApiProperties.DefaultLanguage
+
 import java.util.Date
 import no.ndla.draftapi.TestData.authHeaderWithWriteRole
 import no.ndla.draftapi.auth.UserInfo
@@ -98,7 +100,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       verify(articleSearchService, times(1)).matchingQuery(
         TestData.searchSettings.copy(
           withIdIn = List(1, 2, 3, 4),
-          searchLanguage = Language.DefaultLanguage,
+          searchLanguage = DefaultLanguage,
           page = 1,
           pageSize = 4,
           sort = Sort.ByTitleAsc,

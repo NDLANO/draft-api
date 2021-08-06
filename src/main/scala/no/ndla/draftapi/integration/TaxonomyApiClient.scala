@@ -10,7 +10,7 @@ package no.ndla.draftapi.integration
 import cats.Traverse
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.network.{AuthUser, NdlaClient}
-import no.ndla.draftapi.DraftApiProperties.ApiGatewayHost
+import no.ndla.draftapi.DraftApiProperties.{ApiGatewayHost, DefaultLanguage}
 import no.ndla.draftapi.model.domain.{Article, ArticleTitle, Language}
 import org.json4s.{DefaultFormats, Formats}
 import scalaj.http.Http
@@ -49,7 +49,7 @@ trait TaxonomyApiClient {
     private def updateTaxonomy[T](resource: Seq[T],
                                   titles: Seq[ArticleTitle],
                                   updateFunc: (T, ArticleTitle, Seq[ArticleTitle]) => Try[T]): Try[List[T]] = {
-      Language.findByLanguageOrBestEffort(titles, Language.DefaultLanguage) match {
+      Language.findByLanguageOrBestEffort(titles, DefaultLanguage) match {
         case Some(title) =>
           val updated = resource.map(updateFunc(_, title, titles))
           updated

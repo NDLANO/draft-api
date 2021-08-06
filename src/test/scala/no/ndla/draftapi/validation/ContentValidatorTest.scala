@@ -9,10 +9,9 @@ package no.ndla.draftapi.validation
 
 import no.ndla.draftapi.DraftApiProperties.H5PResizerScriptUrl
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.{DraftApiProperties, TestData, TestEnvironment, UnitSuite}
-import no.ndla.network.AuthUser
+import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 import no.ndla.validation.{ValidationException, ValidationMessage}
-import no.ndla.mapping.License.{CC_BY_SA}
+import no.ndla.mapping.License.CC_BY_SA
 
 import scala.util.Failure
 

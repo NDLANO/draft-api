@@ -7,7 +7,7 @@
 
 package no.ndla.draftapi.validation
 
-import no.ndla.draftapi.DraftApiProperties.{H5PResizerScriptUrl, NDLABrightcoveVideoScriptUrl, NRKVideoScriptUrl}
+import no.ndla.draftapi.DraftApiProperties.{BrightcoveVideoScriptUrl, H5PResizerScriptUrl, NRKVideoScriptUrl}
 import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{
@@ -215,7 +215,7 @@ trait ContentValidator {
     }
 
     private def validateRequiredLibrary(requiredLibrary: RequiredLibrary): Option[ValidationMessage] = {
-      val permittedLibraries = Seq(NDLABrightcoveVideoScriptUrl, H5PResizerScriptUrl) ++ NRKVideoScriptUrl
+      val permittedLibraries = Seq(BrightcoveVideoScriptUrl, H5PResizerScriptUrl) ++ NRKVideoScriptUrl
       permittedLibraries.contains(requiredLibrary.url) match {
         case false =>
           Some(ValidationMessage(

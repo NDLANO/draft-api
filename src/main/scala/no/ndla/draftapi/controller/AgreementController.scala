@@ -33,7 +33,7 @@ trait AgreementController {
 
   class AgreementController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
     protected implicit override val jsonFormats: Formats = DefaultFormats
-    protected val applicationDescription = "API for accessing agreements from ndla.no."
+    protected val applicationDescription = "API for accessing agreements."
 
     // Additional models used in error responses
     registerModel[ValidationError]()
