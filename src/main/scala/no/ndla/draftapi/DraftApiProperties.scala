@@ -79,9 +79,11 @@ object DraftApiProperties extends LazyLogging {
   val RunWithSignedSearchRequests: Boolean = propOrElse("RUN_WITH_SIGNED_SEARCH_REQUESTS", "true").toBoolean
   val DraftSearchIndex: String = propOrElse("SEARCH_INDEX_NAME", "draft-articles")
   val DraftTagSearchIndex: String = propOrElse("TAG_SEARCH_INDEX_NAME", "draft-tags")
+  val DraftGrepCodesSearchIndex: String = propOrElse("GREP_CODES_SEARCH_INDEX_NAME", "draft-grepcodes")
   val AgreementSearchIndex: String = propOrElse("AGREEMENT_SEARCH_INDEX_NAME", "draft-agreements")
   val DraftSearchDocument = "article-drafts"
   val DraftTagSearchDocument = "article-drafts-tag"
+  val DraftGrepCodesSearchDocument = "article-drafts-grepcodes"
   val AgreementSearchDocument = "agreement-drafts"
   val DefaultPageSize = 10
   val MaxPageSize = 10000

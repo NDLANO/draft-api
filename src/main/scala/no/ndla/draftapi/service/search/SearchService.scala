@@ -24,27 +24,7 @@ import scala.util.{Failure, Success, Try}
 trait SearchService {
   this: Elastic4sClient with SearchConverterService with LazyLogging =>
 
-  trait SearchService[T] {
-    val searchIndex: String
-
-    def scroll(scrollId: String, language: String): Try[SearchResult[T]] =
-      e4sClient
-        .execute {
-          searchScroll(scrollId, ElasticSearchScrollKeepAlive)
-        }
-        .map(response => {
-          val hits = getHits(response.result, language)
-
-          SearchResult[T](
-            totalCount = response.result.totalHits,
-            page = None,
-            pageSize = response.result.hits.hits.length,
-            language = if (language == "*") Language.AllLanguages else language,
-            results = hits,
-            scrollId = response.result.scrollId
-          )
-        })
-
+  trait SearchService[T] extends BasicSearchService[T] {
     def hitToApiModel(hit: String, language: String): T
 
     def getHits(response: SearchResponse, language: String): Seq[T] = {
@@ -64,6 +44,24 @@ trait SearchService {
         case _ => Seq()
       }
     }
+
+    def scroll(scrollId: String, language: String): Try[SearchResult[T]] =
+      e4sClient
+        .execute {
+          searchScroll(scrollId, ElasticSearchScrollKeepAlive)
+        }
+        .map(response => {
+          val hits = getHits(response.result, language)
+
+          SearchResult[T](
+            totalCount = response.result.totalHits,
+            page = None,
+            pageSize = response.result.hits.hits.length,
+            language = if (language == "*") Language.AllLanguages else language,
+            results = hits,
+            scrollId = response.result.scrollId
+          )
+        })
 
     def getSortDefinition(sort: Sort.Value, language: String): FieldSort = {
       val sortLanguage = language match {
@@ -90,6 +88,11 @@ trait SearchService {
         case Sort.ByIdDesc          => fieldSort("id").order(SortOrder.Desc).missing("_last")
       }
     }
+
+  }
+
+  trait BasicSearchService[T] {
+    val searchIndex: String
 
     def getSortDefinition(sort: Sort.Value): FieldSort = {
       sort match {

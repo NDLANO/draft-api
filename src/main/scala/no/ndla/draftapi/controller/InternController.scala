@@ -12,12 +12,18 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.auth.User
 import no.ndla.draftapi.integration.ArticleApiClient
 import no.ndla.draftapi.model.api.{ContentId, NotFoundException}
-import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language}
+import no.ndla.draftapi.model.domain.{ArticleStatus, ArticleType, Language, ReindexResult}
 import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.Article.jsonEncoder
 import no.ndla.draftapi.repository.DraftRepository
 import no.ndla.draftapi.service._
-import no.ndla.draftapi.service.search.{AgreementIndexService, ArticleIndexService, IndexService, TagIndexService}
+import no.ndla.draftapi.service.search.{
+  AgreementIndexService,
+  ArticleIndexService,
+  GrepCodesIndexService,
+  IndexService,
+  TagIndexService
+}
 import org.json4s.Formats
 import org.scalatra.swagger.Swagger
 import org.scalatra.{InternalServerError, NotFound, Ok}
@@ -35,6 +41,7 @@ trait InternController {
     with IndexService
     with ArticleIndexService
     with TagIndexService
+    with GrepCodesIndexService
     with AgreementIndexService
     with User
     with ArticleApiClient =>
@@ -44,30 +51,59 @@ trait InternController {
     protected val applicationDescription = "API for accessing internal functionality in draft API"
     protected implicit override val jsonFormats: Formats = jsonEncoder
 
+    def createIndexFuture(indexService: IndexService[_, _])(
+        implicit ec: ExecutionContext): Future[Try[ReindexResult]] = {
+
+      val fut = Future { indexService.indexDocuments }
+
+      val logEx = (ex: Throwable) =>
+        logger.error(s"Something went wrong when indexing ${indexService.documentType}:", ex)
+
+      fut.onComplete {
+        case Success(Success(result)) =>
+          logger.info(
+            s"Successfully indexed ${result.totalIndexed} ${indexService.documentType}'s in ${result.millisUsed}")
+        case Failure(ex)          => logEx(ex)
+        case Success(Failure(ex)) => logEx(ex)
+      }
+
+      fut
+    }
+
     post("/index") {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor)
       val indexResults = for {
-        articleIndex <- Future { articleIndexService.indexDocuments }
-        agreementIndex <- Future { agreementIndexService.indexDocuments }
-        tagIndex <- Future { tagIndexService.indexDocuments }
-      } yield (articleIndex, agreementIndex, tagIndex)
+        articleIndex <- createIndexFuture(articleIndexService)
+        agreementIndex <- createIndexFuture(agreementIndexService)
+        tagIndex <- createIndexFuture(tagIndexService)
+        grepIndex <- createIndexFuture(grepCodesIndexService)
+      } yield (articleIndex, agreementIndex, tagIndex, grepIndex)
 
       Await.result(indexResults, Duration(10, TimeUnit.MINUTES)) match {
-        case (Success(articleResult), Success(agreementResult), Success(tagResult)) =>
-          val indexTime = math.max(math.max(articleResult.millisUsed, agreementResult.millisUsed), tagResult.millisUsed)
+        case (Success(articleResult), Success(agreementResult), Success(tagResult), Success(grepResult)) =>
+          val indexTimes = List(
+            articleResult.millisUsed,
+            agreementResult.millisUsed,
+            tagResult.millisUsed,
+            grepResult.millisUsed
+          )
+
           val result =
-            s"Completed indexing of ${articleResult.totalIndexed} articles, and ${agreementResult.totalIndexed} agreements in $indexTime ms."
+            s"Completed all indexes in ${indexTimes.max} ms."
           logger.info(result)
           Ok(result)
-        case (Failure(articleFail), _, _) =>
+        case (Failure(articleFail), _, _, _) =>
           logger.warn(articleFail.getMessage, articleFail)
           InternalServerError(articleFail.getMessage)
-        case (_, Failure(agreementFail), _) =>
+        case (_, Failure(agreementFail), _, _) =>
           logger.warn(agreementFail.getMessage, agreementFail)
           InternalServerError(agreementFail.getMessage)
-        case (_, _, Failure(tagFail)) =>
+        case (_, _, Failure(tagFail), _) =>
           logger.warn(tagFail.getMessage, tagFail)
           InternalServerError(tagFail.getMessage)
+        case (_, _, _, Failure(grepFail)) =>
+          logger.warn(grepFail.getMessage, grepFail)
+          InternalServerError(grepFail.getMessage)
       }
     }
 
@@ -79,13 +115,15 @@ trait InternController {
         articleIndex <- Future { articleIndexService.findAllIndexes(DraftApiProperties.DraftSearchIndex) }
         agreementIndex <- Future { agreementIndexService.findAllIndexes(DraftApiProperties.AgreementSearchIndex) }
         tagIndex <- Future { tagIndexService.findAllIndexes(DraftApiProperties.DraftTagSearchIndex) }
-      } yield (articleIndex, agreementIndex, tagIndex)
+        grepIndex <- Future { grepCodesIndexService.findAllIndexes(DraftApiProperties.DraftGrepCodesSearchIndex) }
+      } yield (articleIndex, agreementIndex, tagIndex, grepIndex)
 
       val deleteResults: Seq[Try[_]] = Await.result(indexes, Duration(10, TimeUnit.MINUTES)) match {
-        case (Failure(articleFail), _, _)   => halt(status = 500, body = articleFail.getMessage)
-        case (_, Failure(agreementFail), _) => halt(status = 500, body = agreementFail.getMessage)
-        case (_, _, Failure(tagFail))       => halt(status = 500, body = tagFail.getMessage)
-        case (Success(articleIndexes), Success(agreementIndexes), Success(tagIndexes)) => {
+        case (Failure(articleFail), _, _, _)   => halt(status = 500, body = articleFail.getMessage)
+        case (_, Failure(agreementFail), _, _) => halt(status = 500, body = agreementFail.getMessage)
+        case (_, _, Failure(tagFail), _)       => halt(status = 500, body = tagFail.getMessage)
+        case (_, _, _, Failure(grepFail))      => halt(status = 500, body = grepFail.getMessage)
+        case (Success(articleIndexes), Success(agreementIndexes), Success(tagIndexes), Success(grepIndexes)) => {
           val articleDeleteResults = articleIndexes.map(index => {
             logger.info(s"Deleting article index $index")
             articleIndexService.deleteIndexWithName(Option(index))
@@ -98,7 +136,11 @@ trait InternController {
             logger.info(s"Deleting tag index $index")
             tagIndexService.deleteIndexWithName(Option(index))
           })
-          articleDeleteResults ++ agreementDeleteResults ++ tagDeleteResults
+          val grepDeleteResults = grepIndexes.map(index => {
+            logger.info(s"Deleting grep index $index")
+            grepCodesIndexService.deleteIndexWithName(Option(index))
+          })
+          articleDeleteResults ++ agreementDeleteResults ++ tagDeleteResults ++ grepDeleteResults
         }
       }
 

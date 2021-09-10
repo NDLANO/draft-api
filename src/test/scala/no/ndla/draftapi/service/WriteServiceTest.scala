@@ -44,13 +44,21 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   val agreement: Agreement = TestData.sampleDomainAgreement.copy(id = Some(agreementId))
 
   override def beforeEach(): Unit = {
-    Mockito.reset(articleIndexService, draftRepository, agreementIndexService, agreementRepository, contentValidator)
+    Mockito.reset(articleIndexService,
+                  draftRepository,
+                  agreementIndexService,
+                  tagIndexService,
+                  grepCodesIndexService,
+                  agreementRepository,
+                  contentValidator)
 
     when(draftRepository.withId(articleId)).thenReturn(Option(article))
     when(agreementRepository.withId(agreementId)).thenReturn(Option(agreement))
     when(articleIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Article](0)))
     when(tagIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
+      Try(invocation.getArgument[Article](0)))
+    when(grepCodesIndexService.indexDocument(any[Article])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Article](0)))
     when(agreementIndexService.indexDocument(any[Agreement])).thenAnswer((invocation: InvocationOnMock) =>
       Try(invocation.getArgument[Agreement](0)))

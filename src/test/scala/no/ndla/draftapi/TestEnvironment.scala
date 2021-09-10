@@ -26,6 +26,8 @@ trait TestEnvironment
     with ArticleIndexService
     with TagSearchService
     with TagIndexService
+    with GrepCodesSearchService
+    with GrepCodesIndexService
     with AgreementSearchService
     with AgreementIndexService
     with IndexService
@@ -64,6 +66,8 @@ trait TestEnvironment
   val articleIndexService = mock[ArticleIndexService]
   val tagSearchService = mock[TagSearchService]
   val tagIndexService = mock[TagIndexService]
+  val grepCodesSearchService = mock[GrepCodesSearchService]
+  val grepCodesIndexService = mock[GrepCodesIndexService]
   val agreementSearchService = mock[AgreementSearchService]
   val agreementIndexService = mock[AgreementIndexService]
 

@@ -703,11 +703,8 @@ trait ConverterService {
       }
     }
 
-    def toApiArticleGrepCodes(grepCodes: Seq[String],
-                              grepCodesCount: Int,
-                              pageSize: Int,
-                              offset: Int): api.GrepCodesSearchResult = {
-      api.GrepCodesSearchResult(grepCodesCount, offset, pageSize, grepCodes)
+    def toApiArticleGrepCodes(result: LanguagelessSearchResult[String]): api.GrepCodesSearchResult = {
+      api.GrepCodesSearchResult(result.totalCount, result.page.getOrElse(1), result.pageSize, result.results)
     }
 
     def addNote(article: domain.Article, noteText: String, user: UserInfo): domain.Article = {
