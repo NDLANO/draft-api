@@ -558,11 +558,6 @@ trait WriteService {
         .map(api.ContentId)
     }
 
-    private[service] def mergeLanguageFields[A <: LanguageField](existing: Seq[A], updated: Seq[A]): Seq[A] = {
-      val toKeep = existing.filterNot(item => updated.map(_.language).contains(item.language))
-      (toKeep ++ updated).filterNot(_.isEmpty)
-    }
-
     def newEmptyArticle(externalIds: List[String], externalSubjectIds: Seq[String]): Try[Long] = {
       draftRepository.newEmptyArticle(externalIds, externalSubjectIds)
     }
