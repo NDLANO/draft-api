@@ -62,7 +62,7 @@ trait InternController {
       fut.onComplete {
         case Success(Success(result)) =>
           logger.info(
-            s"Successfully indexed ${result.totalIndexed} ${indexService.documentType}'s in ${result.millisUsed}")
+            s"Successfully indexed ${result.totalIndexed} ${indexService.documentType}'s in ${result.millisUsed}ms")
         case Failure(ex)          => logEx(ex)
         case Success(Failure(ex)) => logEx(ex)
       }
