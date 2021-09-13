@@ -1,6 +1,6 @@
 /*
  * Part of NDLA draft-api.
- * Copyright (C) 2020 NDLA
+ * Copyright (C) 2021 NDLA
  *
  * See LICENSE
  */
@@ -18,8 +18,6 @@ import scala.util.Success
 class GrepCodesSearchServiceTest extends IntegrationSuite(EnableElasticsearchContainer = true) with TestEnvironment {
 
   e4sClient = Elastic4sClientFactory.getClient(elasticSearchHost.getOrElse("http://localhost:9200"))
-
-  println("Hello", elasticSearchHost)
 
   // Skip tests if no docker environment available
   override def withFixture(test: NoArgTest): Outcome = {

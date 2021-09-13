@@ -1,6 +1,6 @@
 /*
  * Part of NDLA draft-api.
- * Copyright (C) 2020 NDLA
+ * Copyright (C) 2021 NDLA
  *
  * See LICENSE
  */
