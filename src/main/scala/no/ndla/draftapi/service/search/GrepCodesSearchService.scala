@@ -112,7 +112,5 @@ trait GrepCodesSearchService {
         case Failure(ex) => logger.warn(ex.getMessage, ex)
       }
     }
-
-//    override def hitToApiModel(hit: String, language: String): String = ??? // TODO:
   }
 }
