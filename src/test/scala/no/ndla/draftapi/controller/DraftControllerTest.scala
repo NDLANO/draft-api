@@ -301,7 +301,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   test("grepCodes should return 200 OK if the result was not empty") {
     when(readService.getAllGrepCodes(anyString, anyInt, anyInt))
-      .thenReturn(TestData.sampleApiGrepCodesSearchResult)
+      .thenReturn(Success(TestData.sampleApiGrepCodesSearchResult))
 
     get("/test/grep-codes/") {
       status should equal(200)
@@ -310,7 +310,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
 
   test("grepCodes should return 200 OK if the results are empty") {
     when(readService.getAllGrepCodes(anyString, anyInt, anyInt))
-      .thenReturn(TestData.sampleApiGrepCodesSearchResult.copy(results = Seq.empty))
+      .thenReturn(Success(TestData.sampleApiGrepCodesSearchResult.copy(results = Seq.empty)))
 
     get("/test/grep-codes/") {
       status should equal(200)

@@ -350,30 +350,6 @@ trait DraftRepository {
         .toList
     }
 
-    def getGrepCodes(input: String, pageSize: Int, offset: Int)(
-        implicit session: DBSession = AutoSession): (Seq[String], Int) = {
-      val sanitizedInput = input.replaceAll("%", "")
-      val grepCodes = sql"""select distinct grepCodes from
-            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{grepCodes}') as grepCodes
-            from ${Article.table}) as dummy
-            where grepCodes ilike ${sanitizedInput + '%'}
-            order by grepCodes
-            offset ${offset}
-            limit ${pageSize}
-            """
-        .map(rs => rs.string(1))
-        .list()
-        .apply()
-
-      val grepCodesCount = sql"""select distinct count(*) from
-            (select distinct JSONB_ARRAY_ELEMENTS_TEXT(document#>'{grepCodes}') as grepCodes
-            from ${Article.table}) as dummy
-            where grepCodes ilike ${sanitizedInput + '%'}""".map(rs => rs.int("count")).single().apply().getOrElse(0)
-
-      (grepCodes, grepCodesCount)
-
-    }
-
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
       sql"select coalesce(MIN(id),0) as mi, coalesce(MAX(id),0) as ma from ${Article.table}"
         .map(rs => {

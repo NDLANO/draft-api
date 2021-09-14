@@ -187,5 +187,8 @@ trait SearchConverterService {
                 language = articleTags.language
             )))
     }
+
+    def asSearchableGrepCodes(article: domain.Article): Seq[SearchableGrepCode] =
+      article.grepCodes.map(code => SearchableGrepCode(code))
   }
 }

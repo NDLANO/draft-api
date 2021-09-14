@@ -365,58 +365,6 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
 
   }
 
-  test("getGrepCodes returns non-duplicate grepCodes and correct number of them") {
-    val sampleArticle1 = TestData.sampleTopicArticle.copy(grepCodes = Seq("abc", "bcd"))
-    val sampleArticle2 = TestData.sampleTopicArticle.copy(grepCodes = Seq("bcd", "cde"))
-    val sampleArticle3 = TestData.sampleTopicArticle.copy(grepCodes = Seq("def"))
-    val sampleArticle4 = TestData.sampleTopicArticle.copy(grepCodes = Seq.empty)
-
-    repository.insert(sampleArticle1)
-    repository.insert(sampleArticle2)
-    repository.insert(sampleArticle3)
-    repository.insert(sampleArticle4)
-
-    val (grepCodes1, grepCodesCount1) = repository.getGrepCodes("", 5, 0)
-    grepCodes1 should equal(Seq("abc", "bcd", "cde", "def"))
-    grepCodes1.length should be(4)
-    grepCodesCount1 should be(4)
-
-    val (grepCodes2, grepCodesCount2) = repository.getGrepCodes("", 2, 0)
-    grepCodes2 should equal(Seq("abc", "bcd"))
-    grepCodes2.length should be(2)
-    grepCodesCount2 should be(4)
-
-    val (grepCodes3, grepCodesCount3) = repository.getGrepCodes("", 2, 2)
-    grepCodes3 should equal(Seq("cde", "def"))
-    grepCodes3.length should be(2)
-    grepCodesCount3 should be(4)
-
-    val (grepCodes4, grepCodesCount4) = repository.getGrepCodes("", 1, 3)
-    grepCodes4 should equal(Seq("def"))
-    grepCodes4.length should be(1)
-    grepCodesCount4 should be(4)
-
-    val (grepCodes5, grepCodesCount5) = repository.getGrepCodes("b", 5, 0)
-    grepCodes5 should equal(Seq("bcd"))
-    grepCodes5.length should be(1)
-    grepCodesCount5 should be(1)
-
-    val (grepCodes6, grepCodesCount6) = repository.getGrepCodes("%b", 5, 0)
-    grepCodes6 should equal(Seq("bcd"))
-    grepCodes6.length should be(1)
-    grepCodesCount6 should be(1)
-
-    val (grepCodes7, grepCodesCount7) = repository.getGrepCodes("abC", 10, 0)
-    grepCodes7 should equal(Seq("abc"))
-    grepCodes7.length should be(1)
-    grepCodesCount7 should be(1)
-
-    val (grepCodes8, grepCodesCount8) = repository.getGrepCodes("AbC", 10, 0)
-    grepCodes8 should equal(Seq("abc"))
-    grepCodes8.length should be(1)
-    grepCodesCount8 should be(1)
-  }
-
   test("withId parse relatedContent correctly") {
     repository.insert(sampleArticle.copy(id = Some(1), relatedContent = Seq(Right(2))))
 

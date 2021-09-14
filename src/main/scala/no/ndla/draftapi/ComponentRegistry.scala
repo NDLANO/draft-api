@@ -38,10 +38,12 @@ object ComponentRegistry
     with ReindexClient
     with ArticleSearchService
     with TagSearchService
+    with GrepCodesSearchService
     with AgreementSearchService
     with IndexService
     with ArticleIndexService
     with TagIndexService
+    with GrepCodesIndexService
     with AgreementIndexService
     with SearchService
     with LazyLogging
@@ -86,6 +88,8 @@ object ComponentRegistry
   lazy val articleIndexService = new ArticleIndexService
   lazy val tagSearchService = new TagSearchService
   lazy val tagIndexService = new TagIndexService
+  lazy val grepCodesSearchService = new GrepCodesSearchService
+  lazy val grepCodesIndexService = new GrepCodesIndexService
   lazy val agreementSearchService = new AgreementSearchService
   lazy val agreementIndexService = new AgreementIndexService
 
