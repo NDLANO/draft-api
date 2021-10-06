@@ -134,7 +134,8 @@ object DraftApiProperties extends LazyLogging {
     ".xls",
     ".xlsx",
     ".xml",
-    ".f3d"
+    ".f3d",
+    ".mp4"
   )
 
   def booleanProp(key: String): Boolean = prop(key).toBoolean
