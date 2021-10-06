@@ -79,7 +79,7 @@ trait InternController {
         grepIndex <- createIndexFuture(grepCodesIndexService)
       } yield (articleIndex, agreementIndex, tagIndex, grepIndex)
 
-      Await.result(indexResults, Duration(10, TimeUnit.MINUTES)) match {
+      Await.result(indexResults, Duration.Inf) match {
         case (Success(articleResult), Success(agreementResult), Success(tagResult), Success(grepResult)) =>
           val indexTimes = List(
             articleResult.millisUsed,
