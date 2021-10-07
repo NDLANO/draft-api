@@ -485,7 +485,7 @@ trait ConverterService {
     }
 
     private def languageFieldIsDefined(article: api.UpdatedArticle): Boolean = {
-      val metaImageExists = article.metaImage.map(_.isDefined).getOrElse(true)
+      val metaImageExists = true //article.metaImage.map(_.isDefined).getOrElse(true)
       val langFields: Seq[Option[_]] = Seq(article.title,
                                            article.content,
                                            article.tags,
@@ -606,14 +606,14 @@ trait ConverterService {
       val updatedIntroductions = updatedArticle.introduction.map(i => toDomainIntroduction(i, lang)).toSeq
       val updatedMetaDescriptions = updatedArticle.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq
 
-      val updatedMetaImage = updatedArticle.metaImage match {
-        case Left(_) => toMergeInto.metaImage.filterNot(_.language == lang)
-        case Right(meta) =>
-          val domainMetaImage = meta
-            .map(m => domain.ArticleMetaImage(m.id, m.alt, lang))
-            .toSeq
-          mergeLanguageFields(toMergeInto.metaImage, domainMetaImage)
-      }
+//      val updatedMetaImage = updatedArticle.metaImage match {
+//        case Left(_) => toMergeInto.metaImage.filterNot(_.language == lang)
+//        case Right(meta) =>
+//          val domainMetaImage = meta
+//            .map(m => domain.ArticleMetaImage(m.id, m.alt, lang))
+//            .toSeq
+//          mergeLanguageFields(toMergeInto.metaImage, domainMetaImage)
+//      }
 
       toMergeInto.copy(
         title = mergeLanguageFields(toMergeInto.title, updatedTitles),
@@ -622,7 +622,7 @@ trait ConverterService {
         visualElement = mergeLanguageFields(toMergeInto.visualElement, updatedVisualElement),
         introduction = mergeLanguageFields(toMergeInto.introduction, updatedIntroductions),
         metaDescription = mergeLanguageFields(toMergeInto.metaDescription, updatedMetaDescriptions),
-        metaImage = updatedMetaImage,
+//        metaImage = updatedMetaImage,
       )
     }
 
@@ -650,10 +650,10 @@ trait ConverterService {
             case None                 => Success(Seq.empty)
           }
 
-          val newMetaImage = article.metaImage match {
-            case Right(meta) => meta.map(m => domain.ArticleMetaImage(m.id, m.alt, lang)).toSeq
-            case Left(_)     => Seq.empty
-          }
+//          val newMetaImage = article.metaImage match {
+//            case Right(meta) => meta.map(m => domain.ArticleMetaImage(m.id, m.alt, lang)).toSeq
+//            case Left(_)     => Seq.empty
+//          }
 
           val updatedAvailability = Availability.valueOf(article.availability).getOrElse(Availability.everyone)
 
@@ -671,7 +671,7 @@ trait ConverterService {
                 visualElement = article.visualElement.map(v => toDomainVisualElement(v, lang)).toSeq,
                 introduction = article.introduction.map(i => toDomainIntroduction(i, lang)).toSeq,
                 metaDescription = article.metaDescription.map(m => toDomainMetaDescription(m, lang)).toSeq,
-                metaImage = newMetaImage,
+                metaImage = Seq.empty,
                 created = createdDate,
                 updated = updatedDate,
                 published = article.published.getOrElse(clock.now()),

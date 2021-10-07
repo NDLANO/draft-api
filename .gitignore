@@ -13,3 +13,7 @@ project/metals.sbt
 /.vscode
 project/project/
 
+
+node_modules
+*.log
+typescript/build
