@@ -102,7 +102,7 @@ trait DraftController {
             asQueryParam(size),
             asQueryParam(language)
           )
-          .responseMessages(response500)
+          .responseMessages(response404, response500)
           .authorizations("oauth2"))
     ) {
       val userInfo = user.getUser
