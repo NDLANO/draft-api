@@ -132,6 +132,7 @@ export interface INewArticle {
 
 export interface INewArticleMetaImage {
   id: string
+  alt: string
 }
 
 export interface IRelatedContentLink {
