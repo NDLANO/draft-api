@@ -10,11 +10,13 @@ import com.scalatsi.dsl._
   * This is only necessary if the `sbt generateTypescript` script fails.
   */
 object TSTypes {
+  // This alias is required since scala-tsi doesn't understand that Null is `null`
+  // See: https://github.com/scala-tsi/scala-tsi/issues/172
+  implicit val nullAlias = TSType.alias[Null]("NullAlias", TSNull)
+
   implicit val author = TSType.fromCaseClass[Author]
   implicit val requiredLibrary = TSType.fromCaseClass[RequiredLibrary]
   implicit val editorNote = TSType.fromCaseClass[EditorNote]
   implicit val relatedContentLink = TSType.fromCaseClass[RelatedContentLink]
-  implicit val newArticleMetaImage = TSType.fromCaseClass[NewArticleMetaImage]
-  // This alias is required since scala-tsi doesn't understand that Null is `null`
-  implicit val nullAlias = TSType.alias[Null]("NullAlias", TSNull)
+  implicit val newArticleMetaImage = TSType.fromCaseClass[NewArticleMetaImage] - "alt"
 }
