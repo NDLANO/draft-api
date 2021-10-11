@@ -167,7 +167,7 @@ export interface IUpdatedArticle {
   tags?: string[]
   introduction?: string
   metaDescription?: string
-  metaImage: (number | (INewArticleMetaImage | undefined))
+  metaImage: (NullAlias | (INewArticleMetaImage | undefined))
   visualElement?: string
   copyright?: ICopyright
   requiredLibraries?: IRequiredLibrary[]
@@ -198,3 +198,5 @@ export interface IVisualElement {
   visualElement: string
   language: string
 }
+
+export type NullAlias = null
