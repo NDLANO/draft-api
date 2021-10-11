@@ -1,6 +1,6 @@
 {
     "name": "@ndla/types-draft-api",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "Typescript type definitions for NDLA backend api",
     "license": "GPL-3.0",
     "types": "build/index.d.ts",
