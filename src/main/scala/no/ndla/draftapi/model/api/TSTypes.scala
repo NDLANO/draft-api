@@ -9,5 +9,5 @@ object TSTypes {
   implicit val editorNote = TSType.fromCaseClass[EditorNote]
   implicit val relatedContentLink = TSType.fromCaseClass[RelatedContentLink]
 
-  implicit val x = TSType.fromCaseClass[NewArticleMetaImage] - "alt"
+  implicit val x = TSType.fromCaseClass[NewArticleMetaImage]
 }
