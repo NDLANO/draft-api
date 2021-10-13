@@ -1,8 +1,8 @@
 package no.ndla.draftapi.model.api
 
-import com.scalatsi.TypescriptType.TSNull
 import com.scalatsi._
 import com.scalatsi.dsl._
+import com.scalatsi.TypescriptType.TSNull
 
 /**
   * The `scala-tsi` plugin is not always able to derive the types that are used in `Seq` or other generic types.
@@ -12,7 +12,7 @@ import com.scalatsi.dsl._
 object TSTypes {
   // This alias is required since scala-tsi doesn't understand that Null is `null`
   // See: https://github.com/scala-tsi/scala-tsi/issues/172
-  implicit val nullAlias = TSType.alias[Null]("NullAlias", TSNull)
+  implicit val nullTsType: TSType[Null] = TSType(TSNull)
 
   implicit val author = TSType.fromCaseClass[Author]
   implicit val requiredLibrary = TSType.fromCaseClass[RequiredLibrary]
