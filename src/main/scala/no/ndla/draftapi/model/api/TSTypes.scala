@@ -18,5 +18,5 @@ object TSTypes {
   implicit val requiredLibrary = TSType.fromCaseClass[RequiredLibrary]
   implicit val editorNote = TSType.fromCaseClass[EditorNote]
   implicit val relatedContentLink = TSType.fromCaseClass[RelatedContentLink]
-  implicit val newArticleMetaImage = TSType.fromCaseClass[NewArticleMetaImage]
+  implicit val newArticleMetaImage = TSType.fromCaseClass[NewArticleMetaImage] - "alt"
 }
