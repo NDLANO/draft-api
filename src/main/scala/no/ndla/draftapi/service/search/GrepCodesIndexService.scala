@@ -13,7 +13,7 @@ import com.sksamuel.elastic4s.mappings.MappingDefinition
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Article
-import no.ndla.draftapi.model.search.{SearchableGrepCode, SearchableLanguageFormats, SearchableTag}
+import no.ndla.draftapi.model.search.{SearchableGrepCode, SearchableLanguageFormats}
 import no.ndla.draftapi.repository.{DraftRepository, Repository}
 import org.json4s.native.Serialization.write
 
@@ -39,7 +39,7 @@ trait GrepCodesIndexService {
     def getMapping: MappingDefinition = {
       mapping(documentType).fields(
         List(
-          keywordField("grepCode")
+          keywordField("grepCode").analyzer("lowercase")
         )
       )
     }

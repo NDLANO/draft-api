@@ -87,6 +87,18 @@ class GrepCodesSearchServiceTest extends IntegrationSuite(EnableElasticsearchCon
     result2.results should be(Seq("KE115"))
   }
 
+  test("That searching for grepcodes returns sensible results even if lowercase") {
+    val Success(result) = grepCodesSearchService.matchingQuery("ke", 1, 100)
+
+    result.totalCount should be(3)
+    result.results should be(Seq("KE101", "KE105", "KE115"))
+
+    val Success(result2) = grepCodesSearchService.matchingQuery("ke115", 1, 100)
+
+    result2.totalCount should be(1)
+    result2.results should be(Seq("KE115"))
+  }
+
   test("That only prefixes are matched with grepcodes") {
     val Success(result) = grepCodesSearchService.matchingQuery("TT", 1, 100)
 

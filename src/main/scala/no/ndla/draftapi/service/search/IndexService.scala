@@ -7,13 +7,7 @@
 
 package no.ndla.draftapi.service.search
 
-import java.text.SimpleDateFormat
-import java.util.Calendar
-
-import com.sksamuel.elastic4s.analyzers.{KeywordTokenizer, LowercaseTokenFilter}
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.RequestSuccess
-import com.sksamuel.elastic4s.http.bulk.BulkResponse
 import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.mappings.{FieldDefinition, MappingDefinition}
 import com.typesafe.scalalogging.LazyLogging
@@ -23,9 +17,9 @@ import no.ndla.draftapi.model.domain.Language.languageAnalyzers
 import no.ndla.draftapi.model.domain.{Content, ReindexResult}
 import no.ndla.draftapi.repository.Repository
 
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
 
 trait IndexService {
   this: Elastic4sClient =>
