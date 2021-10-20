@@ -17,7 +17,7 @@ import no.ndla.draftapi.DraftApiProperties.{ElasticSearchIndexMaxResultWindow, E
 import no.ndla.draftapi.integration.Elastic4sClient
 import no.ndla.draftapi.model.api.ResultWindowTooLargeException
 import no.ndla.draftapi.model.domain._
-import no.ndla.draftapi.model.search.{SearchableGrepCode, SearchableTag}
+import no.ndla.draftapi.model.search.SearchableGrepCode
 import org.json4s._
 import org.json4s.native.Serialization.read
 
@@ -52,8 +52,8 @@ trait GrepCodesSearchService {
       val fullQuery = boolQuery()
         .must(
           boolQuery().should(
-            matchQuery("grepCode", query).boost(2),
-            prefixQuery("grepCode", query)
+            matchQuery("grepCode", query.toLowerCase).boost(2),
+            prefixQuery("grepCode", query.toLowerCase)
           )
         )
 
