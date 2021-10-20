@@ -15,6 +15,7 @@ import no.ndla.draftapi.DraftApiProperties
 import no.ndla.draftapi.model.domain.Article
 import no.ndla.draftapi.model.search.{SearchableGrepCode, SearchableLanguageFormats}
 import no.ndla.draftapi.repository.{DraftRepository, Repository}
+import org.json4s.Formats
 import org.json4s.native.Serialization.write
 
 trait GrepCodesIndexService {
@@ -22,7 +23,7 @@ trait GrepCodesIndexService {
   val grepCodesIndexService: GrepCodesIndexService
 
   class GrepCodesIndexService extends LazyLogging with IndexService[Article, SearchableGrepCode] {
-    implicit val formats = SearchableLanguageFormats.JSonFormats
+    implicit val formats: Formats = SearchableLanguageFormats.JSonFormats
     override val documentType: String = DraftApiProperties.DraftGrepCodesSearchDocument
     override val searchIndex: String = DraftApiProperties.DraftGrepCodesSearchIndex
     override val repository: Repository[Article] = draftRepository
