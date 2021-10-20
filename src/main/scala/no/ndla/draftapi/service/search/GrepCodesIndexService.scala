@@ -40,7 +40,7 @@ trait GrepCodesIndexService {
     def getMapping: MappingDefinition = {
       mapping(documentType).fields(
         List(
-          keywordField("grepCode").analyzer("lowercase")
+          textField("grepCode")
         )
       )
     }
