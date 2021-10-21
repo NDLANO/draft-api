@@ -45,7 +45,6 @@ class V8__UpdateStatusFormat extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -54,7 +53,6 @@ class V8__UpdateStatusFormat extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def convertStatus(statuses: Set[String]): JValue = {
@@ -86,7 +84,6 @@ class V8__UpdateStatusFormat extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply()
   }
 
   case class V8_Status(current: String, other: Set[String])

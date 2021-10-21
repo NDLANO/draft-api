@@ -52,7 +52,6 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
     sql"""select count(*) from articledata where document is not NULL and document@>'{"articleType":"topic-article"}'"""
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allTopicArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -66,7 +65,6 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   private def newStatus(extractedArticle: V16__Article): V16__Status =
@@ -155,7 +153,6 @@ class V17__MoveTopicArticleEmbedToVisualElement extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
   case class V16__Status(current: V16__ArticleStatus.Value, other: Set[V16__ArticleStatus.Value])

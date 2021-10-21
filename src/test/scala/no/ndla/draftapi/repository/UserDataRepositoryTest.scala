@@ -35,13 +35,13 @@ class UserDataRepositoryTest extends IntegrationSuite(EnablePostgresContainer = 
 
   def emptyTestDatabase = {
     DB autoCommit (implicit session => {
-      sql"delete from userdata;".execute().apply()(session)
+      sql"delete from userdata;".execute()(session)
     })
   }
 
   private def resetIdSequence() = {
     DB autoCommit (implicit session => {
-      sql"select setval('userdata_id_seq', 1, false);".execute().apply()
+      sql"select setval('userdata_id_seq', 1, false);".execute()
     })
   }
 

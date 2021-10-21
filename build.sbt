@@ -81,7 +81,7 @@ lazy val draft_api = (project in file("."))
       "org.apache.logging.log4j" % "log4j-core" % Log4JVersion,
       "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4JVersion,
       "vc.inreach.aws" % "aws-signing-request-interceptor" % "0.0.22",
-      "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.0.0-RC2",
       "com.zaxxer" % "HikariCP" % HikariConnectionPoolVersion,
       "org.postgresql" % "postgresql" % PostgresVersion,
       "com.amazonaws" % "aws-java-sdk-s3" % AwsSdkversion,

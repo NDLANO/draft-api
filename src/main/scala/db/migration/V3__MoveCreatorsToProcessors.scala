@@ -45,7 +45,7 @@ class V3__MoveCreatorsToProcessors extends BaseJavaMigration {
   }
 
   def countAllArticles(implicit session: DBSession) = {
-    sql"select count(*) from articledata where document is not NULL".map(rs => rs.long("count")).single().apply()
+    sql"select count(*) from articledata where document is not NULL".map(rs => rs.long("count")).single()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -54,7 +54,6 @@ class V3__MoveCreatorsToProcessors extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   private def convertCopyright(copyright: V3_Copyright): JValue = {
@@ -82,7 +81,7 @@ class V3__MoveCreatorsToProcessors extends BaseJavaMigration {
     dataObject.setType("jsonb")
     dataObject.setValue(document)
 
-    sql"update articledata set document = ${dataObject} where id = ${id}".update().apply()
+    sql"update articledata set document = ${dataObject} where id = ${id}".update()
   }
 
   case class V3_Author(`type`: String, name: String)

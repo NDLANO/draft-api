@@ -47,7 +47,6 @@ class R__RemoveDummyMetaDescription extends BaseJavaMigration {
     sql"""select count(*) from articledata where document is not NULL"""
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -60,7 +59,6 @@ class R__RemoveDummyMetaDescription extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def convertMetaDescription(metaDescription: List[ArticleMetaDescription]): JValue = {
@@ -91,6 +89,5 @@ class R__RemoveDummyMetaDescription extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 }

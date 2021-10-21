@@ -34,7 +34,7 @@ trait UserDataRepository {
         val userDataId: Long =
           sql"""
         insert into ${UserData.table} (user_id, document) values (${userData.userId}, $dataObject)
-        """.updateAndReturnGeneratedKey().apply()
+        """.updateAndReturnGeneratedKey()
 
         logger.info(s"Inserted new user data: $userDataId")
         userData.copy(id = Some(userDataId))
@@ -50,7 +50,7 @@ trait UserDataRepository {
           update ${UserData.table}
           set document=$dataObject
           where user_id=${userData.userId}
-      """.update().apply()
+      """.update()
 
       logger.info(s"Updated user data ${userData.userId}")
       Success(userData)
@@ -60,7 +60,6 @@ trait UserDataRepository {
       sql"select count(distinct user_id) from ${UserData.table} where document is not NULL"
         .map(rs => rs.long("count"))
         .single()
-        .apply()
         .getOrElse(0)
     }
 
@@ -77,7 +76,6 @@ trait UserDataRepository {
     sql"select ${ud.result.*} from ${UserData.as(ud)} where $whereClause"
       .map(UserData.fromResultSet(ud))
       .single()
-      .apply()
   }
 
 }
