@@ -106,6 +106,21 @@ lazy val draft_api = (project in file("."))
     // Excluding slf4j-api (and specifically adding 1.7.30) because of conflict between 1.7.30 and 2.0.0-alpha1
       .map(_.exclude("org.slf4j", "slf4j-api"))
   )
+  .enablePlugins(ScalaTsiPlugin)
+  .settings(
+    // The classes that you want to generate typescript interfaces for
+    typescriptGenerationImports := Seq("no.ndla.draftapi.model.api._", "no.ndla.draftapi.model.api.TSTypes._"),
+    typescriptExports := Seq(
+      "Agreement",
+      "Article",
+      "NewArticle",
+      "UpdatedAgreement",
+      "UpdatedArticle",
+      "UpdatedUserData",
+      "UserData"
+    ),
+    typescriptOutputFile := baseDirectory.value / "typescript" / "index.ts",
+  )
   .enablePlugins(DockerPlugin)
   .enablePlugins(JettyPlugin)
   .enablePlugins(ScalaPactPlugin)
