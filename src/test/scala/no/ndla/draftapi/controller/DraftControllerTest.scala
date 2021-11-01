@@ -403,7 +403,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
     reset(articleSearchService)
 
     val expectedSettings = TestData.searchSettings.copy(
-      searchLanguage = "all",
+      searchLanguage = "*",
       articleTypes = List("standard", "topic-article"),
       shouldScroll = true,
       sort = Sort.ByTitleAsc
@@ -413,7 +413,7 @@ class DraftControllerTest extends UnitSuite with TestEnvironment with ScalatraFu
       totalCount = 0,
       page = None,
       pageSize = 10,
-      language = "all",
+      language = "*",
       results = Seq.empty,
       scrollId = Some("heiheihei")
     )

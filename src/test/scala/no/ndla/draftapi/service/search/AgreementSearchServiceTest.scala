@@ -285,11 +285,11 @@ class AgreementSearchServiceTest extends IntegrationSuite(EnableElasticsearchCon
     val Success(initialSearch) =
       agreementSearchService.matchingQuery(agreementSearchSettings.copy(pageSize = pageSize, shouldScroll = true))
 
-    val Success(scroll1) = agreementSearchService.scroll(initialSearch.scrollId.get, "all")
-    val Success(scroll2) = agreementSearchService.scroll(scroll1.scrollId.get, "all")
-    val Success(scroll3) = agreementSearchService.scroll(scroll2.scrollId.get, "all")
-    val Success(scroll4) = agreementSearchService.scroll(scroll3.scrollId.get, "all")
-    val Success(scroll5) = agreementSearchService.scroll(scroll4.scrollId.get, "all")
+    val Success(scroll1) = agreementSearchService.scroll(initialSearch.scrollId.get, "*")
+    val Success(scroll2) = agreementSearchService.scroll(scroll1.scrollId.get, "*")
+    val Success(scroll3) = agreementSearchService.scroll(scroll2.scrollId.get, "*")
+    val Success(scroll4) = agreementSearchService.scroll(scroll3.scrollId.get, "*")
+    val Success(scroll5) = agreementSearchService.scroll(scroll4.scrollId.get, "*")
 
     initialSearch.results.map(_.id) should be(expectedIds.head)
     scroll1.results.map(_.id) should be(expectedIds(1))

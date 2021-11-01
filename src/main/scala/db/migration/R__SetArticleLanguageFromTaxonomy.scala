@@ -11,13 +11,12 @@ import no.ndla.draftapi.DraftApiProperties.Domain
 import no.ndla.draftapi.model.domain._
 import no.ndla.mapping.ISO639.get6391CodeFor6392Code
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
-import org.json4s.DefaultFormats
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.JsonMethods.parse
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
 import scalaj.http.Http
-import scalikejdbc.{DB, DBSession, _}
+import scalikejdbc.{DBSession, _}
 
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
@@ -96,7 +95,7 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
           .map(t => (getISO639(t._1), t._2.trim.toLowerCase))
           .groupBy(_._1)
           .map(entry => (entry._1, entry._2.map(_._2)))
-          .map(t => ArticleTag(t._2, Language.languageOrUnknown(t._1)))
+          .map(t => ArticleTag(t._2, Language.languageOrUnknown(t._1).toString))
           .toList
     }
 

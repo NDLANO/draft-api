@@ -34,7 +34,7 @@ trait SearchConverterService {
 
       val defaultTitle = ai.title
         .sortBy(title => {
-          val languagePriority = Language.languageAnalyzers.map(la => la.lang).reverse
+          val languagePriority = Language.languageAnalyzers.map(la => la.languageTag.toString).reverse
           languagePriority.indexOf(title.language)
         })
         .lastOption
@@ -81,7 +81,7 @@ trait SearchConverterService {
 
       val title = findByLanguageOrBestEffort(titles, language)
         .map(converterService.toApiArticleTitle)
-        .getOrElse(api.ArticleTitle("", UnknownLanguage))
+        .getOrElse(api.ArticleTitle("", UnknownLanguage.toString))
       val visualElement = findByLanguageOrBestEffort(visualElements, language).map(converterService.toApiVisualElement)
       val introduction =
         findByLanguageOrBestEffort(introductions, language).map(converterService.toApiArticleIntroduction)

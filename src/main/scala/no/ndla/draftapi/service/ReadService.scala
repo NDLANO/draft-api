@@ -72,11 +72,11 @@ trait ReadService {
 
     def getNMostUsedTags(n: Int, language: String): Option[api.ArticleTag] = {
       val tagUsageMap = getTagUsageMap()
-      val searchLanguage = getSearchLanguage(language, supportedLanguages)
+      val searchLanguage = languageOrUnknown(Some(language))
 
       tagUsageMap
-        .flatMap(_.get(searchLanguage))
-        .map(tags => api.ArticleTag(tags.getNMostFrequent(n), searchLanguage))
+        .flatMap(_.get(searchLanguage.toString))
+        .map(tags => api.ArticleTag(tags.getNMostFrequent(n), searchLanguage.toString))
     }
 
     def getArticlesByPage(pageNo: Int, pageSize: Int, lang: String, fallback: Boolean = false): api.ArticleDump = {

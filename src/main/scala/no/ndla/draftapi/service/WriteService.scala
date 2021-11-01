@@ -222,7 +222,7 @@ trait WriteService {
                                                           user,
                                                           oldNdlaCreatedDate,
                                                           oldNdlaUpdatedDate)
-        _ <- contentValidator.validateArticle(domainArticle, allowUnknownLanguage = false)
+        _ <- contentValidator.validateArticle(domainArticle)
         insertedArticle <- updateFunction(domainArticle)
         _ <- indexArticle(insertedArticle)
         apiArticle <- converterService.toApiArticle(insertedArticle, newArticle.language)
@@ -311,7 +311,7 @@ trait WriteService {
         else toUpdate
 
       for {
-        _ <- contentValidator.validateArticle(articleToValidate, allowUnknownLanguage = true)
+        _ <- contentValidator.validateArticle(articleToValidate)
         domainArticle <- performArticleUpdate(withMaybeNote,
                                               externalIds,
                                               externalSubjectIds,
@@ -488,7 +488,7 @@ trait WriteService {
           user = user
         )
         apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-                                                    updatedApiArticle.language.getOrElse(UnknownLanguage),
+                                                    updatedApiArticle.language.getOrElse(UnknownLanguage.toString),
                                                     updatedApiArticle.language.isEmpty)
       } yield apiArticle
     }
@@ -528,7 +528,7 @@ trait WriteService {
           user = user
         )
         apiArticle <- converterService.toApiArticle(readService.addUrlsOnEmbedResources(updatedArticle),
-                                                    updatedApiArticle.language.getOrElse(UnknownLanguage))
+                                                    updatedApiArticle.language.getOrElse(UnknownLanguage.toString))
       } yield apiArticle
 
     def deleteLanguage(id: Long, language: String, userInfo: UserInfo): Try[api.Article] = {

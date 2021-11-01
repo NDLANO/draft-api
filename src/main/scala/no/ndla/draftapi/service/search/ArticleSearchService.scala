@@ -44,7 +44,7 @@ trait ArticleSearchService {
       val fullQuery = settings.query match {
         case Some(query) =>
           val language =
-            if (settings.searchLanguage == Language.AllLanguages || settings.fallback) "*" else settings.searchLanguage
+            if (settings.fallback) "*" else settings.searchLanguage
           val titleSearch = simpleStringQuery(query).field(s"title.$language", 6)
           val introSearch = simpleStringQuery(query).field(s"introduction.$language", 2)
           val contentSearch = simpleStringQuery(query).field(s"content.$language", 1)
@@ -125,7 +125,7 @@ trait ArticleSearchService {
                 response.result.totalHits,
                 Some(settings.page),
                 numResults,
-                if (searchLanguage == "*") Language.AllLanguages else searchLanguage,
+                searchLanguage,
                 getHits(response.result, settings.searchLanguage),
                 response.result.scrollId
               ))

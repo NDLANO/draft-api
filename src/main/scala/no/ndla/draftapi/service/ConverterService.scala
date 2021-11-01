@@ -535,7 +535,7 @@ trait ConverterService {
 
       val isNewLanguage = article.language.exists(l => !toMergeInto.supportedLanguages.contains(l))
       val newLanguageEditorNote =
-        if (isNewLanguage) Seq(s"Ny språkvariant '${article.language.getOrElse("unknown")}' ble lagt til.")
+        if (isNewLanguage) Seq(s"Ny språkvariant '${article.language.getOrElse("und")}' ble lagt til.")
         else Seq.empty
 
       val newEditorialNotes = article.notes match {

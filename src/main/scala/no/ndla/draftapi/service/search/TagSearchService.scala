@@ -71,7 +71,7 @@ trait TagSearchService {
     ): Try[SearchResult[String]] = {
 
       val languageFilter =
-        if (language == "all" || language == "*") None
+        if (language == "*") None
         else
           Some(
             termQuery("language", language)

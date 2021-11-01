@@ -179,8 +179,10 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
 
   val article11: Article = TestData.sampleArticleWithPublicDomain.copy(
     id = Option(11),
-    title = List(ArticleTitle("Katter", "nb"), ArticleTitle("Cats", "en")),
-    introduction = List(ArticleIntroduction("Katter er store", "nb"), ArticleIntroduction("Cats are big", "en")),
+    title = List(ArticleTitle("Katter", "nb"), ArticleTitle("Cats", "en"), ArticleTitle("Baloi", "biz")),
+    introduction = List(ArticleIntroduction("Katter er store", "nb"),
+                        ArticleIntroduction("Cats are big", "en"),
+                        ArticleIntroduction("Cats are biz", "biz")),
     content = List(ArticleContent("<p>Noe om en katt</p>", "nb"), ArticleContent("<p>Something about a cat</p>", "en")),
     tags = List(ArticleTag(List("katt"), "nb"), ArticleTag(List("cat"), "en")),
     created = today.minusDays(10).toDate,
@@ -613,6 +615,26 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
     search.results(2).title.language should equal("en")
   }
 
+  test("That searching for language not in analyzers works as expected") {
+    val Success(search) = articleSearchService.matchingQuery(searchSettings.copy(searchLanguage = "biz"))
+
+    search.totalCount should equal(1)
+    search.results.head.id should equal(11)
+    search.results.head.title.language should equal("biz")
+  }
+
+  test("That searching for language not in index works as expected") {
+    val Success(search) = articleSearchService.matchingQuery(searchSettings.copy(searchLanguage = "mix"))
+
+    search.totalCount should equal(0)
+  }
+
+  test("That searching for unsupported language code works as expected") {
+    val Success(search) = articleSearchService.matchingQuery(searchSettings.copy(searchLanguage = "asdf"))
+
+    search.totalCount should equal(0)
+  }
+
   test("That scrolling works as expected") {
     val pageSize = 2
     val expectedIds = List(1, 2, 3, 5, 6, 7, 8, 9, 10, 11).sliding(pageSize, pageSize).toList
@@ -625,11 +647,11 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
         shouldScroll = true
       ))
 
-    val Success(scroll1) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
-    val Success(scroll2) = articleSearchService.scroll(scroll1.scrollId.get, "all")
-    val Success(scroll3) = articleSearchService.scroll(scroll2.scrollId.get, "all")
-    val Success(scroll4) = articleSearchService.scroll(scroll3.scrollId.get, "all")
-    val Success(scroll5) = articleSearchService.scroll(scroll4.scrollId.get, "all")
+    val Success(scroll1) = articleSearchService.scroll(initialSearch.scrollId.get, "*")
+    val Success(scroll2) = articleSearchService.scroll(scroll1.scrollId.get, "*")
+    val Success(scroll3) = articleSearchService.scroll(scroll2.scrollId.get, "*")
+    val Success(scroll4) = articleSearchService.scroll(scroll3.scrollId.get, "*")
+    val Success(scroll5) = articleSearchService.scroll(scroll4.scrollId.get, "*")
 
     initialSearch.results.map(_.id) should be(expectedIds.head)
     scroll1.results.map(_.id) should be(expectedIds(1))
@@ -648,7 +670,7 @@ class ArticleSearchServiceTest extends IntegrationSuite(EnableElasticsearchConta
         pageSize = 1,
         shouldScroll = true
       ))
-    val Success(scroll) = articleSearchService.scroll(initialSearch.scrollId.get, "all")
+    val Success(scroll) = articleSearchService.scroll(initialSearch.scrollId.get, "*")
 
     initialSearch.results.size should be(1)
     initialSearch.results.head.id should be(10)

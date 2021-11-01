@@ -32,12 +32,12 @@ class ReadServiceTest extends UnitSuite with TestEnvironment {
 
   val content2 =
     s"""<$resourceHtmlEmbedTag $resourceIdAttr="321" $resourceAttr="$imageType"><$resourceHtmlEmbedTag $resourceIdAttr=4321 $resourceAttr="$imageType">"""
-  val articleContent1 = ArticleContent(content1, "unknown")
+  val articleContent1 = ArticleContent(content1, "und")
 
   val expectedArticleContent1 = articleContent1.copy(content =
     s"""<$resourceHtmlEmbedTag $resourceIdAttr="123" $resourceAttr="$imageType" $urlAttr="$externalImageApiUrl/123"><$resourceHtmlEmbedTag $resourceIdAttr="1234" $resourceAttr="$imageType" $urlAttr="$externalImageApiUrl/1234">""")
 
-  val articleContent2 = ArticleContent(content2, "unknown")
+  val articleContent2 = ArticleContent(content2, "und")
 
   val nbTags = ArticleTag(Seq("a", "b", "c", "a", "b", "a"), "nb")
   val enTags = ArticleTag(Seq("d", "e", "f", "d", "e", "d"), "en")
