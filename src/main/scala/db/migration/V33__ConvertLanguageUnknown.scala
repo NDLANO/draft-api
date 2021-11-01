@@ -1,11 +1,9 @@
 package db.migration
 
-import no.ndla.draftapi.model.domain
 import no.ndla.draftapi.model.domain.Article
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
-import org.json4s.ext.EnumNameSerializer
-import org.json4s.{Extraction, Formats}
 import org.json4s.native.JsonMethods.{compact, parse, render}
+import org.json4s.{Extraction, Formats}
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
@@ -36,14 +34,14 @@ class V33__ConvertLanguageUnknown extends BaseJavaMigration {
   }
 
   def countAllArticles(implicit session: DBSession): Option[Long] = {
-    sql"select count(*) from contentdata where document is not NULL"
+    sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
       .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
-    sql"select id, document, article_id from contentdata where document is not null order by id limit 1000 offset $offset"
+    sql"select id, document, article_id from articledata where document is not null order by id limit 1000 offset $offset"
       .map(rs => {
         (rs.long("id"), rs.string("document"))
       })
@@ -56,7 +54,7 @@ class V33__ConvertLanguageUnknown extends BaseJavaMigration {
     dataObject.setType("jsonb")
     dataObject.setValue(document)
 
-    sql"update contentdata set document = $dataObject where id = $id"
+    sql"update articledata set document = $dataObject where id = $id"
       .update()
       .apply()
   }
