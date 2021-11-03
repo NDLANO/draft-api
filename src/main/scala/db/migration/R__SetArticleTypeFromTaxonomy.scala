@@ -97,7 +97,6 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, Long, String)] = {
@@ -106,7 +105,6 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
         (rs.long("id"), rs.long("article_id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def updateArticle(document: String, id: Long)(implicit session: DBSession): Int = {
@@ -116,7 +114,6 @@ class R__SetArticleTypeFromTaxonomy extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
 }

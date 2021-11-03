@@ -1,7 +1,7 @@
 import java.util.Properties
 
 val Scalaversion = "2.13.3"
-val Scalatraversion = "2.7.1"
+val Scalatraversion = "2.8.2"
 val ScalaLoggingVersion = "3.9.2"
 val ScalaTestVersion = "3.2.1"
 val Log4JVersion = "2.13.3"
@@ -12,7 +12,7 @@ val Elastic4sVersion = "6.7.8"
 val JacksonVersion = "2.12.1"
 val CatsEffectVersion = "2.1.2"
 val ElasticsearchVersion = "6.8.13"
-val Json4SVersion = "3.6.7"
+val Json4SVersion = "4.0.3"
 val FlywayVersion = "7.5.3"
 val PostgresVersion = "42.2.18"
 val HikariConnectionPoolVersion = "4.0.1"
@@ -63,9 +63,9 @@ lazy val draft_api = (project in file("."))
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= (pactTestFramework ++ Seq(
-      "ndla" %% "network" % "0.44",
+      "ndla" %% "network" % "0.47",
       "ndla" %% "mapping" % "0.15",
-      "ndla" %% "validation" % "0.51",
+      "ndla" %% "validation" % "0.52",
       "ndla" %% "scalatestsuite" % "0.3" % "test",
       "joda-time" % "joda-time" % "2.10",
       "org.scalatra" %% "scalatra" % Scalatraversion,
@@ -81,7 +81,7 @@ lazy val draft_api = (project in file("."))
       "org.apache.logging.log4j" % "log4j-core" % Log4JVersion,
       "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4JVersion,
       "vc.inreach.aws" % "aws-signing-request-interceptor" % "0.0.22",
-      "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.0.0-RC2",
       "com.zaxxer" % "HikariCP" % HikariConnectionPoolVersion,
       "org.postgresql" % "postgresql" % PostgresVersion,
       "com.amazonaws" % "aws-java-sdk-s3" % AwsSdkversion,
@@ -101,7 +101,7 @@ lazy val draft_api = (project in file("."))
       "org.flywaydb" % "flyway-core" % FlywayVersion,
       "io.lemonlabs" %% "scala-uri" % "1.5.1",
       "org.typelevel" %% "cats-effect" % CatsEffectVersion,
-      "org.slf4j" % "slf4j-api" % "1.7.30"
+      "org.slf4j" % "slf4j-api" % "1.7.30",
     ) ++ vulnerabilityOverrides)
     // Excluding slf4j-api (and specifically adding 1.7.30) because of conflict between 1.7.30 and 2.0.0-alpha1
       .map(_.exclude("org.slf4j", "slf4j-api"))

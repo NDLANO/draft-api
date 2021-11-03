@@ -44,7 +44,6 @@ class V12__UpdateAgreementLicenses extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -53,7 +52,6 @@ class V12__UpdateAgreementLicenses extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def updateLicense(license: String): String = {
@@ -100,7 +98,6 @@ class V12__UpdateAgreementLicenses extends BaseJavaMigration {
 
     sql"update agreementdata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
   case class V8_Status(current: String, other: Set[String])

@@ -46,7 +46,6 @@ class V23__UpdateH5PDomainForFFVisualElement extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -55,7 +54,6 @@ class V23__UpdateH5PDomainForFFVisualElement extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def allArticlesWithArticleId(articleId: Long)(implicit session: DBSession) = {
@@ -64,7 +62,6 @@ class V23__UpdateH5PDomainForFFVisualElement extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def updateArticle(document: String, id: Long)(implicit session: DBSession): Int = {
@@ -74,7 +71,6 @@ class V23__UpdateH5PDomainForFFVisualElement extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
   def updateH5PDomains(html: String): String = {

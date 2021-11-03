@@ -30,7 +30,7 @@ trait AgreementRepository {
       dataObject.setValue(write(agreement))
 
       val agreementId: Long =
-        sql"insert into ${Agreement.table} (document) values (${dataObject})".updateAndReturnGeneratedKey().apply()
+        sql"insert into ${Agreement.table} (document) values (${dataObject})".updateAndReturnGeneratedKey()
 
       logger.info(s"Inserted new agreement: $agreementId")
       agreement.copy(id = Some(agreementId))
@@ -41,7 +41,7 @@ trait AgreementRepository {
       dataObject.setType("jsonb")
       dataObject.setValue(write(agreement))
 
-      val count = sql"update ${Agreement.table} set document=${dataObject} where id=${agreement.id}".update().apply()
+      val count = sql"update ${Agreement.table} set document=${dataObject} where id=${agreement.id}".update()
 
       logger.info(s"Updated agreement ${agreement.id}")
       Success(agreement)
@@ -51,7 +51,7 @@ trait AgreementRepository {
       agreementWhere(sqls"agr.id=${id.toInt}")
 
     def delete(id: Long)(implicit session: DBSession = AutoSession) = {
-      sql"delete from ${Agreement.table} where id = $id".update().apply()
+      sql"delete from ${Agreement.table} where id = $id".update()
     }
 
     override def minMaxId(implicit session: DBSession = AutoSession): (Long, Long) = {
@@ -59,8 +59,7 @@ trait AgreementRepository {
         .map(rs => {
           (rs.long("mi"), rs.long("ma"))
         })
-        .single()
-        .apply() match {
+        .single() match {
         case Some(minmax) => minmax
         case None         => (0L, 0L)
       }
@@ -75,7 +74,6 @@ trait AgreementRepository {
       sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause"
         .map(Agreement.fromResultSet(agr))
         .single()
-        .apply()
     }
 
     private def agreementsWhere(whereClause: SQLSyntax)(
@@ -84,7 +82,6 @@ trait AgreementRepository {
       sql"select ${agr.result.*} from ${Agreement.as(agr)} where $whereClause"
         .map(Agreement.fromResultSet(agr))
         .list()
-        .apply()
     }
 
   }
