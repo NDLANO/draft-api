@@ -38,7 +38,6 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[Article] = {
@@ -46,7 +45,6 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
     sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL order by ar.id limit 1000 offset $offset"
       .map(Article.fromResultSet(ar))
       .list()
-      .apply()
   }
 
   def updateArticle(article: Article)(implicit session: DBSession) = {
@@ -68,7 +66,6 @@ class R__RemoveStatusPublishedArticles extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where article_id=${article.id}"
       .update()
-      .apply()
   }
 
 }

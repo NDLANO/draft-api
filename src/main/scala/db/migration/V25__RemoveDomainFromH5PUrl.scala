@@ -48,7 +48,6 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -57,7 +56,6 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def updateArticle(document: String, id: Long)(implicit session: DBSession): Int = {
@@ -67,7 +65,6 @@ class V25__RemoveDomainFromH5PUrl extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
   private def stringToJsoupDocument(htmlString: String): Element = {

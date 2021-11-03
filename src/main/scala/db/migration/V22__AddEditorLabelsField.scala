@@ -44,7 +44,6 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -53,7 +52,6 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def allArticlesWithArticleId(articleId: Long)(implicit session: DBSession) = {
@@ -62,7 +60,6 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def updateArticle(document: String, id: Long)(implicit session: DBSession): Int = {
@@ -72,7 +69,6 @@ class V22__AddEditorLabelsField extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
   private[migration] def convertArticleUpdate(document: String): String = {

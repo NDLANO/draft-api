@@ -44,7 +44,6 @@ class R__RemoveEmptyStringLanguageFields extends BaseJavaMigration {
     sql"""select count(*) from articledata where document is not NULL"""
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -57,7 +56,6 @@ class R__RemoveEmptyStringLanguageFields extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def convertArticle(document: String): String = {
@@ -83,6 +81,5 @@ class R__RemoveEmptyStringLanguageFields extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 }

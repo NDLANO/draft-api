@@ -144,7 +144,6 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
     sql"select ${ar.result.*} from ${Article.as(ar)} where ar.document is not NULL and $withId"
       .map(Article.fromResultSet(ar))
       .single()
-      .apply()
   }
 
   def convertArticleLanguage(oldArticle: Option[Article], externalTags: Seq[ArticleTag]): Option[Article] = {
@@ -209,7 +208,6 @@ class R__SetArticleLanguageFromTaxonomy extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where article_id=${article.id}"
       .update()
-      .apply()
   }
 
 }

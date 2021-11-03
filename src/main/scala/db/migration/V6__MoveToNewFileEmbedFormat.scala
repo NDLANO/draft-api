@@ -51,7 +51,6 @@ class V6__MoveToNewFileEmbedFormat extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -60,7 +59,6 @@ class V6__MoveToNewFileEmbedFormat extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   private def convertContent(content: List[V6_Content]): JValue = {
@@ -110,7 +108,6 @@ class V6__MoveToNewFileEmbedFormat extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply()
   }
 
   case class V6_Content(content: String, language: String)

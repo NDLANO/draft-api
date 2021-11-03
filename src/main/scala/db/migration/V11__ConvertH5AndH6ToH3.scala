@@ -48,7 +48,6 @@ class V11__ConvertH5AndH6ToH3 extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   private def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String)] = {
@@ -57,7 +56,6 @@ class V11__ConvertH5AndH6ToH3 extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   private def stringToJsoupDocument(htmlString: String): Element = {
@@ -111,7 +109,6 @@ class V11__ConvertH5AndH6ToH3 extends BaseJavaMigration {
 
     sql"update articledata set document = ${dataObject} where id = ${id}"
       .update()
-      .apply()
   }
 
 }

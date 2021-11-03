@@ -48,7 +48,6 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
     sql"select count(*) from articledata where document is not NULL"
       .map(rs => rs.long("count"))
       .single()
-      .apply()
   }
 
   def allArticles(offset: Long)(implicit session: DBSession): Seq[(Long, String, Long)] = {
@@ -57,7 +56,6 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"), rs.long("article_id"))
       })
       .list()
-      .apply()
   }
 
   def allArticlesWithArticleId(articleId: Long)(implicit session: DBSession) = {
@@ -66,7 +64,6 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
         (rs.long("id"), rs.string("document"))
       })
       .list()
-      .apply()
   }
 
   def updateArticle(document: String, id: Long)(implicit session: DBSession): Int = {
@@ -76,7 +73,6 @@ class V19__AddPreviousNotesAsHiddenNotes extends BaseJavaMigration {
 
     sql"update articledata set document = $dataObject where id = $id"
       .update()
-      .apply()
   }
 
   def convertArticleUpdate(articleId: Long, id: Long, document: String)(implicit session: DBSession): String = {
