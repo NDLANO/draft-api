@@ -52,7 +52,3 @@ jobs:
           git add typescript/index.ts
           git commit -m "AUTOMATION: Generated new typescript files"
           git push
-      - name: "Cache tricks"
-        run: |
-          find $HOME/.ivy2 -name "ivydata-*.properties" -delete
-          find $HOME/.sbt -name "*.lock" -delete
