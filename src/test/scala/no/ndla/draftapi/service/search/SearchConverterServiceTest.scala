@@ -1,14 +1,15 @@
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2019 NDLA
+ *
+ * See LICENSE
+ */
+
 package no.ndla.draftapi.service.search
 
 import no.ndla.draftapi.model.domain.{ArticleStatus, EditorNote, Status}
 import no.ndla.draftapi.{TestData, TestEnvironment, UnitSuite}
 
-/**
-  * Part of NDLA ndla.
-  * Copyright (C) 2019 NDLA
-  *
-  * See LICENSE
-  */
 class SearchConverterServiceTest extends UnitSuite with TestEnvironment {
   val service = new SearchConverterService
 

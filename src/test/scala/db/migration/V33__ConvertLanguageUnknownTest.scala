@@ -1,3 +1,10 @@
+/*
+ * Part of NDLA draft-api
+ * Copyright (C) 2021 NDLA
+ *
+ * See LICENSE
+ */
+
 package db.migration
 
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}

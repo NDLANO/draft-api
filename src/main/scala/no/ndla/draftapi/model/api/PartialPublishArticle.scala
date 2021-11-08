@@ -3,7 +3,6 @@
  * Copyright (C) 2021 NDLA
  *
  * See LICENSE
- *
  */
 
 package no.ndla.draftapi.model.api
