@@ -1,3 +1,10 @@
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2019 NDLA
+ *
+ * See LICENSE
+ */
+
 package db.migration
 import no.ndla.draftapi.model.domain.{ArticleMetaDescription, ArticleStatus, ArticleType}
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
@@ -8,12 +15,6 @@ import org.json4s.{Formats, JArray, JValue}
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
-/**
-  * Part of NDLA ndla.
-  * Copyright (C) 2019 NDLA
-  *
-  * See LICENSE
-  */
 class R__RemoveDummyMetaDescription extends BaseJavaMigration {
   implicit val formats
     : Formats = org.json4s.DefaultFormats + new EnumNameSerializer(ArticleStatus) + new EnumNameSerializer(ArticleType)

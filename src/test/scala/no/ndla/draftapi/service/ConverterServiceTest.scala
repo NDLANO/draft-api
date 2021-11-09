@@ -1,5 +1,5 @@
 /*
- * Part of NDLA draft_api.
+ * Part of NDLA draft-api.
  * Copyright (C) 2017 NDLA
  *
  * See LICENSE
@@ -49,9 +49,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("that toApiArticle returns sorted supportedLanguages") {
     when(draftRepository.getExternalIdsFromId(TestData.articleId)).thenReturn(List(TestData.externalId))
     val result = service.toApiArticle(
-      TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title :+ ArticleTitle("hehe", "unknown")),
+      TestData.sampleDomainArticle.copy(title = TestData.sampleDomainArticle.title :+ ArticleTitle("hehe", "und")),
       "nb")
-    result.get.supportedLanguages should be(Seq("unknown", "nb"))
+    result.get.supportedLanguages should be(Seq("nb", "und"))
   }
 
   test("that toApiArticleV2 returns none if article does not exist on language, and fallback is not specified") {
@@ -802,7 +802,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("That mergeLanguageFields returns original list when updated is empty") {
     val existing =
-      Seq(ArticleTitle("Tittel 1", "nb"), ArticleTitle("Tittel 2", "nn"), ArticleTitle("Tittel 3", "unknown"))
+      Seq(ArticleTitle("Tittel 1", "nb"), ArticleTitle("Tittel 2", "nn"), ArticleTitle("Tittel 3", "und"))
     service.mergeLanguageFields(existing, Seq()) should equal(existing)
   }
 
@@ -832,9 +832,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("That mergeLanguageFields updates the title with unknown language specified") {
     val tittel1 = ArticleTitle("Tittel 1", "nb")
-    val tittel2 = ArticleTitle("Tittel 2", "unknown")
+    val tittel2 = ArticleTitle("Tittel 2", "und")
     val tittel3 = ArticleTitle("Tittel 3", "en")
-    val oppdatertTittel2 = ArticleTitle("Tittel 2 er oppdatert", "unknown")
+    val oppdatertTittel2 = ArticleTitle("Tittel 2 er oppdatert", "und")
 
     val existing = Seq(tittel1, tittel2, tittel3)
     val updated = Seq(oppdatertTittel2)
@@ -844,9 +844,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("That mergeLanguageFields also updates the correct content") {
     val desc1 = ArticleContent("Beskrivelse 1", "nb")
-    val desc2 = ArticleContent("Beskrivelse 2", "unknown")
+    val desc2 = ArticleContent("Beskrivelse 2", "und")
     val desc3 = ArticleContent("Beskrivelse 3", "en")
-    val oppdatertDesc2 = ArticleContent("Beskrivelse 2 er oppdatert", "unknown")
+    val oppdatertDesc2 = ArticleContent("Beskrivelse 2 er oppdatert", "und")
 
     val existing = Seq(desc1, desc2, desc3)
     val updated = Seq(oppdatertDesc2)

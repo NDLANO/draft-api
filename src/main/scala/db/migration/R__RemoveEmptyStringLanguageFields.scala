@@ -1,3 +1,10 @@
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2021 NDLA
+ *
+ * See LICENSE
+ */
+
 package db.migration
 
 import no.ndla.draftapi.model.domain
@@ -8,12 +15,6 @@ import org.json4s.native.JsonMethods.{compact, render}
 import org.postgresql.util.PGobject
 import scalikejdbc.{DB, DBSession, _}
 
-/**
-  * Part of NDLA ndla.
-  * Copyright (C) 2021 NDLA
-  *
-  * See LICENSE
-  */
 class R__RemoveEmptyStringLanguageFields extends BaseJavaMigration {
   override def getChecksum: Integer = 1 // Change this to something else if you want to repeat migration
 

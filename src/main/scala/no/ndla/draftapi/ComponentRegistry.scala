@@ -1,5 +1,5 @@
 /*
- * Part of NDLA draft_api.
+ * Part of NDLA draft-api.
  * Copyright (C) 2017 NDLA
  *
  * See LICENSE
@@ -94,8 +94,8 @@ object ComponentRegistry
   lazy val agreementIndexService = new AgreementIndexService
 
   lazy val converterService = new ConverterService
-  lazy val contentValidator = new ContentValidator(allowEmptyLanguageField = false)
-  lazy val importValidator = new ContentValidator(allowEmptyLanguageField = true)
+  lazy val contentValidator = new ContentValidator()
+  lazy val importValidator = new ContentValidator()
 
   lazy val ndlaClient = new NdlaClient
   lazy val searchConverterService = new SearchConverterService

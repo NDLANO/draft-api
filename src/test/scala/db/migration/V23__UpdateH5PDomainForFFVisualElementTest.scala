@@ -1,13 +1,14 @@
+/*
+ * Part of NDLA draft-api.
+ * Copyright (C) 2019 NDLA
+ *
+ * See LICENSE
+ */
+
 package db.migration
 
 import no.ndla.draftapi.{TestEnvironment, UnitSuite}
 
-/**
-  * Part of NDLA ndla.
-  * Copyright (C) 2019 NDLA
-  *
-  * See LICENSE
-  */
 class V23__UpdateH5PDomainForFFVisualElementTest extends UnitSuite with TestEnvironment {
   val migration = new V23__UpdateH5PDomainForFFVisualElement
 
