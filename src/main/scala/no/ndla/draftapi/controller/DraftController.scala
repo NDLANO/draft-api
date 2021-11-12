@@ -53,6 +53,8 @@ trait DraftController {
 
     private val query =
       Param[Option[String]]("query", "Return only articles with content matching the specified query.")
+    private val optionalArticleId =
+      Param[Option[Long]]("articleId", description = "The ID of the article to generate a status state machine for")
     private val articleId = Param[Long]("article_id", "Id of the article that is to be fetched")
     private val size = Param[Option[Int]]("size", "Limit the number of results to this many elements")
     private val articleTypes = Param[Option[String]](
@@ -625,13 +627,17 @@ trait DraftController {
         apiOperation[Map[String, List[String]]]("getStatusStateMachine")
           .summary("Get status state machine")
           .description("Get status state machine")
+          .parameters(
+            asQueryParam(optionalArticleId)
+          )
           .authorizations("oauth2")
           .responseMessages(response500)
       )
     ) {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
-        converterService.stateTransitionsToApi(user.getUser)
+        val id = longOrNone(this.optionalArticleId.paramName)
+        converterService.stateTransitionsToApi(user.getUser, id)
       }
     }
 
@@ -730,4 +736,5 @@ trait DraftController {
     }
 
   }
+
 }
