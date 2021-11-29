@@ -694,7 +694,7 @@ trait ConverterService {
       (toKeep ++ updated).filterNot(_.isEmpty)
     }
 
-    def _stateTransitionsToApi(user: UserInfo, article: Option[Article]): Map[String, Seq[String]] = {
+    private[service] def _stateTransitionsToApi(user: UserInfo, article: Option[Article]): Map[String, Seq[String]] = {
       val ignoreRequiredArchiveRoles =
         article.exists(art =>
           art.status.current != ArticleStatus.PUBLISHED && !art.status.other.contains(ArticleStatus.PUBLISHED))

@@ -147,7 +147,6 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       TestData.sampleArticleWithPublicDomain.copy(id = Some(articleId), status = Status(ArticleStatus.DRAFT, Set()))
     when(draftRepository.withId(articleId)).thenReturn(Some(article))
     val Success(noTrans) = service.stateTransitionsToApi(TestData.userWithNoRoles, Some(articleId))
-    println(noTrans(PROPOSAL.toString))
     noTrans(DRAFT.toString) should contain(ArticleStatus.ARCHIVED.toString)
     noTrans(PROPOSAL.toString) should contain(ArticleStatus.ARCHIVED.toString)
     noTrans(USER_TEST.toString) should contain(ArticleStatus.ARCHIVED.toString)
