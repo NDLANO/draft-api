@@ -137,13 +137,80 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("stateTransitionsToApi should return no entries if user has no roles") {
-    val res = service.stateTransitionsToApi(TestData.userWithNoRoles)
+    val Success(res) = service.stateTransitionsToApi(TestData.userWithNoRoles, None)
     res.forall { case (_, to) => to.isEmpty } should be(true)
   }
 
+  test("stateTransitionsToApi should allow all users to archive articles that have not been published") {
+    val articleId: Long = 1
+    val article: Article =
+      TestData.sampleArticleWithPublicDomain.copy(id = Some(articleId), status = Status(ArticleStatus.DRAFT, Set()))
+    when(draftRepository.withId(articleId)).thenReturn(Some(article))
+    val Success(noTrans) = service.stateTransitionsToApi(TestData.userWithNoRoles, Some(articleId))
+    noTrans(DRAFT.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(PROPOSAL.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(USER_TEST.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(AWAITING_QUALITY_ASSURANCE.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(QUALITY_ASSURED.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(QUALITY_ASSURED_DELAYED.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(QUEUED_FOR_LANGUAGE.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(TRANSLATED.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(PUBLISHED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(AWAITING_UNPUBLISHING.toString) should contain(ArticleStatus.ARCHIVED.toString)
+    noTrans(UNPUBLISHED.toString) should contain(ArticleStatus.ARCHIVED.toString)
+  }
+
+  test("stateTransitionsToApi should not allow all users to archive articles that are currently published") {
+
+    val articleId: Long = 1
+    val article: Article =
+      TestData.sampleArticleWithPublicDomain.copy(id = Some(articleId), status = Status(ArticleStatus.PUBLISHED, Set()))
+    when(draftRepository.withId(articleId)).thenReturn(Some(article))
+    val Success(noTrans) = service.stateTransitionsToApi(TestData.userWithNoRoles, Some(articleId))
+
+    noTrans(IMPORTED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(DRAFT.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(PROPOSAL.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(USER_TEST.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(AWAITING_QUALITY_ASSURANCE.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(QUALITY_ASSURED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(QUALITY_ASSURED_DELAYED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(QUEUED_FOR_LANGUAGE.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(TRANSLATED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(PUBLISHED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(AWAITING_UNPUBLISHING.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+    noTrans(UNPUBLISHED.toString) should not contain (ArticleStatus.ARCHIVED.toString)
+  }
+
+  test("stateTransitionsToApi should not allow all users to archive articles that have previously been published") {
+
+    val articleId = 1
+    val article: Article =
+      TestData.sampleArticleWithPublicDomain.copy(id = Some(articleId),
+                                                  status = Status(ArticleStatus.DRAFT, Set(ArticleStatus.PUBLISHED)))
+    when(draftRepository.withId(articleId)).thenReturn(Some(article))
+    val Success(noTrans) = service.stateTransitionsToApi(TestData.userWithNoRoles, None)
+
+    noTrans(IMPORTED.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(DRAFT.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(PROPOSAL.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(USER_TEST.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(AWAITING_QUALITY_ASSURANCE.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(QUALITY_ASSURED.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(QUALITY_ASSURED_DELAYED.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(QUEUED_FOR_LANGUAGE.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(TRANSLATED.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(QUEUED_FOR_PUBLISHING_DELAYED.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(PUBLISHED.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(AWAITING_UNPUBLISHING.toString) should not contain (ArticleStatus.ARCHIVED)
+    noTrans(UNPUBLISHED.toString) should not contain (ArticleStatus.ARCHIVED)
+  }
+
   test("stateTransitionsToApi should return different number of transitions based on access") {
-    val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
-    val writeTrans = service.stateTransitionsToApi(TestData.userWithWriteAccess)
+    val Success(adminTrans) = service.stateTransitionsToApi(TestData.userWithAdminAccess, None)
+    val Success(writeTrans) = service.stateTransitionsToApi(TestData.userWithWriteAccess, None)
 
     // format: off
     writeTrans(IMPORTED.toString).length should be(adminTrans(IMPORTED.toString).length)
@@ -164,14 +231,19 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("stateTransitionsToApi should have transitions from all statuses if admin") {
-    val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
+    val Success(adminTrans) = service.stateTransitionsToApi(TestData.userWithAdminAccess, None)
     adminTrans.size should be(ArticleStatus.values.size)
   }
 
   test("stateTransitionsToApi should have transitions in inserted order") {
-    val adminTrans = service.stateTransitionsToApi(TestData.userWithAdminAccess)
+    val Success(adminTrans) = service.stateTransitionsToApi(TestData.userWithAdminAccess, None)
     adminTrans(QUEUED_FOR_LANGUAGE.toString) should be(
-      Seq(PROPOSAL.toString, QUEUED_FOR_LANGUAGE.toString, TRANSLATED.toString, ARCHIVED.toString, PUBLISHED.toString))
+      Seq(DRAFT.toString,
+          PROPOSAL.toString,
+          QUEUED_FOR_LANGUAGE.toString,
+          TRANSLATED.toString,
+          ARCHIVED.toString,
+          PUBLISHED.toString))
     adminTrans(TRANSLATED.toString) should be(
       Seq(PROPOSAL.toString,
           TRANSLATED.toString,

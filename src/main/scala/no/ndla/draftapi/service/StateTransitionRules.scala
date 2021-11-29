@@ -178,6 +178,7 @@ trait StateTransitionRules {
        UNPUBLISHED                   -> UNPUBLISHED,
        UNPUBLISHED                   -> ARCHIVED                       require PublishRoles illegalStatuses Set(PUBLISHED),
        //UNPUBLISHED                   -> AWAITING_ARCHIVING,
+       QUEUED_FOR_LANGUAGE           -> DRAFT,
        QUEUED_FOR_LANGUAGE           -> PROPOSAL,
        QUEUED_FOR_LANGUAGE           -> QUEUED_FOR_LANGUAGE,
        QUEUED_FOR_LANGUAGE           -> TRANSLATED,

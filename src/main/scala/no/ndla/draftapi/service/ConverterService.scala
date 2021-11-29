@@ -422,6 +422,7 @@ trait ConverterService {
     def toArticleApiCopyright(copyright: domain.Copyright): api.ArticleApiCopyright = {
       def toArticleApiAuthor(author: domain.Author): api.ArticleApiAuthor =
         api.ArticleApiAuthor(author.`type`, author.name)
+
       api.ArticleApiCopyright(
         copyright.license.getOrElse(""),
         copyright.origin.getOrElse(""),
@@ -693,15 +694,32 @@ trait ConverterService {
       (toKeep ++ updated).filterNot(_.isEmpty)
     }
 
-    def stateTransitionsToApi(user: UserInfo): Map[String, Seq[String]] = {
+    private[service] def _stateTransitionsToApi(user: UserInfo, article: Option[Article]): Map[String, Seq[String]] = {
+      val ignoreRequiredArchiveRoles =
+        article.exists(art =>
+          art.status.current != ArticleStatus.PUBLISHED && !art.status.other.contains(ArticleStatus.PUBLISHED))
+
       StateTransitionRules.StateTransitions.groupBy(_.from).map {
         case (from, to) =>
           from.toString -> to
-            .filter(t => user.hasRoles(t.requiredRoles))
+            .filter(t => {
+              val ignoreRoles = ignoreRequiredArchiveRoles && t.from != ArticleStatus.PUBLISHED && t.to == ArticleStatus.ARCHIVED
+              ignoreRoles || user.hasRoles(t.requiredRoles)
+            })
             .map(_.to.toString)
             .toSeq
       }
     }
+
+    def stateTransitionsToApi(user: UserInfo, articleId: Option[Long]): Try[Map[String, Seq[String]]] =
+      articleId match {
+        case Some(id) =>
+          draftRepository.withId(id) match {
+            case Some(article) => Success(_stateTransitionsToApi(user, Some(article)))
+            case None          => Failure(NotFoundException("The article does not exist"))
+          }
+        case None => Success(_stateTransitionsToApi(user, None))
+      }
 
     def toApiArticleGrepCodes(result: LanguagelessSearchResult[String]): api.GrepCodesSearchResult = {
       api.GrepCodesSearchResult(result.totalCount, result.page.getOrElse(1), result.pageSize, result.results)
@@ -714,4 +732,5 @@ trait ConverterService {
     }
 
   }
+
 }
