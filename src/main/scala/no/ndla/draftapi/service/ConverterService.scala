@@ -697,7 +697,7 @@ trait ConverterService {
     def _stateTransitionsToApi(user: UserInfo, article: Option[Article]): Map[String, Seq[String]] = {
       val ignoreRequiredArchiveRoles =
         article.exists(art =>
-          !art.status.current.equals(ArticleStatus.PUBLISHED) && !art.status.other.contains(ArticleStatus.PUBLISHED))
+          art.status.current != ArticleStatus.PUBLISHED && !art.status.other.contains(ArticleStatus.PUBLISHED))
 
       StateTransitionRules.StateTransitions.groupBy(_.from).map {
         case (from, to) =>
