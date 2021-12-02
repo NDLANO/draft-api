@@ -637,7 +637,10 @@ trait DraftController {
       val userInfo = user.getUser
       doOrAccessDenied(userInfo.canWrite) {
         val id = longOrNone(this.optionalArticleId.paramName)
-        converterService.stateTransitionsToApi(user.getUser, id)
+        converterService.stateTransitionsToApi(user.getUser, id) match {
+          case Success(transitions) => Ok(transitions)
+          case Failure(ex)          => errorHandler(ex)
+        }
       }
     }
 
