@@ -281,7 +281,7 @@ trait WriteService {
         isImported: Boolean,
         importId: Option[String],
         shouldOnlyCopy: Boolean
-    ) =
+    ): Try[domain.Article] =
       if (shouldOnlyCopy) {
         draftRepository.storeArticleAsNewVersion(article)
       } else {
@@ -306,13 +306,18 @@ trait WriteService {
       }
 
       val willPartialPublish = shouldPartialPublish(oldArticle, toUpdate)
-      val withMaybeNote =
+      val withPartialPublishNote =
         if (willPartialPublish) converterService.addNote(toUpdate, "Artikkelen har blitt delpublisert", user)
         else toUpdate
 
+      val withSaveAsNewNote =
+        if (shouldAlwaysCopy)
+          converterService.addNote(withPartialPublishNote, "Artikkelen har blitt lagret som ny versjon", user)
+        else withPartialPublishNote
+
       for {
         _ <- contentValidator.validateArticle(articleToValidate)
-        domainArticle <- performArticleUpdate(withMaybeNote,
+        domainArticle <- performArticleUpdate(withSaveAsNewNote,
                                               externalIds,
                                               externalSubjectIds,
                                               isImported,

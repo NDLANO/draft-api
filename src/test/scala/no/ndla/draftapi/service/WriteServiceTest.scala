@@ -801,14 +801,16 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       createNewVersion = Some(true)
     )
 
-    service.updateArticle(articleId,
-                          updatedArticle,
-                          List.empty,
-                          Seq.empty,
-                          TestData.userWithAdminAccess,
-                          None,
-                          None,
-                          None)
+    val updated = service.updateArticle(articleId,
+                                        updatedArticle,
+                                        List.empty,
+                                        Seq.empty,
+                                        TestData.userWithAdminAccess,
+                                        None,
+                                        None,
+                                        None)
+
+    updated.get.notes.length should be(2)
 
     verify(draftRepository, never).updateArticle(any[Article], anyBoolean)(any[DBSession])
     verify(draftRepository, times(1)).storeArticleAsNewVersion(any[Article])(any[DBSession])
