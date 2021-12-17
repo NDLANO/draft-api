@@ -252,10 +252,10 @@ trait WriteService {
 
     private def updateArticleAndStoreAsNewIfPublished(
         article: domain.Article,
-        isImported: Boolean
+        isImported: Boolean,
     ) = draftRepository.updateArticle(article, isImported) match {
       case Success(updated) if updated.status.current == PUBLISHED && !isImported =>
-        draftRepository.storeArticleAsNewVersion(updated)
+        draftRepository.storeArticleAsNewVersion(updated, None)
       case Success(updated) => Success(updated)
       case Failure(ex)      => Failure(ex)
     }
@@ -268,7 +268,7 @@ trait WriteService {
     ): Try[domain.Article] =
       draftRepository.updateWithExternalIds(article, externalIds, externalSubjectIds, importId) match {
         case Success(updated) if updated.status.current == PUBLISHED =>
-          draftRepository.storeArticleAsNewVersion(updated)
+          draftRepository.storeArticleAsNewVersion(updated, None)
         case Success(updated) => Success(updated)
         case Failure(ex)      => Failure(ex)
       }
@@ -280,10 +280,11 @@ trait WriteService {
         externalSubjectIds: Seq[String],
         isImported: Boolean,
         importId: Option[String],
-        shouldOnlyCopy: Boolean
+        shouldOnlyCopy: Boolean,
+        user: UserInfo
     ): Try[domain.Article] =
       if (shouldOnlyCopy) {
-        draftRepository.storeArticleAsNewVersion(article)
+        draftRepository.storeArticleAsNewVersion(article, Some(user))
       } else {
         externalIds match {
           case Nil  => updateArticleAndStoreAsNewIfPublished(article, isImported)
@@ -310,19 +311,15 @@ trait WriteService {
         if (willPartialPublish) converterService.addNote(toUpdate, "Artikkelen har blitt delpublisert", user)
         else toUpdate
 
-      val withSaveAsNewNote =
-        if (shouldAlwaysCopy)
-          converterService.addNote(withPartialPublishNote, "Artikkelen har blitt lagret som ny versjon", user)
-        else withPartialPublishNote
-
       for {
         _ <- contentValidator.validateArticle(articleToValidate)
-        domainArticle <- performArticleUpdate(withSaveAsNewNote,
+        domainArticle <- performArticleUpdate(withPartialPublishNote,
                                               externalIds,
                                               externalSubjectIds,
                                               isImported,
                                               importId,
-                                              shouldAlwaysCopy)
+                                              shouldAlwaysCopy,
+                                              user)
         _ <- partialPublishIfNeeded(willPartialPublish,
                                     domainArticle,
                                     PartialArticleFields.values.toSeq,

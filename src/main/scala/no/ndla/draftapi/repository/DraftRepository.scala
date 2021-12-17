@@ -7,9 +7,9 @@
 
 package no.ndla.draftapi.repository
 
-import java.util.UUID
-
+import java.util.{Date, UUID}
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.draftapi.auth.UserInfo
 import no.ndla.draftapi.integration.DataSource
 import no.ndla.draftapi.model.api.{ArticleVersioningException, NotFoundException, OptimisticLockException}
 import no.ndla.draftapi.model.domain._
@@ -68,7 +68,8 @@ trait DraftRepository {
       article.copy(revision = Some(startRevision))
     }
 
-    def storeArticleAsNewVersion(article: Article)(implicit session: DBSession = AutoSession): Try[Article] = {
+    def storeArticleAsNewVersion(article: Article, user: Option[UserInfo])(
+        implicit session: DBSession = AutoSession): Try[Article] = {
       article.id match {
         case None => Failure(ArticleVersioningException("Duplication of article failed."))
         case Some(articleId) =>
@@ -82,9 +83,10 @@ trait DraftRepository {
             val externalSubjectIds: Seq[String] = getExternalSubjectIdsFromId(articleId)
             val importId: Option[String] = getImportIdFromId(articleId)
             val articleRevision = article.revision.getOrElse(0) + 1
-
             val copiedArticle = article.copy(
-              notes = Seq.empty,
+              notes = user
+                .map(u => EditorNote("Artikkelen har blitt lagret som ny versjon", u.id, article.status, new Date()))
+                .toList,
               previousVersionsNotes = article.previousVersionsNotes ++ article.notes
             )
 
