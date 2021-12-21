@@ -7,19 +7,21 @@
 
 package no.ndla.draftapi.repository
 
-import java.net.Socket
-import no.ndla.draftapi.model.domain._
+import com.zaxxer.hikari.HikariDataSource
 import no.ndla.draftapi._
+import no.ndla.draftapi.auth.{Role, UserInfo}
 import no.ndla.draftapi.model.domain
+import no.ndla.draftapi.model.domain._
 import no.ndla.scalatestsuite.IntegrationSuite
 import org.joda.time.DateTime
 import org.scalatest.Outcome
 import scalikejdbc._
 
+import java.net.Socket
 import scala.util.{Failure, Success, Try}
 
 class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = true) with TestEnvironment {
-  override val dataSource = testDataSource.get
+  override val dataSource: HikariDataSource = testDataSource.get
   var repository: ArticleRepository = new ArticleRepository
 
   // Skip tests if no docker environment available
@@ -37,13 +39,13 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
 
   val sampleArticle: Article = TestData.sampleArticleWithByNcSa
 
-  def emptyTestDatabase = {
+  def emptyTestDatabase: Boolean = {
     DB autoCommit (implicit session => {
       sql"delete from articledata;".execute()(session)
     })
   }
 
-  private def resetIdSequence() = {
+  private def resetIdSequence(): Boolean = {
     DB autoCommit (implicit session => {
       sql"select setval('article_id_sequence', 1, false);".execute()
     })
@@ -283,7 +285,7 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
     val oldCount = repository.articlesWithId(article.id.get).size
     val publishedArticle = article.copy(status = domain.Status(domain.ArticleStatus.PUBLISHED, Set.empty))
     val updatedArticle = repository.updateArticle(publishedArticle).get
-    val updatedAndCopiedArticle = repository.storeArticleAsNewVersion(updatedArticle).get
+    val updatedAndCopiedArticle = repository.storeArticleAsNewVersion(updatedArticle, None).get
 
     updatedAndCopiedArticle.revision should be(Some(5))
 
@@ -346,7 +348,7 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
       updatedArticle1.notes should be(prevNotes1)
       updatedArticle1.previousVersionsNotes should be(Seq.empty)
 
-      val copiedArticle1 = repository.storeArticleAsNewVersion(updatedArticle1).get
+      val copiedArticle1 = repository.storeArticleAsNewVersion(updatedArticle1, None).get
       copiedArticle1.notes should be(Seq.empty)
       copiedArticle1.previousVersionsNotes should be(prevNotes1)
 
@@ -358,9 +360,28 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
       updatedArticle2.notes should be(prevNotes2)
       updatedArticle2.previousVersionsNotes should be(prevNotes1)
 
-      val copiedArticle2 = repository.storeArticleAsNewVersion(updatedArticle2).get
+      val copiedArticle2 = repository.storeArticleAsNewVersion(updatedArticle2, None).get
       copiedArticle2.notes should be(Seq.empty)
       copiedArticle2.previousVersionsNotes should be(prevNotes1 ++ prevNotes2)
+    }
+
+  }
+
+  test("copied article should have new note about copying if user present") {
+    val timeToFreeze = new DateTime().withMillisOfSecond(0)
+    withFrozenTime(timeToFreeze) {
+      val draftArticle1 = TestData.sampleDomainArticle.copy(
+        status = domain.Status(domain.ArticleStatus.DRAFT, Set.empty),
+        notes = Seq.empty
+      )
+      repository.insert(draftArticle1)
+
+      val copiedArticle1 =
+        repository.storeArticleAsNewVersion(draftArticle1, Some(UserInfo("user-id", Set(Role.WRITE)))).get
+      copiedArticle1.notes.length should be(1)
+      copiedArticle1.notes.head.user should be("user-id")
+      copiedArticle1.previousVersionsNotes should be(Seq.empty)
+
     }
 
   }
@@ -369,7 +390,7 @@ class DraftRepositoryTest extends IntegrationSuite(EnablePostgresContainer = tru
     repository.insert(sampleArticle.copy(id = Some(1), relatedContent = Seq(Right(2))))
 
     val Right(relatedId) = repository.withId(1).get.relatedContent.head
-    relatedId.toLong should be(2L)
+    relatedId should be(2L)
 
   }
 }
