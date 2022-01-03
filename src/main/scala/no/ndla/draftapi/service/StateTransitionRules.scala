@@ -197,17 +197,21 @@ trait StateTransitionRules {
 
     private def getTransition(from: ArticleStatus.Value,
                               to: ArticleStatus.Value,
-                              user: UserInfo): Option[StateTransition] = {
+                              user: UserInfo,
+                              ignoreRules: Boolean): Option[StateTransition] = {
       StateTransitions
         .find(transition => transition.from == from && transition.to == to)
-        .filter(t => user.hasRoles(t.requiredRoles))
+        .filter(t => if (ignoreRules) true else user.hasRoles(t.requiredRoles))
     }
 
     private[service] def doTransitionWithoutSideEffect(current: domain.Article,
                                                        to: ArticleStatus.Value,
                                                        user: UserInfo,
                                                        isImported: Boolean): (Try[domain.Article], Seq[SideEffect]) = {
-      getTransition(current.status.current, to, user) match {
+      val ignoreRules = to == ArticleStatus.ARCHIVED &&
+        !(current.status.current == ArticleStatus.PUBLISHED || current.status.other.contains(ArticleStatus.PUBLISHED))
+
+      getTransition(current.status.current, to, user, ignoreRules) match {
         case Some(t) =>
           val currentToOther = if (t.addCurrentStateToOthersOnTransition) Set(current.status.current) else Set()
           val containsIllegalStatuses = current.status.other.intersect(t.illegalStatuses)
